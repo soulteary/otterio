@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2016-2020 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,20 +36,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/minio/minio/cmd/config"
-	"github.com/minio/minio/cmd/crypto"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/cmd/logger/message/log"
-	"github.com/minio/minio/pkg/auth"
-	"github.com/minio/minio/pkg/bandwidth"
-	"github.com/minio/minio/pkg/dsync"
-	"github.com/minio/minio/pkg/handlers"
-	iampolicy "github.com/minio/minio/pkg/iam/policy"
-	"github.com/minio/minio/pkg/kms"
-	"github.com/minio/minio/pkg/madmin"
-	xnet "github.com/minio/minio/pkg/net"
-	trace "github.com/minio/minio/pkg/trace"
+	"github.com/soulteary/otterio/cmd/config"
+	"github.com/soulteary/otterio/cmd/crypto"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/cmd/logger/message/log"
+	"github.com/soulteary/otterio/pkg/auth"
+	"github.com/soulteary/otterio/pkg/bandwidth"
+	"github.com/soulteary/otterio/pkg/dsync"
+	"github.com/soulteary/otterio/pkg/handlers"
+	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
+	"github.com/soulteary/otterio/pkg/kms"
+	"github.com/soulteary/otterio/pkg/madmin"
+	xnet "github.com/soulteary/otterio/pkg/net"
+	trace "github.com/soulteary/otterio/pkg/trace"
 )
 
 const (

@@ -23,10 +23,10 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/minio/minio/cmd/http"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/cmd/rest"
-	"github.com/minio/minio/pkg/dsync"
+	"github.com/soulteary/otterio/cmd/http"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/cmd/rest"
+	"github.com/soulteary/otterio/pkg/dsync"
 )
 
 // lockRESTClient is authenticable lock REST client

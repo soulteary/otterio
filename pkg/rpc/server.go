@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file.
 
 // Copyright 2020 MinIO, Inc. All rights reserved.
-// Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+// Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
 // forked from https://github.com/gorilla/rpc/v2
 // modified to be used with MinIO under Apache
 // 2.0 license that can be found in the LICENSE file.

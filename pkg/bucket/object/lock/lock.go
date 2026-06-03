@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"github.com/beevik/ntp"
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/env"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/env"
 )
 
 // RetMode - object retention mode.

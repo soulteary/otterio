@@ -17,8 +17,8 @@
 package encoding
 
 import (
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/common"
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/gen-go/parquet"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/common"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
 )
 
 // RLEDictEncode encodes values specified in https://github.com/apache/parquet-format/blob/master/Encodings.md#dictionary-encoding-plain_dictionary--2-and-rle_dictionary--8 and returns dictionary page data and data page data.

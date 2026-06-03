@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2015-2019 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,17 +39,17 @@ import (
 	"github.com/klauspost/compress/s2"
 	"github.com/klauspost/readahead"
 	"github.com/minio/minio-go/v7/pkg/s3utils"
-	"github.com/minio/minio/cmd/config/compress"
-	"github.com/minio/minio/cmd/config/dns"
-	"github.com/minio/minio/cmd/config/storageclass"
-	"github.com/minio/minio/cmd/crypto"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/bucket/lifecycle"
-	"github.com/minio/minio/pkg/hash"
-	"github.com/minio/minio/pkg/ioutil"
-	"github.com/minio/minio/pkg/trie"
-	"github.com/minio/minio/pkg/wildcard"
+	"github.com/soulteary/otterio/cmd/config/compress"
+	"github.com/soulteary/otterio/cmd/config/dns"
+	"github.com/soulteary/otterio/cmd/config/storageclass"
+	"github.com/soulteary/otterio/cmd/crypto"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
+	"github.com/soulteary/otterio/pkg/hash"
+	"github.com/soulteary/otterio/pkg/ioutil"
+	"github.com/soulteary/otterio/pkg/trie"
+	"github.com/soulteary/otterio/pkg/wildcard"
 )
 
 const (

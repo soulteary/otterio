@@ -23,11 +23,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/color"
-	"github.com/minio/minio/pkg/console"
-	"github.com/minio/minio/pkg/madmin"
-	"github.com/minio/minio/pkg/wildcard"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/color"
+	"github.com/soulteary/otterio/pkg/console"
+	"github.com/soulteary/otterio/pkg/madmin"
+	"github.com/soulteary/otterio/pkg/wildcard"
 )
 
 const (

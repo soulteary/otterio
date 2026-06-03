@@ -34,13 +34,13 @@ import (
 	"time"
 
 	"github.com/djherbis/atime"
-	"github.com/minio/minio/cmd/config/cache"
-	"github.com/minio/minio/cmd/crypto"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/disk"
-	"github.com/minio/minio/pkg/fips"
-	"github.com/minio/minio/pkg/kms"
+	"github.com/soulteary/otterio/cmd/config/cache"
+	"github.com/soulteary/otterio/cmd/crypto"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/disk"
+	"github.com/soulteary/otterio/pkg/fips"
+	"github.com/soulteary/otterio/pkg/kms"
 	"github.com/minio/sio"
 )
 

@@ -25,10 +25,10 @@ package main // import "github.com/minio/minio"
 import (
 	"os"
 
-	minio "github.com/minio/minio/cmd"
+	minio "github.com/soulteary/otterio/cmd"
 
 	// Import gateway
-	_ "github.com/minio/minio/cmd/gateway"
+	_ "github.com/soulteary/otterio/cmd/gateway"
 )
 
 func main() {

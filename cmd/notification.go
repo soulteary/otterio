@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2018, 2019 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,16 +35,16 @@ import (
 	"github.com/cespare/xxhash/v2"
 	"github.com/klauspost/compress/zip"
 	"github.com/minio/minio-go/v7/pkg/set"
-	"github.com/minio/minio/cmd/crypto"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/cmd/logger"
-	bandwidth "github.com/minio/minio/pkg/bandwidth"
-	bucketBandwidth "github.com/minio/minio/pkg/bucket/bandwidth"
-	"github.com/minio/minio/pkg/bucket/policy"
-	"github.com/minio/minio/pkg/event"
-	"github.com/minio/minio/pkg/madmin"
-	xnet "github.com/minio/minio/pkg/net"
-	"github.com/minio/minio/pkg/sync/errgroup"
+	"github.com/soulteary/otterio/cmd/crypto"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/cmd/logger"
+	bandwidth "github.com/soulteary/otterio/pkg/bandwidth"
+	bucketBandwidth "github.com/soulteary/otterio/pkg/bucket/bandwidth"
+	"github.com/soulteary/otterio/pkg/bucket/policy"
+	"github.com/soulteary/otterio/pkg/event"
+	"github.com/soulteary/otterio/pkg/madmin"
+	xnet "github.com/soulteary/otterio/pkg/net"
+	"github.com/soulteary/otterio/pkg/sync/errgroup"
 )
 
 // NotificationSys - notification system.

@@ -22,8 +22,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/minio/minio/pkg/bucket/policy"
-	"github.com/minio/minio/pkg/bucket/policy/condition"
+	"github.com/soulteary/otterio/pkg/bucket/policy"
+	"github.com/soulteary/otterio/pkg/bucket/policy/condition"
 )
 
 func TestStatementIsAllowed(t *testing.T) {

@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2015-2019 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,18 +32,18 @@ import (
 	"time"
 
 	"github.com/minio/cli"
-	"github.com/minio/minio/cmd/config"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/cmd/rest"
-	"github.com/minio/minio/pkg/auth"
-	"github.com/minio/minio/pkg/bucket/bandwidth"
-	"github.com/minio/minio/pkg/certs"
-	"github.com/minio/minio/pkg/color"
-	"github.com/minio/minio/pkg/env"
-	"github.com/minio/minio/pkg/fips"
-	"github.com/minio/minio/pkg/madmin"
-	"github.com/minio/minio/pkg/sync/errgroup"
+	"github.com/soulteary/otterio/cmd/config"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/cmd/rest"
+	"github.com/soulteary/otterio/pkg/auth"
+	"github.com/soulteary/otterio/pkg/bucket/bandwidth"
+	"github.com/soulteary/otterio/pkg/certs"
+	"github.com/soulteary/otterio/pkg/color"
+	"github.com/soulteary/otterio/pkg/env"
+	"github.com/soulteary/otterio/pkg/fips"
+	"github.com/soulteary/otterio/pkg/madmin"
+	"github.com/soulteary/otterio/pkg/sync/errgroup"
 )
 
 // ServerFlags - server command specific flags

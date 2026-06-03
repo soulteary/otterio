@@ -20,9 +20,9 @@ import (
 	"context"
 
 	"github.com/minio/cli"
-	minio "github.com/minio/minio/cmd"
-	"github.com/minio/minio/pkg/auth"
-	"github.com/minio/minio/pkg/madmin"
+	minio "github.com/soulteary/otterio/cmd"
+	"github.com/soulteary/otterio/pkg/auth"
+	"github.com/soulteary/otterio/pkg/madmin"
 )
 
 func init() {

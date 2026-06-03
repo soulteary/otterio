@@ -1,6 +1,6 @@
 /*
  * Minio Cloud Storage, (C) 2019 Minio, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/minio/minio/pkg/dsync"
+	"github.com/soulteary/otterio/pkg/dsync"
 )
 
 const (

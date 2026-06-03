@@ -16,7 +16,7 @@
 
 package api
 
-import "github.com/minio/minio/cmd/config"
+import "github.com/soulteary/otterio/cmd/config"
 
 // Help template for storageclass feature.
 var (

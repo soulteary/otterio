@@ -17,7 +17,7 @@
 package logger
 
 import (
-	"github.com/minio/minio/cmd/config"
+	"github.com/soulteary/otterio/cmd/config"
 )
 
 // Help template for logger http and audit

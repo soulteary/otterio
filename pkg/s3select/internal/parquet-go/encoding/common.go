@@ -17,7 +17,7 @@
 package encoding
 
 import (
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/common"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/common"
 )
 
 // Refer https://en.wikipedia.org/wiki/LEB128#Unsigned_LEB128

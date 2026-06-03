@@ -24,7 +24,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/minio/minio/pkg/bandwidth"
+	"github.com/soulteary/otterio/pkg/bandwidth"
 )
 
 // Report includes the bandwidth report or the error encountered.

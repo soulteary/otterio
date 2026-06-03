@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"net/url"
 
-	iampolicy "github.com/minio/minio/pkg/iam/policy"
+	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 )
 
 // InfoCannedPolicy - expand canned policy into JSON structure.

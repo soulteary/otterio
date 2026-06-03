@@ -3,7 +3,7 @@
 
 /*
  * MinIO Cloud Storage, (C) 2015 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,12 @@ import (
 
 func genLDFlags(version string) string {
 	ldflagsStr := "-s -w"
-	ldflagsStr += " -X github.com/minio/minio/cmd.Version=" + version
-	ldflagsStr += " -X github.com/minio/minio/cmd.ReleaseTag=" + releaseTag(version)
-	ldflagsStr += " -X github.com/minio/minio/cmd.CommitID=" + commitID()
-	ldflagsStr += " -X github.com/minio/minio/cmd.ShortCommitID=" + commitID()[:12]
-	ldflagsStr += " -X github.com/minio/minio/cmd.GOPATH=" + os.Getenv("GOPATH")
-	ldflagsStr += " -X github.com/minio/minio/cmd.GOROOT=" + os.Getenv("GOROOT")
+	ldflagsStr += " -X github.com/soulteary/otterio/cmd.Version=" + version
+	ldflagsStr += " -X github.com/soulteary/otterio/cmd.ReleaseTag=" + releaseTag(version)
+	ldflagsStr += " -X github.com/soulteary/otterio/cmd.CommitID=" + commitID()
+	ldflagsStr += " -X github.com/soulteary/otterio/cmd.ShortCommitID=" + commitID()[:12]
+	ldflagsStr += " -X github.com/soulteary/otterio/cmd.GOPATH=" + os.Getenv("GOPATH")
+	ldflagsStr += " -X github.com/soulteary/otterio/cmd.GOROOT=" + os.Getenv("GOROOT")
 	return ldflagsStr
 }
 

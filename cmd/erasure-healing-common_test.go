@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/minio/minio/pkg/madmin"
+	"github.com/soulteary/otterio/pkg/madmin"
 )
 
 // validates functionality provided to find most common

@@ -22,8 +22,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/madmin"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/madmin"
 )
 
 // getLocalServerProperty - returns madmin.ServerProperties for only the

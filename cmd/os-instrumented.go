@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/minio/minio/pkg/disk"
-	trace "github.com/minio/minio/pkg/trace"
+	"github.com/soulteary/otterio/pkg/disk"
+	trace "github.com/soulteary/otterio/pkg/trace"
 )
 
 //go:generate stringer -type=osMetric -trimprefix=osMetric $GOFILE

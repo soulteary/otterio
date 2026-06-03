@@ -1,6 +1,6 @@
 /*
  * Minio Cloud Storage, (C) 2019 Minio, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import (
 	"strings"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/common"
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/encoding"
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/gen-go/parquet"
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/schema"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/common"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/encoding"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/schema"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

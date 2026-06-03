@@ -21,8 +21,8 @@ import (
 	"errors"
 
 	"github.com/minio/minio-go/v7/pkg/s3utils"
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/sync/errgroup"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/sync/errgroup"
 )
 
 // list all errors that can be ignore in a bucket operation.

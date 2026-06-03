@@ -27,8 +27,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/minio/minio/pkg/auth"
-	iampolicy "github.com/minio/minio/pkg/iam/policy"
+	"github.com/soulteary/otterio/pkg/auth"
+	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 )
 
 // Test get request auth type.

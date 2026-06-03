@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # MinIO Cloud Storage, (C) 2014-2018 MinIO, Inc.
-# Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+# Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

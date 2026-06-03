@@ -1,7 +1,7 @@
 FROM golang:1.26-alpine as builder
 
 # Community fork of MinIO. Not affiliated with, endorsed by, or sponsored by MinIO, Inc.
-LABEL maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/minio)"
+LABEL maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/otterio)"
 
 ENV GOPATH /go
 ENV CGO_ENABLED 0
@@ -9,7 +9,7 @@ ENV GO111MODULE on
 
 RUN  \
      apk add --no-cache git && \
-     git clone https://github.com/soulteary/minio && cd minio && \
+     git clone https://github.com/soulteary/otterio && cd minio && \
      git checkout master && go install -v -ldflags "$(go run buildscripts/gen-ldflags.go)"
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3

@@ -1,5 +1,5 @@
 // MinIO Cloud Storage, (C) 2019-2020 MinIO, Inc.
-// Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+// Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,9 +32,9 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/pkg/kms"
-	xnet "github.com/minio/minio/pkg/net"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/pkg/kms"
+	xnet "github.com/soulteary/otterio/pkg/net"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

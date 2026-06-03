@@ -23,9 +23,9 @@ import (
 	"strings"
 
 	"github.com/minio/minio-go/v7/pkg/set"
-	"github.com/minio/minio/cmd/config"
-	"github.com/minio/minio/pkg/ellipses"
-	"github.com/minio/minio/pkg/env"
+	"github.com/soulteary/otterio/cmd/config"
+	"github.com/soulteary/otterio/pkg/ellipses"
+	"github.com/soulteary/otterio/pkg/env"
 )
 
 // This file implements and supports ellipses pattern for

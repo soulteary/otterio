@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/gen-go/parquet"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
 )
 
 func updateMaxDLRL(schemaMap map[string]*Element, maxDL, maxRL int64) {

@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/minio/minio/cmd/logger/message/log"
-	"github.com/minio/minio/pkg/color"
-	c "github.com/minio/minio/pkg/console"
+	"github.com/soulteary/otterio/cmd/logger/message/log"
+	"github.com/soulteary/otterio/pkg/color"
+	c "github.com/soulteary/otterio/pkg/console"
 )
 
 // Logger interface describes the methods that need to be implemented to satisfy the interface requirements.

@@ -2,8 +2,8 @@
 
 ``MinIO Browser`` provides minimal set of UI to manage buckets and objects on ``minio`` server. ``MinIO Browser`` is written in javascript and released under the [Apache 2.0 License](../LICENSE).
 
-> NOTE: This is part of an independent, community-maintained fork of MinIO
-> (https://github.com/soulteary/minio). It is not affiliated with, endorsed by,
+> NOTE: This is part of OtterIO, an independent, community-maintained fork of MinIO
+> (https://github.com/soulteary/otterio). It is not affiliated with, endorsed by,
 > or sponsored by MinIO, Inc. "MinIO" is a trademark of MinIO, Inc.
 
 
@@ -117,7 +117,7 @@ Install [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and
 
 Prepare and build container
 ```
-git clone git@github.com:soulteary/minio.git
+git clone git@github.com:soulteary/otterio.git
 cd minio
 docker build -t minio-dev -f Dockerfile.dev.browser .
 ```

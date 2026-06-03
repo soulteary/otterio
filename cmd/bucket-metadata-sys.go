@@ -24,17 +24,17 @@ import (
 	"sync"
 
 	"github.com/minio/minio-go/v7/pkg/tags"
-	"github.com/minio/minio/cmd/crypto"
-	"github.com/minio/minio/cmd/logger"
-	bucketsse "github.com/minio/minio/pkg/bucket/encryption"
-	"github.com/minio/minio/pkg/bucket/lifecycle"
-	objectlock "github.com/minio/minio/pkg/bucket/object/lock"
-	"github.com/minio/minio/pkg/bucket/policy"
-	"github.com/minio/minio/pkg/bucket/replication"
-	"github.com/minio/minio/pkg/bucket/versioning"
-	"github.com/minio/minio/pkg/event"
-	"github.com/minio/minio/pkg/madmin"
-	"github.com/minio/minio/pkg/sync/errgroup"
+	"github.com/soulteary/otterio/cmd/crypto"
+	"github.com/soulteary/otterio/cmd/logger"
+	bucketsse "github.com/soulteary/otterio/pkg/bucket/encryption"
+	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
+	objectlock "github.com/soulteary/otterio/pkg/bucket/object/lock"
+	"github.com/soulteary/otterio/pkg/bucket/policy"
+	"github.com/soulteary/otterio/pkg/bucket/replication"
+	"github.com/soulteary/otterio/pkg/bucket/versioning"
+	"github.com/soulteary/otterio/pkg/event"
+	"github.com/soulteary/otterio/pkg/madmin"
+	"github.com/soulteary/otterio/pkg/sync/errgroup"
 )
 
 // BucketMetadataSys captures all bucket metadata for a given cluster.

@@ -16,7 +16,7 @@
 
 package parquet
 
-import "github.com/minio/minio/pkg/s3select/internal/parquet-go/gen-go/parquet"
+import "github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
 
 func getTableValues(values interface{}, valueType parquet.Type) (tableValues []interface{}) {
 	return valuesToInterfaces(values, valueType)

@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/minio/minio/pkg/kms"
+	"github.com/soulteary/otterio/pkg/kms"
 	"github.com/secure-io/sio-go"
 	"github.com/secure-io/sio-go/sioutil"
 )

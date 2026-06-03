@@ -21,7 +21,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/minio/minio/cmd/logger"
+	"github.com/soulteary/otterio/cmd/logger"
 )
 
 var shortRandom = func(limit int64) io.Reader { return io.LimitReader(rand.Reader, limit) }

@@ -1,6 +1,6 @@
 /*
  * Minio Cloud Storage, (C) 2018 Minio, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/minio/minio-go/v7/pkg/set"
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/gen-go/parquet"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
 )
 
 // GetReaderFunc - function type returning io.ReadCloser for requested offset/length.

@@ -1,17 +1,47 @@
-# MinIO Quickstart Guide [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io) [![Docker Pulls](https://img.shields.io/docker/pulls/minio/minio.svg?maxAge=604800)](https://hub.docker.com/r/minio/minio/)
+<div align="center">
 
-MinIO 是一个基于Apache License v2.0开源协议的对象存储服务。它兼容亚马逊S3云存储服务接口，非常适合于存储大容量非结构化的数据，例如图片、视频、日志文件、备份数据和容器/虚拟机镜像等，而一个对象文件可以是任意大小，从几kb到最大5T不等。
+[![OtterIO — S3 兼容对象存储](./.github/otter-io-banner.jpg)](https://github.com/soulteary/otterio)
 
-MinIO是一个非常轻量的服务,可以很简单的和其他应用的结合，类似 NodeJS, Redis 或者 MySQL。
+# OtterIO
 
-## 关于本 fork
+**S3 兼容对象存储** — _自由存储，无限扩展。_
 
-本仓库是 MinIO 的定制 fork，与上游存在以下差异：
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.26%2B-00ADD8.svg?logo=go&logoColor=white)](./go.mod)
+[![GitHub](https://img.shields.io/badge/GitHub-soulteary%2Fotterio-181717.svg?logo=github)](https://github.com/soulteary/otterio)
+
+[English](./README.md) · 简体中文
+
+</div>
+
+OtterIO 是一个基于 Apache License v2.0 开源协议的高性能对象存储服务。它兼容亚马逊 S3 云存储服务接口，非常适合于存储大容量非结构化的数据，例如图片、视频、日志文件、备份数据和容器/虚拟机镜像等，而一个对象文件可以是任意大小，从几 KB 到最大 5T 不等。
+
+OtterIO 是一个非常轻量的服务，可以很简单地和其他应用结合，类似 NodeJS、Redis 或者 MySQL。
+
+## 关于 OtterIO
+
+OtterIO 是 MinIO 的定制 fork，与上游存在以下差异：
 
 - **HTTP 层**：请求路由基于 [`gofiber/fiber/v3`](https://github.com/gofiber/fiber) 实现，已不再使用 `gorilla/mux`。
 - **桶通知目标（Bucket Notification）**：仅保留 `elasticsearch`、`mysql`、`postgresql`、`redis`、`webhook`，已移除消息队列类目标（Kafka、NATS、NATS Streaming、NSQ、AMQP、MQTT）。
 - **网关（Gateway）**：仅保留 `nas` 与 `s3`，已移除 `azure`、`gcs`、`hdfs` 网关。
 - **构建工具链**：要求 Go `1.26` 及以上版本（详见 `go.mod`）。
+
+> **⚠️ OtterIO 是一个独立的、由社区维护的上游 MinIO 项目分支。**
+>
+> 本项目**未**获得 MinIO, Inc. 的关联、认可或赞助。"MinIO" 是 MinIO, Inc. 的商标，
+> 这里仅用于标识本分支所派生的上游项目。Apache License 2.0 不授予任何商标权
+> （详见许可证第 6 节）。
+>
+> OtterIO 基于 MinIO **在改用 GNU AGPLv3 之前的最后一个 Apache License 2.0 版本**，
+> 并继续以 [Apache License, Version 2.0](./LICENSE) 进行分发。MinIO, Inc. 及所有第三方
+> 子组件的原始版权声明均予以保留 —— 详见 [`NOTICE`](./NOTICE)。
+>
+> 项目主页：https://github.com/soulteary/otterio
+
+> 提示：本指南中出现的上游链接（`docs.min.io`、`dl.min.io`、`hub.docker.com/r/minio/minio` 等）
+> 以及 `minio/minio` 镜像均指向**原始上游项目**，而非 OtterIO。要使用上述定制能力，
+> 请从源码构建 OtterIO（见[使用源码安装](#使用源码安装)）。
 
 ## Docker 容器
 ### 稳定版
@@ -98,10 +128,15 @@ service minio start
 
 ## 使用源码安装
 
-采用源码安装仅供开发人员和高级用户使用,如果你还没有Golang环境， 请参考 [How to install Golang](https://golang.org/doc/install)。最低需要Golang版本为 [go1.16](https://golang.org/dl/#stable)
+采用源码安装仅供开发人员和高级用户使用。如果你还没有 Golang 环境，请参考 [How to install Golang](https://golang.org/doc/install)。OtterIO 要求 **Go 1.26 及以上版本**（详见 `go.mod`）。
+
+要构建 OtterIO（包含基于 Fiber 的路由及其他定制），请直接克隆并构建：
 
 ```sh
-GO111MODULE=on go get github.com/minio/minio
+git clone https://github.com/soulteary/otterio.git
+cd otterio
+make build
+./minio server /data
 ```
 
 ## 为防火墙设置允许访问的端口
@@ -198,8 +233,17 @@ mc admin update <minio alias, e.g., myminio>
 - [使用 `minio-go` SDK](https://docs.min.io/docs/golang-client-quickstart-guide)
 - [MinIO文档](https://docs.min.io)
 
-## 如何参与到MinIO项目
-请参考 [贡献者指南](https://github.com/minio/minio/blob/master/CONTRIBUTING.md)。欢迎各位中国程序员加入到MinIO项目中。
+## 如何参与到 OtterIO 项目
+欢迎通过仓库 https://github.com/soulteary/otterio 参与贡献。上游项目的约定请参考原始 MinIO [贡献者指南](https://github.com/minio/minio/blob/master/CONTRIBUTING.md)。
 
 ## 授权许可
-MinIO的使用受 Apache 2.0 License 约束，你可以在 [LICENSE](./LICENSE) 查看许可。
+
+<div align="center">
+
+<img src="./.github/otter-io-logo.jpg" alt="OtterIO logo" width="220" />
+
+</div>
+
+OtterIO 的使用受 Apache License, Version 2.0 约束，你可以在 [LICENSE](./LICENSE) 查看许可，归属与第三方声明见 [NOTICE](./NOTICE)。
+
+"MinIO" 是 MinIO, Inc. 的商标。OtterIO 未获得 MinIO, Inc. 的关联、认可或赞助。

@@ -28,9 +28,9 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/sync/errgroup"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/sync/errgroup"
 )
 
 var printEndpointError = func() func(Endpoint, error, bool) {
@@ -152,7 +152,7 @@ func formatErasureCleanupTmpLocalEndpoints(endpoints Endpoints) error {
 // migration failed to capture '.This' field properly which indicates
 // the disk UUID association. Below error message is returned when
 // we see this situation in format.json, for more info refer
-// https://github.com/minio/minio/issues/5667
+// https://github.com/soulteary/otterio/issues/5667
 var errErasureV3ThisEmpty = fmt.Errorf("Erasure format version 3 has This field empty")
 
 // isServerResolvable - checks if the endpoint is resolvable
@@ -289,7 +289,7 @@ func connectLoadInitFormats(retryCount int, firstDisk bool, endpoints Endpoints,
 	// in release RELEASE.2018-03-16T22-52-12Z after migrating v1 to v2 to v3.
 	// This migration failed to capture '.This' field properly which indicates
 	// the disk UUID association. Below function is called to handle and fix
-	// this regression, for more info refer https://github.com/minio/minio/issues/5667
+	// this regression, for more info refer https://github.com/soulteary/otterio/issues/5667
 	if err = fixFormatErasureV3(storageDisks, endpoints, formatConfigs); err != nil {
 		return nil, nil, err
 	}

@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2015, 2016, 2017, 2018 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,25 +26,25 @@ import (
 	"time"
 
 	"github.com/minio/minio-go/v7/pkg/set"
-	"github.com/minio/minio/pkg/bucket/bandwidth"
-	"github.com/minio/minio/pkg/handlers"
-	"github.com/minio/minio/pkg/kms"
+	"github.com/soulteary/otterio/pkg/bucket/bandwidth"
+	"github.com/soulteary/otterio/pkg/handlers"
+	"github.com/soulteary/otterio/pkg/kms"
 
 	"github.com/dustin/go-humanize"
-	"github.com/minio/minio/cmd/config/cache"
-	"github.com/minio/minio/cmd/config/compress"
-	"github.com/minio/minio/cmd/config/dns"
-	xldap "github.com/minio/minio/cmd/config/identity/ldap"
-	"github.com/minio/minio/cmd/config/identity/openid"
-	"github.com/minio/minio/cmd/config/policy/opa"
-	"github.com/minio/minio/cmd/config/storageclass"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/pkg/auth"
+	"github.com/soulteary/otterio/cmd/config/cache"
+	"github.com/soulteary/otterio/cmd/config/compress"
+	"github.com/soulteary/otterio/cmd/config/dns"
+	xldap "github.com/soulteary/otterio/cmd/config/identity/ldap"
+	"github.com/soulteary/otterio/cmd/config/identity/openid"
+	"github.com/soulteary/otterio/cmd/config/policy/opa"
+	"github.com/soulteary/otterio/cmd/config/storageclass"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/pkg/auth"
 	etcd "go.etcd.io/etcd/client/v3"
 
-	"github.com/minio/minio/pkg/certs"
-	"github.com/minio/minio/pkg/event"
-	"github.com/minio/minio/pkg/pubsub"
+	"github.com/soulteary/otterio/pkg/certs"
+	"github.com/soulteary/otterio/pkg/event"
+	"github.com/soulteary/otterio/pkg/pubsub"
 )
 
 // minio configuration related constants.

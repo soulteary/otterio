@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2016-2019 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/minio/minio/pkg/madmin"
+	"github.com/soulteary/otterio/pkg/madmin"
 )
 
 // commonTime returns a maximally occurring time from a list of time.
@@ -223,7 +223,7 @@ func disksWithAllParts(ctx context.Context, onlineDisks []StorageAPI, partsMetad
 	erasureDistributionReliable := true
 	if inconsistent > len(partsMetadata)/2 {
 		// If there are too many inconsistent files, then we can't trust erasure.Distribution (most likely
-		// because of bugs found in CopyObject/PutObjectTags) https://github.com/minio/minio/pull/10772
+		// because of bugs found in CopyObject/PutObjectTags) https://github.com/soulteary/otterio/pull/10772
 		erasureDistributionReliable = false
 	}
 

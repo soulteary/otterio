@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2018 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
-	"github.com/minio/minio/cmd/config"
-	xnet "github.com/minio/minio/pkg/net"
+	"github.com/soulteary/otterio/cmd/config"
+	xnet "github.com/soulteary/otterio/pkg/net"
 )
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -3,7 +3,7 @@
 
 /*
  * MinIO Cloud Storage, (C) 2015, 2016, 2017 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ func GetInfo(path string) (info Info, err error) {
 		FSType: getFSType(int64(s.Type)),
 	}
 	// Check for overflows.
-	// https://github.com/minio/minio/issues/8035
+	// https://github.com/soulteary/otterio/issues/8035
 	// XFS can show wrong values at times error out
 	// in such scenarios.
 	if info.Free > info.Total {

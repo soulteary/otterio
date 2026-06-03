@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2017-2020 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	// Import all gateways please keep the order
 
 	// NAS
-	_ "github.com/minio/minio/cmd/gateway/nas"
+	_ "github.com/soulteary/otterio/cmd/gateway/nas"
 
 	// S3
-	_ "github.com/minio/minio/cmd/gateway/s3"
+	_ "github.com/soulteary/otterio/cmd/gateway/s3"
 	// gateway functionality is frozen, no new gateways are being implemented
 	// or considered for upstream inclusion at this point in time. if needed
 	// please keep a fork of the project.

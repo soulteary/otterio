@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2019 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import (
 	"context"
 	"sync"
 
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/cmd/logger/message/log"
-	"github.com/minio/minio/cmd/logger/target/console"
-	xnet "github.com/minio/minio/pkg/net"
-	"github.com/minio/minio/pkg/pubsub"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/cmd/logger/message/log"
+	"github.com/soulteary/otterio/cmd/logger/target/console"
+	xnet "github.com/soulteary/otterio/pkg/net"
+	"github.com/soulteary/otterio/pkg/pubsub"
 )
 
 // number of log messages to buffer

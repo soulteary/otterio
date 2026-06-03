@@ -19,7 +19,7 @@ package encoding
 import (
 	"fmt"
 
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/gen-go/parquet"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
 )
 
 func rleEncodeInt32s(i32s []int32, bitWidth int32) (data []byte) {

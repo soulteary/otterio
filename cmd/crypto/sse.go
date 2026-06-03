@@ -1,5 +1,5 @@
 // MinIO Cloud Storage, (C) 2015, 2016, 2017, 2018 MinIO, Inc.
-// Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+// Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/fips"
-	"github.com/minio/minio/pkg/ioutil"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/fips"
+	"github.com/soulteary/otterio/pkg/ioutil"
 	"github.com/minio/sio"
 )
 
@@ -36,7 +36,7 @@ const (
 	// InsecureSealAlgorithm is the legacy encryption/sealing algorithm used
 	// to derive & seal the key-encryption-key and to en/decrypt the object data.
 	// This algorithm should not be used for new objects because its key derivation
-	// is not optimal. See: https://github.com/minio/minio/pull/6121
+	// is not optimal. See: https://github.com/soulteary/otterio/pull/6121
 	InsecureSealAlgorithm = "DARE-SHA256"
 )
 

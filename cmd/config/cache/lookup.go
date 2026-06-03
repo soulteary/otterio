@@ -20,8 +20,8 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/minio/minio/cmd/config"
-	"github.com/minio/minio/pkg/env"
+	"github.com/soulteary/otterio/cmd/config"
+	"github.com/soulteary/otterio/pkg/env"
 )
 
 // Cache ENVs

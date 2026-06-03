@@ -3,7 +3,7 @@
 
 /*
  * MinIO Cloud Storage, (C) 2019,2020 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/minio/minio/pkg/auth"
+	"github.com/soulteary/otterio/pkg/auth"
 )
 
 // AssumedRoleUser - The identifiers for the temporary security credentials that

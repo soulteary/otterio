@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2016-2020 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package cmd
 import (
 	"net/http"
 
-	xhttp "github.com/minio/minio/cmd/http"
+	xhttp "github.com/soulteary/otterio/cmd/http"
 )
 
 func newHTTPServerFn() *xhttp.Server {

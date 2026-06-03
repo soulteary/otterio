@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2019 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	csv "github.com/minio/minio/pkg/csvparser"
-	"github.com/minio/minio/pkg/s3select/sql"
+	csv "github.com/soulteary/otterio/pkg/csvparser"
+	"github.com/soulteary/otterio/pkg/s3select/sql"
 )
 
 // Reader - CSV record reader for S3Select.

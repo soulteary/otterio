@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	"github.com/dustin/go-humanize"
-	"github.com/minio/minio/cmd/crypto"
+	"github.com/soulteary/otterio/cmd/crypto"
 )
 
 // Return pointer to testOneByteReadEOF{}

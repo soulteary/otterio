@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/minio/minio/pkg/s3select/internal/parquet-go/gen-go/parquet"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
 	"github.com/tidwall/gjson"
 )
 

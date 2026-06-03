@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	xnet "github.com/minio/minio/pkg/net"
+	xnet "github.com/soulteary/otterio/pkg/net"
 )
 
 func TestUpdateClaimsExpiry(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/minio/minio
+module github.com/soulteary/otterio
 
 go 1.26
 

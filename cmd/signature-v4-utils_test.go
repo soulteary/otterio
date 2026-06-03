@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"testing"
 
-	xhttp "github.com/minio/minio/cmd/http"
+	xhttp "github.com/soulteary/otterio/cmd/http"
 )
 
 // TestSkipContentSha256Cksum - Test validate the logic which decides whether

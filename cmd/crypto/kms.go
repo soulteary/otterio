@@ -23,8 +23,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/pkg/kms"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/kms"
 	"github.com/minio/sio"
 )
 

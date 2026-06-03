@@ -23,10 +23,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/minio/minio/cmd/config"
-	"github.com/minio/minio/pkg/env"
-	iampolicy "github.com/minio/minio/pkg/iam/policy"
-	xnet "github.com/minio/minio/pkg/net"
+	"github.com/soulteary/otterio/cmd/config"
+	"github.com/soulteary/otterio/pkg/env"
+	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
+	xnet "github.com/soulteary/otterio/pkg/net"
 )
 
 // Env IAM OPA URL

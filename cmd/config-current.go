@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2016-2019 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,25 +24,25 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/minio/minio/cmd/config"
-	"github.com/minio/minio/cmd/config/api"
-	"github.com/minio/minio/cmd/config/cache"
-	"github.com/minio/minio/cmd/config/compress"
-	"github.com/minio/minio/cmd/config/dns"
-	"github.com/minio/minio/cmd/config/etcd"
-	"github.com/minio/minio/cmd/config/heal"
-	xldap "github.com/minio/minio/cmd/config/identity/ldap"
-	"github.com/minio/minio/cmd/config/identity/openid"
-	"github.com/minio/minio/cmd/config/notify"
-	"github.com/minio/minio/cmd/config/policy/opa"
-	"github.com/minio/minio/cmd/config/scanner"
-	"github.com/minio/minio/cmd/config/storageclass"
-	"github.com/minio/minio/cmd/crypto"
-	xhttp "github.com/minio/minio/cmd/http"
-	"github.com/minio/minio/cmd/logger"
-	"github.com/minio/minio/cmd/logger/target/http"
-	"github.com/minio/minio/pkg/env"
-	"github.com/minio/minio/pkg/madmin"
+	"github.com/soulteary/otterio/cmd/config"
+	"github.com/soulteary/otterio/cmd/config/api"
+	"github.com/soulteary/otterio/cmd/config/cache"
+	"github.com/soulteary/otterio/cmd/config/compress"
+	"github.com/soulteary/otterio/cmd/config/dns"
+	"github.com/soulteary/otterio/cmd/config/etcd"
+	"github.com/soulteary/otterio/cmd/config/heal"
+	xldap "github.com/soulteary/otterio/cmd/config/identity/ldap"
+	"github.com/soulteary/otterio/cmd/config/identity/openid"
+	"github.com/soulteary/otterio/cmd/config/notify"
+	"github.com/soulteary/otterio/cmd/config/policy/opa"
+	"github.com/soulteary/otterio/cmd/config/scanner"
+	"github.com/soulteary/otterio/cmd/config/storageclass"
+	"github.com/soulteary/otterio/cmd/crypto"
+	xhttp "github.com/soulteary/otterio/cmd/http"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/cmd/logger/target/http"
+	"github.com/soulteary/otterio/pkg/env"
+	"github.com/soulteary/otterio/pkg/madmin"
 )
 
 func initHelp() {

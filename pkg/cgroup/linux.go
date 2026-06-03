@@ -3,7 +3,7 @@
 
 /*
  * MinIO Cloud Storage, (C) 2017 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import (
 )
 
 // DO NOT EDIT following constants are chosen defaults for any kernel
-// after 3.x, please open a github issue https://github.com/minio/minio/issues
+// after 3.x, please open a github issue https://github.com/soulteary/otterio/issues
 // and discuss first if you wish to change this.
 const (
 	// Default string for looking for kernel memory param.

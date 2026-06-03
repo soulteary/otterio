@@ -3,7 +3,7 @@ FROM golang:1.26-alpine as builder
 ARG RELEASE
 
 # Community fork of MinIO. Not affiliated with, endorsed by, or sponsored by MinIO, Inc.
-LABEL maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/minio)"
+LABEL maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/otterio)"
 
 ENV GOPATH=/go
 ENV CGO_ENABLED=0
@@ -14,7 +14,7 @@ ENV GO111MODULE=on
 # derives the version/commit from git history.
 RUN \
     apk add --no-cache git && \
-    git clone https://github.com/soulteary/minio && cd minio && \
+    git clone https://github.com/soulteary/otterio && cd minio && \
     if [ -n "${RELEASE}" ]; then git checkout "${RELEASE}"; fi && \
     go install -v -ldflags "$(go run buildscripts/gen-ldflags.go)"
 
@@ -26,7 +26,7 @@ ARG RELEASE
 # "MinIO" is a trademark of MinIO, Inc.; used here solely to identify the upstream project.
 LABEL name="minio (community fork)" \
       vendor="soulteary" \
-      maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/minio)" \
+      maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/otterio)" \
       version="${RELEASE}" \
       release="${RELEASE}" \
       summary="High Performance Object Storage, API compatible with Amazon S3. Community-maintained fork of MinIO." \

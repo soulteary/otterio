@@ -16,7 +16,7 @@
 
 package ldap
 
-import "github.com/minio/minio/cmd/config"
+import "github.com/soulteary/otterio/cmd/config"
 
 // Help template for LDAP identity feature.
 var (

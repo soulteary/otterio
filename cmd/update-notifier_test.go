@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/minio/minio/pkg/color"
+	"github.com/soulteary/otterio/pkg/color"
 )
 
 // Tests update notifier string builder.

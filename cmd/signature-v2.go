@@ -1,6 +1,6 @@
 /*
  * MinIO Cloud Storage, (C) 2016, 2017 MinIO, Inc.
- * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/minio
+ * Modifications and additions (C) 2025-2026 soulteary, https://github.com/soulteary/otterio
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import (
 	"strconv"
 	"strings"
 
-	xhttp "github.com/minio/minio/cmd/http"
+	xhttp "github.com/soulteary/otterio/cmd/http"
 
-	"github.com/minio/minio/pkg/auth"
+	"github.com/soulteary/otterio/pkg/auth"
 )
 
 // Whitelist resource list that will be used in query string for signature-V2 calculation.
