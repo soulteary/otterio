@@ -1,0 +1,172 @@
+# MinIO File Browser
+
+``MinIO Browser`` provides minimal set of UI to manage buckets and objects on ``minio`` server. ``MinIO Browser`` is written in javascript and released under the [Apache 2.0 License](../LICENSE).
+
+> NOTE: This is part of an independent, community-maintained fork of MinIO
+> (https://github.com/soulteary/minio). It is not affiliated with, endorsed by,
+> or sponsored by MinIO, Inc. "MinIO" is a trademark of MinIO, Inc.
+
+
+## Installation
+
+### Install bun
+```sh
+curl -fsSL https://bun.sh/install | bash
+exec -l $SHELL
+```
+
+### Install dependencies
+```sh
+bun install
+```
+
+## Generating Assets
+
+```sh
+bun run release
+```
+
+This generates `production` in the current directory. 
+
+
+## Run MinIO Browser with live reload
+
+### Run MinIO Browser with live reload
+
+```sh
+bun run dev
+```
+
+Open [http://localhost:8080/minio/](http://localhost:8080/minio/) in your browser to play with the application.
+
+### Run MinIO Browser with live reload on custom port
+
+Edit `browser/webpack.config.js`
+
+```diff
+diff --git a/browser/webpack.config.js b/browser/webpack.config.js
+index 3ccdaba..9496c56 100644
+--- a/browser/webpack.config.js
++++ b/browser/webpack.config.js
+@@ -58,6 +58,7 @@ var exports = {
+     historyApiFallback: {
+       index: '/minio/'
+     },
++    port: 8888,
+     proxy: {
+       '/minio/webrpc': {
+         target: 'http://localhost:9000',
+@@ -97,7 +98,7 @@ var exports = {
+ if (process.env.NODE_ENV === 'dev') {
+   exports.entry = [
+     'webpack/hot/dev-server',
+-    'webpack-dev-server/client?http://localhost:8080',
++    'webpack-dev-server/client?http://localhost:8888',
+     path.resolve(__dirname, 'app/index.js')
+   ]
+ }
+```
+
+```sh
+bun run dev
+```
+
+Open [http://localhost:8888/minio/](http://localhost:8888/minio/) in your browser to play with the application.
+
+### Run MinIO Browser with live reload on any IP
+
+Edit `browser/webpack.config.js`
+
+```diff
+diff --git a/browser/webpack.config.js b/browser/webpack.config.js
+index 8bdbba53..139f6049 100644
+--- a/browser/webpack.config.js
++++ b/browser/webpack.config.js
+@@ -71,6 +71,7 @@ var exports = {
+     historyApiFallback: {
+       index: '/minio/'
+     },
++    host: '0.0.0.0',
+     proxy: {
+       '/minio/webrpc': {
+         target: 'http://localhost:9000',
+```
+
+```sh
+bun run dev
+```
+
+Open [http://IP:8080/minio/](http://IP:8080/minio/) in your browser to play with the application.
+
+
+## Run tests
+
+    bun run test
+
+
+## Docker development environment
+
+This approach will download the sources on your machine such that you are able to use your IDE or editor of choice.
+A Docker container will be used in order to provide a controlled build environment without messing with your host system.
+
+### Prepare host system
+
+Install [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker](https://docs.docker.com/get-docker/).
+
+### Development within container
+
+Prepare and build container
+```
+git clone git@github.com:soulteary/minio.git
+cd minio
+docker build -t minio-dev -f Dockerfile.dev.browser .
+```
+
+Run container, build and run core
+```sh
+docker run -it --rm --name minio-dev -v "$PWD":/minio minio-dev
+
+cd /minio/browser
+bun install
+bun run release
+cd /minio
+make
+./minio server /data
+```
+Note `Endpoint` IP (the one which is _not_ `127.0.0.1`), `AccessKey` and `SecretKey` (both default to `minioadmin`) in order to enter them in the browser later.
+
+
+Open another terminal.
+Connect to container
+```sh
+docker exec -it minio-dev bash
+```
+
+Apply patch to allow access from outside container
+```sh
+cd /minio
+git apply --ignore-whitespace <<EOF
+diff --git a/browser/webpack.config.js b/browser/webpack.config.js
+index 8bdbba53..139f6049 100644
+--- a/browser/webpack.config.js
++++ b/browser/webpack.config.js
+@@ -71,6 +71,7 @@ var exports = {
+     historyApiFallback: {
+       index: '/minio/'
+     },
++    host: '0.0.0.0',
+     proxy: {
+       '/minio/webrpc': {
+         target: 'http://localhost:9000',
+EOF
+```
+
+Build and run frontend with auto-reload
+```sh
+cd /minio/browser
+bun install
+bun run dev
+```
+
+Open [http://IP:8080/minio/](http://IP:8080/minio/) in your browser to play with the application.
+

@@ -1,0 +1,39 @@
+version: "2"
+
+run:
+  build-tags:
+    - kqueue
+  timeout: 10m
+
+linters:
+  default: none
+  enable:
+    - gomodguard
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - staticcheck
+    - unused
+  settings:
+    misspell:
+      locale: US
+    staticcheck:
+      # Replicates the behaviour of the previously enabled "gosimple" linter,
+      # which was merged into staticcheck in golangci-lint v2. Only the
+      # simplification (S1xxx) checks are run to keep parity with the old setup.
+      checks:
+        - S1*
+  exclusions:
+    generated: lax
+    rules:
+      - text: should have a package comment
+      - text: error strings should not be capitalized or end with punctuation or a newline
+    paths:
+      - pkg/rpc
+      - pkg/argon2
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

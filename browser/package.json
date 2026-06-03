@@ -1,0 +1,95 @@
+{
+  "name": "browser",
+  "version": "0.0.1",
+  "description": "MinIO Browser",
+  "scripts": {
+    "test": "jest",
+    "dev": "NODE_ENV=dev webpack serve --config webpack.config.js",
+    "build": "NODE_ENV=dev node build.js",
+    "release": "NODE_ENV=production node build.js"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testEnvironmentOptions": {
+      "url": "https://localhost:8080"
+    },
+    "setupFilesAfterEnv": [
+      "./app/js/jest/setup.js"
+    ],
+    "moduleNameMapper": {
+      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/app/js/jest/__mocks__/fileMock.js",
+      "\\.(css|scss|less)$": "identity-obj-proxy"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/minio/minio"
+  },
+  "author": "MinIO Inc",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/minio/minio/issues"
+  },
+  "homepage": "https://github.com/minio/minio",
+  "overrides": {
+    "cheerio": "1.0.0-rc.12"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-react": "^7.26.3",
+    "async": "^3.2.6",
+    "babel-jest": "^29.7.0",
+    "babel-loader": "^9.2.1",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.11.0",
+    "enzyme": "^3.11.0",
+    "enzyme-adapter-react-16": "^1.15.8",
+    "expect": "^29.7.0",
+    "glob-all": "^3.3.1",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-enzyme": "^7.1.2",
+    "jest-environment-jsdom": "^29.7.0",
+    "less": "^4.2.1",
+    "less-loader": "^11.1.4",
+    "purgecss-webpack-plugin": "^5.0.0",
+    "redux-mock-store": "^1.5.5",
+    "style-loader": "^3.3.4",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.2.0"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.4",
+    "babel-polyfill": "^6.26.0",
+    "bootstrap": "^3.4.1",
+    "classnames": "^2.5.1",
+    "core-js": "^3.39.0",
+    "history": "^4.10.1",
+    "humanize": "0.0.9",
+    "jwt-decode": "^2.2.0",
+    "local-storage-fallback": "^4.1.2",
+    "material-design-iconic-font": "^2.2.0",
+    "mime-db": "^1.53.0",
+    "mime-types": "^2.1.35",
+    "moment": "^2.30.1",
+    "query-string": "^6.14.1",
+    "react": "^16.14.0",
+    "react-bootstrap": "^0.32.4",
+    "react-copy-to-clipboard": "^5.1.0",
+    "react-custom-scrollbars": "^4.2.1",
+    "react-dom": "^16.14.0",
+    "react-dropzone": "^11.7.1",
+    "react-infinite-scroller": "^1.2.6",
+    "react-onclickout": "^2.0.8",
+    "react-qr-code": "^1.1.1",
+    "react-redux": "^5.1.2",
+    "react-router-dom": "^5.3.4",
+    "redux": "^4.2.1",
+    "redux-thunk": "^2.4.2",
+    "reselect": "^4.1.8",
+    "superagent": "^5.3.1",
+    "superagent-es6-promise": "^1.0.0"
+  }
+}

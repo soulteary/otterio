@@ -1,0 +1,19 @@
+MinIO Cloud Storage, (C) 2014-2020 MinIO, Inc.
+
+This product includes software developed at MinIO, Inc.
+(https://min.io/).
+
+The MinIO project contains unmodified/modified subcomponents too with
+separate copyright notices and license terms. Your use of the source
+code for these subcomponents is subject to the terms and conditions
+of Apache License Version 2.0
+
+---
+
+This is a fork maintained at https://github.com/soulteary/minio
+Modifications and additions (C) 2025-2026 soulteary.
+
+This fork is based on the last Apache License 2.0 release of MinIO
+(prior to MinIO's relicensing to GNU AGPLv3), and remains licensed
+under the Apache License, Version 2.0. The original copyright notices
+of MinIO, Inc. and all third-party subcomponents are retained.

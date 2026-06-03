@@ -1,0 +1,61 @@
+FROM golang:1.26-alpine as builder
+
+ARG RELEASE
+
+# Community fork of MinIO. Not affiliated with, endorsed by, or sponsored by MinIO, Inc.
+LABEL maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/minio)"
+
+ENV GOPATH=/go
+ENV CGO_ENABLED=0
+ENV GO111MODULE=on
+
+# Build the fork from source instead of downloading upstream release artifacts
+# from dl.min.io. A full clone (with .git) is required because buildscripts/gen-ldflags.go
+# derives the version/commit from git history.
+RUN \
+    apk add --no-cache git && \
+    git clone https://github.com/soulteary/minio && cd minio && \
+    if [ -n "${RELEASE}" ]; then git checkout "${RELEASE}"; fi && \
+    go install -v -ldflags "$(go run buildscripts/gen-ldflags.go)"
+
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+
+ARG RELEASE
+
+# Community fork of MinIO. Not affiliated with, endorsed by, or sponsored by MinIO, Inc.
+# "MinIO" is a trademark of MinIO, Inc.; used here solely to identify the upstream project.
+LABEL name="minio (community fork)" \
+      vendor="soulteary" \
+      maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/minio)" \
+      version="${RELEASE}" \
+      release="${RELEASE}" \
+      summary="High Performance Object Storage, API compatible with Amazon S3. Community-maintained fork of MinIO." \
+      description="A community-maintained fork of MinIO, based on the last Apache 2.0 release. High performance, S3 API compatible object storage. Not affiliated with MinIO, Inc."
+
+ENV MINIO_ACCESS_KEY_FILE=access_key \
+    MINIO_SECRET_KEY_FILE=secret_key \
+    MINIO_ROOT_USER_FILE=access_key \
+    MINIO_ROOT_PASSWORD_FILE=secret_key \
+    MINIO_KMS_MASTER_KEY_FILE=kms_master_key \
+    MINIO_SSE_MASTER_KEY_FILE=sse_master_key
+
+COPY dockerscripts/docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+COPY --from=builder /go/minio/CREDITS /licenses/CREDITS
+COPY --from=builder /go/minio/LICENSE /licenses/LICENSE
+COPY --from=builder /go/minio/NOTICE /licenses/NOTICE
+COPY --from=builder /go/bin/minio /usr/bin/minio
+
+RUN \
+     microdnf update --nodocs && \
+     microdnf install curl ca-certificates shadow-utils util-linux --nodocs && \
+     microdnf clean all && \
+     chmod +x /usr/bin/minio && \
+     chmod +x /usr/bin/docker-entrypoint.sh
+
+EXPOSE 9000
+
+ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
+
+VOLUME ["/data"]
+
+CMD ["minio"]
