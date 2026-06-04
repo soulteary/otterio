@@ -10,7 +10,7 @@ ENV GO111MODULE on
 RUN  \
      apk add --no-cache git && \
      git clone https://github.com/soulteary/otterio && cd otterio && \
-     git checkout master && go install -v -ldflags "$(go run buildscripts/gen-ldflags.go)"
+     git checkout main && go install -v -ldflags "$(go run buildscripts/gen-ldflags.go)"
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
 
