@@ -117,11 +117,18 @@ func (listener *httpListener) Accept() (conn net.Conn, err error) {
 }
 
 // Close - closes underneath all TCP listeners.
+//
+// Close is idempotent: calling it after the listener has already been closed
+// returns nil instead of an error. This matters because the listener is handed
+// to Fiber/fasthttp via App.Listener, and fasthttp closes it during its own
+// Shutdown. Server.Shutdown then closes it again; without idempotency the
+// second close returns syscall.EINVAL, which surfaces as a spurious
+// "invalid argument" error on graceful shutdown (e.g. Ctrl+C).
 func (listener *httpListener) Close() (err error) {
 	listener.mutex.Lock()
 	defer listener.mutex.Unlock()
 	if listener.doneCh == nil {
-		return syscall.EINVAL
+		return nil
 	}
 
 	for i := range listener.tcpListeners {

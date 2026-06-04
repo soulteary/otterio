@@ -17,35 +17,36 @@
 package http
 
 import (
-	"fmt"
-	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/gofiber/fiber/v3"
 
 	"github.com/soulteary/otterio/pkg/certs"
 )
 
 func TestNewServer(t *testing.T) {
 	nonLoopBackIP := getNonLoopBackIP(t)
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, world")
+	app := fiber.New()
+	app.Get("/", func(c fiber.Ctx) error {
+		return c.SendString("Hello, world")
 	})
 
 	testCases := []struct {
-		addrs   []string
-		handler http.Handler
-		certFn  certs.GetCertificateFunc
+		addrs  []string
+		app    *fiber.App
+		certFn certs.GetCertificateFunc
 	}{
-		{[]string{"127.0.0.1:9000"}, handler, nil},
-		{[]string{nonLoopBackIP + ":9000"}, handler, nil},
-		{[]string{"127.0.0.1:9000", nonLoopBackIP + ":9000"}, handler, nil},
-		{[]string{"127.0.0.1:9000"}, handler, getCert},
-		{[]string{nonLoopBackIP + ":9000"}, handler, getCert},
-		{[]string{"127.0.0.1:9000", nonLoopBackIP + ":9000"}, handler, getCert},
+		{[]string{"127.0.0.1:9000"}, app, nil},
+		{[]string{nonLoopBackIP + ":9000"}, app, nil},
+		{[]string{"127.0.0.1:9000", nonLoopBackIP + ":9000"}, app, nil},
+		{[]string{"127.0.0.1:9000"}, app, getCert},
+		{[]string{nonLoopBackIP + ":9000"}, app, getCert},
+		{[]string{"127.0.0.1:9000", nonLoopBackIP + ":9000"}, app, getCert},
 	}
 
 	for i, testCase := range testCases {
-		server := NewServer(testCase.addrs, testCase.handler, testCase.certFn)
+		server := NewServer(testCase.addrs, testCase.app, testCase.certFn)
 		if server == nil {
 			t.Fatalf("Case %v: server: expected: <non-nil>, got: <nil>", (i + 1))
 		}
@@ -71,10 +72,6 @@ func TestNewServer(t *testing.T) {
 
 		if server.ShutdownTimeout != DefaultShutdownTimeout {
 			t.Fatalf("Case %v: server.ShutdownTimeout: expected: %v, got: %v", (i + 1), DefaultShutdownTimeout, server.ShutdownTimeout)
-		}
-
-		if server.MaxHeaderBytes != DefaultMaxHeaderBytes {
-			t.Fatalf("Case %v: server.MaxHeaderBytes: expected: %v, got: %v", (i + 1), DefaultMaxHeaderBytes, server.MaxHeaderBytes)
 		}
 	}
 }
