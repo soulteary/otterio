@@ -1,16 +1,16 @@
-# How to monitor MinIO server with Grafana
+# How to monitor OtterIO server with Grafana
 
 [Grafana](https://grafana.com/) allows you to query, visualize, alert on and understand your metrics no matter where they are stored. Create, explore, and share dashboards with your team and foster a data driven culture.
 
 ## Prerequisites
 
-- Prometheus and MinIO configured as explained in [document here](https://github.com/minio/minio/blob/master/docs/metrics/prometheus/README.md).
+- Prometheus and OtterIO configured as explained in [document here](https://github.com/minio/minio/blob/master/docs/metrics/prometheus/README.md).
 - Grafana installed as explained [here](https://grafana.com/grafana/download).
 
-## MinIO Grafana Dashboard
+## OtterIO Grafana Dashboard
 
-Visualize MinIO metrics with our official Grafana dashboard available on the [Grafana dashboard portal](https://grafana.com/grafana/dashboards/13502).
+Visualize OtterIO metrics with our official Grafana dashboard available on the [Grafana dashboard portal](https://grafana.com/grafana/dashboards/13502).
 
-Refer to the dashboard [json file here](https://raw.githubusercontent.com/minio/minio/master/docs/metrics/prometheus/grafana/minio-overview.json).
+Refer to the dashboard [json file here](https://raw.githubusercontent.com/soulteary/OtterIO/main/docs/metrics/prometheus/grafana/otterio-overview.json).
 
-![Grafana](https://raw.githubusercontent.com/minio/minio/master/docs/metrics/prometheus/grafana/grafana-minio.png)
+![Grafana](https://raw.githubusercontent.com/soulteary/OtterIO/main/docs/metrics/prometheus/grafana/grafana-otterio.png)

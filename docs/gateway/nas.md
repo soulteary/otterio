@@ -1,8 +1,8 @@
-# MinIO NAS Gateway
+# OtterIO NAS Gateway
 
-MinIO Gateway adds Amazon S3 compatibility to NAS storage. You may run multiple minio instances on the same shared NAS volume as a distributed object gateway.
+OtterIO Gateway adds Amazon S3 compatibility to NAS storage. You may run multiple otterio instances on the same shared NAS volume as a distributed object gateway.
 
-## Run MinIO Gateway for NAS Storage
+## Run OtterIO Gateway for NAS Storage
 
 ### Using Docker
 
@@ -10,8 +10,8 @@ Please ensure to replace `/shared/nasvol` with actual mount path.
 
 ```
 docker run -p 9000:9000 --name nas-s3 \
- -e "MINIO_ROOT_USER=minio" \
- -e "MINIO_ROOT_PASSWORD=minio123" \
+ -e "OTTERIO_ROOT_USER=otterio" \
+ -e "OTTERIO_ROOT_PASSWORD=otterio123" \
  -v /shared/nasvol:/container/vol \
  minio/minio gateway nas /container/vol
 ```
@@ -19,18 +19,18 @@ docker run -p 9000:9000 --name nas-s3 \
 ### Using Binary
 
 ```
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
-minio gateway nas /shared/nasvol
+export OTTERIO_ROOT_USER=otterio
+export OTTERIO_ROOT_PASSWORD=otterio123
+otterio gateway nas /shared/nasvol
 ```
 
-## Test using MinIO Browser
+## Test using OtterIO Browser
 
-MinIO Gateway comes with an embedded web based object browser. Point your web browser to http://127.0.0.1:9000 to ensure that your server has started successfully.
+OtterIO Gateway comes with an embedded web based object browser. Point your web browser to http://127.0.0.1:9000 to ensure that your server has started successfully.
 
-![Screenshot](https://raw.githubusercontent.com/minio/minio/master/docs/screenshots/minio-browser-gateway.png)
+![Screenshot](https://raw.githubusercontent.com/soulteary/OtterIO/main/docs/screenshots/otterio-browser-gateway.png)
 
-## Test using MinIO Client `mc`
+## Test using OtterIO Client `mc`
 
 `mc` provides a modern alternative to UNIX commands such as ls, cat, cp, mirror, diff etc. It supports filesystems and Amazon S3 compatible cloud storage services.
 
@@ -72,9 +72,9 @@ notify_webhook:1 endpoint=http://localhost:8080/ auth_token= queue_limit=0 queue
 The corresponding environment variable setting can be
 
 ```
-export MINIO_NOTIFY_WEBHOOK_ENABLE_1=on
-export MINIO_NOTIFY_WEBHOOK_ENDPOINT_1=http://localhost:8080/
-export MINIO_NOTIFY_WEBHOOK_QUEUE_DIR_1=/tmp/webhk
+export OTTERIO_NOTIFY_WEBHOOK_ENABLE_1=on
+export OTTERIO_NOTIFY_WEBHOOK_ENDPOINT_1=http://localhost:8080/
+export OTTERIO_NOTIFY_WEBHOOK_QUEUE_DIR_1=/tmp/webhk
 ```
 
 > NOTE: Please check the docs for the corresponding ENV setting. Alternatively, We can obtain other ENVs in the form `mc admin config set alias/ <sub-sys> --env`
@@ -99,4 +99,4 @@ NAS gateway implementation allows symlinks on regular files,
 ## Explore Further
 - [`mc` command-line interface](https://docs.min.io/docs/minio-client-quickstart-guide)
 - [`aws` command-line interface](https://docs.min.io/docs/aws-cli-with-minio)
-- [`minio-go` Go SDK](https://docs.min.io/docs/golang-client-quickstart-guide)
+- [`otterio-go` Go SDK](https://docs.min.io/docs/golang-client-quickstart-guide)

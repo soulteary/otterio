@@ -36,7 +36,7 @@ const (
 	// DeleteBucketAction - DeleteBucket Rest API action.
 	DeleteBucketAction = "s3:DeleteBucket"
 
-	// ForceDeleteBucketAction - DeleteBucket Rest API action when x-minio-force-delete flag
+	// ForceDeleteBucketAction - DeleteBucket Rest API action when x-otterio-force-delete flag
 	// is specified.
 	ForceDeleteBucketAction = "s3:ForceDeleteBucket"
 
@@ -58,7 +58,7 @@ const (
 	// GetObjectAction - GetObject Rest API action.
 	GetObjectAction = "s3:GetObject"
 
-	// HeadBucketAction - HeadBucket Rest API action. This action is unused in minio.
+	// HeadBucketAction - HeadBucket Rest API action. This action is unused in otterio.
 	HeadBucketAction = "s3:HeadBucket"
 
 	// ListAllMyBucketsAction - ListAllMyBuckets (List buckets) Rest API action.
@@ -77,11 +77,11 @@ const (
 	ListBucketMultipartUploadsAction = "s3:ListBucketMultipartUploads"
 
 	// ListenNotificationAction - ListenNotification Rest API action.
-	// This is MinIO extension.
+	// This is OtterIO extension.
 	ListenNotificationAction = "s3:ListenNotification"
 
 	// ListenBucketNotificationAction - ListenBucketNotification Rest API action.
-	// This is MinIO extension.
+	// This is OtterIO extension.
 	ListenBucketNotificationAction = "s3:ListenBucketNotification"
 
 	// ListMultipartUploadPartsAction - ListParts Rest API action.

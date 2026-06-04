@@ -144,8 +144,8 @@ func setBrowserCacheControlHandlerFiber(c fiber.Ctx) error {
 		return err
 	}
 	if globalBrowserEnabled && r.Method == http.MethodGet && guessIsBrowserReq(r) {
-		if HasPrefix(r.URL.Path, minioReservedBucketPath+SlashSeparator) {
-			if HasSuffix(r.URL.Path, ".js") || r.URL.Path == minioReservedBucketPath+"/favicon.ico" {
+		if HasPrefix(r.URL.Path, otterioReservedBucketPath+SlashSeparator) {
+			if HasSuffix(r.URL.Path, ".js") || r.URL.Path == otterioReservedBucketPath+"/favicon.ico" {
 				c.Set(xhttp.CacheControl, "max-age=31536000")
 			} else {
 				c.Set(xhttp.CacheControl, "no-store")
@@ -162,7 +162,7 @@ func setReservedBucketHandlerFiber(c fiber.Ctx) error {
 		return err
 	}
 	bucketName, _ := request2BucketObjectName(r)
-	if isMinioReservedBucket(bucketName) || isMinioMetaBucket(bucketName) {
+	if isOtterioReservedBucket(bucketName) || isOtterioMetaBucket(bucketName) {
 		if !guessIsRPCReq(r) && !guessIsBrowserReq(r) && !guessIsHealthCheckReq(r) && !guessIsMetricsReq(r) && !isAdminReq(r) {
 			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrAllAccessDisabled), guessIsBrowserReq(r))
 			return nil
@@ -232,7 +232,7 @@ func setHTTPStatsHandlerFiber(c fiber.Ctx) error {
 	if read := requestInputBytesRead(c); read > inputBytes {
 		inputBytes = read
 	}
-	reserved := strings.HasPrefix(c.Path(), minioReservedBucketPath)
+	reserved := strings.HasPrefix(c.Path(), otterioReservedBucketPath)
 	record := func(out int64) {
 		if out < 0 {
 			out = 0
@@ -302,12 +302,12 @@ func setBucketForwardingHandlerFiber(c fiber.Ctx) error {
 		switch r.Method {
 		case http.MethodPut:
 			if getRequestAuthType(r) == authTypeJWT {
-				bucket, _ = path2BucketObjectWithBasePath(minioReservedBucketPath+"/upload", r.URL.Path)
+				bucket, _ = path2BucketObjectWithBasePath(otterioReservedBucketPath+"/upload", r.URL.Path)
 			}
 		case http.MethodGet:
 			if t := r.URL.Query().Get("token"); t != "" {
-				bucket, _ = path2BucketObjectWithBasePath(minioReservedBucketPath+"/download", r.URL.Path)
-			} else if getRequestAuthType(r) != authTypeJWT && !strings.HasPrefix(r.URL.Path, minioReservedBucketPath) {
+				bucket, _ = path2BucketObjectWithBasePath(otterioReservedBucketPath+"/download", r.URL.Path)
+			} else if getRequestAuthType(r) != authTypeJWT && !strings.HasPrefix(r.URL.Path, otterioReservedBucketPath) {
 				bucket, _ = request2BucketObjectName(r)
 			}
 		}

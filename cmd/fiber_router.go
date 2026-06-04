@@ -144,7 +144,7 @@ func newFiberApp() *fiber.App {
 	app := fiber.New(fiber.Config{
 		BodyLimit:    int(requestMaxBodySize),
 		UnescapePath: false, // preserve encoded path segments (mux UseEncodedPath equivalent)
-		ServerHeader: "MinIO",
+		ServerHeader: "OtterIO",
 		// Stream request bodies instead of buffering them fully in memory. This
 		// keeps large uploads from being held entirely in RAM once the request
 		// reaches a native (non-adaptor) handler; the bridge in fiberRequest

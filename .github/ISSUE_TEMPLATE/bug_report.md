@@ -37,10 +37,10 @@ assignees: ''
 
 ## Regression
 <!-- Is this issue a regression? (Yes / No) -->
-<!-- If Yes, optionally please include minio version or commit id or PR# that caused this regression, if you have these details. -->
+<!-- If Yes, optionally please include otterio version or commit id or PR# that caused this regression, if you have these details. -->
 
 ## Your Environment
 <!--- Include as many relevant details about the environment you experienced the bug in -->
-* Version used (`minio --version`):
+* Version used (`otterio --version`):
 * Server setup and configuration:
 * Operating System and version (`uname -a`):

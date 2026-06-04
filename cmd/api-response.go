@@ -417,8 +417,8 @@ func generateListBucketsResponse(buckets []BucketInfo) ListBucketsResponse {
 	listbuckets := make([]Bucket, 0, len(buckets))
 	var data = ListBucketsResponse{}
 	var owner = Owner{
-		ID:          globalMinioDefaultOwnerID,
-		DisplayName: "minio",
+		ID:          globalOtterioDefaultOwnerID,
+		DisplayName: "otterio",
 	}
 
 	for _, bucket := range buckets {
@@ -438,8 +438,8 @@ func generateListBucketsResponse(buckets []BucketInfo) ListBucketsResponse {
 func generateListVersionsResponse(bucket, prefix, marker, versionIDMarker, delimiter, encodingType string, maxKeys int, resp ListObjectVersionsInfo) ListVersionsResponse {
 	versions := make([]ObjectVersion, 0, len(resp.Objects))
 	var owner = Owner{
-		ID:          globalMinioDefaultOwnerID,
-		DisplayName: "minio",
+		ID:          globalOtterioDefaultOwnerID,
+		DisplayName: "otterio",
 	}
 	var data = ListVersionsResponse{}
 
@@ -457,7 +457,7 @@ func generateListVersionsResponse(bucket, prefix, marker, versionIDMarker, delim
 		if object.StorageClass != "" {
 			content.StorageClass = object.StorageClass
 		} else {
-			content.StorageClass = globalMinioDefaultStorageClass
+			content.StorageClass = globalOtterioDefaultStorageClass
 		}
 		content.Owner = owner
 		content.VersionID = object.VersionID
@@ -496,8 +496,8 @@ func generateListVersionsResponse(bucket, prefix, marker, versionIDMarker, delim
 func generateListObjectsV1Response(bucket, prefix, marker, delimiter, encodingType string, maxKeys int, resp ListObjectsInfo) ListObjectsResponse {
 	contents := make([]Object, 0, len(resp.Objects))
 	var owner = Owner{
-		ID:          globalMinioDefaultOwnerID,
-		DisplayName: "minio",
+		ID:          globalOtterioDefaultOwnerID,
+		DisplayName: "otterio",
 	}
 	var data = ListObjectsResponse{}
 
@@ -515,7 +515,7 @@ func generateListObjectsV1Response(bucket, prefix, marker, delimiter, encodingTy
 		if object.StorageClass != "" {
 			content.StorageClass = object.StorageClass
 		} else {
-			content.StorageClass = globalMinioDefaultStorageClass
+			content.StorageClass = globalOtterioDefaultStorageClass
 		}
 		content.Owner = owner
 		contents = append(contents, content)
@@ -545,8 +545,8 @@ func generateListObjectsV1Response(bucket, prefix, marker, delimiter, encodingTy
 func generateListObjectsV2Response(bucket, prefix, token, nextToken, startAfter, delimiter, encodingType string, fetchOwner, isTruncated bool, maxKeys int, objects []ObjectInfo, prefixes []string, metadata bool) ListObjectsV2Response {
 	contents := make([]Object, 0, len(objects))
 	var owner = Owner{
-		ID:          globalMinioDefaultOwnerID,
-		DisplayName: "minio",
+		ID:          globalOtterioDefaultOwnerID,
+		DisplayName: "otterio",
 	}
 	var data = ListObjectsV2Response{}
 
@@ -564,12 +564,12 @@ func generateListObjectsV2Response(bucket, prefix, token, nextToken, startAfter,
 		if object.StorageClass != "" {
 			content.StorageClass = object.StorageClass
 		} else {
-			content.StorageClass = globalMinioDefaultStorageClass
+			content.StorageClass = globalOtterioDefaultStorageClass
 		}
 		content.Owner = owner
 		if metadata {
 			content.UserMetadata = make(StringMap)
-			for k, v := range CleanMinioInternalMetadataKeys(object.UserDefined) {
+			for k, v := range CleanOtterioInternalMetadataKeys(object.UserDefined) {
 				if strings.HasPrefix(strings.ToLower(k), ReservedMetadataPrefixLower) {
 					// Do not need to send any internal metadata
 					// values to client.
@@ -649,16 +649,16 @@ func generateListPartsResponse(partsInfo ListPartsInfo, encodingType string) Lis
 	listPartsResponse.Bucket = partsInfo.Bucket
 	listPartsResponse.Key = s3EncodeName(partsInfo.Object, encodingType)
 	listPartsResponse.UploadID = partsInfo.UploadID
-	listPartsResponse.StorageClass = globalMinioDefaultStorageClass
+	listPartsResponse.StorageClass = globalOtterioDefaultStorageClass
 
 	// Dumb values not meaningful
 	listPartsResponse.Initiator = Initiator{
-		ID:          globalMinioDefaultOwnerID,
-		DisplayName: globalMinioDefaultOwnerID,
+		ID:          globalOtterioDefaultOwnerID,
+		DisplayName: globalOtterioDefaultOwnerID,
 	}
 	listPartsResponse.Owner = Owner{
-		ID:          globalMinioDefaultOwnerID,
-		DisplayName: globalMinioDefaultOwnerID,
+		ID:          globalOtterioDefaultOwnerID,
+		DisplayName: globalOtterioDefaultOwnerID,
 	}
 
 	listPartsResponse.MaxParts = partsInfo.MaxParts
@@ -776,7 +776,7 @@ func writeSuccessResponseHeadersOnly(w http.ResponseWriter) {
 // writeErrorRespone writes error headers
 func writeErrorResponse(ctx context.Context, w http.ResponseWriter, err APIError, reqURL *url.URL, browser bool) {
 	switch err.Code {
-	case "SlowDown", "XMinioServerNotInitialized", "XMinioReadQuorum", "XMinioWriteQuorum":
+	case "SlowDown", "XOtterioServerNotInitialized", "XOtterioReadQuorum", "XOtterioWriteQuorum":
 		// Set retry-after header to indicate user-agents to retry request after 120secs.
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
 		w.Header().Set(xhttp.RetryAfter, "120")
@@ -788,7 +788,7 @@ func writeErrorResponse(ctx context.Context, w http.ResponseWriter, err APIError
 		// The request is from browser and also if browser
 		// is enabled we need to redirect.
 		if browser && globalBrowserEnabled {
-			w.Header().Set(xhttp.Location, minioReservedBucketPath+reqURL.Path)
+			w.Header().Set(xhttp.Location, otterioReservedBucketPath+reqURL.Path)
 			w.WriteHeader(http.StatusTemporaryRedirect)
 			return
 		}

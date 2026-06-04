@@ -34,7 +34,7 @@ class ClientGrantsCredentialProvider(CredentialProvider):
     CANONICAL_NAME = 'AssumeRoleClientGrants'
 
     def __init__(self, cid, csec,
-                 idp_ep='http://localhost:8080/auth/realms/minio/protocol/openid-connect/token',
+                 idp_ep='http://localhost:8080/auth/realms/otterio/protocol/openid-connect/token',
                  sts_ep='http://localhost:9000'):
         self.cid = cid
         self.csec = csec

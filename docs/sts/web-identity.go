@@ -37,7 +37,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/minio/minio-go/v7"
+	otterio "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/soulteary/otterio/pkg/auth"
 )
@@ -60,7 +60,7 @@ type AssumeRoleWithWebIdentityResponse struct {
 }
 
 // WebIdentityResult - Contains the response to a successful AssumeRoleWithWebIdentity
-// request, including temporary credentials that can be used to make MinIO API requests.
+// request, including temporary credentials that can be used to make OtterIO API requests.
 type WebIdentityResult struct {
 	AssumedRoleUser             AssumedRoleUser  `xml:",omitempty"`
 	Audience                    string           `xml:",omitempty"`
@@ -87,7 +87,7 @@ var (
 )
 
 // DiscoveryDoc - parses the output from openid-configuration
-// for example http://localhost:8080/auth/realms/minio/.well-known/openid-configuration
+// for example http://localhost:8080/auth/realms/otterio/.well-known/openid-configuration
 type DiscoveryDoc struct {
 	Issuer                           string   `json:"issuer,omitempty"`
 	AuthEndpoint                     string   `json:"authorization_endpoint,omitempty"`
@@ -131,7 +131,7 @@ func parseDiscoveryDoc(ustr string) (DiscoveryDoc, error) {
 func init() {
 	flag.StringVar(&stsEndpoint, "sts-ep", "http://localhost:9000", "STS endpoint")
 	flag.StringVar(&configEndpoint, "config-ep",
-		"http://localhost:8080/auth/realms/minio/.well-known/openid-configuration",
+		"http://localhost:8080/auth/realms/otterio/.well-known/openid-configuration",
 		"OpenID discovery document endpoint")
 	flag.StringVar(&clientID, "cid", "", "Client ID")
 	flag.StringVar(&clientSec, "csec", "", "Client Secret")
@@ -211,9 +211,9 @@ func main() {
 			return
 		}
 
-		opts := &minio.Options{
+		opts := &otterio.Options{
 			Creds:        sts,
-			BucketLookup: minio.BucketLookupAuto,
+			BucketLookup: otterio.BucketLookupAuto,
 		}
 
 		u, err := url.Parse(stsEndpoint)
@@ -223,9 +223,9 @@ func main() {
 			return
 		}
 
-		clnt, err := minio.New(u.Host, opts)
+		clnt, err := otterio.New(u.Host, opts)
 		if err != nil {
-			log.Println(fmt.Errorf("Error while initializing Minio client, %s", err))
+			log.Println(fmt.Errorf("Error while initializing Otterio client, %s", err))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

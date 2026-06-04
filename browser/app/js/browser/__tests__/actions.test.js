@@ -26,10 +26,10 @@ jest.mock("../../web", () => ({
   }),
   ServerInfo: jest.fn(() => {
     return Promise.resolve({
-      MinioVersion: "test",
-      MinioPlatform: "test",
-      MinioRuntime: "test",
-      MinioGlobalInfo: "test"
+      OtterioVersion: "test",
+      OtterioPlatform: "test",
+      OtterioRuntime: "test",
+      OtterioGlobalInfo: "test"
     })
   })
 }))

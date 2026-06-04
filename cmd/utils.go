@@ -274,7 +274,7 @@ func setDefaultProfilerRates() {
 }
 
 // Starts a profiler returns nil if profiler is not enabled, caller needs to handle this.
-func startProfiler(profilerType string) (minioProfiler, error) {
+func startProfiler(profilerType string) (otterioProfiler, error) {
 	var prof profilerWrapper
 	prof.ext = "pprof"
 	// Enable profiler and set the name of the file that pkg/pprof
@@ -375,8 +375,8 @@ func startProfiler(profilerType string) (minioProfiler, error) {
 	return prof, nil
 }
 
-// minioProfiler - minio profiler interface.
-type minioProfiler interface {
+// otterioProfiler - otterio profiler interface.
+type otterioProfiler interface {
 	// Return base profile. 'nil' if none.
 	Base() []byte
 	// Stop the profiler
@@ -386,7 +386,7 @@ type minioProfiler interface {
 }
 
 // Global profiler to be used by service go-routine.
-var globalProfiler map[string]minioProfiler
+var globalProfiler map[string]otterioProfiler
 var globalProfilerMu sync.Mutex
 
 // dump the request into a string in JSON format.
@@ -456,7 +456,7 @@ func newInternodeHTTPTransport(tlsConfig *tls.Config, dialTimeout time.Duration)
 		WriteBufferSize:       32 << 10, // 32KiB moving up from 4KiB default
 		ReadBufferSize:        32 << 10, // 32KiB moving up from 4KiB default
 		IdleConnTimeout:       15 * time.Second,
-		ResponseHeaderTimeout: 3 * time.Minute, // Set conservative timeouts for MinIO internode.
+		ResponseHeaderTimeout: 3 * time.Minute, // Set conservative timeouts for OtterIO internode.
 		TLSHandshakeTimeout:   15 * time.Second,
 		ExpectContinueTimeout: 15 * time.Second,
 		TLSClientConfig:       tlsConfig,
@@ -567,7 +567,7 @@ func newCustomHTTPTransport(tlsConfig *tls.Config, dialTimeout time.Duration) fu
 		WriteBufferSize:       16 << 10, // 16KiB moving up from 4KiB default
 		ReadBufferSize:        16 << 10, // 16KiB moving up from 4KiB default
 		IdleConnTimeout:       15 * time.Second,
-		ResponseHeaderTimeout: 3 * time.Minute, // Set conservative timeouts for MinIO internode.
+		ResponseHeaderTimeout: 3 * time.Minute, // Set conservative timeouts for OtterIO internode.
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 10 * time.Second,
 		TLSClientConfig:       tlsConfig,
@@ -852,15 +852,15 @@ func lcp(strs []string, pre bool) string {
 	return xfix
 }
 
-// Returns the mode in which MinIO is running
-func getMinioMode() string {
-	mode := globalMinioModeFS
+// Returns the mode in which OtterIO is running
+func getOtterioMode() string {
+	mode := globalOtterioModeFS
 	if globalIsDistErasure {
-		mode = globalMinioModeDistErasure
+		mode = globalOtterioModeDistErasure
 	} else if globalIsErasure {
-		mode = globalMinioModeErasure
+		mode = globalOtterioModeErasure
 	} else if globalIsGateway {
-		mode = globalMinioModeGatewayPrefix + globalGatewayName
+		mode = globalOtterioModeGatewayPrefix + globalGatewayName
 	}
 	return mode
 }
@@ -937,7 +937,7 @@ func (t *timedValue) update(v interface{}) {
 	t.lastUpdate = time.Now()
 }
 
-// On MinIO a directory object is stored as a regular object with "__XLDIR__" suffix.
+// On OtterIO a directory object is stored as a regular object with "__XLDIR__" suffix.
 // For ex. "prefix/" is stored as "prefix__XLDIR__"
 func encodeDirObject(object string) string {
 	if HasSuffix(object, slashSeparator) {

@@ -1,5 +1,5 @@
 . {
-  etcd churchofminio.com {
+  etcd churchofotterio.com {
       endpoint http://localhost:2379 http://localhost:4001
       upstream /etc/resolv.conf
   }

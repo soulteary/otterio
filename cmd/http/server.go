@@ -138,7 +138,7 @@ func (srv *Server) Shutdown() error {
 	for {
 		select {
 		case <-shutdownTimer.C:
-			tmp, err := ioutil.TempFile("", "minio-goroutines-*.txt")
+			tmp, err := ioutil.TempFile("", "otterio-goroutines-*.txt")
 			if err == nil {
 				_ = pprof.Lookup("goroutine").WriteTo(tmp, 1)
 				tmp.Close()

@@ -21,14 +21,14 @@ import jwtDecode from "jwt-decode"
 
 jest.mock("jwt-decode")
 
-jwtDecode.mockImplementation(() => ({ sub: "minio" }))
+jwtDecode.mockImplementation(() => ({ sub: "otterio" }))
 
 jest.mock("../../web", () => ({
   SetAuth: jest.fn(
     ({ currentAccessKey, currentSecretKey, newAccessKey, newSecretKey }) => {
       if (
-        currentAccessKey == "minio" &&
-        currentSecretKey == "minio123" &&
+        currentAccessKey == "otterio" &&
+        currentSecretKey == "otterio123" &&
         newAccessKey == "test" &&
         newSecretKey == "test1234"
       ) {
@@ -72,7 +72,7 @@ describe("ChangePasswordModal", () => {
         .find("ModalBody")
         .childAt(0)
         .text()
-    ).toBe("Credentials of this user cannot be updated through MinIO Browser.")
+    ).toBe("Credentials of this user cannot be updated through OtterIO Browser.")
   })
 
   it("should not allow changing password for STS user", () => {
@@ -86,14 +86,14 @@ describe("ChangePasswordModal", () => {
         .find("ModalBody")
         .childAt(0)
         .text()
-    ).toBe("Credentials of this user cannot be updated through MinIO Browser.")
+    ).toBe("Credentials of this user cannot be updated through OtterIO Browser.")
   })
 
   it("should not generate accessKey for IAM User", () => {
     const wrapper = shallow(<ChangePasswordModal serverInfo={serverInfo} />)
     wrapper.find("#generate-keys").simulate("click")
     setImmediate(() => {
-      expect(wrapper.state("newAccessKey")).toBe("minio")
+      expect(wrapper.state("newAccessKey")).toBe("otterio")
       expect(wrapper.state("newSecretKey")).toBe("rsecretkey")
     })
   })
@@ -110,7 +110,7 @@ describe("ChangePasswordModal", () => {
     )
     wrapper
       .find("#currentSecretKey")
-      .simulate("change", { target: { value: "minio123" } })
+      .simulate("change", { target: { value: "otterio123" } })
     wrapper
       .find("#newSecretKey")
       .simulate("change", { target: { value: "t1" } })

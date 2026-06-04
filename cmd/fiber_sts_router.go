@@ -40,7 +40,7 @@ func registerSTSRouterFiber(app *fiber.App) {
 				stsLDAPUsername: ".*",
 				stsLDAPPassword: ".*",
 			},
-			handler: toMinioHandler(sts.AssumeRoleWithLDAPIdentity),
+			handler: toOtterioHandler(sts.AssumeRoleWithLDAPIdentity),
 		},
 		{
 			methods: []string{http.MethodPost},
@@ -49,7 +49,7 @@ func registerSTSRouterFiber(app *fiber.App) {
 				stsVersion:          stsAPIVersion,
 				stsWebIdentityToken: ".*",
 			},
-			handler: toMinioHandler(sts.AssumeRoleWithWebIdentity),
+			handler: toOtterioHandler(sts.AssumeRoleWithWebIdentity),
 		},
 		{
 			methods: []string{http.MethodPost},
@@ -58,7 +58,7 @@ func registerSTSRouterFiber(app *fiber.App) {
 				stsVersion: stsAPIVersion,
 				stsToken:   ".*",
 			},
-			handler: toMinioHandler(sts.AssumeRoleWithClientGrants),
+			handler: toOtterioHandler(sts.AssumeRoleWithClientGrants),
 		},
 		{
 			methods:           []string{http.MethodPost},
@@ -67,7 +67,7 @@ func registerSTSRouterFiber(app *fiber.App) {
 				xhttp.ContentType:   formContentType,
 				xhttp.Authorization: signV4Auth,
 			},
-			handler: toMinioHandler(sts.AssumeRole),
+			handler: toOtterioHandler(sts.AssumeRole),
 		},
 		{
 			methods:           []string{http.MethodPost},
@@ -75,7 +75,7 @@ func registerSTSRouterFiber(app *fiber.App) {
 			headerRegex: map[string]*regexp.Regexp{
 				xhttp.ContentType: formContentType,
 			},
-			handler: toMinioHandler(sts.AssumeRoleWithSSO),
+			handler: toOtterioHandler(sts.AssumeRoleWithSSO),
 		},
 	}
 

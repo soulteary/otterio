@@ -66,7 +66,7 @@
       }
     ]
   },
-  "description": "MinIO dashboard - https://min.io/",
+  "description": "OtterIO dashboard - https://min.io/",
   "editable": true,
   "gnetId": 13502,
   "graphTooltip": 0,
@@ -78,7 +78,7 @@
       "includeVars": true,
       "keepTime": true,
       "tags": [
-        "minio"
+        "otterio"
       ],
       "type": "dashboards"
     }
@@ -236,13 +236,13 @@
       "pluginVersion": "7.2.0",
       "targets": [
         {
-          "expr": "sum(minio_disks_total)",
+          "expr": "sum(otterio_disks_total)",
           "format": "table",
           "hide": false,
           "instant": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "Total online disks in MinIO Cluster",
+          "legendFormat": "Total online disks in OtterIO Cluster",
           "metric": "process_start_time_seconds",
           "refId": "A",
           "step": 60
@@ -552,12 +552,12 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(minio_disks_offline)",
+          "expr": "sum(otterio_disks_offline)",
           "format": "time_series",
           "instant": true,
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "Total offline disks in MinIO Cluster",
+          "legendFormat": "Total offline disks in OtterIO Cluster",
           "metric": "process_start_time_seconds",
           "refId": "A",
           "step": 60
@@ -639,7 +639,7 @@
       "pluginVersion": "7.2.0",
       "targets": [
         {
-          "expr": "count by (instances) (minio_version_info)",
+          "expr": "count by (instances) (otterio_version_info)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1360,7 +1360,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Total number of s3 bytes received and sent per MinIO server instance",
+      "description": "Total number of s3 bytes received and sent per OtterIO server instance",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -1411,7 +1411,7 @@
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "S3 Bytes Received {{instance}}",
-          "metric": "minio_http_requests_duration_seconds_count",
+          "metric": "otterio_http_requests_duration_seconds_count",
           "refId": "A",
           "step": 4
         },
@@ -1474,7 +1474,7 @@
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
       "decimals": null,
-      "description": "Total number of active s3 requests in current MinIO instance",
+      "description": "Total number of active s3 requests in current OtterIO instance",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -1543,7 +1543,7 @@
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "Instance {{instance}} function {{api}}",
-          "metric": "minio_network_sent_bytes_total",
+          "metric": "otterio_network_sent_bytes_total",
           "refId": "A",
           "step": 10
         }
@@ -1601,7 +1601,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Total number of bytes received and sent among all MinIO server instances",
+      "description": "Total number of bytes received and sent among all OtterIO server instances",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -1652,7 +1652,7 @@
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "Internode Bytes Received {{instance}}",
-          "metric": "minio_http_requests_duration_seconds_count",
+          "metric": "otterio_http_requests_duration_seconds_count",
           "refId": "A",
           "step": 4
         },
@@ -1730,7 +1730,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Number of online disks per MinIO Server",
+      "description": "Number of online disks per OtterIO Server",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -1776,7 +1776,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "minio_disks_total{instance=~\"$instance\"} - minio_disks_offline{instance=~\"$instance\"}",
+          "expr": "otterio_disks_total{instance=~\"$instance\"} - otterio_disks_offline{instance=~\"$instance\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1840,7 +1840,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Disk capacity used per MinIO Server",
+      "description": "Disk capacity used per OtterIO Server",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -1941,7 +1941,7 @@
   "schemaVersion": 26,
   "style": "dark",
   "tags": [
-    "minio"
+    "otterio"
   ],
   "templating": {
     "list": [
@@ -1949,14 +1949,14 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(minio_version_info,instance)",
+        "definition": "label_values(otterio_version_info,instance)",
         "hide": 0,
         "includeAll": true,
-        "label": "MinIO Host",
+        "label": "OtterIO Host",
         "multi": true,
         "name": "instance",
         "options": [],
-        "query": "label_values(minio_version_info,instance)",
+        "query": "label_values(otterio_version_info,instance)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -2020,7 +2020,7 @@
     ]
   },
   "timezone": "",
-  "title": "MinIO Overview",
+  "title": "OtterIO Overview",
   "uid": "pJnnS4hZz",
   "version": 190
 }

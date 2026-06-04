@@ -45,7 +45,7 @@ import (
 // setsDsyncLockers is encapsulated type for Close()
 type setsDsyncLockers [][]dsync.NetLocker
 
-const envMinioDeleteCleanupInterval = "MINIO_DELETE_CLEANUP_INTERVAL"
+const envOtterioDeleteCleanupInterval = "OTTERIO_DELETE_CLEANUP_INTERVAL"
 
 // erasureSets implements ObjectLayer combining a static list of erasure coded
 // object sets. NOTE: There is no dynamic scaling allowed or intended in
@@ -434,7 +434,7 @@ func newErasureSets(ctx context.Context, endpoints Endpoints, storageDisks []Sto
 	// cleanup ".trash/" folder every 5m minutes with sufficient sleep cycles, between each
 	// deletes a dynamic sleeper is used with a factor of 10 ratio with max delay between
 	// deletes to be 2 seconds.
-	deletedObjectsCleanupInterval, err := time.ParseDuration(env.Get(envMinioDeleteCleanupInterval, "5m"))
+	deletedObjectsCleanupInterval, err := time.ParseDuration(env.Get(envOtterioDeleteCleanupInterval, "5m"))
 	if err != nil {
 		return nil, err
 	}
@@ -1172,7 +1172,7 @@ func markRootDisksAsDown(storageDisks []StorageAPI, errs []error) {
 	if !isTestSetup(infos, errs) {
 		for i := range storageDisks {
 			if storageDisks[i] != nil && infos[i].RootDisk {
-				// We should not heal on root disk. i.e in a situation where the minio-administrator has unmounted a
+				// We should not heal on root disk. i.e in a situation where the otterio-administrator has unmounted a
 				// defective drive we should not heal a path on the root disk.
 				logger.Info("Disk `%s` the same as the system root disk.\n"+
 					"Disk will not be used. Please supply a separate disk and restart the server.",

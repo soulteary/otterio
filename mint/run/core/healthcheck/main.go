@@ -35,10 +35,10 @@ import (
 const (
 	pass             = "PASS" // Indicate that a test passed
 	fail             = "FAIL" // Indicate that a test failed
-	livenessPath     = "/minio/health/live"
-	readinessPath    = "/minio/health/ready"
-	prometheusPath   = "/minio/prometheus/metrics"
-	prometheusPathV2 = "/minio/v2/metrics/cluster"
+	livenessPath     = "/otterio/health/live"
+	readinessPath    = "/otterio/health/ready"
+	prometheusPath   = "/otterio/prometheus/metrics"
+	prometheusPathV2 = "/otterio/v2/metrics/cluster"
 	timeout          = time.Duration(30 * time.Second)
 )
 
@@ -111,7 +111,7 @@ func testLivenessEndpoint(endpoint string) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		// Status not 200 OK
-		failureLog(function, nil, startTime, "", fmt.Sprintf("GET /minio/health/live returned %s", resp.Status), err).Fatal()
+		failureLog(function, nil, startTime, "", fmt.Sprintf("GET /otterio/health/live returned %s", resp.Status), err).Fatal()
 	}
 
 	defer resp.Body.Close()
@@ -139,7 +139,7 @@ func testReadinessEndpoint(endpoint string) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		// Status not 200 OK
-		failureLog(function, nil, startTime, "", "GET /minio/health/ready returned non OK status", err).Fatal()
+		failureLog(function, nil, startTime, "", "GET /otterio/health/ready returned non OK status", err).Fatal()
 	}
 
 	defer resp.Body.Close()
@@ -190,7 +190,7 @@ func testPrometheusEndpoint(endpoint string) {
 
 	if resp.StatusCode != http.StatusOK {
 		// Status not 200 OK
-		failureLog(function, nil, startTime, "", "GET /minio/prometheus/metrics returned non OK status", err).Fatal()
+		failureLog(function, nil, startTime, "", "GET /otterio/prometheus/metrics returned non OK status", err).Fatal()
 	}
 
 	defer resp.Body.Close()
@@ -237,7 +237,7 @@ func testPrometheusEndpointV2(endpoint string) {
 
 	if resp.StatusCode != http.StatusOK {
 		// Status not 200 OK
-		failureLog(function, nil, startTime, "", "GET /minio/prometheus/metrics returned non OK status", err).Fatal()
+		failureLog(function, nil, startTime, "", "GET /otterio/prometheus/metrics returned non OK status", err).Fatal()
 	}
 
 	defer resp.Body.Close()

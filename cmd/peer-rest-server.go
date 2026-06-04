@@ -293,7 +293,7 @@ func (s *peerRESTServer) StartProfilingHandler(w http.ResponseWriter, r *http.Re
 	globalProfilerMu.Lock()
 	defer globalProfilerMu.Unlock()
 	if globalProfiler == nil {
-		globalProfiler = make(map[string]minioProfiler, 10)
+		globalProfiler = make(map[string]otterioProfiler, 10)
 	}
 
 	// Stop profiler of all types if already running
@@ -758,7 +758,7 @@ func (s *peerRESTServer) ServerUpdateHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if _, err = updateServer(info.URL, info.Sha256Sum, info.Time, info.ReleaseInfo, getMinioMode()); err != nil {
+	if _, err = updateServer(info.URL, info.Sha256Sum, info.Time, info.ReleaseInfo, getOtterioMode()); err != nil {
 		s.writeErrorResponse(w, err)
 		return
 	}

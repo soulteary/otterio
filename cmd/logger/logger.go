@@ -202,10 +202,10 @@ func Init(goPath string, goRoot string) {
 	// Remove duplicate entries.
 	trimStrings = uniqueEntries(trimStrings)
 
-	// Add "github.com/minio/minio" as the last to cover
-	// paths like "{GOROOT}/src/github.com/minio/minio"
-	// and "{GOPATH}/src/github.com/minio/minio"
-	trimStrings = append(trimStrings, filepath.Join("github.com", "minio", "minio")+string(filepath.Separator))
+	// Add "github.com/soulteary/otterio" as the last to cover
+	// paths like "{GOROOT}/src/github.com/soulteary/otterio"
+	// and "{GOPATH}/src/github.com/soulteary/otterio"
+	trimStrings = append(trimStrings, filepath.Join("github.com", "soulteary", "otterio")+string(filepath.Separator))
 
 	loggerHighwayHasher, _ = highwayhash.New(magicHighwayHash256Key) // New will never return error since key is 256 bit
 }
@@ -272,8 +272,8 @@ func hashString(input string) string {
 type Kind string
 
 const (
-	// Minio errors
-	Minio Kind = "MINIO"
+	// Otterio errors
+	Otterio Kind = "OTTERIO"
 	// Application errors
 	Application Kind = "APPLICATION"
 	// All errors
@@ -315,7 +315,7 @@ func logIf(ctx context.Context, err error, errKind ...interface{}) {
 	if Disable {
 		return
 	}
-	logKind := string(Minio)
+	logKind := string(Otterio)
 	if len(errKind) > 0 {
 		if ek, ok := errKind[0].(Kind); ok {
 			logKind = string(ek)

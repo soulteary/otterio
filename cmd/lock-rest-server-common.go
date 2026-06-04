@@ -23,7 +23,7 @@ import (
 const (
 	lockRESTVersion       = "v6" // Add Refresh API
 	lockRESTVersionPrefix = SlashSeparator + lockRESTVersion
-	lockRESTPrefix        = minioReservedBucketPath + "/lock"
+	lockRESTPrefix        = otterioReservedBucketPath + "/lock"
 )
 
 const (

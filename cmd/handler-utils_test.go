@@ -38,7 +38,7 @@ func TestIsValidLocationContraint(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatal(err)
 	}
 
@@ -71,16 +71,16 @@ func TestIsValidLocationContraint(t *testing.T) {
 		expectedCode       APIErrorCode
 	}{
 		// Test case - 1.
-		{createExpectedRequest(&http.Request{}, "eu-central-1"), globalMinioDefaultRegion, ErrNone},
+		{createExpectedRequest(&http.Request{}, "eu-central-1"), globalOtterioDefaultRegion, ErrNone},
 		// Test case - 2.
 		// In case of empty request body ErrNone is returned.
-		{createExpectedRequest(&http.Request{}, ""), globalMinioDefaultRegion, ErrNone},
+		{createExpectedRequest(&http.Request{}, ""), globalOtterioDefaultRegion, ErrNone},
 		// Test case - 3
 		// In case of garbage request body ErrMalformedXML is returned.
-		{badRequest, globalMinioDefaultRegion, ErrMalformedXML},
+		{badRequest, globalOtterioDefaultRegion, ErrMalformedXML},
 		// Test case - 4
 		// In case of invalid XML request body ErrMalformedXML is returned.
-		{malformedReq, globalMinioDefaultRegion, ErrMalformedXML},
+		{malformedReq, globalOtterioDefaultRegion, ErrMalformedXML},
 	}
 
 	for i, testCase := range testCases {
@@ -159,11 +159,11 @@ func TestExtractMetadataHeaders(t *testing.T) {
 		{
 			header: http.Header{
 				"X-Amz-Meta-Appid":   []string{"amz-meta"},
-				"X-Minio-Meta-Appid": []string{"minio-meta"},
+				"X-Otterio-Meta-Appid": []string{"otterio-meta"},
 			},
 			metadata: map[string]string{
 				"X-Amz-Meta-Appid":   "amz-meta",
-				"X-Minio-Meta-Appid": "minio-meta",
+				"X-Otterio-Meta-Appid": "otterio-meta",
 			},
 			shouldFail: false,
 		},

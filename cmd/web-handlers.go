@@ -35,9 +35,9 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zip"
-	"github.com/minio/minio-go/v7"
-	miniogo "github.com/minio/minio-go/v7"
-	miniogopolicy "github.com/minio/minio-go/v7/pkg/policy"
+	otterio "github.com/minio/minio-go/v7"
+	otteriogo "github.com/minio/minio-go/v7"
+	otteriogopolicy "github.com/minio/minio-go/v7/pkg/policy"
 	"github.com/minio/minio-go/v7/pkg/s3utils"
 
 	"github.com/soulteary/otterio/cmd/config/dns"
@@ -89,12 +89,12 @@ type WebGenericRep struct {
 
 // ServerInfoRep - server info reply.
 type ServerInfoRep struct {
-	MinioVersion    string
-	MinioMemory     string
-	MinioPlatform   string
-	MinioRuntime    string
-	MinioGlobalInfo map[string]interface{}
-	MinioUserInfo   map[string]interface{}
+	OtterioVersion    string
+	OtterioMemory     string
+	OtterioPlatform   string
+	OtterioRuntime    string
+	OtterioGlobalInfo map[string]interface{}
+	OtterioUserInfo   map[string]interface{}
 	UIVersion       string `json:"uiVersion"`
 }
 
@@ -115,23 +115,23 @@ func (web *webAPIHandlers) ServerInfo(r *http.Request, args *WebGenericArgs, rep
 		runtime.GOARCH)
 	goruntime := fmt.Sprintf("Version: %s | CPUs: %d", runtime.Version(), runtime.NumCPU())
 
-	reply.MinioVersion = Version
-	reply.MinioGlobalInfo = getGlobalInfo()
+	reply.OtterioVersion = Version
+	reply.OtterioGlobalInfo = getGlobalInfo()
 
 	// Check if the user is IAM user.
-	reply.MinioUserInfo = map[string]interface{}{
+	reply.OtterioUserInfo = map[string]interface{}{
 		"isIAMUser": !owner,
 	}
 
 	if !owner {
 		creds, ok := globalIAMSys.GetUser(claims.AccessKey)
 		if ok && creds.SessionToken != "" {
-			reply.MinioUserInfo["isTempUser"] = true
+			reply.OtterioUserInfo["isTempUser"] = true
 		}
 	}
 
-	reply.MinioPlatform = platform
-	reply.MinioRuntime = goruntime
+	reply.OtterioPlatform = platform
+	reply.OtterioRuntime = goruntime
 	reply.UIVersion = Version
 	return nil
 }
@@ -692,20 +692,20 @@ func (web *webAPIHandlers) RemoveObject(r *http.Request, args *RemoveObjectArgs,
 		if err != nil {
 			return toJSONError(ctx, err, args.BucketName)
 		}
-		objectsCh := make(chan miniogo.ObjectInfo)
+		objectsCh := make(chan otteriogo.ObjectInfo)
 
 		// Send object names that are needed to be removed to objectsCh
 		go func() {
 			defer close(objectsCh)
 
 			for _, objectName := range args.Objects {
-				objectsCh <- miniogo.ObjectInfo{
+				objectsCh <- otteriogo.ObjectInfo{
 					Key: objectName,
 				}
 			}
 		}()
 
-		for resp := range core.RemoveObjects(ctx, args.BucketName, objectsCh, minio.RemoveObjectsOptions{}) {
+		for resp := range core.RemoveObjects(ctx, args.BucketName, objectsCh, otterio.RemoveObjectsOptions{}) {
 			if resp.Err != nil {
 				return toJSONError(ctx, resp.Err, args.BucketName, resp.ObjectName)
 			}
@@ -1776,7 +1776,7 @@ type GetBucketPolicyArgs struct {
 // GetBucketPolicyRep - get bucket policy reply.
 type GetBucketPolicyRep struct {
 	UIVersion string                     `json:"uiVersion"`
-	Policy    miniogopolicy.BucketPolicy `json:"policy"`
+	Policy    otteriogopolicy.BucketPolicy `json:"policy"`
 }
 
 // GetBucketPolicy - get bucket policy for the requested prefix.
@@ -1810,7 +1810,7 @@ func (web *webAPIHandlers) GetBucketPolicy(r *http.Request, args *GetBucketPolic
 		return toJSONError(ctx, errInvalidBucketName, args.BucketName)
 	}
 
-	var policyInfo = &miniogopolicy.BucketAccessPolicy{Version: "2012-10-17"}
+	var policyInfo = &otteriogopolicy.BucketAccessPolicy{Version: "2012-10-17"}
 	if isRemoteCallRequired(ctx, args.BucketName, objectAPI) {
 		sr, err := globalDNSConfig.Get(args.BucketName)
 		if err != nil {
@@ -1854,7 +1854,7 @@ func (web *webAPIHandlers) GetBucketPolicy(r *http.Request, args *GetBucketPolic
 	}
 
 	reply.UIVersion = Version
-	reply.Policy = miniogopolicy.GetPolicy(policyInfo.Statements, args.BucketName, args.Prefix)
+	reply.Policy = otteriogopolicy.GetPolicy(policyInfo.Statements, args.BucketName, args.Prefix)
 
 	return nil
 }
@@ -1868,7 +1868,7 @@ type ListAllBucketPoliciesArgs struct {
 type BucketAccessPolicy struct {
 	Bucket string                     `json:"bucket"`
 	Prefix string                     `json:"prefix"`
-	Policy miniogopolicy.BucketPolicy `json:"policy"`
+	Policy otteriogopolicy.BucketPolicy `json:"policy"`
 }
 
 // ListAllBucketPoliciesRep - get all bucket policy reply.
@@ -1907,7 +1907,7 @@ func (web *webAPIHandlers) ListAllBucketPolicies(r *http.Request, args *ListAllB
 		return toJSONError(ctx, errInvalidBucketName, args.BucketName)
 	}
 
-	var policyInfo = new(miniogopolicy.BucketAccessPolicy)
+	var policyInfo = new(otteriogopolicy.BucketAccessPolicy)
 	if isRemoteCallRequired(ctx, args.BucketName, objectAPI) {
 		sr, err := globalDNSConfig.Get(args.BucketName)
 		if err != nil {
@@ -1946,7 +1946,7 @@ func (web *webAPIHandlers) ListAllBucketPolicies(r *http.Request, args *ListAllB
 	}
 
 	reply.UIVersion = Version
-	for prefix, policy := range miniogopolicy.GetPolicies(policyInfo.Statements, args.BucketName, "") {
+	for prefix, policy := range otteriogopolicy.GetPolicies(policyInfo.Statements, args.BucketName, "") {
 		bucketName, objectPrefix := path2BucketObject(prefix)
 		objectPrefix = strings.TrimSuffix(objectPrefix, "*")
 		reply.Policies = append(reply.Policies, BucketAccessPolicy{
@@ -1998,7 +1998,7 @@ func (web *webAPIHandlers) SetBucketPolicy(r *http.Request, args *SetBucketPolic
 		return toJSONError(ctx, errInvalidBucketName, args.BucketName)
 	}
 
-	policyType := miniogopolicy.BucketPolicy(args.Policy)
+	policyType := otteriogopolicy.BucketPolicy(args.Policy)
 	if !policyType.IsValidBucketPolicy() {
 		return &json2.Error{
 			Message: "Invalid policy type " + args.Policy,
@@ -2026,14 +2026,14 @@ func (web *webAPIHandlers) SetBucketPolicy(r *http.Request, args *SetBucketPolic
 		if err != nil {
 			return toJSONError(ctx, err, args.BucketName)
 		}
-		var policyInfo = &miniogopolicy.BucketAccessPolicy{Version: "2012-10-17"}
+		var policyInfo = &otteriogopolicy.BucketAccessPolicy{Version: "2012-10-17"}
 		if policyStr != "" {
 			if err = json.Unmarshal([]byte(policyStr), policyInfo); err != nil {
 				return toJSONError(ctx, err, args.BucketName)
 			}
 		}
 
-		policyInfo.Statements = miniogopolicy.SetPolicy(policyInfo.Statements, policyType, args.BucketName, args.Prefix)
+		policyInfo.Statements = otteriogopolicy.SetPolicy(policyInfo.Statements, policyType, args.BucketName, args.Prefix)
 		if len(policyInfo.Statements) == 0 {
 			if err = core.SetBucketPolicy(ctx, args.BucketName, ""); err != nil {
 				return toJSONError(ctx, err, args.BucketName)
@@ -2069,7 +2069,7 @@ func (web *webAPIHandlers) SetBucketPolicy(r *http.Request, args *SetBucketPolic
 			return toJSONError(ctx, err, args.BucketName)
 		}
 
-		policyInfo.Statements = miniogopolicy.SetPolicy(policyInfo.Statements, policyType, args.BucketName, args.Prefix)
+		policyInfo.Statements = otteriogopolicy.SetPolicy(policyInfo.Statements, policyType, args.BucketName, args.Prefix)
 		if len(policyInfo.Statements) == 0 {
 			if err = globalBucketMetadataSys.Update(args.BucketName, bucketPolicyConfig, nil); err != nil {
 				return toJSONError(ctx, err, args.BucketName)
@@ -2254,7 +2254,7 @@ func (web *webAPIHandlers) LoginSTS(r *http.Request, args *LoginSTSArgs, reply *
 	}
 
 	// JWT has requested a custom claim with policy value set.
-	// This is a MinIO STS API specific value, this value should
+	// This is a OtterIO STS API specific value, this value should
 	// be set and configured on your identity provider as part of
 	// JWT custom claims.
 	var policyName string
@@ -2278,7 +2278,7 @@ func (web *webAPIHandlers) LoginSTS(r *http.Request, args *LoginSTSArgs, reply *
 		return toJSONError(ctx, err)
 	}
 
-	// Notify all other MinIO peers to reload temp users
+	// Notify all other OtterIO peers to reload temp users
 	for _, nerr := range globalNotificationSys.LoadUser(cred.AccessKey, true) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -2345,7 +2345,7 @@ func toWebAPIError(ctx context.Context, err error) APIError {
 		return APIError(stsErrCodes.ToSTSErr(ErrSTSNotInitialized))
 	case errServerNotInitialized:
 		return APIError{
-			Code:           "XMinioServerNotInitialized",
+			Code:           "XOtterioServerNotInitialized",
 			HTTPStatusCode: http.StatusServiceUnavailable,
 			Description:    err.Error(),
 		}

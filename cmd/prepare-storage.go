@@ -106,21 +106,21 @@ func formatErasureCleanupTmpLocalEndpoints(endpoints Endpoints) error {
 		index := index
 		g.Go(func() error {
 			epPath := endpoints[index].Path
-			// Need to move temporary objects left behind from previous run of minio
-			// server to a unique directory under `minioMetaTmpBucket-old` to clean
-			// up `minioMetaTmpBucket` for the current run.
+			// Need to move temporary objects left behind from previous run of otterio
+			// server to a unique directory under `otterioMetaTmpBucket-old` to clean
+			// up `otterioMetaTmpBucket` for the current run.
 			//
-			// /disk1/.minio.sys/tmp-old/
+			// /disk1/.otterio.sys/tmp-old/
 			//  |__ 33a58b40-aecc-4c9f-a22f-ff17bfa33b62
 			//  |__ e870a2c1-d09c-450c-a69c-6eaa54a89b3e
 			//
 			// In this example, `33a58b40-aecc-4c9f-a22f-ff17bfa33b62` directory contains
-			// temporary objects from one of the previous runs of minio server.
-			tmpOld := pathJoin(epPath, minioMetaTmpBucket+"-old", mustGetUUID())
-			if err := renameAll(pathJoin(epPath, minioMetaTmpBucket),
+			// temporary objects from one of the previous runs of otterio server.
+			tmpOld := pathJoin(epPath, otterioMetaTmpBucket+"-old", mustGetUUID())
+			if err := renameAll(pathJoin(epPath, otterioMetaTmpBucket),
 				tmpOld); err != nil && err != errFileNotFound {
 				return fmt.Errorf("unable to rename (%s -> %s) %w",
-					pathJoin(epPath, minioMetaTmpBucket),
+					pathJoin(epPath, otterioMetaTmpBucket),
 					tmpOld,
 					osErrToFileErr(err))
 			}
@@ -129,11 +129,11 @@ func formatErasureCleanupTmpLocalEndpoints(endpoints Endpoints) error {
 			renameAllBucketMetacache(epPath)
 
 			// Removal of tmp-old folder is backgrounded completely.
-			go removeAll(pathJoin(epPath, minioMetaTmpBucket+"-old"))
+			go removeAll(pathJoin(epPath, otterioMetaTmpBucket+"-old"))
 
-			if err := mkdirAll(pathJoin(epPath, minioMetaTmpBucket), 0777); err != nil {
+			if err := mkdirAll(pathJoin(epPath, otterioMetaTmpBucket), 0777); err != nil {
 				return fmt.Errorf("unable to create (%s) %w",
-					pathJoin(epPath, minioMetaTmpBucket),
+					pathJoin(epPath, otterioMetaTmpBucket),
 					err)
 			}
 			return nil
@@ -265,7 +265,7 @@ func connectLoadInitFormats(retryCount int, firstDisk bool, endpoints Endpoints,
 		}
 
 		// Assign globalDeploymentID on first run for the
-		// minio server managing the first disk
+		// otterio server managing the first disk
 		globalDeploymentID = format.ID
 		return storageDisks, format, nil
 	}
@@ -320,7 +320,7 @@ func connectLoadInitFormats(retryCount int, firstDisk bool, endpoints Endpoints,
 		return nil, nil, err
 	}
 
-	// The will always recreate some directories inside .minio.sys of
+	// The will always recreate some directories inside .otterio.sys of
 	// the local disk such as tmp, multipart and background-ops
 	initErasureMetaVolumesInLocalDisks(storageDisks, formatConfigs)
 

@@ -1,13 +1,13 @@
 **/*.swp
 cover.out
 *~
-minio
+otterio
 !*/
 site/
 **/*.test
 **/*.sublime-workspace
 /.idea/
-/Minio.iml
+/Otterio.iml
 **/access.log
 build
 vendor/**/*.js

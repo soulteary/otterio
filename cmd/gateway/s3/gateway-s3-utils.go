@@ -17,7 +17,7 @@
 package s3
 
 import (
-	minio "github.com/soulteary/otterio/cmd"
+	otterio "github.com/soulteary/otterio/cmd"
 )
 
 // List of header keys to be filtered, usually
@@ -39,10 +39,10 @@ var defaultFilterKeys = []string{
 }
 
 // FromGatewayObjectPart converts ObjectInfo for custom part stored as object to PartInfo
-func FromGatewayObjectPart(partID int, oi minio.ObjectInfo) (pi minio.PartInfo) {
-	return minio.PartInfo{
+func FromGatewayObjectPart(partID int, oi otterio.ObjectInfo) (pi otterio.PartInfo) {
+	return otterio.PartInfo{
 		Size:         oi.Size,
-		ETag:         minio.CanonicalizeETag(oi.ETag),
+		ETag:         otterio.CanonicalizeETag(oi.ETag),
 		LastModified: oi.ModTime,
 		PartNumber:   partID,
 	}

@@ -29,7 +29,7 @@ func TestPrintGatewayCommonMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatal(err)
 	}
 
@@ -44,7 +44,7 @@ func TestPrintGatewayStartupMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatal(err)
 	}
 

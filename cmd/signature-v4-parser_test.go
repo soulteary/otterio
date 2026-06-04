@@ -83,7 +83,7 @@ func validateCredentialfields(t *testing.T, testNum int, expectedCredentials cre
 // Credential = accessKey + SlashSeparator+ scope
 // where scope = string.Join([]string{  currTime.Format(yyyymmdd),
 //
-//				globalMinioDefaultRegion,
+//				globalOtterioDefaultRegion,
 //	              	"s3",
 //			        "aws4_request",
 //	                      },SlashSeparator)
@@ -200,7 +200,7 @@ func TestParseCredentialHeader(t *testing.T) {
 			expectedErrCode: ErrNone,
 		},
 		// Test Case - 10.
-		// Test case with right inputs -> AccessKey contains `/`. See minio/#6443
+		// Test case with right inputs -> AccessKey contains `/`. See otterio/#6443
 		// "aws4_request" is the valid request version.
 		{
 			inputCredentialStr: generateCredentialStr(
@@ -219,7 +219,7 @@ func TestParseCredentialHeader(t *testing.T) {
 			expectedErrCode: ErrNone,
 		},
 		// Test Case - 11.
-		// Test case with right inputs -> AccessKey contains `=`. See minio/#7376
+		// Test case with right inputs -> AccessKey contains `=`. See otterio/#7376
 		// "aws4_request" is the valid request version.
 		{
 			inputCredentialStr: generateCredentialStr(

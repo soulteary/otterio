@@ -42,7 +42,7 @@ Below environment variables are required to be passed to the docker container. S
 | `SECRET_KEY` | Secret Key of access `SERVER_ENDPOINT` | `zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG` |
 | `ENABLE_HTTPS` | (Optional) Set `1` to indicate to use HTTPS to access `SERVER_ENDPOINT`. Defaults to `0` (HTTP) | `1` |
 | `MINT_MODE` | (Optional) Set mode indicating what category of tests to be run by values `core`, `full`. Defaults to `core` | `full` |
-| `DOMAIN` | (Optional) Value of MINIO_DOMAIN environment variable used in Minio server | `myminio.com` |
+| `DOMAIN` | (Optional) Value of OTTERIO_DOMAIN environment variable used in Minio server | `myminio.com` |
 | `ENABLE_VIRTUAL_STYLE` | (Optional) Set `1` to indicate virtual style access . Defaults to `0` (Path style) | `1` |
 
 
@@ -50,9 +50,9 @@ Below environment variables are required to be passed to the docker container. S
 
 To test Minio server virtual style access with Mint, follow these steps:
 
-- Set a domain in your Minio server using environment variable MINIO_DOMAIN. For example `export MINIO_DOMAIN=myminio.com`.
+- Set a domain in your Minio server using environment variable OTTERIO_DOMAIN. For example `export OTTERIO_DOMAIN=myminio.com`.
 - Start Minio server.
-- Execute Mint against Minio server (with `MINIO_DOMAIN` set to `myminio.com`) using this command
+- Execute Mint against Minio server (with `OTTERIO_DOMAIN` set to `myminio.com`) using this command
 ```sh
 $ docker run -e "SERVER_ENDPOINT=192.168.86.133:9000" -e "DOMAIN=minio.com"  \
 	     -e "ACCESS_KEY=minio" -e "SECRET_KEY=minio123" -e "ENABLE_HTTPS=0" \

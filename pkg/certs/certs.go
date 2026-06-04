@@ -156,7 +156,7 @@ func (m *Manager) AddCertificate(certFile, keyFile string) (err error) {
 	// match the client SNI to a SAN since the SNI is meant to communicate the destination
 	// host name and clients will not set the SNI to an IP address.
 	// Allowing multiple certificates with IP SANs lead to errors that confuses users - like:
-	// "It works for `https://instance.minio.local` but not for `https://10.0.2.1`"
+	// "It works for `https://instance.otterio.local` but not for `https://10.0.2.1`"
 	if len(m.certificates) > 0 && len(certificate.Leaf.IPAddresses) > 0 {
 		return errors.New("cert: certificate must not contain any IP SANs: only the default certificate may contain IP SANs")
 	}
@@ -289,7 +289,7 @@ func (m *Manager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, 
 	// via SNI.
 	//
 	// Note: The certificate.Leaf should be non-nil and contain the actual
-	// client certificate of MinIO that should be presented to the peer (TLS client).
+	// client certificate of OtterIO that should be presented to the peer (TLS client).
 	// Otherwise, the leaf certificate has to be parsed again - which is kind of
 	// expensive and may cause a performance issue. For more information, check the
 	// docs of tls.ClientHelloInfo.SupportsCertificate.
@@ -323,7 +323,7 @@ func (m *Manager) GetClientCertificate(reqInfo *tls.CertificateRequestInfo) (*tl
 	// be accepted by the peer (TLS server) based on reqInfo.
 	//
 	// Note: The certificate.Leaf should be non-nil and contain the actual
-	// client certificate of MinIO that should be presented to the peer (TLS server).
+	// client certificate of OtterIO that should be presented to the peer (TLS server).
 	// Otherwise, the leaf certificate has to be parsed again - which is kind of
 	// expensive and may cause a performance issue. For more information, check the
 	// docs of tls.CertificateRequestInfo.SupportsCertificate.

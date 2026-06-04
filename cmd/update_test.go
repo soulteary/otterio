@@ -31,7 +31,7 @@ import (
 	"time"
 )
 
-func TestMinioVersionToReleaseTime(t *testing.T) {
+func TestOtterioVersionToReleaseTime(t *testing.T) {
 	testCases := []struct {
 		version    string
 		isOfficial bool
@@ -41,7 +41,7 @@ func TestMinioVersionToReleaseTime(t *testing.T) {
 		{"DEVELOPMENT.GOGET", false},
 	}
 	for i, testCase := range testCases {
-		_, err := minioVersionToReleaseTime(testCase.version)
+		_, err := otterioVersionToReleaseTime(testCase.version)
 		if (err == nil) != testCase.isOfficial {
 			t.Errorf("Test %d: Expected %v but got %v",
 				i+1, testCase.isOfficial, err == nil)
@@ -84,52 +84,52 @@ func TestReleaseTagToNFromTimeConversion(t *testing.T) {
 }
 
 func TestDownloadURL(t *testing.T) {
-	sci := os.Getenv("MINIO_CI_CD")
+	sci := os.Getenv("OTTERIO_CI_CD")
 
-	os.Setenv("MINIO_CI_CD", "")
-	defer os.Setenv("MINIO_CI_CD", sci)
+	os.Setenv("OTTERIO_CI_CD", "")
+	defer os.Setenv("OTTERIO_CI_CD", sci)
 
-	minioVersion1 := releaseTimeToReleaseTag(UTCNow())
+	otterioVersion1 := releaseTimeToReleaseTag(UTCNow())
 
 	// By default this fork has no release URL configured, so there is no
 	// download hint and updates are effectively disabled.
-	sru := os.Getenv(envMinioUpdateReleaseURL)
-	os.Unsetenv(envMinioUpdateReleaseURL)
-	defer os.Setenv(envMinioUpdateReleaseURL, sru)
-	if durl := getDownloadURL(minioVersion1); durl != "" {
-		t.Errorf("Expected empty download URL when %s is unset, got %s", envMinioUpdateReleaseURL, durl)
+	sru := os.Getenv(envOtterioUpdateReleaseURL)
+	os.Unsetenv(envOtterioUpdateReleaseURL)
+	defer os.Setenv(envOtterioUpdateReleaseURL, sru)
+	if durl := getDownloadURL(otterioVersion1); durl != "" {
+		t.Errorf("Expected empty download URL when %s is unset, got %s", envOtterioUpdateReleaseURL, durl)
 	}
 
 	// With a release URL configured, the usual per-environment hints apply.
-	os.Setenv(envMinioUpdateReleaseURL, "https://example.com/minio/release/")
-	base := minioReleaseBaseURL()
+	os.Setenv(envOtterioUpdateReleaseURL, "https://example.com/otterio/release/")
+	base := otterioReleaseBaseURL()
 
-	durl := getDownloadURL(minioVersion1)
+	durl := getDownloadURL(otterioVersion1)
 	if IsDocker() {
-		if durl != "docker pull soulteary/minio:"+minioVersion1 {
-			t.Errorf("Expected %s, got %s", "docker pull soulteary/minio:"+minioVersion1, durl)
+		if durl != "docker pull soulteary/otterio:"+otterioVersion1 {
+			t.Errorf("Expected %s, got %s", "docker pull soulteary/otterio:"+otterioVersion1, durl)
 		}
 	} else {
 		if runtime.GOOS == "windows" {
-			if durl != base+"minio.exe" {
-				t.Errorf("Expected %s, got %s", base+"minio.exe", durl)
+			if durl != base+"otterio.exe" {
+				t.Errorf("Expected %s, got %s", base+"otterio.exe", durl)
 			}
 		} else {
-			if durl != base+"minio" {
-				t.Errorf("Expected %s, got %s", base+"minio", durl)
+			if durl != base+"otterio" {
+				t.Errorf("Expected %s, got %s", base+"otterio", durl)
 			}
 		}
 	}
 
 	os.Setenv("KUBERNETES_SERVICE_HOST", "10.11.148.5")
-	durl = getDownloadURL(minioVersion1)
+	durl = getDownloadURL(otterioVersion1)
 	if durl != kubernetesDeploymentDoc {
 		t.Errorf("Expected %s, got %s", kubernetesDeploymentDoc, durl)
 	}
 	os.Unsetenv("KUBERNETES_SERVICE_HOST")
 
 	os.Setenv("MESOS_CONTAINER_NAME", "mesos-1111")
-	durl = getDownloadURL(minioVersion1)
+	durl = getDownloadURL(otterioVersion1)
 	if durl != mesosDeploymentDoc {
 		t.Errorf("Expected %s, got %s", mesosDeploymentDoc, durl)
 	}
@@ -147,26 +147,26 @@ func TestUserAgent(t *testing.T) {
 		{
 			envName:     "",
 			envValue:    "",
-			mode:        globalMinioModeFS,
-			expectedStr: fmt.Sprintf("MinIO (%s; %s; %s; source) MinIO/DEVELOPMENT.GOGET MinIO/DEVELOPMENT.GOGET MinIO/DEVELOPMENT.GOGET", runtime.GOOS, runtime.GOARCH, globalMinioModeFS),
+			mode:        globalOtterioModeFS,
+			expectedStr: fmt.Sprintf("OtterIO (%s; %s; %s; source) OtterIO/DEVELOPMENT.GOGET OtterIO/DEVELOPMENT.GOGET OtterIO/DEVELOPMENT.GOGET", runtime.GOOS, runtime.GOARCH, globalOtterioModeFS),
 		},
 		{
 			envName:     "MESOS_CONTAINER_NAME",
 			envValue:    "mesos-11111",
-			mode:        globalMinioModeErasure,
-			expectedStr: fmt.Sprintf("MinIO (%s; %s; %s; %s; source) MinIO/DEVELOPMENT.GOGET MinIO/DEVELOPMENT.GOGET MinIO/DEVELOPMENT.GOGET MinIO/universe-%s", runtime.GOOS, runtime.GOARCH, globalMinioModeErasure, "dcos", "mesos-1111"),
+			mode:        globalOtterioModeErasure,
+			expectedStr: fmt.Sprintf("OtterIO (%s; %s; %s; %s; source) OtterIO/DEVELOPMENT.GOGET OtterIO/DEVELOPMENT.GOGET OtterIO/DEVELOPMENT.GOGET OtterIO/universe-%s", runtime.GOOS, runtime.GOARCH, globalOtterioModeErasure, "dcos", "mesos-1111"),
 		},
 		{
 			envName:     "KUBERNETES_SERVICE_HOST",
 			envValue:    "10.11.148.5",
-			mode:        globalMinioModeErasure,
-			expectedStr: fmt.Sprintf("MinIO (%s; %s; %s; %s; source) MinIO/DEVELOPMENT.GOGET MinIO/DEVELOPMENT.GOGET MinIO/DEVELOPMENT.GOGET", runtime.GOOS, runtime.GOARCH, globalMinioModeErasure, "kubernetes"),
+			mode:        globalOtterioModeErasure,
+			expectedStr: fmt.Sprintf("OtterIO (%s; %s; %s; %s; source) OtterIO/DEVELOPMENT.GOGET OtterIO/DEVELOPMENT.GOGET OtterIO/DEVELOPMENT.GOGET", runtime.GOOS, runtime.GOARCH, globalOtterioModeErasure, "kubernetes"),
 		},
 	}
 
 	for i, testCase := range testCases {
-		sci := os.Getenv("MINIO_CI_CD")
-		os.Setenv("MINIO_CI_CD", "")
+		sci := os.Getenv("OTTERIO_CI_CD")
+		os.Setenv("OTTERIO_CI_CD", "")
 
 		os.Setenv(testCase.envName, testCase.envValue)
 		if testCase.envName == "MESOS_CONTAINER_NAME" {
@@ -180,7 +180,7 @@ func TestUserAgent(t *testing.T) {
 		if str != expectedStr {
 			t.Errorf("Test %d: expected: %s, got: %s", i+1, expectedStr, str)
 		}
-		os.Setenv("MINIO_CI_CD", sci)
+		os.Setenv("OTTERIO_CI_CD", sci)
 		os.Unsetenv("MARATHON_APP_LABEL_DCOS_PACKAGE_VERSION")
 		os.Unsetenv(testCase.envName)
 	}
@@ -188,9 +188,9 @@ func TestUserAgent(t *testing.T) {
 
 // Tests if the environment we are running is in DCOS.
 func TestIsDCOS(t *testing.T) {
-	sci := os.Getenv("MINIO_CI_CD")
-	os.Setenv("MINIO_CI_CD", "")
-	defer os.Setenv("MINIO_CI_CD", sci)
+	sci := os.Getenv("OTTERIO_CI_CD")
+	os.Setenv("OTTERIO_CI_CD", "")
+	defer os.Setenv("OTTERIO_CI_CD", sci)
 
 	os.Setenv("MESOS_CONTAINER_NAME", "mesos-1111")
 	dcos := IsDCOS()
@@ -207,9 +207,9 @@ func TestIsDCOS(t *testing.T) {
 
 // Tests if the environment we are running is in kubernetes.
 func TestIsKubernetes(t *testing.T) {
-	sci := os.Getenv("MINIO_CI_CD")
-	os.Setenv("MINIO_CI_CD", "")
-	defer os.Setenv("MINIO_CI_CD", sci)
+	sci := os.Getenv("OTTERIO_CI_CD")
+	os.Setenv("OTTERIO_CI_CD", "")
+	defer os.Setenv("OTTERIO_CI_CD", sci)
 
 	os.Setenv("KUBERNETES_SERVICE_HOST", "10.11.148.5")
 	kubernetes := IsKubernetes()
@@ -240,8 +240,8 @@ func TestGetHelmVersion(t *testing.T) {
 	}
 
 	filename := createTempFile(
-		`app="virtuous-rat-minio"
-chart="minio-0.1.3"
+		`app="virtuous-rat-otterio"
+chart="otterio-0.1.3"
 heritage="Tiller"
 pod-template-hash="818089471"`)
 
@@ -253,7 +253,7 @@ pod-template-hash="818089471"`)
 	}{
 		{"", ""},
 		{"/tmp/non-existing-file", ""},
-		{filename, "minio-0.1.3"},
+		{filename, "otterio-0.1.3"},
 	}
 
 	for _, testCase := range testCases {
@@ -269,7 +269,7 @@ func TestDownloadReleaseData(t *testing.T) {
 	httpServer1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	defer httpServer1.Close()
 	httpServer2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "fbe246edbd382902db9a4035df7dce8cb441357d minio.RELEASE.2016-10-07T01-16-39Z")
+		fmt.Fprintln(w, "fbe246edbd382902db9a4035df7dce8cb441357d otterio.RELEASE.2016-10-07T01-16-39Z")
 	}))
 	defer httpServer2.Close()
 	httpServer3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -283,7 +283,7 @@ func TestDownloadReleaseData(t *testing.T) {
 		expectedErr        error
 	}{
 		{httpServer1.URL, "", nil},
-		{httpServer2.URL, "fbe246edbd382902db9a4035df7dce8cb441357d minio.RELEASE.2016-10-07T01-16-39Z\n", nil},
+		{httpServer2.URL, "fbe246edbd382902db9a4035df7dce8cb441357d otterio.RELEASE.2016-10-07T01-16-39Z\n", nil},
 		{httpServer3.URL, "", fmt.Errorf("Error downloading URL " + httpServer3.URL + ". Response: 404 Not Found")},
 	}
 
@@ -322,12 +322,12 @@ func TestParseReleaseData(t *testing.T) {
 		{"more than two fields", time.Time{}, "", "", true},
 		{"more than", time.Time{}, "", "", true},
 		{"more than.two.fields", time.Time{}, "", "", true},
-		{"more minio.RELEASE.fields", time.Time{}, "", "", true},
-		{"more minio.RELEASE.2016-10-07T01-16-39Z", time.Time{}, "", "", true},
-		{"fbe246edbd382902db9a4035df7dce8cb441357d minio.RELEASE.2016-10-07T01-16-39Z\n", releaseTime, "fbe246edbd382902db9a4035df7dce8cb441357d",
-			"minio.RELEASE.2016-10-07T01-16-39Z", false},
-		{"fbe246edbd382902db9a4035df7dce8cb441357d minio.RELEASE.2016-10-07T01-16-39Z.customer-hotfix\n", releaseTime, "fbe246edbd382902db9a4035df7dce8cb441357d",
-			"minio.RELEASE.2016-10-07T01-16-39Z.customer-hotfix", false},
+		{"more otterio.RELEASE.fields", time.Time{}, "", "", true},
+		{"more otterio.RELEASE.2016-10-07T01-16-39Z", time.Time{}, "", "", true},
+		{"fbe246edbd382902db9a4035df7dce8cb441357d otterio.RELEASE.2016-10-07T01-16-39Z\n", releaseTime, "fbe246edbd382902db9a4035df7dce8cb441357d",
+			"otterio.RELEASE.2016-10-07T01-16-39Z", false},
+		{"fbe246edbd382902db9a4035df7dce8cb441357d otterio.RELEASE.2016-10-07T01-16-39Z.customer-hotfix\n", releaseTime, "fbe246edbd382902db9a4035df7dce8cb441357d",
+			"otterio.RELEASE.2016-10-07T01-16-39Z.customer-hotfix", false},
 	}
 
 	for i, testCase := range testCases {
@@ -359,7 +359,7 @@ func TestParseReleaseData(t *testing.T) {
 // arbitrary files (e.g. "mc admin update alias/ /etc/passwd").
 func TestDoUpdateRejectsLocalFileSource(t *testing.T) {
 	secret := "TOP-SECRET-ROOT-PASSWORD-should-never-be-read"
-	f, err := ioutil.TempFile("", "minio-update-traversal-")
+	f, err := ioutil.TempFile("", "otterio-update-traversal-")
 	if err != nil {
 		t.Fatal(err)
 	}

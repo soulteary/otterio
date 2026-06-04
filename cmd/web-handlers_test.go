@@ -235,13 +235,13 @@ func testServerInfoWebHandler(obj ObjectLayer, instanceType string, t TestErrHan
 	if err != nil {
 		t.Fatalf("Failed, %v", err)
 	}
-	if serverInfoReply.MinioVersion != Version {
-		t.Fatalf("Cannot get minio version from server info handler")
+	if serverInfoReply.OtterioVersion != Version {
+		t.Fatalf("Cannot get otterio version from server info handler")
 	}
-	serverInfoReply.MinioGlobalInfo["domains"] = []string(nil)
+	serverInfoReply.OtterioGlobalInfo["domains"] = []string(nil)
 	globalInfo := getGlobalInfo()
-	if !reflect.DeepEqual(serverInfoReply.MinioGlobalInfo, globalInfo) {
-		t.Fatalf("Global info did not match got %#v, expected %#v", serverInfoReply.MinioGlobalInfo, globalInfo)
+	if !reflect.DeepEqual(serverInfoReply.OtterioGlobalInfo, globalInfo) {
+		t.Fatalf("Global info did not match got %#v, expected %#v", serverInfoReply.OtterioGlobalInfo, globalInfo)
 	}
 }
 
@@ -272,8 +272,8 @@ func testMakeBucketWebHandler(obj ObjectLayer, instanceType string, t TestErrHan
 		{"", false},
 		{".", false},
 		{"ab", false},
-		{"minio", false},
-		{minioMetaBucket, false},
+		{"otterio", false},
+		{otterioMetaBucket, false},
 		{bucketName, true},
 	}
 
@@ -343,8 +343,8 @@ func testDeleteBucketWebHandler(obj ObjectLayer, instanceType string, t TestErrH
 		{"ab", false, token, "Bucket Name ab is invalid. Lowercase letters, period, " +
 			"hyphen, numerals are the only allowed characters and should be minimum " +
 			"3 characters in length."},
-		{"minio", false, "false token", "Authentication failed"},
-		{"minio", false, token, "Bucket Name minio is invalid. Lowercase letters, period, " +
+		{"otterio", false, "false token", "Authentication failed"},
+		{"otterio", false, token, "Bucket Name otterio is invalid. Lowercase letters, period, " +
 			"hyphen, numerals are the only allowed characters and should be minimum " +
 			"3 characters in length."},
 		{bucketName, false, token, ""},
@@ -716,7 +716,7 @@ func testUploadWebHandler(obj ObjectLayer, instanceType string, t TestErrHandler
 
 	test := func(token string, sendContentLength bool) int {
 		rec := httptest.NewRecorder()
-		req, rErr := http.NewRequest(http.MethodPut, "/minio/upload/"+bucketName+SlashSeparator+objectName, nil)
+		req, rErr := http.NewRequest(http.MethodPut, "/otterio/upload/"+bucketName+SlashSeparator+objectName, nil)
 		if rErr != nil {
 			t.Fatalf("Cannot create upload request, %v", rErr)
 		}
@@ -797,7 +797,7 @@ func testDownloadWebHandler(obj ObjectLayer, instanceType string, t TestErrHandl
 
 	test := func(token string) (int, []byte) {
 		rec := httptest.NewRecorder()
-		path := "/minio/download/" + bucketName + SlashSeparator + objectName + "?token="
+		path := "/otterio/download/" + bucketName + SlashSeparator + objectName + "?token="
 		if token != "" {
 			path = path + token
 		}
@@ -912,7 +912,7 @@ func testWebHandlerDownloadZip(obj ObjectLayer, instanceType string, t TestErrHa
 
 	test := func(token string) (int, []byte) {
 		rec := httptest.NewRecorder()
-		path := "/minio/zip" + "?token="
+		path := "/otterio/zip" + "?token="
 		if token != "" {
 			path = path + token
 		}
@@ -1087,7 +1087,7 @@ func TestWebCheckAuthorization(t *testing.T) {
 
 	// initialize the server and obtain the credentials and root.
 	// credentials are necessary to sign the HTTP request.
-	err = newTestConfig(globalMinioDefaultRegion, obj)
+	err = newTestConfig(globalOtterioDefaultRegion, obj)
 	if err != nil {
 		t.Fatal("Init Test config failed", err)
 	}
@@ -1123,7 +1123,7 @@ func TestWebCheckAuthorization(t *testing.T) {
 
 	rec = httptest.NewRecorder()
 	// Test authorization of web.Download
-	req, err := http.NewRequest(http.MethodGet, "/minio/download/bucket/object?token=wrongauth", nil)
+	req, err := http.NewRequest(http.MethodGet, "/otterio/download/bucket/object?token=wrongauth", nil)
 	if err != nil {
 		t.Fatalf("Cannot create upload request, %v", err)
 	}
@@ -1140,7 +1140,7 @@ func TestWebCheckAuthorization(t *testing.T) {
 	rec = httptest.NewRecorder()
 	// Test authorization of web.Upload
 	content := []byte("temporary file's content")
-	req, err = http.NewRequest(http.MethodPut, "/minio/upload/bucket/object", nil)
+	req, err = http.NewRequest(http.MethodPut, "/otterio/upload/bucket/object", nil)
 	req.Header.Set("Authorization", "Bearer foo-authorization")
 	req.Header.Set("User-Agent", "Mozilla")
 	req.Header.Set("Content-Length", strconv.Itoa(len(content)))
@@ -1175,7 +1175,7 @@ func TestWebObjectLayerFaultyDisks(t *testing.T) {
 
 	// initialize the server and obtain the credentials and root.
 	// credentials are necessary to sign the HTTP request.
-	err = newTestConfig(globalMinioDefaultRegion, obj)
+	err = newTestConfig(globalOtterioDefaultRegion, obj)
 	if err != nil {
 		t.Fatal("Init Test config failed", err)
 	}
@@ -1257,7 +1257,7 @@ func TestWebObjectLayerFaultyDisks(t *testing.T) {
 	}
 
 	// Test authorization of web.Download
-	req, err = http.NewRequest(http.MethodGet, "/minio/download/bucket/object?token="+authorization, nil)
+	req, err = http.NewRequest(http.MethodGet, "/otterio/download/bucket/object?token="+authorization, nil)
 	if err != nil {
 		t.Fatalf("Cannot create upload request, %v", err)
 	}
@@ -1268,7 +1268,7 @@ func TestWebObjectLayerFaultyDisks(t *testing.T) {
 
 	// Test authorization of web.Upload
 	content := []byte("temporary file's content")
-	req, err = http.NewRequest(http.MethodPut, "/minio/upload/bucket/object", nil)
+	req, err = http.NewRequest(http.MethodPut, "/otterio/upload/bucket/object", nil)
 	req.Header.Set("Authorization", "Bearer "+authorization)
 	req.Header.Set("Content-Length", strconv.Itoa(len(content)))
 	req.Header.Set("x-amz-date", "20160814T114029Z")

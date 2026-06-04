@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	minio "github.com/minio/minio-go/v7"
+	otterio "github.com/minio/minio-go/v7"
 )
 
 func TestParsePostPolicyForm(t *testing.T) {
@@ -79,7 +79,7 @@ func TestParsePostPolicyForm(t *testing.T) {
 
 // Test Post Policy parsing and checking conditions
 func TestPostPolicyForm(t *testing.T) {
-	pp := minio.NewPostPolicy()
+	pp := otterio.NewPostPolicy()
 	pp.SetBucket("testbucket")
 	pp.SetContentType("image/jpeg")
 	pp.SetUserMetadata("uuid", "14365123651274")

@@ -1311,7 +1311,7 @@ func (z *erasureServerPools) deleteAll(ctx context.Context, bucket, prefix strin
 }
 
 // renameAll will rename bucket+prefix unconditionally across all disks to
-// minioMetaTmpBucket + unique uuid,
+// otterioMetaTmpBucket + unique uuid,
 // Note that set distribution is ignored so it should only be used in cases where
 // data is not distributed across sets. Errors are logged but individual
 // disk failures are not returned.
@@ -1372,7 +1372,7 @@ func (z *erasureServerPools) ListBuckets(ctx context.Context) (buckets []BucketI
 func (z *erasureServerPools) HealFormat(ctx context.Context, dryRun bool) (madmin.HealResultItem, error) {
 	var err error
 	// Acquire lock on format.json
-	formatLock := z.NewNSLock(minioMetaBucket, formatConfigFile)
+	formatLock := z.NewNSLock(otterioMetaBucket, formatConfigFile)
 	ctx, err = formatLock.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
 		return madmin.HealResultItem{}, err
@@ -1417,7 +1417,7 @@ func (z *erasureServerPools) HealBucket(ctx context.Context, bucket string, opts
 	}
 
 	// Attempt heal on the bucket metadata, ignore any failures
-	_, _ = z.HealObject(ctx, minioMetaBucket, pathJoin(bucketConfigPrefix, bucket, bucketMetadataFile), "", opts)
+	_, _ = z.HealObject(ctx, otterioMetaBucket, pathJoin(bucketConfigPrefix, bucket, bucketMetadataFile), "", opts)
 
 	for _, pool := range z.serverPools {
 		result, err := pool.HealBucket(ctx, bucket, opts)
@@ -1531,8 +1531,8 @@ func (z *erasureServerPools) HealObjects(ctx context.Context, bucket, prefix str
 						}
 						// We might land at .metacache, .trash, .multipart
 						// no need to heal them skip, only when bucket
-						// is '.minio.sys'
-						if bucket == minioMetaBucket {
+						// is '.otterio.sys'
+						if bucket == otterioMetaBucket {
 							if wildcard.Match("buckets/*/.metacache/*", entry.name) {
 								return
 							}

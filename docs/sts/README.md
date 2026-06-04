@@ -1,7 +1,7 @@
-# MinIO STS Quickstart Guide
-The MinIO Security Token Service (STS) is an endpoint service that enables clients to request temporary credentials for MinIO resources. Temporary credentials work almost identically to default admin credentials, with some differences:
+# OtterIO STS Quickstart Guide
+The OtterIO Security Token Service (STS) is an endpoint service that enables clients to request temporary credentials for OtterIO resources. Temporary credentials work almost identically to default admin credentials, with some differences:
 
-- Temporary credentials are short-term, as the name implies. They can be configured to last for anywhere from a few minutes to several hours. After the credentials expire, MinIO no longer recognizes them or allows any kind of access from API requests made with them.
+- Temporary credentials are short-term, as the name implies. They can be configured to last for anywhere from a few minutes to several hours. After the credentials expire, OtterIO no longer recognizes them or allows any kind of access from API requests made with them.
 - Temporary credentials do not need to be stored with the application but are generated dynamically and provided to the application when requested. When (or even before) the temporary credentials expire, the application can request new credentials.
 
 Following are advantages for using temporary credentials:
@@ -13,9 +13,9 @@ Following are advantages for using temporary credentials:
 ## Identity Federation
 |AuthN | Description |
 | :---------------------- | ------------------------------------------ |
-| [**Client grants**](https://github.com/minio/minio/blob/master/docs/sts/client-grants.md) | Let applications request `client_grants` using any well-known third party identity provider such as KeyCloak, Okta. This is known as the client grants approach to temporary access. Using this approach helps clients keep MinIO credentials to be secured. MinIO STS supports client grants, tested against identity providers such as KeyCloak, Okta. |
+| [**Client grants**](https://github.com/minio/minio/blob/master/docs/sts/client-grants.md) | Let applications request `client_grants` using any well-known third party identity provider such as KeyCloak, Okta. This is known as the client grants approach to temporary access. Using this approach helps clients keep OtterIO credentials to be secured. OtterIO STS supports client grants, tested against identity providers such as KeyCloak, Okta. |
 | [**WebIdentity**](https://github.com/minio/minio/blob/master/docs/sts/web-identity.md) | Let users request temporary credentials using any OpenID(OIDC) compatible web identity providers such as KeyCloak, Dex, Facebook, Google etc. |
-| [**AssumeRole**](https://github.com/minio/minio/blob/master/docs/sts/assume-role.md) | Let MinIO users request temporary credentials using user access and secret keys. |
+| [**AssumeRole**](https://github.com/minio/minio/blob/master/docs/sts/assume-role.md) | Let OtterIO users request temporary credentials using user access and secret keys. |
 | [**AD/LDAP**](https://github.com/minio/minio/blob/master/docs/sts/ldap.md) | Let AD/LDAP users request temporary credentials using AD/LDAP username and password. |
 
 ### Understanding JWT Claims
@@ -28,7 +28,7 @@ The access token received is a signed JSON Web Token (JWT). Use a JWT decoder to
 
 | Claim Name | Type                                              | Claim Value                                                                                                                                                                                                        |
 |:----------:|:-------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| policy     | _string_ or _[]string_ or _comma_separated_value_ | Canned policy name to be applied for STS credentials. (Mandatory) - This can be configured to any desired value such as `roles` or `groups` by setting the environment variable `MINIO_IDENTITY_OPENID_CLAIM_NAME` |
+| policy     | _string_ or _[]string_ or _comma_separated_value_ | Canned policy name to be applied for STS credentials. (Mandatory) - This can be configured to any desired value such as `roles` or `groups` by setting the environment variable `OTTERIO_IDENTITY_OPENID_CLAIM_NAME` |
 
 ## Get started
 In this document we will explain in detail on how to configure all the prerequisites.
@@ -39,33 +39,33 @@ In this document we will explain in detail on how to configure all the prerequis
 - [Configuring keycloak](https://github.com/minio/minio/blob/master/docs/sts/keycloak.md)
 - [Configuring etcd (optional needed only in gateway or federation mode)](https://github.com/minio/minio/blob/master/docs/sts/etcd.md)
 
-### Setup MinIO with Keycloak
-Make sure we have followed the previous step and configured each software independently, once done we can now proceed to use MinIO STS API and MinIO server to use these credentials to perform object API operations.
+### Setup OtterIO with Keycloak
+Make sure we have followed the previous step and configured each software independently, once done we can now proceed to use OtterIO STS API and OtterIO server to use these credentials to perform object API operations.
 
 ```
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
-export MINIO_IDENTITY_OPENID_CONFIG_URL=http://localhost:8080/auth/realms/demo/.well-known/openid-configuration
-export MINIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
-minio server /mnt/data
+export OTTERIO_ROOT_USER=otterio
+export OTTERIO_ROOT_PASSWORD=otterio123
+export OTTERIO_IDENTITY_OPENID_CONFIG_URL=http://localhost:8080/auth/realms/demo/.well-known/openid-configuration
+export OTTERIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
+otterio server /mnt/data
 ```
 
-### Setup MinIO Gateway with Keycloak and Etcd
-Make sure we have followed the previous step and configured each software independently, once done we can now proceed to use MinIO STS API and MinIO gateway to use these credentials to perform object API operations.
+### Setup OtterIO Gateway with Keycloak and Etcd
+Make sure we have followed the previous step and configured each software independently, once done we can now proceed to use OtterIO STS API and OtterIO gateway to use these credentials to perform object API operations.
 
-> NOTE: MinIO gateway requires etcd to be configured to use STS API.
+> NOTE: OtterIO gateway requires etcd to be configured to use STS API.
 
 ```
-export MINIO_ROOT_USER=aws_access_key
-export MINIO_ROOT_PASSWORD=aws_secret_key
-export MINIO_IDENTITY_OPENID_CONFIG_URL=http://localhost:8080/auth/realms/demo/.well-known/openid-configuration
-export MINIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
-export MINIO_ETCD_ENDPOINTS=http://localhost:2379
-minio gateway s3
+export OTTERIO_ROOT_USER=aws_access_key
+export OTTERIO_ROOT_PASSWORD=aws_secret_key
+export OTTERIO_IDENTITY_OPENID_CONFIG_URL=http://localhost:8080/auth/realms/demo/.well-known/openid-configuration
+export OTTERIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
+export OTTERIO_ETCD_ENDPOINTS=http://localhost:2379
+otterio gateway s3
 ```
 
 ### Using WebIdentiy API
-On another terminal run `web-identity.go` a sample client application which obtains JWT access tokens from an identity provider, in our case its Keycloak. Uses the returned access token response to get new temporary credentials from the MinIO server using the STS API call `AssumeRoleWithWebIdentity`.
+On another terminal run `web-identity.go` a sample client application which obtains JWT access tokens from an identity provider, in our case its Keycloak. Uses the returned access token response to get new temporary credentials from the OtterIO server using the STS API call `AssumeRoleWithWebIdentity`.
 
 ```
 $ go run docs/sts/web-identity.go -cid account -csec 072e7f00-4289-469c-9ab2-bbe843c7f5a8  -config-ep "http://localhost:8080/auth/realms/demo/.well-known/openid-configuration" -port 8888
@@ -90,16 +90,16 @@ This will open the login page of keycloak, upon successful login, STS credential
 
 > NOTE: You can use the `-cscopes` parameter to restrict the requested scopes, for example to `"openid,policy_role_attribute"`, being `policy_role_attribute` a client_scope / client_mapper that maps a role attribute called policy to a `policy` claim returned by Keycloak.
 
-These credentials can now be used to perform MinIO API operations.
+These credentials can now be used to perform OtterIO API operations.
 
-### Using MinIO Browser
+### Using OtterIO Browser
 
-- Open MinIO URL on the browser, lets say http://localhost:9000
+- Open OtterIO URL on the browser, lets say http://localhost:9000
 - Click on `Log in with OpenID`
-- Provide `Client ID` and press ENTER, if `client_id` is already configured for MinIO this page will automatically redirect to Keycloak user login page.
-- User will be redirected to the Keycloak user login page, upon successful login the user will be redirected to MinIO page and logged in automatically,
+- Provide `Client ID` and press ENTER, if `client_id` is already configured for OtterIO this page will automatically redirect to Keycloak user login page.
+- User will be redirected to the Keycloak user login page, upon successful login the user will be redirected to OtterIO page and logged in automatically,
   the user should see now the buckets and objects they have access to.
 
 ## Explore Further
-- [MinIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The MinIO documentation website](https://docs.min.io)
+- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
+- [The OtterIO documentation website](https://docs.min.io)

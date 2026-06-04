@@ -30,7 +30,7 @@ import (
 
 const (
 	retryInterval = 3 * time.Second
-	storePrefix   = "minio"
+	storePrefix   = "otterio"
 )
 
 // errNotConnected - indicates that the target connection is not active.

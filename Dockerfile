@@ -1,7 +1,7 @@
 FROM golang:1.26-alpine as builder
 
-# Community fork of MinIO. Not affiliated with, endorsed by, or sponsored by MinIO, Inc.
-LABEL maintainer="soulteary (community fork of MinIO, https://github.com/soulteary/otterio)"
+# community fork of Apache-licensed MinIO codebase. Not affiliated with, endorsed by, or sponsored by MinIO, Inc.
+LABEL maintainer="soulteary (community fork of Apache-licensed MinIO codebase, https://github.com/soulteary/otterio)"
 
 ENV GOPATH /go
 ENV CGO_ENABLED 0
@@ -9,26 +9,26 @@ ENV GO111MODULE on
 
 RUN  \
      apk add --no-cache git && \
-     git clone https://github.com/soulteary/otterio && cd minio && \
+     git clone https://github.com/soulteary/otterio && cd otterio && \
      git checkout master && go install -v -ldflags "$(go run buildscripts/gen-ldflags.go)"
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
 
-ENV MINIO_ACCESS_KEY_FILE=access_key \
-    MINIO_SECRET_KEY_FILE=secret_key \
-    MINIO_ROOT_USER_FILE=access_key \
-    MINIO_ROOT_PASSWORD_FILE=secret_key \
-    MINIO_KMS_MASTER_KEY_FILE=kms_master_key \
-    MINIO_SSE_MASTER_KEY_FILE=sse_master_key \
-    MINIO_UPDATE_MINISIGN_PUBKEY="RWTx5Zr1tiHQLwG9keckT0c45M3AGeHD6IvimQHpyRywVWGbP1aVSGav"
+ENV OTTERIO_ACCESS_KEY_FILE=access_key \
+    OTTERIO_SECRET_KEY_FILE=secret_key \
+    OTTERIO_ROOT_USER_FILE=access_key \
+    OTTERIO_ROOT_PASSWORD_FILE=secret_key \
+    OTTERIO_KMS_MASTER_KEY_FILE=kms_master_key \
+    OTTERIO_SSE_MASTER_KEY_FILE=sse_master_key \
+    OTTERIO_UPDATE_MINISIGN_PUBKEY="RWTx5Zr1tiHQLwG9keckT0c45M3AGeHD6IvimQHpyRywVWGbP1aVSGav"
 
 EXPOSE 9000
 
-COPY --from=builder /go/bin/minio /usr/bin/minio
-COPY --from=builder /go/minio/CREDITS /licenses/CREDITS
-COPY --from=builder /go/minio/LICENSE /licenses/LICENSE
-COPY --from=builder /go/minio/NOTICE /licenses/NOTICE
-COPY --from=builder /go/minio/dockerscripts/docker-entrypoint.sh /usr/bin/
+COPY --from=builder /go/bin/otterio /usr/bin/otterio
+COPY --from=builder /go/otterio/CREDITS /licenses/CREDITS
+COPY --from=builder /go/otterio/LICENSE /licenses/LICENSE
+COPY --from=builder /go/otterio/NOTICE /licenses/NOTICE
+COPY --from=builder /go/otterio/dockerscripts/docker-entrypoint.sh /usr/bin/
 
 RUN  \
      microdnf update --nodocs && \
@@ -40,4 +40,4 @@ ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
 
 VOLUME ["/data"]
 
-CMD ["minio"]
+CMD ["otterio"]

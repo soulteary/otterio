@@ -83,8 +83,8 @@ func testStorageAPIListVols(t *testing.T, storage StorageAPI) {
 		expectedResult []VolInfo
 		expectErr      bool
 	}{
-		{nil, []VolInfo{{Name: ".minio.sys"}}, false},
-		{[]string{"foo"}, []VolInfo{{Name: ".minio.sys"}, {Name: "foo"}}, false},
+		{nil, []VolInfo{{Name: ".otterio.sys"}}, false},
+		{[]string{"foo"}, []VolInfo{{Name: ".otterio.sys"}, {Name: "foo"}}, false},
 	}
 
 	for i, testCase := range testCases {
@@ -416,9 +416,9 @@ func testStorageAPIRenameFile(t *testing.T, storage StorageAPI) {
 }
 
 func newStorageRESTHTTPServerClient(t *testing.T) (*httptest.Server, *storageRESTClient, config.Config, string) {
-	prevHost, prevPort := globalMinioHost, globalMinioPort
+	prevHost, prevPort := globalOtterioHost, globalOtterioPort
 	defer func() {
-		globalMinioHost, globalMinioPort = prevHost, prevPort
+		globalOtterioHost, globalOtterioPort = prevHost, prevPort
 	}()
 
 	endpointPath, err := ioutil.TempDir("", ".TestStorageREST.")
@@ -435,7 +435,7 @@ func newStorageRESTHTTPServerClient(t *testing.T) (*httptest.Server, *storageRES
 	}
 	url.Path = endpointPath
 
-	globalMinioHost, globalMinioPort = mustSplitHostPort(url.Host)
+	globalOtterioHost, globalOtterioPort = mustSplitHostPort(url.Host)
 
 	endpoint, err := NewEndpoint(url.String())
 	if err != nil {

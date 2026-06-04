@@ -20,8 +20,8 @@ import "github.com/soulteary/otterio/cmd/config"
 
 // Legacy envs
 const (
-	legacyEnvAuditLoggerHTTPEndpoint = "MINIO_AUDIT_LOGGER_HTTP_ENDPOINT"
-	legacyEnvLoggerHTTPEndpoint      = "MINIO_LOGGER_HTTP_ENDPOINT"
+	legacyEnvAuditLoggerHTTPEndpoint = "OTTERIO_AUDIT_LOGGER_HTTP_ENDPOINT"
+	legacyEnvLoggerHTTPEndpoint      = "OTTERIO_LOGGER_HTTP_ENDPOINT"
 )
 
 // SetLoggerHTTPAudit - helper for migrating older config to newer KV format.

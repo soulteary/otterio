@@ -20,17 +20,17 @@
  * more information refer https://golang.org/doc/go1.4#canonicalimports
  */
 
-package main // import "github.com/minio/minio"
+package main // import "github.com/soulteary/otterio"
 
 import (
 	"os"
 
-	minio "github.com/soulteary/otterio/cmd"
+	otterio "github.com/soulteary/otterio/cmd"
 
 	// Import gateway
 	_ "github.com/soulteary/otterio/cmd/gateway"
 )
 
 func main() {
-	minio.Main(os.Args)
+	otterio.Main(os.Args)
 }

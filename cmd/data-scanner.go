@@ -90,7 +90,7 @@ func (s *safeDuration) Get() time.Duration {
 func runDataScanner(ctx context.Context, objAPI ObjectLayer) {
 	var err error
 	// Make sure only 1 scanner is running on the cluster.
-	locker := objAPI.NewNSLock(minioMetaBucket, "runDataScanner.lock")
+	locker := objAPI.NewNSLock(otterioMetaBucket, "runDataScanner.lock")
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		ctx, err = locker.GetLock(ctx, dataScannerLeaderLockTimeout)

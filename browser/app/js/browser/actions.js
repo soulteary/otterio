@@ -49,11 +49,11 @@ export const fetchServerInfo = () => {
   return function(dispatch) {
     return web.ServerInfo().then(res => {
       const serverInfo = {
-        version: res.MinioVersion,
-        platform: res.MinioPlatform,
-        runtime: res.MinioRuntime,
-        info: res.MinioGlobalInfo,
-        userInfo: res.MinioUserInfo
+        version: res.OtterioVersion,
+        platform: res.OtterioPlatform,
+        runtime: res.OtterioRuntime,
+        info: res.OtterioGlobalInfo,
+        userInfo: res.OtterioUserInfo
       }
       dispatch(setServerInfo(serverInfo))
     })

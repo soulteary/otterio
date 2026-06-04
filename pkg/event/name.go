@@ -24,7 +24,7 @@ import (
 // Name - event type enum.
 // Refer http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#notification-how-to-event-types-and-destinations
 // for most basic values we have since extend this and its not really much applicable other than a reference point.
-// "s3:Replication:OperationCompletedReplication" is a MinIO extension.
+// "s3:Replication:OperationCompletedReplication" is a OtterIO extension.
 type Name int
 
 // Values of event Name

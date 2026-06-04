@@ -43,14 +43,14 @@ const (
 	ElasticUsername   = "username"
 	ElasticPassword   = "password"
 
-	EnvElasticEnable     = "MINIO_NOTIFY_ELASTICSEARCH_ENABLE"
-	EnvElasticFormat     = "MINIO_NOTIFY_ELASTICSEARCH_FORMAT"
-	EnvElasticURL        = "MINIO_NOTIFY_ELASTICSEARCH_URL"
-	EnvElasticIndex      = "MINIO_NOTIFY_ELASTICSEARCH_INDEX"
-	EnvElasticQueueDir   = "MINIO_NOTIFY_ELASTICSEARCH_QUEUE_DIR"
-	EnvElasticQueueLimit = "MINIO_NOTIFY_ELASTICSEARCH_QUEUE_LIMIT"
-	EnvElasticUsername   = "MINIO_NOTIFY_ELASTICSEARCH_USERNAME"
-	EnvElasticPassword   = "MINIO_NOTIFY_ELASTICSEARCH_PASSWORD"
+	EnvElasticEnable     = "OTTERIO_NOTIFY_ELASTICSEARCH_ENABLE"
+	EnvElasticFormat     = "OTTERIO_NOTIFY_ELASTICSEARCH_FORMAT"
+	EnvElasticURL        = "OTTERIO_NOTIFY_ELASTICSEARCH_URL"
+	EnvElasticIndex      = "OTTERIO_NOTIFY_ELASTICSEARCH_INDEX"
+	EnvElasticQueueDir   = "OTTERIO_NOTIFY_ELASTICSEARCH_QUEUE_DIR"
+	EnvElasticQueueLimit = "OTTERIO_NOTIFY_ELASTICSEARCH_QUEUE_LIMIT"
+	EnvElasticUsername   = "OTTERIO_NOTIFY_ELASTICSEARCH_USERNAME"
+	EnvElasticPassword   = "OTTERIO_NOTIFY_ELASTICSEARCH_PASSWORD"
 )
 
 // ElasticsearchArgs - Elasticsearch target arguments.

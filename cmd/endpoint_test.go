@@ -330,7 +330,7 @@ func TestCreateEndpoints(t *testing.T) {
 	}
 }
 
-// Tests get local peer functionality, local peer is supposed to only return one entry per minio service.
+// Tests get local peer functionality, local peer is supposed to only return one entry per otterio service.
 // So it means that if you have say localhost:9000 and localhost:9001 as endpointArgs then localhost:9001
 // is considered a remote service from localhost:9000 perspective.
 func TestGetLocalPeer(t *testing.T) {
@@ -362,11 +362,11 @@ func TestGetLocalPeer(t *testing.T) {
 }
 
 func TestGetRemotePeers(t *testing.T) {
-	tempGlobalMinioPort := globalMinioPort
+	tempGlobalOtterioPort := globalOtterioPort
 	defer func() {
-		globalMinioPort = tempGlobalMinioPort
+		globalOtterioPort = tempGlobalOtterioPort
 	}()
-	globalMinioPort = "9000"
+	globalOtterioPort = "9000"
 
 	testCases := []struct {
 		endpointArgs   []string
@@ -398,11 +398,11 @@ func TestGetRemotePeers(t *testing.T) {
 }
 
 func TestUpdateDomainIPs(t *testing.T) {
-	tempGlobalMinioPort := globalMinioPort
+	tempGlobalOtterioPort := globalOtterioPort
 	defer func() {
-		globalMinioPort = tempGlobalMinioPort
+		globalOtterioPort = tempGlobalOtterioPort
 	}()
-	globalMinioPort = "9000"
+	globalOtterioPort = "9000"
 
 	tempGlobalDomainIPs := globalDomainIPs
 	defer func() {

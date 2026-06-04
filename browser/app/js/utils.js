@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { minioBrowserPrefix, SORT_ORDER_DESC } from "./constants.js"
+import { otterioBrowserPrefix, SORT_ORDER_DESC } from "./constants.js"
 
 export const sortObjectsByName = (objects, order) => {
   let folders = objects.filter(object => object.name.endsWith("/"))
@@ -56,7 +56,7 @@ export const sortObjectsByDate = (objects, order) => {
 }
 
 export const pathSlice = path => {
-  path = path.replace(minioBrowserPrefix, "")
+  path = path.replace(otterioBrowserPrefix, "")
   let prefix = ""
   let bucket = ""
   if (!path)
@@ -82,7 +82,7 @@ export const pathSlice = path => {
 
 export const pathJoin = (bucket, prefix) => {
   if (!prefix) prefix = ""
-  return minioBrowserPrefix + "/" + bucket + "/" + prefix
+  return otterioBrowserPrefix + "/" + bucket + "/" + prefix
 }
 
 export const getRandomAccessKey = () => {

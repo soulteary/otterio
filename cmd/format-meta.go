@@ -46,6 +46,6 @@ type formatMetaV1 struct {
 	Version string `json:"version"`
 	// Format indicates the backend format type, supports two values 'xl' and 'fs'.
 	Format string `json:"format"`
-	// ID is the identifier for the minio deployment
+	// ID is the identifier for the otterio deployment
 	ID string `json:"id"`
 }

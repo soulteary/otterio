@@ -62,10 +62,10 @@ type xlMetaV1Object struct {
 	Stat    StatInfo `json:"stat"`    // Stat of the current object `xl.meta`.
 	// Erasure coded info for the current object `xl.meta`.
 	Erasure ErasureInfo `json:"erasure"`
-	// MinIO release tag for current object `xl.meta`.
-	Minio struct {
+	// OtterIO release tag for current object `xl.meta`.
+	Otterio struct {
 		Release string `json:"release"`
-	} `json:"minio"`
+	} `json:"otterio"`
 	// Metadata map for current object `xl.meta`.
 	Meta map[string]string `json:"meta,omitempty"`
 	// Captures all the individual object `xl.meta`.

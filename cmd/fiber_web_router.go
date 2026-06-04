@@ -73,10 +73,10 @@ func registerWebRouterFiber(app *fiber.App) error {
 		return err
 	}
 
-	fileServer := http.StripPrefix(minioReservedBucketPath, http.FileServer(http.FS(assetFS)))
+	fileServer := http.StripPrefix(otterioReservedBucketPath, http.FileServer(http.FS(assetFS)))
 	serveAssets := adaptor.HTTPHandler(fileServer)
 
-	prefix := minioReservedBucketPath
+	prefix := otterioReservedBucketPath
 
 	webRules := []routeRule{
 		{
@@ -90,7 +90,7 @@ func registerWebRouterFiber(app *fiber.App) error {
 	webUploadRules := []routeRule{
 		{
 			methods:      []string{http.MethodPut},
-			handler:      toMinioHandler(web.Upload),
+			handler:      toOtterioHandler(web.Upload),
 			traceHeaders: true,
 		},
 	}
@@ -101,7 +101,7 @@ func registerWebRouterFiber(app *fiber.App) error {
 			// Streams a single object (io.Copy) to the client; like GetObject it
 			// must use the streaming bridge so large downloads are not buffered
 			// entirely in memory by the buffered bridge.
-			handler:      toMinioStreamHandler(web.Download),
+			handler:      toOtterioStreamHandler(web.Download),
 			traceHeaders: true,
 		},
 	}
@@ -111,7 +111,7 @@ func registerWebRouterFiber(app *fiber.App) error {
 			queries: map[string]string{"token": ".*"},
 			// Streams a (potentially large) multi-object zip archive; must stream
 			// for the same reason as the single-object download above.
-			handler:      toMinioStreamHandler(web.DownloadZip),
+			handler:      toOtterioStreamHandler(web.DownloadZip),
 			traceHeaders: true,
 		},
 	}
@@ -158,7 +158,7 @@ func registerWebRouterFiber(app *fiber.App) error {
 		case webSpecialAssetsRegex.MatchString(strings.TrimPrefix(relPath, "/")):
 			return serveAssets(c)
 		default:
-			c.Request().URI().SetPath(path.Join(minioReservedBucketPath, "/"))
+			c.Request().URI().SetPath(path.Join(otterioReservedBucketPath, "/"))
 			return serveAssets(c)
 		}
 

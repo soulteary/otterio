@@ -22,11 +22,11 @@ time="2020-07-12T20:45:50Z" level=info msg="config id tokens valid for: 3h0m0s"
 time="2020-07-12T20:45:50Z" level=info msg="listening (http) on 0.0.0.0:5556"
 ```
 
-### Configure MinIO server with Dex
+### Configure OtterIO server with Dex
 ```
-~ export MINIO_IDENTITY_OPENID_CLAIM_NAME=name
-~ export MINIO_IDENTITY_OPENID_CONFIG_URL=http://127.0.0.1:5556/dex/.well-known/openid-configuration
-~ minio server ~/test
+~ export OTTERIO_IDENTITY_OPENID_CLAIM_NAME=name
+~ export OTTERIO_IDENTITY_OPENID_CONFIG_URL=http://127.0.0.1:5556/dex/.well-known/openid-configuration
+~ otterio server ~/test
 ```
 
 ### Run the `web-identity.go`
@@ -66,12 +66,12 @@ You will be redirected to dex login screen - click "Login with email", enter use
 
 and then click "Grant access"
 
-On the browser now you shall see the list of buckets output, along with your temporary credentials obtained from MinIO.
+On the browser now you shall see the list of buckets output, along with your temporary credentials obtained from OtterIO.
 ```
 {
 	"buckets": [
-		"dl.minio.equipment",
-		"dl.minio.service-fulfillment",
+		"dl.otterio.equipment",
+		"dl.otterio.service-fulfillment",
 		"testbucket"
 	],
 	"credentials": {
@@ -83,16 +83,16 @@ On the browser now you shall see the list of buckets output, along with your tem
 }
 ```
 
-Now you have successfully configured Dex IdP with MinIO.
+Now you have successfully configured Dex IdP with OtterIO.
 
 > NOTE: Dex supports groups with external connectors so you can use `groups` as policy claim instead of `name`.
 ```
-export MINIO_IDENTITY_OPENID_CLAIM_NAME=groups
+export OTTERIO_IDENTITY_OPENID_CLAIM_NAME=groups
 ```
 
-and add relevant policies on MinIO using `mc admin policy add myminio/ <group_name> group-access.json`
+and add relevant policies on OtterIO using `mc admin policy add myotterio/ <group_name> group-access.json`
 
 ## Explore Further
 
-- [MinIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
-- [The MinIO documentation website](https://docs.min.io)
+- [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
+- [The OtterIO documentation website](https://docs.min.io)

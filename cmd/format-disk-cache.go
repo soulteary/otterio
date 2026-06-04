@@ -122,7 +122,7 @@ func createFormatCache(fsFormatPath string, format *formatCacheV1) error {
 		return err
 	}
 	if fi.Size() != 0 {
-		// format.json already got created because of another minio process's createFormatCache()
+		// format.json already got created because of another otterio process's createFormatCache()
 		return nil
 	}
 	return jsonSave(file, format)
@@ -133,12 +133,12 @@ func createFormatCache(fsFormatPath string, format *formatCacheV1) error {
 func initFormatCache(ctx context.Context, drives []string) (formats []*formatCacheV2, err error) {
 	nformats := newFormatCacheV2(drives)
 	for i, drive := range drives {
-		if err = os.MkdirAll(pathJoin(drive, minioMetaBucket), 0777); err != nil {
+		if err = os.MkdirAll(pathJoin(drive, otterioMetaBucket), 0777); err != nil {
 			logger.GetReqInfo(ctx).AppendTags("drive", drive)
 			logger.LogIf(ctx, err)
 			return nil, err
 		}
-		cacheFormatPath := pathJoin(drive, minioMetaBucket, formatConfigFile)
+		cacheFormatPath := pathJoin(drive, otterioMetaBucket, formatConfigFile)
 		// Fresh disk - create format.json for this cfs
 		if err = createFormatCache(cacheFormatPath, nformats[i]); err != nil {
 			logger.GetReqInfo(ctx).AppendTags("drive", drive)
@@ -154,7 +154,7 @@ func loadFormatCache(ctx context.Context, drives []string) ([]*formatCacheV2, bo
 	var formatV2 *formatCacheV2
 	migrating := false
 	for i, drive := range drives {
-		cacheFormatPath := pathJoin(drive, minioMetaBucket, formatConfigFile)
+		cacheFormatPath := pathJoin(drive, otterioMetaBucket, formatConfigFile)
 		f, err := os.OpenFile(cacheFormatPath, os.O_RDWR, 0)
 
 		if err != nil {
@@ -318,7 +318,7 @@ func validateCacheFormats(ctx context.Context, migrating bool, formats []*format
 func cacheDrivesUnformatted(drives []string) bool {
 	count := 0
 	for _, drive := range drives {
-		cacheFormatPath := pathJoin(drive, minioMetaBucket, formatConfigFile)
+		cacheFormatPath := pathJoin(drive, otterioMetaBucket, formatConfigFile)
 		if _, err := os.Stat(cacheFormatPath); osIsNotExist(err) {
 			count++
 		}
@@ -377,15 +377,15 @@ func migrateCacheData(ctx context.Context, c *diskCache, bucket, object, oldfile
 //	    - part.1         <== data
 //	    - cache.json     <== metadata
 func migrateOldCache(ctx context.Context, c *diskCache) error {
-	oldCacheBucketsPath := path.Join(c.dir, minioMetaBucket, "buckets")
-	cacheFormatPath := pathJoin(c.dir, minioMetaBucket, formatConfigFile)
+	oldCacheBucketsPath := path.Join(c.dir, otterioMetaBucket, "buckets")
+	cacheFormatPath := pathJoin(c.dir, otterioMetaBucket, formatConfigFile)
 
 	if _, err := os.Stat(oldCacheBucketsPath); err != nil {
-		// remove .minio.sys sub directories
-		removeAll(path.Join(c.dir, minioMetaBucket, "multipart"))
-		removeAll(path.Join(c.dir, minioMetaBucket, "tmp"))
-		removeAll(path.Join(c.dir, minioMetaBucket, "trash"))
-		removeAll(path.Join(c.dir, minioMetaBucket, "buckets"))
+		// remove .otterio.sys sub directories
+		removeAll(path.Join(c.dir, otterioMetaBucket, "multipart"))
+		removeAll(path.Join(c.dir, otterioMetaBucket, "tmp"))
+		removeAll(path.Join(c.dir, otterioMetaBucket, "trash"))
+		removeAll(path.Join(c.dir, otterioMetaBucket, "buckets"))
 		// just migrate cache format
 		return migrateCacheFormatJSON(cacheFormatPath)
 	}
@@ -469,11 +469,11 @@ func migrateOldCache(ctx context.Context, c *diskCache) error {
 		removeAll(path.Join(c.dir, bucket))
 	}
 
-	// remove .minio.sys sub directories
-	removeAll(path.Join(c.dir, minioMetaBucket, "multipart"))
-	removeAll(path.Join(c.dir, minioMetaBucket, "tmp"))
-	removeAll(path.Join(c.dir, minioMetaBucket, "trash"))
-	removeAll(path.Join(c.dir, minioMetaBucket, "buckets"))
+	// remove .otterio.sys sub directories
+	removeAll(path.Join(c.dir, otterioMetaBucket, "multipart"))
+	removeAll(path.Join(c.dir, otterioMetaBucket, "tmp"))
+	removeAll(path.Join(c.dir, otterioMetaBucket, "trash"))
+	removeAll(path.Join(c.dir, otterioMetaBucket, "buckets"))
 
 	return migrateCacheFormatJSON(cacheFormatPath)
 

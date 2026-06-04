@@ -45,7 +45,7 @@ func (sys *BucketSSEConfigSys) Get(bucket string) (*bucketsse.BucketSSEConfig, e
 	return globalBucketMetadataSys.GetSSEConfig(bucket)
 }
 
-// validateBucketSSEConfig parses bucket encryption configuration and validates if it is supported by MinIO.
+// validateBucketSSEConfig parses bucket encryption configuration and validates if it is supported by OtterIO.
 func validateBucketSSEConfig(r io.Reader) (*bucketsse.BucketSSEConfig, error) {
 	encConfig, err := bucketsse.ParseBucketSSEConfig(r)
 	if err != nil {

@@ -38,10 +38,10 @@ const (
 	AllowEncrypted = "allow_encryption"
 	MimeTypes      = "mime_types"
 
-	EnvCompressState           = "MINIO_COMPRESS_ENABLE"
-	EnvCompressAllowEncryption = "MINIO_COMPRESS_ALLOW_ENCRYPTION"
-	EnvCompressExtensions      = "MINIO_COMPRESS_EXTENSIONS"
-	EnvCompressMimeTypes       = "MINIO_COMPRESS_MIME_TYPES"
+	EnvCompressState           = "OTTERIO_COMPRESS_ENABLE"
+	EnvCompressAllowEncryption = "OTTERIO_COMPRESS_ALLOW_ENCRYPTION"
+	EnvCompressExtensions      = "OTTERIO_COMPRESS_EXTENSIONS"
+	EnvCompressMimeTypes       = "OTTERIO_COMPRESS_MIME_TYPES"
 
 	// Include-list for compression.
 	DefaultExtensions = ".txt,.log,.csv,.json,.tar,.xml,.bin"
@@ -121,21 +121,21 @@ func LookupConfig(kvs config.KVS) (Config, error) {
 		if compressExtensions != "" {
 			extensions, err := parseCompressIncludes(compressExtensions)
 			if err != nil {
-				return cfg, fmt.Errorf("%s: Invalid MINIO_COMPRESS_EXTENSIONS value (`%s`)", err, extensions)
+				return cfg, fmt.Errorf("%s: Invalid OTTERIO_COMPRESS_EXTENSIONS value (`%s`)", err, extensions)
 			}
 			cfg.Extensions = extensions
 		}
 		if compressMimeTypes != "" {
 			mimeTypes, err := parseCompressIncludes(compressMimeTypes)
 			if err != nil {
-				return cfg, fmt.Errorf("%s: Invalid MINIO_COMPRESS_MIME_TYPES value (`%s`)", err, mimeTypes)
+				return cfg, fmt.Errorf("%s: Invalid OTTERIO_COMPRESS_MIME_TYPES value (`%s`)", err, mimeTypes)
 			}
 			cfg.MimeTypes = mimeTypes
 		}
 		if compressMimeTypesLegacy != "" {
 			mimeTypes, err := parseCompressIncludes(compressMimeTypesLegacy)
 			if err != nil {
-				return cfg, fmt.Errorf("%s: Invalid MINIO_COMPRESS_MIME_TYPES value (`%s`)", err, mimeTypes)
+				return cfg, fmt.Errorf("%s: Invalid OTTERIO_COMPRESS_MIME_TYPES value (`%s`)", err, mimeTypes)
 			}
 			cfg.MimeTypes = mimeTypes
 		}

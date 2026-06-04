@@ -41,13 +41,13 @@ const (
 	RedisQueueDir   = "queue_dir"
 	RedisQueueLimit = "queue_limit"
 
-	EnvRedisEnable     = "MINIO_NOTIFY_REDIS_ENABLE"
-	EnvRedisFormat     = "MINIO_NOTIFY_REDIS_FORMAT"
-	EnvRedisAddress    = "MINIO_NOTIFY_REDIS_ADDRESS"
-	EnvRedisPassword   = "MINIO_NOTIFY_REDIS_PASSWORD"
-	EnvRedisKey        = "MINIO_NOTIFY_REDIS_KEY"
-	EnvRedisQueueDir   = "MINIO_NOTIFY_REDIS_QUEUE_DIR"
-	EnvRedisQueueLimit = "MINIO_NOTIFY_REDIS_QUEUE_LIMIT"
+	EnvRedisEnable     = "OTTERIO_NOTIFY_REDIS_ENABLE"
+	EnvRedisFormat     = "OTTERIO_NOTIFY_REDIS_FORMAT"
+	EnvRedisAddress    = "OTTERIO_NOTIFY_REDIS_ADDRESS"
+	EnvRedisPassword   = "OTTERIO_NOTIFY_REDIS_PASSWORD"
+	EnvRedisKey        = "OTTERIO_NOTIFY_REDIS_KEY"
+	EnvRedisQueueDir   = "OTTERIO_NOTIFY_REDIS_QUEUE_DIR"
+	EnvRedisQueueLimit = "OTTERIO_NOTIFY_REDIS_QUEUE_LIMIT"
 )
 
 // RedisArgs - Redis target arguments.
@@ -277,7 +277,7 @@ func NewRedisTarget(id string, args RedisArgs, doneCh <-chan struct{}, loggerOnc
 			}
 
 			// Must be done after AUTH
-			if _, err = conn.Do("CLIENT", "SETNAME", "MinIO"); err != nil {
+			if _, err = conn.Do("CLIENT", "SETNAME", "OtterIO"); err != nil {
 				cErr := conn.Close()
 				targetID := event.TargetID{ID: id, Name: "redis"}
 				loggerOnce(context.Background(), cErr, targetID)

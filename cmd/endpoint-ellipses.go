@@ -29,7 +29,7 @@ import (
 )
 
 // This file implements and supports ellipses pattern for
-// `minio server` command line arguments.
+// `otterio server` command line arguments.
 
 // Endpoint set represents parsed ellipses values, also provides
 // methods to get the sets of endpoints.
@@ -328,7 +328,7 @@ func GetAllSets(args ...string) ([][]string, error) {
 
 // Override set drive count for manual distribution.
 const (
-	EnvErasureSetDriveCount = "MINIO_ERASURE_SET_DRIVE_COUNT"
+	EnvErasureSetDriveCount = "OTTERIO_ERASURE_SET_DRIVE_COUNT"
 )
 
 var (

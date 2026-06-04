@@ -31,11 +31,11 @@ func TestServerConfig(t *testing.T) {
 	}
 	defer os.RemoveAll(fsDir)
 
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatalf("Init Test config failed")
 	}
 
-	if globalServerRegion != globalMinioDefaultRegion {
+	if globalServerRegion != globalOtterioDefaultRegion {
 		t.Errorf("Expecting region `us-east-1` found %s", globalServerRegion)
 	}
 

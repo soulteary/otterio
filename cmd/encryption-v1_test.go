@@ -649,8 +649,8 @@ func Test_decryptObjectInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	os.Setenv("MINIO_KMS_MASTER_KEY", "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
-	defer os.Setenv("MINIO_KMS_MASTER_KEY", "")
+	os.Setenv("OTTERIO_KMS_MASTER_KEY", "my-otterio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
+	defer os.Setenv("OTTERIO_KMS_MASTER_KEY", "")
 	GlobalKMS, err = crypto.NewKMS(crypto.KMSConfig{})
 	if err != nil {
 		t.Fatal(err)
@@ -690,8 +690,8 @@ func Benchmark_decryptObjectInfo(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	os.Setenv("MINIO_KMS_MASTER_KEY", "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
-	defer os.Setenv("MINIO_KMS_MASTER_KEY", "")
+	os.Setenv("OTTERIO_KMS_MASTER_KEY", "my-otterio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
+	defer os.Setenv("OTTERIO_KMS_MASTER_KEY", "")
 	GlobalKMS, err = crypto.NewKMS(crypto.KMSConfig{})
 	if err != nil {
 		b.Fatal(err)

@@ -404,7 +404,7 @@ func (er erasureObjects) healObject(ctx context.Context, bucket string, object s
 		copyPartsMetadata = shufflePartsMetadata(copyPartsMetadata, latestMeta.Erasure.Distribution)
 
 		// Heal each part. erasureHealFile() will write the healed
-		// part to .minio/tmp/uuid/ which needs to be renamed later to
+		// part to .otterio/tmp/uuid/ which needs to be renamed later to
 		// the final location.
 		erasure, err := NewErasure(ctx, latestMeta.Erasure.DataBlocks,
 			latestMeta.Erasure.ParityBlocks, latestMeta.Erasure.BlockSize)
@@ -439,7 +439,7 @@ func (er erasureObjects) healObject(ctx context.Context, bucket string, object s
 					inlineBuffers[i] = bytes.NewBuffer(make([]byte, 0, erasure.ShardFileSize(latestMeta.Size)))
 					writers[i] = newStreamingBitrotWriterBuffer(inlineBuffers[i], DefaultBitrotAlgorithm, erasure.ShardSize())
 				} else {
-					writers[i] = newBitrotWriter(disk, minioMetaTmpBucket, partPath,
+					writers[i] = newBitrotWriter(disk, otterioMetaTmpBucket, partPath,
 						tillOffset, DefaultBitrotAlgorithm, erasure.ShardSize(), true)
 				}
 			}
@@ -485,7 +485,7 @@ func (er erasureObjects) healObject(ctx context.Context, bucket string, object s
 		}
 	}
 
-	defer er.deleteObject(context.Background(), minioMetaTmpBucket, tmpID, len(storageDisks)/2+1)
+	defer er.deleteObject(context.Background(), otterioMetaTmpBucket, tmpID, len(storageDisks)/2+1)
 
 	// Rename from tmp location to the actual location.
 	for i, disk := range outDatedDisks {
@@ -497,7 +497,7 @@ func (er erasureObjects) healObject(ctx context.Context, bucket string, object s
 		partsMetadata[i].Erasure.Index = i + 1
 
 		// Attempt a rename now from healed data to final location.
-		if err = disk.RenameData(ctx, minioMetaTmpBucket, tmpID, partsMetadata[i], bucket, object); err != nil {
+		if err = disk.RenameData(ctx, otterioMetaTmpBucket, tmpID, partsMetadata[i], bucket, object); err != nil {
 			logger.LogIf(ctx, err)
 			return result, toObjectErr(err, bucket, object)
 		}

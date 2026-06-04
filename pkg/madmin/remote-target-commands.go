@@ -58,13 +58,13 @@ func (a ARN) Empty() bool {
 	return !a.Type.IsValid()
 }
 func (a ARN) String() string {
-	return fmt.Sprintf("arn:minio:%s:%s:%s:%s", a.Type, a.Region, a.ID, a.Bucket)
+	return fmt.Sprintf("arn:otterio:%s:%s:%s:%s", a.Type, a.Region, a.ID, a.Bucket)
 }
 
 // ParseARN return ARN struct from string in arn format.
 func ParseARN(s string) (*ARN, error) {
-	// ARN must be in the format of arn:minio:<Type>:<REGION>:<ID>:<remote-bucket>
-	if !strings.HasPrefix(s, "arn:minio:") {
+	// ARN must be in the format of arn:otterio:<Type>:<REGION>:<ID>:<remote-bucket>
+	if !strings.HasPrefix(s, "arn:otterio:") {
 		return nil, fmt.Errorf("Invalid ARN %s", s)
 	}
 
@@ -174,7 +174,7 @@ func (adm *AdminClient) ListRemoteTargets(ctx context.Context, bucket, arnType s
 		queryValues: queryValues,
 	}
 
-	// Execute GET on /minio/admin/v3/list-remote-targets
+	// Execute GET on /otterio/admin/v3/list-remote-targets
 	resp, err := adm.executeMethod(ctx, http.MethodGet, reqData)
 
 	defer closeResponse(resp)
@@ -215,7 +215,7 @@ func (adm *AdminClient) SetRemoteTarget(ctx context.Context, bucket string, targ
 		content:     encData,
 	}
 
-	// Execute PUT on /minio/admin/v3/set-remote-target to set a target for this bucket of specific arn type.
+	// Execute PUT on /otterio/admin/v3/set-remote-target to set a target for this bucket of specific arn type.
 	resp, err := adm.executeMethod(ctx, http.MethodPut, reqData)
 
 	defer closeResponse(resp)
@@ -260,7 +260,7 @@ func (adm *AdminClient) UpdateRemoteTarget(ctx context.Context, target *BucketTa
 		content:     encData,
 	}
 
-	// Execute PUT on /minio/admin/v3/set-remote-target to set a target for this bucket of specific arn type.
+	// Execute PUT on /otterio/admin/v3/set-remote-target to set a target for this bucket of specific arn type.
 	resp, err := adm.executeMethod(ctx, http.MethodPut, reqData)
 
 	defer closeResponse(resp)
@@ -293,7 +293,7 @@ func (adm *AdminClient) RemoveRemoteTarget(ctx context.Context, bucket, arn stri
 		queryValues: queryValues,
 	}
 
-	// Execute PUT on /minio/admin/v3/remove-remote-target to remove a target for this bucket
+	// Execute PUT on /otterio/admin/v3/remove-remote-target to remove a target for this bucket
 	// with specific ARN
 	resp, err := adm.executeMethod(ctx, http.MethodDelete, reqData)
 	defer closeResponse(resp)

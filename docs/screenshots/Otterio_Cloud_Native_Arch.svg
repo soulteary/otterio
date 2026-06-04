@@ -326,7 +326,7 @@
 </g>
 <rect x="683.92" y="65.11" class="st243" width="310.24" height="53.24"/>
 <text transform="matrix(1 0 0 1 705.6503 81.9298)"><tspan x="0" y="0" class="st142 st240 st244">Provision object storage as </tspan><tspan x="79.33" y="35.07" class="st142 st240 st244">Containers</tspan></text>
-<text transform="matrix(1 0 0 1 326.2503 226.3781)" class="st0 st240 st241">MINIO</text>
+<text transform="matrix(1 0 0 1 326.2503 226.3781)" class="st0 st240 st241">OTTERIO</text>
 <text transform="matrix(1 0 0 1 531.6703 212.1583)" class="st0 st240 st241">MySQL</text>
 <text transform="matrix(1 0 0 1 743.0184 212.1583)" class="st0 st240 st241">REDIS</text>
 <text transform="matrix(1 0 0 1 939.0199 212.1583)" class="st0 st240 st241">NODE JS</text>

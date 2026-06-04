@@ -52,7 +52,7 @@ func newBgHealSequence() *healSequence {
 		startTime:   UTCNow(),
 		clientToken: bgHealingUUID,
 		// run-background heal with reserved bucket
-		bucket:   minioReservedBucket,
+		bucket:   otterioReservedBucket,
 		settings: hs,
 		currentStatus: healSequenceStatus{
 			Summary:      healNotStartedStatus,
@@ -154,11 +154,11 @@ func mustGetHealSequence(ctx context.Context) *healSequence {
 func (er *erasureObjects) healErasureSet(ctx context.Context, buckets []BucketInfo, tracker *healingTracker) error {
 	bgSeq := mustGetHealSequence(ctx)
 	buckets = append(buckets, BucketInfo{
-		Name: pathJoin(minioMetaBucket, minioConfigPrefix),
+		Name: pathJoin(otterioMetaBucket, otterioConfigPrefix),
 	})
 
 	// Try to pro-actively heal backend-encrypted file.
-	if _, err := er.HealObject(ctx, minioMetaBucket, backendEncryptedFile, "", madmin.HealOpts{}); err != nil {
+	if _, err := er.HealObject(ctx, otterioMetaBucket, backendEncryptedFile, "", madmin.HealOpts{}); err != nil {
 		if !isErrObjectNotFound(err) && !isErrVersionNotFound(err) {
 			logger.LogIf(ctx, err)
 		}
@@ -208,8 +208,8 @@ func (er *erasureObjects) healErasureSet(ctx context.Context, buckets []BucketIn
 			}
 			// We might land at .metacache, .trash, .multipart
 			// no need to heal them skip, only when bucket
-			// is '.minio.sys'
-			if bucket.Name == minioMetaBucket {
+			// is '.otterio.sys'
+			if bucket.Name == otterioMetaBucket {
 				if wildcard.Match("buckets/*/.metacache/*", entry.name) {
 					return
 				}

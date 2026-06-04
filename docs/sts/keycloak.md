@@ -1,6 +1,6 @@
 # Keycloak Quickstart Guide
 
-Keycloak is an open source Identity and Access Management solution aimed at modern applications and services, this document covers configuring Keycloak identity provider support with MinIO.
+Keycloak is an open source Identity and Access Management solution aimed at modern applications and services, this document covers configuring Keycloak identity provider support with OtterIO.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ Configure and install keycloak server by following [Keycloak Installation Guide]
 
 - Go to Users
   - Click on the user
-  - Attribute, add a new attribute `Key` is `policy`, `Value` is name of the `policy` on MinIO (ex: `readwrite`)
+  - Attribute, add a new attribute `Key` is `policy`, `Value` is name of the `policy` on OtterIO (ex: `readwrite`)
   - Add and Save
 
 - Go to Clients
@@ -34,18 +34,18 @@ Configure and install keycloak server by following [Keycloak Installation Guide]
     - `Claim JSON Type` is `string`
   - Save
 
-- Open http://localhost:8080/auth/realms/minio/.well-known/openid-configuration to verify OpenID discovery document, verify it has `authorization_endpoint` and `jwks_uri`
+- Open http://localhost:8080/auth/realms/otterio/.well-known/openid-configuration to verify OpenID discovery document, verify it has `authorization_endpoint` and `jwks_uri`
 
-### Configure MinIO
+### Configure OtterIO
 ```
-$ export MINIO_ROOT_USER=minio
-$ export MINIO_ROOT_PASSWORD=minio123
-$ minio server /mnt/export
+$ export OTTERIO_ROOT_USER=otterio
+$ export OTTERIO_ROOT_PASSWORD=otterio123
+$ otterio server /mnt/export
 ```
 
 Here are all the available options to configure OpenID connect
 ```
-mc admin config set myminio/ identity_openid
+mc admin config set myotterio/ identity_openid
 
 KEY:
 identity_openid  enable OpenID SSO support
@@ -61,36 +61,36 @@ comment       (sentence)  optionally add a comment to this setting
 
 and ENV based options
 ```
-mc admin config set myminio/ identity_openid --env
+mc admin config set myotterio/ identity_openid --env
 
 KEY:
 identity_openid  enable OpenID SSO support
 
 ARGS:
-MINIO_IDENTITY_OPENID_CONFIG_URL*   (url)       openid discovery document e.g. "https://accounts.google.com/.well-known/openid-configuration"
-MINIO_IDENTITY_OPENID_CLIENT_ID     (string)    unique public identifier for apps e.g. "292085223830.apps.googleusercontent.com"
-MINIO_IDENTITY_OPENID_CLAIM_NAME    (string)    JWT canned policy claim name, defaults to "policy"
-MINIO_IDENTITY_OPENID_CLAIM_PREFIX  (string)    JWT claim namespace prefix e.g. "customer1/"
-MINIO_IDENTITY_OPENID_SCOPES        (csv)       Comma separated list of OpenID scopes for server, defaults to advertised scopes from discovery document e.g. "email,admin"
-MINIO_IDENTITY_OPENID_COMMENT       (sentence)  optionally add a comment to this setting
+OTTERIO_IDENTITY_OPENID_CONFIG_URL*   (url)       openid discovery document e.g. "https://accounts.google.com/.well-known/openid-configuration"
+OTTERIO_IDENTITY_OPENID_CLIENT_ID     (string)    unique public identifier for apps e.g. "292085223830.apps.googleusercontent.com"
+OTTERIO_IDENTITY_OPENID_CLAIM_NAME    (string)    JWT canned policy claim name, defaults to "policy"
+OTTERIO_IDENTITY_OPENID_CLAIM_PREFIX  (string)    JWT claim namespace prefix e.g. "customer1/"
+OTTERIO_IDENTITY_OPENID_SCOPES        (csv)       Comma separated list of OpenID scopes for server, defaults to advertised scopes from discovery document e.g. "email,admin"
+OTTERIO_IDENTITY_OPENID_COMMENT       (sentence)  optionally add a comment to this setting
 ```
 
-Set `identity_openid` config with `config_url`, `client_id` and restart MinIO
+Set `identity_openid` config with `config_url`, `client_id` and restart OtterIO
 ```
-~ mc admin config set myminio identity_openid config_url="http://localhost:8080/auth/realms/minio/.well-known/openid-configuration" client_id="account"
+~ mc admin config set myotterio identity_openid config_url="http://localhost:8080/auth/realms/otterio/.well-known/openid-configuration" client_id="account"
 ```
-> NOTE: You can configure the `scopes` parameter to restrict the OpenID scopes requested by minio to the IdP, for example, `"openid,policy_role_attribute"`, being `policy_role_attribute` a client_scope / client_mapper that maps a role attribute called policy to a `policy` claim returned by Keycloak
+> NOTE: You can configure the `scopes` parameter to restrict the OpenID scopes requested by otterio to the IdP, for example, `"openid,policy_role_attribute"`, being `policy_role_attribute` a client_scope / client_mapper that maps a role attribute called policy to a `policy` claim returned by Keycloak
 
-Once successfully set restart the MinIO instance.
+Once successfully set restart the OtterIO instance.
 ```
-mc admin service restart myminio
+mc admin service restart myotterio
 ```
 
 ### Using WebIdentiy API
-Client ID can be found by clicking any of the clients listed [here](http://localhost:8080/auth/admin/master/console/#/realms/minio/clients). If you have followed the above steps docs, the default Client ID will be `account`.
+Client ID can be found by clicking any of the clients listed [here](http://localhost:8080/auth/admin/master/console/#/realms/otterio/clients). If you have followed the above steps docs, the default Client ID will be `account`.
 
 ```
-$ go run docs/sts/web-identity.go -cid account -csec 072e7f00-4289-469c-9ab2-bbe843c7f5a8  -config-ep "http://localhost:8080/auth/realms/minio/.well-known/openid-configuration" -port 8888
+$ go run docs/sts/web-identity.go -cid account -csec 072e7f00-4289-469c-9ab2-bbe843c7f5a8  -config-ep "http://localhost:8080/auth/realms/otterio/.well-known/openid-configuration" -port 8888
 2018/12/26 17:49:36 listening on http://localhost:8888/
 ```
 
@@ -112,17 +112,17 @@ This will open the login page of keycloak, upon successful login, STS credential
 
 > NOTE: You can use the `-cscopes` parameter to restrict the requested scopes, for example to `"openid,policy_role_attribute"`, being `policy_role_attribute` a client_scope / client_mapper that maps a role attribute called policy to a `policy` claim returned by Keycloak.
 
-These credentials can now be used to perform MinIO API operations.
+These credentials can now be used to perform OtterIO API operations.
 
-### Using MinIO Browser
+### Using OtterIO Browser
 
-- Open MinIO URL on the browser, lets say http://localhost:9000
+- Open OtterIO URL on the browser, lets say http://localhost:9000
 - Click on `Log in with OpenID`
-- Provide `Client ID` and press ENTER, if `client_id` is already configured for MinIO this page will automatically redirect to Keycloak user login page.
-- User will be redirected to the Keycloak user login page, upon successful login the user will be redirected to MinIO page and logged in automatically,
+- Provide `Client ID` and press ENTER, if `client_id` is already configured for OtterIO this page will automatically redirect to Keycloak user login page.
+- User will be redirected to the Keycloak user login page, upon successful login the user will be redirected to OtterIO page and logged in automatically,
   the user should see now the buckets and objects they have access to.
 
 ## Explore Further
 
-- [MinIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
-- [The MinIO documentation website](https://docs.min.io)
+- [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
+- [The OtterIO documentation website](https://docs.min.io)

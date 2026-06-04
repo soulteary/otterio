@@ -156,8 +156,8 @@ const (
 	KvDoubleQuote      = madmin.KvDoubleQuote
 	KvSingleQuote      = madmin.KvSingleQuote
 
-	// Env prefix used for all envs in MinIO
-	EnvPrefix        = "MINIO_"
+	// Env prefix used for all envs in OtterIO
+	EnvPrefix        = "OTTERIO_"
 	EnvWordDelimiter = `_`
 )
 
@@ -290,7 +290,7 @@ func (kvs KVS) Lookup(key string) (string, bool) {
 	return "", false
 }
 
-// Config - MinIO server config structure.
+// Config - OtterIO server config structure.
 type Config map[string]map[string]KVS
 
 // DelFrom - deletes all keys in the input reader.
@@ -444,7 +444,7 @@ func CheckValidKeys(subSys string, kv KVS, validKVS KVS) error {
 	}
 	if len(nkv) > 0 {
 		return Errorf(
-			"found invalid keys (%s) for '%s' sub-system, use 'mc admin config reset myminio %s' to fix invalid keys", nkv.String(), subSys, subSys)
+			"found invalid keys (%s) for '%s' sub-system, use 'mc admin config reset myotterio %s' to fix invalid keys", nkv.String(), subSys, subSys)
 	}
 	return nil
 }

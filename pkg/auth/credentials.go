@@ -32,17 +32,17 @@ import (
 )
 
 const (
-	// Minimum length for MinIO access key.
+	// Minimum length for OtterIO access key.
 	accessKeyMinLen = 3
 
-	// Maximum length for MinIO access key.
+	// Maximum length for OtterIO access key.
 	// There is no max length enforcement for access keys
 	accessKeyMaxLen = 20
 
-	// Minimum length for MinIO secret key for both server and gateway mode.
+	// Minimum length for OtterIO secret key for both server and gateway mode.
 	secretKeyMinLen = 8
 
-	// Maximum secret key length for MinIO, this
+	// Maximum secret key length for OtterIO, this
 	// is used when autogenerating new credentials.
 	// There is no max length enforcement for secret keys
 	secretKeyMaxLen = 40
@@ -72,8 +72,8 @@ func IsSecretKeyValid(secretKey string) bool {
 
 // Default access and secret keys.
 const (
-	DefaultAccessKey = "minioadmin"
-	DefaultSecretKey = "minioadmin"
+	DefaultAccessKey = "otterioadmin"
+	DefaultSecretKey = "otterioadmin"
 )
 
 // Default access credentials

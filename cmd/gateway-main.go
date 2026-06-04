@@ -152,12 +152,12 @@ func ValidateGatewayArguments(serverAddr, endpointAddr string) error {
 	return nil
 }
 
-// StartGateway - handler for 'minio gateway <name>'.
+// StartGateway - handler for 'otterio gateway <name>'.
 func StartGateway(ctx *cli.Context, gw Gateway) {
 	defer globalDNSCache.Stop()
 
 	// This is only to uniquely identify each gateway deployments.
-	globalDeploymentID = env.Get("MINIO_GATEWAY_DEPLOYMENT_ID", mustGetUUID())
+	globalDeploymentID = env.Get("OTTERIO_GATEWAY_DEPLOYMENT_ID", mustGetUUID())
 	logger.SetDeploymentID(globalDeploymentID)
 
 	if gw == nil {
@@ -199,20 +199,20 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	initHelp()
 
 	// Get port to listen on from gateway address
-	globalMinioHost, globalMinioPort = mustSplitHostPort(globalCLIContext.Addr)
+	globalOtterioHost, globalOtterioPort = mustSplitHostPort(globalCLIContext.Addr)
 
 	// On macOS, if a process already listens on LOCALIPADDR:PORT, net.Listen() falls back
-	// to IPv6 address ie minio will start listening on IPv6 address whereas another
-	// (non-)minio process is listening on IPv4 of given port.
+	// to IPv6 address ie otterio will start listening on IPv6 address whereas another
+	// (non-)otterio process is listening on IPv4 of given port.
 	// To avoid this error situation we check for port availability.
-	logger.FatalIf(checkPortAvailability(globalMinioHost, globalMinioPort), "Unable to start the gateway")
+	logger.FatalIf(checkPortAvailability(globalOtterioHost, globalOtterioPort), "Unable to start the gateway")
 
-	globalMinioEndpoint = func() string {
-		host := globalMinioHost
+	globalOtterioEndpoint = func() string {
+		host := globalOtterioHost
 		if host == "" {
 			host = sortIPs(localIP4.ToSlice())[0]
 		}
-		return fmt.Sprintf("%s://%s", getURLScheme(globalIsTLS), net.JoinHostPort(host, globalMinioPort))
+		return fmt.Sprintf("%s://%s", getURLScheme(globalIsTLS), net.JoinHostPort(host, globalOtterioPort))
 	}()
 
 	// Handle gateway specific env
@@ -332,7 +332,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 
 	// Prints the formatted startup message once object layer is initialized.
 	if !globalCLIContext.Quiet {
-		mode := globalMinioModeGatewayPrefix + gatewayName
+		mode := globalOtterioModeGatewayPrefix + gatewayName
 		// Check update mode.
 		checkUpdate(mode)
 

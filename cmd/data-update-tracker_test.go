@@ -116,7 +116,7 @@ func TestDataUpdateTracker(t *testing.T) {
 		},
 		{
 			// System bucket
-			in:    ".minio.sys/ignoreme/pls",
+			in:    ".otterio.sys/ignoreme/pls",
 			exist: false,
 		},
 		{

@@ -1,12 +1,12 @@
 Introduction
 ------------
 
-This feature allows MinIO to serve a shared NAS drive across multiple MinIO instances. There are no special configuration changes required to enable this feature. Access to files stored on NAS volume are locked and synchronized by default.
+This feature allows OtterIO to serve a shared NAS drive across multiple OtterIO instances. There are no special configuration changes required to enable this feature. Access to files stored on NAS volume are locked and synchronized by default.
 
 Motivation
 ----------
 
-Since MinIO instances serve the purpose of a single tenant there is an increasing requirement where users want to run multiple MinIO instances on a same backend which is managed by an existing NAS (NFS, GlusterFS, Other distributed filesystems) rather than a local disk. This feature is implemented also with minimal disruption in mind for the user and overall UI.
+Since OtterIO instances serve the purpose of a single tenant there is an increasing requirement where users want to run multiple OtterIO instances on a same backend which is managed by an existing NAS (NFS, GlusterFS, Other distributed filesystems) rather than a local disk. This feature is implemented also with minimal disruption in mind for the user and overall UI.
 
 Restrictions
 ------------
@@ -17,46 +17,46 @@ Restrictions
 
 ## How To Run?
 
-Running MinIO instances on shared backend is no different than running on a stand-alone disk. There are no special configuration changes required to enable this feature. Access to files stored on NAS volume are locked and synchronized by default. Following examples will clarify this further for each operating system of your choice:
+Running OtterIO instances on shared backend is no different than running on a stand-alone disk. There are no special configuration changes required to enable this feature. Access to files stored on NAS volume are locked and synchronized by default. Following examples will clarify this further for each operating system of your choice:
 
 ### Ubuntu 16.04 LTS
 
-Example 1: Start MinIO instance on a shared backend mounted and available at `/path/to/nfs-volume`.
+Example 1: Start OtterIO instance on a shared backend mounted and available at `/path/to/nfs-volume`.
 
 On linux server1
 ```shell
-minio gateway nas /path/to/nfs-volume
+otterio gateway nas /path/to/nfs-volume
 ```
 
 On linux server2
 ```shell
-minio gateway nas /path/to/nfs-volume
+otterio gateway nas /path/to/nfs-volume
 ```
 
 ### Windows 2012 Server
 
-Example 1: Start MinIO instance on a shared backend mounted and available at `\\remote-server\cifs`.
+Example 1: Start OtterIO instance on a shared backend mounted and available at `\\remote-server\cifs`.
 
 On windows server1
 ```cmd
-minio.exe gateway nas \\remote-server\cifs\data
+otterio.exe gateway nas \\remote-server\cifs\data
 ```
 
 On windows server2
 ```cmd
-minio.exe gateway nas \\remote-server\cifs\data
+otterio.exe gateway nas \\remote-server\cifs\data
 ```
 
 Alternatively if `\\remote-server\cifs` is mounted as `D:\` drive.
 
 On windows server1
 ```cmd
-minio.exe gateway nas D:\data
+otterio.exe gateway nas D:\data
 ```
 
 On windows server2
 ```cmd
-minio.exe gateway nas D:\data
+otterio.exe gateway nas D:\data
 ```
 
 Architecture
@@ -66,7 +66,7 @@ Architecture
 
 ### Lock process
 
-With in the same MinIO instance locking is handled by existing in-memory namespace locks (**sync.RWMutex** et. al).  To synchronize locks between many MinIO instances we leverage POSIX `fcntl()` locks on Unixes and on Windows `LockFileEx()` Win32 API. Requesting write lock block if there are any read locks held by neighboring MinIO instance on the same path. So does the read lock if there are any active write locks in-progress.
+With in the same OtterIO instance locking is handled by existing in-memory namespace locks (**sync.RWMutex** et. al).  To synchronize locks between many OtterIO instances we leverage POSIX `fcntl()` locks on Unixes and on Windows `LockFileEx()` Win32 API. Requesting write lock block if there are any read locks held by neighboring OtterIO instance on the same path. So does the read lock if there are any active write locks in-progress.
 
 ### Unlock process
 
@@ -81,7 +81,7 @@ An example here shows how the contention is handled with GetObject().
 GetObject() holds a read lock on `fs.json`.
 
 ```go
-	fsMetaPath := pathJoin(fs.fsPath, minioMetaBucket, bucketMetaPrefix, bucket, object, fsMetaJSONFile)
+	fsMetaPath := pathJoin(fs.fsPath, otterioMetaBucket, bucketMetaPrefix, bucket, object, fsMetaJSONFile)
 	rlk, err := fs.rwPool.Open(fsMetaPath)
 	if err != nil {
 		return toObjectErr(err, bucket, object)
@@ -98,7 +98,7 @@ GetObject() holds a read lock on `fs.json`.
 A concurrent PutObject is requested on the same object, PutObject() attempts a write lock on `fs.json`.
 
 ```go
-	fsMetaPath := pathJoin(fs.fsPath, minioMetaBucket, bucketMetaPrefix, bucket, object, fsMetaJSONFile)
+	fsMetaPath := pathJoin(fs.fsPath, otterioMetaBucket, bucketMetaPrefix, bucket, object, fsMetaJSONFile)
 	wlk, err := fs.rwPool.Create(fsMetaPath)
 	if err != nil {
 		return ObjectInfo{}, toObjectErr(err, bucket, object)
@@ -119,18 +119,18 @@ This restriction is needed so that corrupted data is not returned to the client 
 
 Consider for example 3 servers sharing the same backend
 
-On minio1
+On otterio1
 
 - DeleteObject(object1) --> lock acquired on `fs.json` while object1 is being deleted.
 
-On minio2
+On otterio2
 
 - PutObject(object1) --> lock waiting until DeleteObject finishes.
 
-On minio3
+On otterio3
 
-- PutObject(object1) --> (concurrent request during PutObject minio2 checking if `fs.json` exists)
+- PutObject(object1) --> (concurrent request during PutObject otterio2 checking if `fs.json` exists)
 
-Once lock is acquired the minio2 validates if the file really exists to avoid obtaining lock on an fd which is already deleted. But this situation calls for a race with a third server which is also attempting to write the same file before the minio2 can validate if the file exists. It might be potentially possible `fs.json` is created so the lock acquired by minio2 might be invalid and can lead to a potential inconsistency.
+Once lock is acquired the otterio2 validates if the file really exists to avoid obtaining lock on an fd which is already deleted. But this situation calls for a race with a third server which is also attempting to write the same file before the otterio2 can validate if the file exists. It might be potentially possible `fs.json` is created so the lock acquired by otterio2 might be invalid and can lead to a potential inconsistency.
 
 This is a known problem and cannot be solved by POSIX fcntl locks. These are considered to be the limits of shared filesystem.

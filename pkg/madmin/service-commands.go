@@ -28,12 +28,12 @@ import (
 	trace "github.com/soulteary/otterio/pkg/trace"
 )
 
-// ServiceRestart - restarts the MinIO cluster
+// ServiceRestart - restarts the OtterIO cluster
 func (adm *AdminClient) ServiceRestart(ctx context.Context) error {
 	return adm.serviceCallAction(ctx, ServiceActionRestart)
 }
 
-// ServiceStop - stops the MinIO cluster
+// ServiceStop - stops the OtterIO cluster
 func (adm *AdminClient) ServiceStop(ctx context.Context) error {
 	return adm.serviceCallAction(ctx, ServiceActionStop)
 }

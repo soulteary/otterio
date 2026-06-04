@@ -79,13 +79,13 @@ func TestHasEllipses(t *testing.T) {
 			true,
 		},
 		{
-			[]string{"http://minio{2...3}/export/set{1...64}"},
+			[]string{"http://otterio{2...3}/export/set{1...64}"},
 			true,
 		},
 		{
 			[]string{
-				"http://minio{2...3}/export/set{1...64}",
-				"http://minio{2...3}/export/set{65...128}",
+				"http://otterio{2...3}/export/set{1...64}",
+				"http://otterio{2...3}/export/set{65...128}",
 			},
 			true,
 		},

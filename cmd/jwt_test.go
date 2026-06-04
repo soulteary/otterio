@@ -31,7 +31,7 @@ func testAuthenticate(authType string, t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatal(err)
 	}
 
@@ -97,7 +97,7 @@ func TestWebRequestAuthenticate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatal(err)
 	}
 
@@ -151,7 +151,7 @@ func BenchmarkParseJWTStandardClaims(b *testing.B) {
 		b.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		b.Fatal(err)
 	}
 
@@ -179,7 +179,7 @@ func BenchmarkParseJWTMapClaims(b *testing.B) {
 		b.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		b.Fatal(err)
 	}
 
@@ -209,7 +209,7 @@ func BenchmarkAuthenticateNode(b *testing.B) {
 		b.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		b.Fatal(err)
 	}
 
@@ -227,7 +227,7 @@ func BenchmarkAuthenticateWeb(b *testing.B) {
 		b.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		b.Fatal(err)
 	}
 

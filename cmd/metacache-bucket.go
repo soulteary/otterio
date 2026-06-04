@@ -64,7 +64,7 @@ func newBucketMetacache(bucket string, cleanup bool) *bucketMetacache {
 		ez, ok := objAPI.(*erasureServerPools)
 		if ok {
 			ctx := context.Background()
-			ez.renameAll(ctx, minioMetaBucket, metacachePrefixForID(bucket, slashSeparator))
+			ez.renameAll(ctx, otterioMetaBucket, metacachePrefixForID(bucket, slashSeparator))
 		}
 	}
 	return &bucketMetacache{
@@ -100,7 +100,7 @@ func loadBucketMetaCache(ctx context.Context, bucket string) (*bucketMetacache, 
 	var meta bucketMetacache
 	var decErr error
 	// Use global context for this.
-	r, err := objAPI.GetObjectNInfo(GlobalContext, minioMetaBucket, pathJoin("buckets", bucket, ".metacache", "index.s2"), nil, http.Header{}, readLock, ObjectOptions{})
+	r, err := objAPI.GetObjectNInfo(GlobalContext, otterioMetaBucket, pathJoin("buckets", bucket, ".metacache", "index.s2"), nil, http.Header{}, readLock, ObjectOptions{})
 	if err == nil {
 		dec := s2DecPool.Get().(*s2.Reader)
 		dec.Reset(r)
@@ -180,7 +180,7 @@ func (b *bucketMetacache) save(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = objAPI.PutObject(ctx, minioMetaBucket, pathJoin("buckets", b.bucket, ".metacache", "index.s2"), NewPutObjReader(hr), ObjectOptions{})
+	_, err = objAPI.PutObject(ctx, otterioMetaBucket, pathJoin("buckets", b.bucket, ".metacache", "index.s2"), NewPutObjReader(hr), ObjectOptions{})
 	logger.LogIf(ctx, err)
 	return err
 }
@@ -464,7 +464,7 @@ func (b *bucketMetacache) deleteAll() {
 	b.updated = true
 	if !b.transient {
 		// Delete all.
-		ez.renameAll(ctx, minioMetaBucket, metacachePrefixForID(b.bucket, slashSeparator))
+		ez.renameAll(ctx, otterioMetaBucket, metacachePrefixForID(b.bucket, slashSeparator))
 		b.caches = make(map[string]metacache, 10)
 		b.cachesRoot = make(map[string][]string, 10)
 		return
@@ -476,7 +476,7 @@ func (b *bucketMetacache) deleteAll() {
 		wg.Add(1)
 		go func(cache metacache) {
 			defer wg.Done()
-			ez.renameAll(ctx, minioMetaBucket, metacachePrefixForID(cache.bucket, cache.id))
+			ez.renameAll(ctx, otterioMetaBucket, metacachePrefixForID(cache.bucket, cache.id))
 		}(b.caches[id])
 	}
 	wg.Wait()

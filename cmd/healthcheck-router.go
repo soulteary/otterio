@@ -23,5 +23,5 @@ const (
 	healthCheckReadinessPath   = "/ready"
 	healthCheckClusterPath     = "/cluster"
 	healthCheckClusterReadPath = "/cluster/read"
-	healthCheckPathPrefix      = minioReservedBucketPath + healthCheckPath
+	healthCheckPathPrefix      = otterioReservedBucketPath + healthCheckPath
 )

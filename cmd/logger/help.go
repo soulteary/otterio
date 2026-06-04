@@ -25,7 +25,7 @@ var (
 	Help = config.HelpKVS{
 		config.HelpKV{
 			Key:         Endpoint,
-			Description: `HTTP(s) endpoint e.g. "http://localhost:8080/minio/logs/server"`,
+			Description: `HTTP(s) endpoint e.g. "http://localhost:8080/otterio/logs/server"`,
 			Type:        "url",
 		},
 		config.HelpKV{
@@ -45,7 +45,7 @@ var (
 	HelpAudit = config.HelpKVS{
 		config.HelpKV{
 			Key:         Endpoint,
-			Description: `HTTP(s) endpoint e.g. "http://localhost:8080/minio/logs/audit"`,
+			Description: `HTTP(s) endpoint e.g. "http://localhost:8080/otterio/logs/audit"`,
 			Type:        "url",
 		},
 		config.HelpKV{

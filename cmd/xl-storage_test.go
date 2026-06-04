@@ -117,7 +117,7 @@ func TestIsValidVolname(t *testing.T) {
 // creates a temp dir and sets up xlStorage layer.
 // returns xlStorage layer, temp dir path to be used for the purpose of tests.
 func newXLStorageTestSetup() (*xlStorageDiskIDCheck, string, error) {
-	diskPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	diskPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		return nil, "", err
 	}
@@ -128,7 +128,7 @@ func newXLStorageTestSetup() (*xlStorageDiskIDCheck, string, error) {
 		return nil, "", err
 	}
 	// Create a sample format.json file
-	err = storage.WriteAll(context.Background(), minioMetaBucket, formatConfigFile, []byte(`{"version":"1","format":"xl","id":"592a41c2-b7cc-4130-b883-c4b5cb15965b","xl":{"version":"3","this":"da017d62-70e3-45f1-8a1a-587707e69ad1","sets":[["e07285a6-8c73-4962-89c6-047fb939f803","33b8d431-482d-4376-b63c-626d229f0a29","cff6513a-4439-4dc1-bcaa-56c9e880c352","da017d62-70e3-45f1-8a1a-587707e69ad1","9c9f21d5-1f15-4737-bce6-835faa0d9626","0a59b346-1424-4fc2-9fa2-a2e80541d0c1","7924a3dc-b69a-4971-9a2e-014966d6aebb","4d2b8dd9-4e48-444b-bdca-c89194b26042"]],"distributionAlgo":"CRCMOD"}}`))
+	err = storage.WriteAll(context.Background(), otterioMetaBucket, formatConfigFile, []byte(`{"version":"1","format":"xl","id":"592a41c2-b7cc-4130-b883-c4b5cb15965b","xl":{"version":"3","this":"da017d62-70e3-45f1-8a1a-587707e69ad1","sets":[["e07285a6-8c73-4962-89c6-047fb939f803","33b8d431-482d-4376-b63c-626d229f0a29","cff6513a-4439-4dc1-bcaa-56c9e880c352","da017d62-70e3-45f1-8a1a-587707e69ad1","9c9f21d5-1f15-4737-bce6-835faa0d9626","0a59b346-1424-4fc2-9fa2-a2e80541d0c1","7924a3dc-b69a-4971-9a2e-014966d6aebb","4d2b8dd9-4e48-444b-bdca-c89194b26042"]],"distributionAlgo":"CRCMOD"}}`))
 	if err != nil {
 		return nil, "", err
 	}
@@ -154,7 +154,7 @@ func createPermDeniedFile(t *testing.T) (permDeniedDir string) {
 	}()
 
 	var err error
-	if permDeniedDir, err = ioutil.TempDir(globalTestTmpDir, "minio-"); err != nil {
+	if permDeniedDir, err = ioutil.TempDir(globalTestTmpDir, "otterio-"); err != nil {
 		errMsg = fmt.Sprintf("Unable to create temporary directory. %v", err)
 		return permDeniedDir
 	}
@@ -192,7 +192,7 @@ func removePermDeniedFile(permDeniedDir string) {
 
 // TestXLStorages xlStorage.getDiskInfo()
 func TestXLStorageGetDiskInfo(t *testing.T) {
-	path, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	path, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatalf("Unable to create a temporary directory, %s", err)
 	}
@@ -215,7 +215,7 @@ func TestXLStorageGetDiskInfo(t *testing.T) {
 }
 
 func TestXLStorageIsDirEmpty(t *testing.T) {
-	tmp, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	tmp, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -427,9 +427,9 @@ func TestXLStorageReadAll(t *testing.T) {
 // TestNewXLStorage all the cases handled in xlStorage storage layer initialization.
 func TestNewXLStorage(t *testing.T) {
 	// Temporary dir name.
-	tmpDirName := globalTestTmpDir + SlashSeparator + "minio-" + nextSuffix()
+	tmpDirName := globalTestTmpDir + SlashSeparator + "otterio-" + nextSuffix()
 	// Temporary file name.
-	tmpFileName := globalTestTmpDir + SlashSeparator + "minio-" + nextSuffix()
+	tmpFileName := globalTestTmpDir + SlashSeparator + "otterio-" + nextSuffix()
 	f, _ := os.Create(tmpFileName)
 	f.Close()
 	defer os.Remove(tmpFileName)
@@ -525,7 +525,7 @@ func TestXLStorageMakeVol(t *testing.T) {
 
 	// TestXLStorage for permission denied.
 	if runtime.GOOS != globalWindowsOSName {
-		permDeniedDir, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+		permDeniedDir, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 		if err != nil {
 			t.Fatalf("Unable to create temporary directory. %v", err)
 		}
@@ -622,7 +622,7 @@ func TestXLStorageDeleteVol(t *testing.T) {
 	// TestXLStorage for permission denied.
 	if runtime.GOOS != globalWindowsOSName {
 		var permDeniedDir string
-		if permDeniedDir, err = ioutil.TempDir(globalTestTmpDir, "minio-"); err != nil {
+		if permDeniedDir, err = ioutil.TempDir(globalTestTmpDir, "otterio-"); err != nil {
 			t.Fatalf("Unable to create temporary directory. %v", err)
 		}
 		defer removePermDeniedFile(permDeniedDir)
@@ -1329,7 +1329,7 @@ func TestXLStorageFormatFileChange(t *testing.T) {
 	}
 
 	// Change the format.json such that "this" is changed to "randomid".
-	if err = ioutil.WriteFile(pathJoin(xlStorage.String(), minioMetaBucket, formatConfigFile), []byte(`{"version":"1","format":"xl","id":"592a41c2-b7cc-4130-b883-c4b5cb15965b","xl":{"version":"3","this":"randomid","sets":[["e07285a6-8c73-4962-89c6-047fb939f803","33b8d431-482d-4376-b63c-626d229f0a29","cff6513a-4439-4dc1-bcaa-56c9e880c352","randomid","9c9f21d5-1f15-4737-bce6-835faa0d9626","0a59b346-1424-4fc2-9fa2-a2e80541d0c1","7924a3dc-b69a-4971-9a2e-014966d6aebb","4d2b8dd9-4e48-444b-bdca-c89194b26042"]],"distributionAlgo":"CRCMOD"}}`), 0644); err != nil {
+	if err = ioutil.WriteFile(pathJoin(xlStorage.String(), otterioMetaBucket, formatConfigFile), []byte(`{"version":"1","format":"xl","id":"592a41c2-b7cc-4130-b883-c4b5cb15965b","xl":{"version":"3","this":"randomid","sets":[["e07285a6-8c73-4962-89c6-047fb939f803","33b8d431-482d-4376-b63c-626d229f0a29","cff6513a-4439-4dc1-bcaa-56c9e880c352","randomid","9c9f21d5-1f15-4737-bce6-835faa0d9626","0a59b346-1424-4fc2-9fa2-a2e80541d0c1","7924a3dc-b69a-4971-9a2e-014966d6aebb","4d2b8dd9-4e48-444b-bdca-c89194b26042"]],"distributionAlgo":"CRCMOD"}}`), 0644); err != nil {
 		t.Fatalf("ioutil.WriteFile failed with %s", err)
 	}
 

@@ -468,23 +468,23 @@ func TestLCP(t *testing.T) {
 	}
 }
 
-func TestGetMinioMode(t *testing.T) {
-	testMinioMode := func(expected string) {
-		if mode := getMinioMode(); mode != expected {
+func TestGetOtterioMode(t *testing.T) {
+	testOtterioMode := func(expected string) {
+		if mode := getOtterioMode(); mode != expected {
 			t.Fatalf("Expected %s got %s", expected, mode)
 		}
 	}
 	globalIsDistErasure = true
-	testMinioMode(globalMinioModeDistErasure)
+	testOtterioMode(globalOtterioModeDistErasure)
 
 	globalIsDistErasure = false
 	globalIsErasure = true
-	testMinioMode(globalMinioModeErasure)
+	testOtterioMode(globalOtterioModeErasure)
 
 	globalIsDistErasure, globalIsErasure = false, false
-	testMinioMode(globalMinioModeFS)
+	testOtterioMode(globalOtterioModeFS)
 
 	globalIsGateway, globalGatewayName = true, "s3"
-	testMinioMode(globalMinioModeGatewayPrefix + globalGatewayName)
+	testOtterioMode(globalOtterioModeGatewayPrefix + globalGatewayName)
 
 }

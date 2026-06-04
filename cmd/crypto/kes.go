@@ -52,12 +52,12 @@ type KesConfig struct {
 	Endpoint []string
 
 	// The path to the TLS private key used
-	// by MinIO to authenticate to the kes
+	// by OtterIO to authenticate to the kes
 	// server during the TLS handshake (mTLS).
 	KeyFile string
 
 	// The path to the TLS certificate used
-	// by MinIO to authenticate to the kes
+	// by OtterIO to authenticate to the kes
 	// server during the TLS handshake (mTLS).
 	//
 	// The kes server will also allow or deny
@@ -74,7 +74,7 @@ type KesConfig struct {
 	// This is required if the TLS certificate
 	// of the kes server has not been issued
 	// (e.g. b/c it's self-signed) by a CA that
-	// MinIO trusts.
+	// OtterIO trusts.
 	CAPath string
 
 	// The default key ID returned by KMS.KeyID().
@@ -208,7 +208,7 @@ func (kes *kesService) DecryptKey(keyID string, ciphertext []byte, ctx Context) 
 }
 
 // kesClient implements the bare minimum functionality needed for
-// MinIO to talk to a KES server. In particular, it implements
+// OtterIO to talk to a KES server. In particular, it implements
 //   - CreateKey       (API: /v1/key/create/)
 //   - GenerateDataKey (API: /v1/key/generate/)
 //   - DecryptDataKey  (API: /v1/key/decrypt/)

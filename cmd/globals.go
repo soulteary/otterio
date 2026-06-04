@@ -47,12 +47,12 @@ import (
 	"github.com/soulteary/otterio/pkg/pubsub"
 )
 
-// minio configuration related constants.
+// otterio configuration related constants.
 const (
-	GlobalMinioDefaultPort = "9000"
+	GlobalOtterioDefaultPort = "9000"
 
-	globalMinioDefaultRegion = ""
-	// This is a sha256 output of ``arn:aws:iam::minio:user/admin``,
+	globalOtterioDefaultRegion = ""
+	// This is a sha256 output of ``arn:aws:iam::otterio:user/admin``,
 	// this is kept in present form to be compatible with S3 owner ID
 	// requirements -
 	//
@@ -61,14 +61,14 @@ const (
 	//    It is 64-character obfuscated version of the account ID.
 	// ```
 	// http://docs.aws.amazon.com/AmazonS3/latest/dev/example-walkthroughs-managing-access-example4.html
-	globalMinioDefaultOwnerID      = "02d6176db174dc93cb1b899f7c6078f08654445fe8cf1b6ce98d8855f66bdbf4"
-	globalMinioDefaultStorageClass = "STANDARD"
+	globalOtterioDefaultOwnerID      = "02d6176db174dc93cb1b899f7c6078f08654445fe8cf1b6ce98d8855f66bdbf4"
+	globalOtterioDefaultStorageClass = "STANDARD"
 	globalWindowsOSName            = "windows"
 	globalMacOSName                = "darwin"
-	globalMinioModeFS              = "mode-server-fs"
-	globalMinioModeErasure         = "mode-server-xl"
-	globalMinioModeDistErasure     = "mode-server-distributed-xl"
-	globalMinioModeGatewayPrefix   = "mode-gateway-"
+	globalOtterioModeFS              = "mode-server-fs"
+	globalOtterioModeErasure         = "mode-server-xl"
+	globalOtterioModeDistErasure     = "mode-server-distributed-xl"
+	globalOtterioModeGatewayPrefix   = "mode-gateway-"
 	globalDirSuffix                = "__XLDIR__"
 	globalDirSuffixWithSlash       = globalDirSuffix + slashSeparator
 
@@ -117,13 +117,13 @@ var globalCLIContext = struct {
 }{}
 
 var (
-	// Indicates if the running minio server is distributed setup.
+	// Indicates if the running otterio server is distributed setup.
 	globalIsDistErasure = false
 
-	// Indicates if the running minio server is an erasure-code backend.
+	// Indicates if the running otterio server is an erasure-code backend.
 	globalIsErasure = false
 
-	// Indicates if the running minio is in gateway mode.
+	// Indicates if the running otterio is in gateway mode.
 	globalIsGateway = false
 
 	// Name of gateway server, e.g S3, NAS, etc
@@ -132,20 +132,20 @@ var (
 	// This flag is set to 'true' by default
 	globalBrowserEnabled = true
 
-	// This flag is set to 'true' when MINIO_UPDATE env is set to 'off'. Default is false.
+	// This flag is set to 'true' when OTTERIO_UPDATE env is set to 'off'. Default is false.
 	globalInplaceUpdateDisabled = false
 
 	// This flag is set to 'us-east-1' by default
-	globalServerRegion = globalMinioDefaultRegion
+	globalServerRegion = globalOtterioDefaultRegion
 
-	// MinIO local server address (in `host:port` format)
-	globalMinioAddr = ""
-	// MinIO default port, can be changed through command line.
-	globalMinioPort = GlobalMinioDefaultPort
+	// OtterIO local server address (in `host:port` format)
+	globalOtterioAddr = ""
+	// OtterIO default port, can be changed through command line.
+	globalOtterioPort = GlobalOtterioDefaultPort
 	// Holds the host that was passed using --address
-	globalMinioHost = ""
+	globalOtterioHost = ""
 	// Holds the possible host endpoint.
-	globalMinioEndpoint = ""
+	globalOtterioEndpoint = ""
 
 	// globalConfigSys server config system.
 	globalConfigSys *ConfigSys
@@ -221,7 +221,7 @@ var (
 	globalPublicCerts []*x509.Certificate
 
 	globalDomainNames []string      // Root domains for virtual host style requests
-	globalDomainIPs   set.StringSet // Root domain IP address(s) for a distributed MinIO deployment
+	globalDomainIPs   set.StringSet // Root domain IP address(s) for a distributed OtterIO deployment
 
 	globalOperationTimeout       = newDynamicTimeout(10*time.Minute, 5*time.Minute) // default timeout for general ops
 	globalDeleteOperationTimeout = newDynamicTimeout(5*time.Minute, 1*time.Minute)  // default time for delete ops
@@ -299,7 +299,7 @@ var (
 
 var errSelfTestFailure = errors.New("self test failed. unsafe to start server")
 
-// Returns minio global information, as a key value map.
+// Returns otterio global information, as a key value map.
 // returned list of global values is not an exhaustive
 // list. Feel free to add new relevant fields.
 func getGlobalInfo() (globalInfo map[string]interface{}) {

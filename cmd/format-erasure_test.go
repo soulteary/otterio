@@ -123,11 +123,11 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = os.MkdirAll(pathJoin(rootPath, minioMetaBucket), os.FileMode(0755)); err != nil {
+	if err = os.MkdirAll(pathJoin(rootPath, otterioMetaBucket), os.FileMode(0755)); err != nil {
 		t.Fatal(err)
 	}
 
-	if err = ioutil.WriteFile(pathJoin(rootPath, minioMetaBucket, formatConfigFile), b, os.FileMode(0644)); err != nil {
+	if err = ioutil.WriteFile(pathJoin(rootPath, otterioMetaBucket, formatConfigFile), b, os.FileMode(0644)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -135,7 +135,7 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	migratedVersion, err := formatGetBackendErasureVersion(pathJoin(rootPath, minioMetaBucket, formatConfigFile))
+	migratedVersion, err := formatGetBackendErasureVersion(pathJoin(rootPath, otterioMetaBucket, formatConfigFile))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatalf("expected version: %s, got: %s", formatErasureVersionV3, migratedVersion)
 	}
 
-	b, err = ioutil.ReadFile(pathJoin(rootPath, minioMetaBucket, formatConfigFile))
+	b, err = ioutil.ReadFile(pathJoin(rootPath, otterioMetaBucket, formatConfigFile))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = ioutil.WriteFile(pathJoin(rootPath, minioMetaBucket, formatConfigFile), b, os.FileMode(0644)); err != nil {
+	if err = ioutil.WriteFile(pathJoin(rootPath, otterioMetaBucket, formatConfigFile), b, os.FileMode(0644)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -194,7 +194,7 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = ioutil.WriteFile(pathJoin(rootPath, minioMetaBucket, formatConfigFile), b, os.FileMode(0644)); err != nil {
+	if err = ioutil.WriteFile(pathJoin(rootPath, otterioMetaBucket, formatConfigFile), b, os.FileMode(0644)); err != nil {
 		t.Fatal(err)
 	}
 

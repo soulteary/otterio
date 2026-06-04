@@ -106,6 +106,6 @@ func ErrInvalidArgument(message string) error {
 	return ErrorResponse{
 		Code:      "InvalidArgument",
 		Message:   message,
-		RequestID: "minio",
+		RequestID: "otterio",
 	}
 }

@@ -43,8 +43,8 @@ func TestObjectAPIPutObjectSingle(t *testing.T) {
 // Tests validate correctness of PutObject.
 func testObjectAPIPutObject(obj ObjectLayer, instanceType string, t TestErrHandler) {
 	// Generating cases for which the PutObject fails.
-	bucket := "minio-bucket"
-	object := "minio-object"
+	bucket := "otterio-bucket"
+	object := "otterio-object"
 
 	// Create bucket.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
@@ -208,8 +208,8 @@ func TestObjectAPIPutObjectDiskNotFound(t *testing.T) {
 // Tests validate correctness of PutObject.
 func testObjectAPIPutObjectDiskNotFound(obj ObjectLayer, instanceType string, disks []string, t *testing.T) {
 	// Generating cases for which the PutObject fails.
-	bucket := "minio-bucket"
-	object := "minio-object"
+	bucket := "otterio-bucket"
+	object := "otterio-object"
 
 	// Create bucket.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
@@ -320,8 +320,8 @@ func TestObjectAPIPutObjectStaleFiles(t *testing.T) {
 // Tests validate correctness of PutObject.
 func testObjectAPIPutObjectStaleFiles(obj ObjectLayer, instanceType string, disks []string, t *testing.T) {
 	// Generating cases for which the PutObject fails.
-	bucket := "minio-bucket"
-	object := "minio-object"
+	bucket := "otterio-bucket"
+	object := "otterio-object"
 
 	// Create bucket.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
@@ -339,7 +339,7 @@ func testObjectAPIPutObjectStaleFiles(obj ObjectLayer, instanceType string, disk
 	}
 
 	for _, disk := range disks {
-		tmpMetaDir := path.Join(disk, minioMetaTmpBucket)
+		tmpMetaDir := path.Join(disk, otterioMetaTmpBucket)
 		files, err := ioutil.ReadDir(tmpMetaDir)
 		if err != nil {
 			t.Fatal(err)
@@ -352,7 +352,7 @@ func testObjectAPIPutObjectStaleFiles(obj ObjectLayer, instanceType string, disk
 			found = true
 		}
 		if found {
-			t.Fatalf("%s: expected: empty, got: non-empty %#v", minioMetaTmpBucket, files)
+			t.Fatalf("%s: expected: empty, got: non-empty %#v", otterioMetaTmpBucket, files)
 		}
 	}
 }
@@ -365,8 +365,8 @@ func TestObjectAPIMultipartPutObjectStaleFiles(t *testing.T) {
 // Tests validate correctness of PutObject.
 func testObjectAPIMultipartPutObjectStaleFiles(obj ObjectLayer, instanceType string, disks []string, t *testing.T) {
 	// Generating cases for which the PutObject fails.
-	bucket := "minio-bucket"
-	object := "minio-object"
+	bucket := "otterio-bucket"
+	object := "otterio-object"
 
 	// Create bucket.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
@@ -417,7 +417,7 @@ func testObjectAPIMultipartPutObjectStaleFiles(obj ObjectLayer, instanceType str
 	}
 
 	for _, disk := range disks {
-		tmpMetaDir := path.Join(disk, minioMetaTmpBucket)
+		tmpMetaDir := path.Join(disk, otterioMetaTmpBucket)
 		files, err := ioutil.ReadDir(tmpMetaDir)
 		if err != nil {
 			// Its OK to have non-existen tmpMetaDir.

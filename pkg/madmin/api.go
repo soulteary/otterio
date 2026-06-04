@@ -78,15 +78,15 @@ const (
 	libraryName    = "madmin-go"
 	libraryVersion = "0.0.1"
 
-	libraryAdminURLPrefix = "/minio/admin"
+	libraryAdminURLPrefix = "/otterio/admin"
 )
 
 // User Agent should always following the below style.
 // Please open an issue to discuss any new changes here.
 //
-//	MinIO (OS; ARCH) LIB/VER APP/VER
+//	OtterIO (OS; ARCH) LIB/VER APP/VER
 const (
-	libraryUserAgentPrefix = "MinIO (" + runtime.GOOS + "; " + runtime.GOARCH + ") "
+	libraryUserAgentPrefix = "OtterIO (" + runtime.GOOS + "; " + runtime.GOARCH + ") "
 	libraryUserAgent       = libraryUserAgentPrefix + libraryName + "/" + libraryVersion
 )
 
@@ -97,7 +97,7 @@ type Options struct {
 	// Add future fields here
 }
 
-// New - instantiate minio admin client
+// New - instantiate otterio admin client
 func New(endpoint string, accessKeyID, secretAccessKey string, secure bool) (*AdminClient, error) {
 	creds := credentials.NewStaticV4(accessKeyID, secretAccessKey, "")
 
@@ -108,7 +108,7 @@ func New(endpoint string, accessKeyID, secretAccessKey string, secure bool) (*Ad
 	return clnt, nil
 }
 
-// NewWithOptions - instantiate minio admin client with options.
+// NewWithOptions - instantiate otterio admin client with options.
 func NewWithOptions(endpoint string, opts *Options) (*AdminClient, error) {
 	clnt, err := privateNew(endpoint, opts.Creds, opts.Secure)
 	if err != nil {

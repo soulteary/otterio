@@ -144,7 +144,7 @@ func (c *CoreDNS) list(key string, domain bool) ([]SrvRecord, error) {
 		srvRecord.Key = strings.TrimSuffix(srvRecord.Key, srvRecord.Host)
 
 		// Skip non-bucket entry like for a key
-		// /skydns/net/miniocloud/10.0.0.1 that may exist as
+		// /skydns/net/otteriocloud/10.0.0.1 that may exist as
 		// dns entry for the server (rather than the bucket
 		// itself).
 		if srvRecord.Key == "" {

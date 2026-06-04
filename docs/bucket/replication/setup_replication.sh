@@ -103,4 +103,4 @@ mc admin bucket remote add repladminAlias/bucket http://repluser:repluser123@loc
 
 echo "Now, use this ARN to add replication rules using 'mc replicate add' command"
 # use arn returned by above command to create a replication policy on the source/bucket with `mc replicate add`
-#mc replicate add source/bucket --priority 1 --remote-bucket bucket --arn arn:minio:replication:us-east-1:21fb52f5857473e2dbdcf62dcac21240861caf0f8301c3d26aad4de7677869c7:bucket --replicate delete-marker,delete
+#mc replicate add source/bucket --priority 1 --remote-bucket bucket --arn arn:otterio:replication:us-east-1:21fb52f5857473e2dbdcf62dcac21240861caf0f8301c3d26aad4de7677869c7:bucket --replicate delete-marker,delete

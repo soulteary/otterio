@@ -32,7 +32,7 @@ import (
 // EnvCertPassword is the environment variable which contains the password used
 // to decrypt the TLS private key. It must be set if the TLS private key is
 // password protected.
-const EnvCertPassword = "MINIO_CERT_PASSWD"
+const EnvCertPassword = "OTTERIO_CERT_PASSWD"
 
 // ParsePublicCertFile - parses public cert into its *x509.Certificate equivalent.
 func ParsePublicCertFile(certFile string) (x509Certs []*x509.Certificate, err error) {
@@ -70,7 +70,7 @@ func ParsePublicCertFile(certFile string) (x509Certs []*x509.Certificate, err er
 
 // LoadX509KeyPair - load an X509 key pair (private key , certificate)
 // from the provided paths. The private key may be encrypted and is
-// decrypted using the ENV_VAR: MINIO_CERT_PASSWD.
+// decrypted using the ENV_VAR: OTTERIO_CERT_PASSWD.
 func LoadX509KeyPair(certFile, keyFile string) (tls.Certificate, error) {
 	certPEMBlock, err := ioutil.ReadFile(certFile)
 	if err != nil {

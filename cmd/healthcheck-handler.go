@@ -31,7 +31,7 @@ func ClusterCheckHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ClusterCheckHandler")
 
 	if shouldProxy() {
-		w.Header().Set(xhttp.MinIOServerStatus, unavailable)
+		w.Header().Set(xhttp.OtterIOServerStatus, unavailable)
 		writeResponse(w, http.StatusServiceUnavailable, nil, mimeNone)
 		return
 	}
@@ -44,12 +44,12 @@ func ClusterCheckHandler(w http.ResponseWriter, r *http.Request) {
 	opts := HealthOptions{Maintenance: r.URL.Query().Get("maintenance") == "true"}
 	result := objLayer.Health(ctx, opts)
 	if result.WriteQuorum > 0 {
-		w.Header().Set(xhttp.MinIOWriteQuorum, strconv.Itoa(result.WriteQuorum))
+		w.Header().Set(xhttp.OtterIOWriteQuorum, strconv.Itoa(result.WriteQuorum))
 	}
 	if !result.Healthy {
 		// return how many drives are being healed if any
 		if result.HealingDrives > 0 {
-			w.Header().Set(xhttp.MinIOHealingDrives, strconv.Itoa(result.HealingDrives))
+			w.Header().Set(xhttp.OtterIOHealingDrives, strconv.Itoa(result.HealingDrives))
 		}
 		// As a maintenance call we are purposefully asked to be taken
 		// down, this is for orchestrators to know if we can safely
@@ -69,7 +69,7 @@ func ClusterReadCheckHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ClusterReadCheckHandler")
 
 	if shouldProxy() {
-		w.Header().Set(xhttp.MinIOServerStatus, unavailable)
+		w.Header().Set(xhttp.OtterIOServerStatus, unavailable)
 		writeResponse(w, http.StatusServiceUnavailable, nil, mimeNone)
 		return
 	}
@@ -91,7 +91,7 @@ func ClusterReadCheckHandler(w http.ResponseWriter, r *http.Request) {
 func ReadinessCheckHandler(w http.ResponseWriter, r *http.Request) {
 	if shouldProxy() {
 		// Service not initialized yet
-		w.Header().Set(xhttp.MinIOServerStatus, unavailable)
+		w.Header().Set(xhttp.OtterIOServerStatus, unavailable)
 	}
 
 	writeResponse(w, http.StatusOK, nil, mimeNone)
@@ -101,7 +101,7 @@ func ReadinessCheckHandler(w http.ResponseWriter, r *http.Request) {
 func LivenessCheckHandler(w http.ResponseWriter, r *http.Request) {
 	if shouldProxy() {
 		// Service not initialized yet
-		w.Header().Set(xhttp.MinIOServerStatus, unavailable)
+		w.Header().Set(xhttp.OtterIOServerStatus, unavailable)
 	}
 	writeResponse(w, http.StatusOK, nil, mimeNone)
 }

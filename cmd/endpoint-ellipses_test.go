@@ -354,7 +354,7 @@ func TestParseEndpointSet(t *testing.T) {
 		},
 		// Invalid range.
 		{
-			"http://minio{2...3}/export/set{1...0}",
+			"http://otterio{2...3}/export/set{1...0}",
 			endpointSet{},
 			false,
 		},
@@ -407,7 +407,7 @@ func TestParseEndpointSet(t *testing.T) {
 		},
 		// Valid input for distributed setup.
 		{
-			"http://minio{2...3}/export/set{1...64}",
+			"http://otterio{2...3}/export/set{1...64}",
 			endpointSet{
 				[]ellipses.ArgPattern{
 					[]ellipses.Pattern{
@@ -417,7 +417,7 @@ func TestParseEndpointSet(t *testing.T) {
 							Seq:    getSequences(1, 64, 0),
 						},
 						{
-							Prefix: "http://minio",
+							Prefix: "http://otterio",
 							Suffix: "/export/set",
 							Seq:    getSequences(2, 3, 0),
 						},
@@ -430,12 +430,12 @@ func TestParseEndpointSet(t *testing.T) {
 		},
 		// Supporting some advanced cases.
 		{
-			"http://minio{1...64}.mydomain.net/data",
+			"http://otterio{1...64}.mydomain.net/data",
 			endpointSet{
 				[]ellipses.ArgPattern{
 					[]ellipses.Pattern{
 						{
-							Prefix: "http://minio",
+							Prefix: "http://otterio",
 							Suffix: ".mydomain.net/data",
 							Seq:    getSequences(1, 64, 0),
 						},
@@ -447,7 +447,7 @@ func TestParseEndpointSet(t *testing.T) {
 			true,
 		},
 		{
-			"http://rack{1...4}.mydomain.minio{1...16}/data",
+			"http://rack{1...4}.mydomain.otterio{1...16}/data",
 			endpointSet{
 				[]ellipses.ArgPattern{
 					[]ellipses.Pattern{
@@ -458,7 +458,7 @@ func TestParseEndpointSet(t *testing.T) {
 						},
 						{
 							Prefix: "http://rack",
-							Suffix: ".mydomain.minio",
+							Suffix: ".mydomain.otterio",
 							Seq:    getSequences(1, 4, 0),
 						},
 					},
@@ -470,7 +470,7 @@ func TestParseEndpointSet(t *testing.T) {
 		},
 		// Supporting kubernetes cases.
 		{
-			"http://minio{0...15}.mydomain.net/data{0...1}",
+			"http://otterio{0...15}.mydomain.net/data{0...1}",
 			endpointSet{
 				[]ellipses.ArgPattern{
 					[]ellipses.Pattern{
@@ -480,7 +480,7 @@ func TestParseEndpointSet(t *testing.T) {
 							Seq:    getSequences(0, 1, 0),
 						},
 						{
-							Prefix: "http://minio",
+							Prefix: "http://otterio",
 							Suffix: ".mydomain.net/data",
 							Seq:    getSequences(0, 15, 0),
 						},
@@ -529,7 +529,7 @@ func TestParseEndpointSet(t *testing.T) {
 		},
 		// More than 2 ellipses are supported as well.
 		{
-			"http://minio{2...3}/export/set{1...64}/test{1...2}",
+			"http://otterio{2...3}/export/set{1...64}/test{1...2}",
 			endpointSet{
 				[]ellipses.ArgPattern{
 					[]ellipses.Pattern{
@@ -544,7 +544,7 @@ func TestParseEndpointSet(t *testing.T) {
 							Seq:    getSequences(1, 64, 0),
 						},
 						{
-							Prefix: "http://minio",
+							Prefix: "http://otterio",
 							Suffix: "/export/set",
 							Seq:    getSequences(2, 3, 0),
 						},

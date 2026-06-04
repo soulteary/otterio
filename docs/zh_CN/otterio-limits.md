@@ -1,4 +1,4 @@
-## 每个租户的MinIO服务器限制
+## 每个租户的OtterIO服务器限制
 
 ### 纠删码 (多块 硬盘/服务器)
 
@@ -36,10 +36,10 @@
 |每次list 对象请求可返回的最大对象数量| 10000|
 |每次list multipart uploads请求可返回的multipart uploads最大数量| 1000|
 
-###  MinIO不支持的Amazon S3 API
-我们认为下列AWS S3的API有些冗余或者说用处不大，因此我们在minio中没有实现这些接口。如果您有不同意见，欢迎在[github](https://github.com/minio/minio/issues)上提issue。
+###  OtterIO不支持的Amazon S3 API
+我们认为下列AWS S3的API有些冗余或者说用处不大，因此我们在otterio中没有实现这些接口。如果您有不同意见，欢迎在[github](https://github.com/minio/minio/issues)上提issue。
 
-#### MinIO不支持的Amazon S3 Bucket API
+#### OtterIO不支持的Amazon S3 Bucket API
 
 - BucketACL (可以用 [存储桶策略](https://docs.min.io/cn/minio-client-complete-guide#policy))
 - BucketCORS (所有HTTP方法的所有存储桶都默认启用CORS)
@@ -47,10 +47,10 @@
 - BucketAnalytics, BucketMetrics, BucketLogging (可以用 [存储桶通知](https://docs.min.io/cn/minio-client-complete-guide#events) API)
 - BucketRequestPayment
 
-#### MinIO不支持的Amazon S3 Object API.
+#### OtterIO不支持的Amazon S3 Object API.
 
 - ObjectACL (可以用 [存储桶策略](https://docs.min.io/cn/minio-client-complete-guide#policy))
 - ObjectTorrent
 
-### MinIO上的对象名称限制
+### OtterIO上的对象名称限制
 在Windows上对象名称不能包含`^*|\/&";`这些特殊字符，如果其他系统文件名不支持这些特殊字符，那么在这些系统上对象名称也不能使用这些特殊字符。请注意，此列表并不详尽，并且取决于文件系统本身的维护者。

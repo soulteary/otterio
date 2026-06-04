@@ -3,8 +3,8 @@
 在存储桶上启用对象的生命周期配置，可以设置在指定天数或指定日期后自动删除对象。
 
 ## 1. 前提条件
-- 安装MinIO - [MinIO快速入门指南](https://docs.min.io/cn/minio-quickstart-guide).
-- 安装`mc` - [mc快速入门指南](https://docs.minio.io/cn/minio-client-quickstart-guide.html)
+- 安装OtterIO - [OtterIO快速入门指南](https://docs.min.io/cn/minio-quickstart-guide).
+- 安装`mc` - [mc快速入门指南](https://docs.otterio.io/cn/otterio-client-quickstart-guide.html)
 
 ## 2. 启用存储桶生命周期配置
 
@@ -53,5 +53,5 @@ TempUploads |  temp/   |    ✓       |  ✓     |   7 day(s)   |     ✗       
 ```
 
 ## 进一步探索
-- [MinIO | Golang Client API文档](https://docs.min.io/cn/golang-client-api-reference.html#SetBucketLifecycle)
+- [OtterIO | Golang Client API文档](https://docs.min.io/cn/golang-client-api-reference.html#SetBucketLifecycle)
 - [对象生命周期管理](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html)

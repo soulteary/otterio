@@ -63,7 +63,7 @@ func parseLocationConstraint(r *http.Request) (location string, s3Error APIError
 }
 
 // Validates input location is same as configured region
-// of MinIO server.
+// of OtterIO server.
 func isValidLocation(location string) bool {
 	return globalServerRegion == "" || globalServerRegion == location
 }
@@ -106,7 +106,7 @@ func isDirectiveReplace(value string) bool {
 // must be extracted from the header.
 var userMetadataKeyPrefixes = []string{
 	"x-amz-meta-",
-	"x-minio-meta-",
+	"x-otterio-meta-",
 }
 
 // extractMetadata extracts metadata from HTTP header and HTTP queryString.
@@ -245,8 +245,8 @@ func extractReqParams(r *http.Request) map[string]string {
 		"sourceIPAddress": handlers.GetSourceIP(r),
 		// Add more fields here.
 	}
-	if _, ok := r.Header[xhttp.MinIOSourceReplicationRequest]; ok {
-		m[xhttp.MinIOSourceReplicationRequest] = ""
+	if _, ok := r.Header[xhttp.OtterIOSourceReplicationRequest]; ok {
+		m[xhttp.OtterIOSourceReplicationRequest] = ""
 	}
 	return m
 }
@@ -416,7 +416,7 @@ func getResource(path string, host string, domains []string) (string, error) {
 		}
 	}
 	for _, domain := range domains {
-		if host == minioReservedBucket+"."+domain {
+		if host == otterioReservedBucket+"."+domain {
 			continue
 		}
 		if !strings.HasSuffix(host, "."+domain) {
@@ -428,7 +428,7 @@ func getResource(path string, host string, domains []string) (string, error) {
 	return path, nil
 }
 
-var regexVersion = regexp.MustCompile(`^/minio.*/(v\d+)/.*`)
+var regexVersion = regexp.MustCompile(`^` + otterioReservedBucketPath + `.*/(v\d+)/.*`)
 
 func extractAPIVersion(r *http.Request) string {
 	if matches := regexVersion.FindStringSubmatch(r.URL.Path); len(matches) > 1 {
@@ -445,23 +445,23 @@ func methodNotAllowedHandler(api string) func(w http.ResponseWriter, r *http.Req
 		version := extractAPIVersion(r)
 		switch {
 		case strings.HasPrefix(r.URL.Path, peerRESTPrefix):
-			desc := fmt.Sprintf("Server expects 'peer' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", peerRESTVersion, version, ReleaseTag)
+			desc := fmt.Sprintf("Server expects 'peer' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", peerRESTVersion, version, ReleaseTag)
 			writeErrorResponseString(r.Context(), w, APIError{
-				Code:           "XMinioPeerVersionMismatch",
+				Code:           "XOtterioPeerVersionMismatch",
 				Description:    desc,
 				HTTPStatusCode: http.StatusUpgradeRequired,
 			}, r.URL)
 		case strings.HasPrefix(r.URL.Path, storageRESTPrefix):
-			desc := fmt.Sprintf("Server expects 'storage' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", storageRESTVersion, version, ReleaseTag)
+			desc := fmt.Sprintf("Server expects 'storage' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", storageRESTVersion, version, ReleaseTag)
 			writeErrorResponseString(r.Context(), w, APIError{
-				Code:           "XMinioStorageVersionMismatch",
+				Code:           "XOtterioStorageVersionMismatch",
 				Description:    desc,
 				HTTPStatusCode: http.StatusUpgradeRequired,
 			}, r.URL)
 		case strings.HasPrefix(r.URL.Path, lockRESTPrefix):
-			desc := fmt.Sprintf("Server expects 'lock' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", lockRESTVersion, version, ReleaseTag)
+			desc := fmt.Sprintf("Server expects 'lock' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", lockRESTVersion, version, ReleaseTag)
 			writeErrorResponseString(r.Context(), w, APIError{
-				Code:           "XMinioLockVersionMismatch",
+				Code:           "XOtterioLockVersionMismatch",
 				Description:    desc,
 				HTTPStatusCode: http.StatusUpgradeRequired,
 			}, r.URL)
@@ -470,12 +470,12 @@ func methodNotAllowedHandler(api string) func(w http.ResponseWriter, r *http.Req
 			if version == "v1" {
 				desc = fmt.Sprintf("Server expects client requests with 'admin' API version '%s', found '%s', please upgrade the client to latest releases", madmin.AdminAPIVersion, version)
 			} else if version == madmin.AdminAPIVersion {
-				desc = fmt.Sprintf("This 'admin' API is not supported by server in '%s'", getMinioMode())
+				desc = fmt.Sprintf("This 'admin' API is not supported by server in '%s'", getOtterioMode())
 			} else {
 				desc = fmt.Sprintf("Unexpected client 'admin' API version found '%s', expected '%s', please downgrade the client to older releases", version, madmin.AdminAPIVersion)
 			}
 			writeErrorResponseJSON(r.Context(), w, APIError{
-				Code:           "XMinioAdminVersionMismatch",
+				Code:           "XOtterioAdminVersionMismatch",
 				Description:    desc,
 				HTTPStatusCode: http.StatusUpgradeRequired,
 			}, r.URL)
@@ -498,23 +498,23 @@ func errorResponseHandler(w http.ResponseWriter, r *http.Request) {
 	version := extractAPIVersion(r)
 	switch {
 	case strings.HasPrefix(r.URL.Path, peerRESTPrefix):
-		desc := fmt.Sprintf("Server expects 'peer' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", peerRESTVersion, version, ReleaseTag)
+		desc := fmt.Sprintf("Server expects 'peer' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", peerRESTVersion, version, ReleaseTag)
 		writeErrorResponseString(r.Context(), w, APIError{
-			Code:           "XMinioPeerVersionMismatch",
+			Code:           "XOtterioPeerVersionMismatch",
 			Description:    desc,
 			HTTPStatusCode: http.StatusUpgradeRequired,
 		}, r.URL)
 	case strings.HasPrefix(r.URL.Path, storageRESTPrefix):
-		desc := fmt.Sprintf("Server expects 'storage' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", storageRESTVersion, version, ReleaseTag)
+		desc := fmt.Sprintf("Server expects 'storage' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", storageRESTVersion, version, ReleaseTag)
 		writeErrorResponseString(r.Context(), w, APIError{
-			Code:           "XMinioStorageVersionMismatch",
+			Code:           "XOtterioStorageVersionMismatch",
 			Description:    desc,
 			HTTPStatusCode: http.StatusUpgradeRequired,
 		}, r.URL)
 	case strings.HasPrefix(r.URL.Path, lockRESTPrefix):
-		desc := fmt.Sprintf("Server expects 'lock' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", lockRESTVersion, version, ReleaseTag)
+		desc := fmt.Sprintf("Server expects 'lock' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", lockRESTVersion, version, ReleaseTag)
 		writeErrorResponseString(r.Context(), w, APIError{
-			Code:           "XMinioLockVersionMismatch",
+			Code:           "XOtterioLockVersionMismatch",
 			Description:    desc,
 			HTTPStatusCode: http.StatusUpgradeRequired,
 		}, r.URL)
@@ -523,12 +523,12 @@ func errorResponseHandler(w http.ResponseWriter, r *http.Request) {
 		if version == "v1" {
 			desc = fmt.Sprintf("Server expects client requests with 'admin' API version '%s', found '%s', please upgrade the client to latest releases", madmin.AdminAPIVersion, version)
 		} else if version == madmin.AdminAPIVersion {
-			desc = fmt.Sprintf("This 'admin' API is not supported by server in '%s'", getMinioMode())
+			desc = fmt.Sprintf("This 'admin' API is not supported by server in '%s'", getOtterioMode())
 		} else {
 			desc = fmt.Sprintf("Unexpected client 'admin' API version found '%s', expected '%s', please downgrade the client to older releases", version, madmin.AdminAPIVersion)
 		}
 		writeErrorResponseJSON(r.Context(), w, APIError{
-			Code:           "XMinioAdminVersionMismatch",
+			Code:           "XOtterioAdminVersionMismatch",
 			Description:    desc,
 			HTTPStatusCode: http.StatusUpgradeRequired,
 		}, r.URL)

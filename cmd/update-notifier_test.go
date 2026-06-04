@@ -66,7 +66,7 @@ func TestPrepareUpdateMessage(t *testing.T) {
 		{2 * 365 * 24 * time.Hour, "my_download_url", "2 years ago"},
 	}
 
-	plainMsg := "You are running an older version of MinIO released"
+	plainMsg := "You are running an older version of OtterIO released"
 
 	for i, testCase := range testCases {
 		output := prepareUpdateMessage(testCase.dlURL, testCase.older)

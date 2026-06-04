@@ -24,7 +24,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func registerInternalPOST(app *fiber.App, routePath string, handler MinioHandler, queries map[string]string) {
+func registerInternalPOST(app *fiber.App, routePath string, handler OtterioHandler, queries map[string]string) {
 	rules := []routeRule{{
 		methods: []string{http.MethodPost},
 		queries: queries,
@@ -39,16 +39,16 @@ func registerInternalPOST(app *fiber.App, routePath string, handler MinioHandler
 	})
 }
 
-func internalHdr(h func(http.ResponseWriter, *http.Request)) MinioHandler {
-	return wrapInternalHandler(toMinioHandler(h))
+func internalHdr(h func(http.ResponseWriter, *http.Request)) OtterioHandler {
+	return wrapInternalHandler(toOtterioHandler(h))
 }
 
-func internalAll(h func(http.ResponseWriter, *http.Request)) MinioHandler {
-	return httpTraceAllFiber(toMinioHandler(h))
+func internalAll(h func(http.ResponseWriter, *http.Request)) OtterioHandler {
+	return httpTraceAllFiber(toOtterioHandler(h))
 }
 
-func internalRaw(h func(http.ResponseWriter, *http.Request)) MinioHandler {
-	return toMinioHandler(h)
+func internalRaw(h func(http.ResponseWriter, *http.Request)) OtterioHandler {
+	return toOtterioHandler(h)
 }
 
 // internalRawStream is the streaming counterpart of internalRaw. It must be
@@ -57,15 +57,15 @@ func internalRaw(h func(http.ResponseWriter, *http.Request)) MinioHandler {
 // mid-handler (responseBodyWriter has no Flush), so such handlers would buffer
 // their output in memory, never deliver it incrementally, defeat their
 // keepalive, and (for infinite streams) never terminate on peer disconnect.
-func internalRawStream(h func(http.ResponseWriter, *http.Request)) MinioHandler {
-	return toMinioStreamHandler(h)
+func internalRawStream(h func(http.ResponseWriter, *http.Request)) OtterioHandler {
+	return toOtterioStreamHandler(h)
 }
 
 // internalHdrStream is the streaming counterpart of internalHdr; it preserves
 // the header-only trace wrapping (TraceFiber is stream-aware and does not drain
 // a SetBodyStream body) while bridging the handler through the streaming path.
-func internalHdrStream(h func(http.ResponseWriter, *http.Request)) MinioHandler {
-	return httpTraceHdrsFiber(toMinioStreamHandler(h))
+func internalHdrStream(h func(http.ResponseWriter, *http.Request)) OtterioHandler {
+	return httpTraceHdrsFiber(toOtterioStreamHandler(h))
 }
 
 func registerStorageRESTHandlersFiber(app *fiber.App, endpointServerPools EndpointServerPools) {

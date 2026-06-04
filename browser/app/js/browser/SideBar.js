@@ -43,7 +43,7 @@ export const SideBar = ({ sidebarOpen, clickOutside }) => {
       >
         <div className="fes-header clearfix hidden-sm hidden-xs">
           <img src={logo} alt="" />
-          <h2>MinIO Browser</h2>
+          <h2>OtterIO Browser</h2>
         </div>
         <div className="fes-list">
           {web.LoggedIn() && <BucketSearch />}

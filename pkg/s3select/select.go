@@ -339,7 +339,7 @@ func (s3Select *S3Select) Open(getReader func(offset, length int64) (io.ReadClos
 		s3Select.close = rc.Close
 		return nil
 	case parquetFormat:
-		if !strings.EqualFold(os.Getenv("MINIO_API_SELECT_PARQUET"), "on") {
+		if !strings.EqualFold(os.Getenv("OTTERIO_API_SELECT_PARQUET"), "on") {
 			return errors.New("parquet format parsing not enabled on server")
 		}
 		var err error

@@ -95,7 +95,7 @@ func s3Route(methods []string, api string, traceHdrs bool, h func(http.ResponseW
 		headerRegex: headerRegex,
 		// wrapS3Handler already applies stats + maxClients + trace; skipTrace
 		// prevents dispatchRules from wrapping a second trace (double publish).
-		handler:   wrapS3Handler(api, traceHdrs, toMinioHandler(h)),
+		handler:   wrapS3Handler(api, traceHdrs, toOtterioHandler(h)),
 		skipTrace: true,
 	}
 }
@@ -108,7 +108,7 @@ func s3RouteStream(methods []string, api string, traceHdrs bool, h func(http.Res
 		methods:     methods,
 		queries:     queries,
 		headerRegex: headerRegex,
-		handler:     wrapS3Handler(api, traceHdrs, toMinioStreamHandler(h)),
+		handler:     wrapS3Handler(api, traceHdrs, toOtterioStreamHandler(h)),
 		skipTrace:   true,
 	}
 }
@@ -269,7 +269,7 @@ func registerAPIRouterFiber(app *fiber.App) {
 	objectHandler := makeS3DispatchHandler(objectRules)
 	rootDispatch := makeS3DispatchHandler(rootS3APIRules(api))
 
-	listBucketsDoubleSlash := wrapS3Handler("listbuckets", false, toMinioHandler(api.ListBucketsHandler))
+	listBucketsDoubleSlash := wrapS3Handler("listbuckets", false, toOtterioHandler(api.ListBucketsHandler))
 	notFoundHandler := collectAPIStatsFiber("notfound", httpTraceAllFiber(errorResponseHandlerFiber))
 
 	apiGroup := app.Group("", vhostBucketMiddleware)

@@ -75,7 +75,7 @@ type ErrFn func(err error) Err
 
 // Create a UI error generator, this is needed to simplify
 // the update of the detailed error message in several places
-// in MinIO code
+// in OtterIO code
 func newErrFn(msg, action, hint string) ErrFn {
 	return func(err error) Err {
 		u := Err{

@@ -35,7 +35,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	miniogo "github.com/minio/minio-go/v7"
+	otteriogo "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"github.com/minio/minio-go/v7/pkg/tags"
@@ -435,10 +435,10 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 			if globalBucketVersioningSys.Enabled(bucket) && gr != nil {
 				if !gr.ObjInfo.VersionPurgeStatus.Empty() {
 					// Shows the replication status of a permanent delete of a version
-					w.Header()[xhttp.MinIODeleteReplicationStatus] = []string{string(gr.ObjInfo.VersionPurgeStatus)}
+					w.Header()[xhttp.OtterIODeleteReplicationStatus] = []string{string(gr.ObjInfo.VersionPurgeStatus)}
 				}
 				if !gr.ObjInfo.ReplicationStatus.Empty() && gr.ObjInfo.DeleteMarker {
-					w.Header()[xhttp.MinIODeleteMarkerReplicationStatus] = []string{string(gr.ObjInfo.ReplicationStatus)}
+					w.Header()[xhttp.OtterIODeleteMarkerReplicationStatus] = []string{string(gr.ObjInfo.ReplicationStatus)}
 				}
 
 				// Versioning enabled quite possibly object is deleted might be delete-marker
@@ -627,10 +627,10 @@ func (api objectAPIHandlers) HeadObjectHandler(w http.ResponseWriter, r *http.Re
 			if globalBucketVersioningSys.Enabled(bucket) {
 				if !objInfo.VersionPurgeStatus.Empty() {
 					// Shows the replication status of a permanent delete of a version
-					w.Header()[xhttp.MinIODeleteReplicationStatus] = []string{string(objInfo.VersionPurgeStatus)}
+					w.Header()[xhttp.OtterIODeleteReplicationStatus] = []string{string(objInfo.VersionPurgeStatus)}
 				}
 				if !objInfo.ReplicationStatus.Empty() && objInfo.DeleteMarker {
-					w.Header()[xhttp.MinIODeleteMarkerReplicationStatus] = []string{string(objInfo.ReplicationStatus)}
+					w.Header()[xhttp.OtterIODeleteMarkerReplicationStatus] = []string{string(objInfo.ReplicationStatus)}
 				}
 				// Versioning enabled quite possibly object is deleted might be delete-marker
 				// if present set the headers, no idea why AWS S3 sets these headers.
@@ -799,9 +799,9 @@ var (
 	getRemoteInstanceTransportOnce sync.Once
 )
 
-// Returns a minio-go Client configured to access remote host described by destDNSRecord
+// Returns a otterio-go Client configured to access remote host described by destDNSRecord
 // Applicable only in a federated deployment
-var getRemoteInstanceClient = func(r *http.Request, host string) (*miniogo.Core, error) {
+var getRemoteInstanceClient = func(r *http.Request, host string) (*otteriogo.Core, error) {
 	if newObjectLayerFn() == nil {
 		return nil, errServerNotInitialized
 	}
@@ -809,7 +809,7 @@ var getRemoteInstanceClient = func(r *http.Request, host string) (*miniogo.Core,
 	cred := getReqAccessCred(r, globalServerRegion)
 	// In a federated deployment, all the instances share config files
 	// and hence expected to have same credentials.
-	core, err := miniogo.NewCore(host, &miniogo.Options{
+	core, err := otteriogo.NewCore(host, &otteriogo.Options{
 		Creds:     credentials.NewStaticV4(cred.AccessKey, cred.SecretKey, ""),
 		Secure:    globalIsTLS,
 		Transport: getRemoteInstanceTransport,
@@ -1322,7 +1322,7 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 		// Remove the metadata for remote calls.
 		delete(srcInfo.UserDefined, ReservedMetadataPrefix+"compression")
 		delete(srcInfo.UserDefined, ReservedMetadataPrefix+"actual-size")
-		opts := miniogo.PutObjectOptions{
+		opts := otteriogo.PutObjectOptions{
 			UserMetadata:         srcInfo.UserDefined,
 			ServerSideEncryption: dstOpts.ServerSideEncryption,
 			UserTags:             tag.ToMap(),
@@ -2321,7 +2321,7 @@ func (api objectAPIHandlers) CopyObjectPartHandler(w http.ResponseWriter, r *htt
 			return
 		}
 
-		partInfo, err := core.PutObjectPart(ctx, dstBucket, dstObject, uploadID, partID, gr, length, miniogo.PutObjectPartOptions{
+		partInfo, err := core.PutObjectPart(ctx, dstBucket, dstObject, uploadID, partID, gr, length, otteriogo.PutObjectPartOptions{
 			SSE: dstOpts.ServerSideEncryption,
 		})
 		if err != nil {
@@ -3019,7 +3019,7 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 	// complete multipart upload operations on FS mode.
 	writeErrorResponseWithoutXMLHeader := func(ctx context.Context, w http.ResponseWriter, err APIError, reqURL *url.URL) {
 		switch err.Code {
-		case "SlowDown", "XMinioServerNotInitialized", "XMinioReadQuorum", "XMinioWriteQuorum":
+		case "SlowDown", "XOtterioServerNotInitialized", "XOtterioReadQuorum", "XOtterioWriteQuorum":
 			// Set retxry-after header to indicate user-agents to retry request after 120secs.
 			// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
 			w.Header().Set(xhttp.RetryAfter, "120")

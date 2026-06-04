@@ -15,10 +15,10 @@
  */
 
 import createHistory from "history/createBrowserHistory"
-import { minioBrowserPrefix } from "./constants"
+import { otterioBrowserPrefix } from "./constants"
 
 const history = createHistory({
-  basename: minioBrowserPrefix
+  basename: otterioBrowserPrefix
 })
 
 export default history

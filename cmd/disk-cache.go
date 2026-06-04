@@ -747,7 +747,7 @@ func (c *cacheObjects) queueWritebackRetry(oi ObjectInfo) {
 
 // Returns cacheObjects for use by Server.
 func newServerCacheObjects(ctx context.Context, config cache.Config) (CacheObjectLayer, error) {
-	// list of disk caches for cache "drives" specified in config.json or MINIO_CACHE_DRIVES env var.
+	// list of disk caches for cache "drives" specified in config.json or OTTERIO_CACHE_DRIVES env var.
 	cache, migrateSw, err := newCache(config)
 	if err != nil {
 		return nil, err

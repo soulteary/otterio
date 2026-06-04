@@ -24,7 +24,7 @@ import (
 	"github.com/soulteary/otterio/pkg/madmin"
 )
 
-func TestMinioAdminClient(t *testing.T) {
+func TestOtterioAdminClient(t *testing.T) {
 	_, err := madmin.New("localhost:9000", "food", "food123", true)
 	if err != nil {
 		t.Fatal(err)

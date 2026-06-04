@@ -134,7 +134,7 @@ func TestQueueUnmarshalXML(t *testing.T) {
 <QueueConfiguration>
    <Id>1</Id>
    <Filter></Filter>
-   <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
    <Event>s3:ObjectAccessed:*</Event>
    <Event>s3:ObjectCreated:*</Event>
    <Event>s3:ObjectRemoved:*</Event>
@@ -155,7 +155,7 @@ func TestQueueUnmarshalXML(t *testing.T) {
             </FilterRule>
         </S3Key>
    </Filter>
-   <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
    <Event>s3:ObjectCreated:Put</Event>
 </QueueConfiguration>`)
 
@@ -174,7 +174,7 @@ func TestQueueUnmarshalXML(t *testing.T) {
             </FilterRule>
         </S3Key>
    </Filter>
-   <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
    <Event>s3:ObjectCreated:Put</Event>
    <Event>s3:ObjectCreated:Put</Event>
 </QueueConfiguration>`)
@@ -203,7 +203,7 @@ func TestQueueValidate(t *testing.T) {
 <QueueConfiguration>
    <Id>1</Id>
    <Filter></Filter>
-   <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
    <Event>s3:ObjectAccessed:*</Event>
    <Event>s3:ObjectCreated:*</Event>
    <Event>s3:ObjectRemoved:*</Event>
@@ -228,7 +228,7 @@ func TestQueueValidate(t *testing.T) {
             </FilterRule>
         </S3Key>
    </Filter>
-   <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
    <Event>s3:ObjectCreated:Put</Event>
 </QueueConfiguration>`)
 	queue2 := &Queue{}
@@ -240,7 +240,7 @@ func TestQueueValidate(t *testing.T) {
 <QueueConfiguration>
    <Id>1</Id>
    <Filter></Filter>
-   <Queue>arn:minio:sqs:eu-west-2:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:eu-west-2:1:webhook</Queue>
    <Event>s3:ObjectAccessed:*</Event>
    <Event>s3:ObjectCreated:*</Event>
    <Event>s3:ObjectRemoved:*</Event>
@@ -284,7 +284,7 @@ func TestQueueSetRegion(t *testing.T) {
 <QueueConfiguration>
    <Id>1</Id>
    <Filter></Filter>
-   <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
    <Event>s3:ObjectAccessed:*</Event>
    <Event>s3:ObjectCreated:*</Event>
    <Event>s3:ObjectRemoved:*</Event>
@@ -309,7 +309,7 @@ func TestQueueSetRegion(t *testing.T) {
             </FilterRule>
         </S3Key>
    </Filter>
-   <Queue>arn:minio:sqs::1:webhook</Queue>
+   <Queue>arn:otterio:sqs::1:webhook</Queue>
    <Event>s3:ObjectCreated:Put</Event>
 </QueueConfiguration>`)
 	queue2 := &Queue{}
@@ -343,7 +343,7 @@ func TestQueueToRulesMap(t *testing.T) {
 <QueueConfiguration>
    <Id>1</Id>
    <Filter></Filter>
-   <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
    <Event>s3:ObjectAccessed:*</Event>
    <Event>s3:ObjectCreated:*</Event>
    <Event>s3:ObjectRemoved:*</Event>
@@ -368,7 +368,7 @@ func TestQueueToRulesMap(t *testing.T) {
             </FilterRule>
         </S3Key>
    </Filter>
-   <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+   <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
    <Event>s3:ObjectCreated:Put</Event>
 </QueueConfiguration>`)
 	queueCase2 := &Queue{}
@@ -402,7 +402,7 @@ func TestConfigUnmarshalXML(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -426,7 +426,7 @@ func TestConfigUnmarshalXML(t *testing.T) {
 	               </FilterRule>
 	           </S3Key>
 	      </Filter>
-	      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+	      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
 	      <Event>s3:ObjectCreated:Put</Event>
 	   </QueueConfiguration>
 	</NotificationConfiguration>
@@ -437,7 +437,7 @@ func TestConfigUnmarshalXML(t *testing.T) {
 	   <QueueConfiguration>
 	      <Id>1</Id>
 	      <Filter></Filter>
-	      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+	      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
 	      <Event>s3:ObjectAccessed:*</Event>
 	      <Event>s3:ObjectCreated:*</Event>
 	      <Event>s3:ObjectRemoved:*</Event>
@@ -456,7 +456,7 @@ func TestConfigUnmarshalXML(t *testing.T) {
 	               </FilterRule>
 	           </S3Key>
 	      </Filter>
-	      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+	      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
 	      <Event>s3:ObjectCreated:Put</Event>
 	   </QueueConfiguration>
 	</NotificationConfiguration>
@@ -467,7 +467,7 @@ func TestConfigUnmarshalXML(t *testing.T) {
 	   <QueueConfiguration>
 	      <Id>1</Id>
 	      <Filter></Filter>
-	      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+	      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
 	      <Event>s3:ObjectAccessed:*</Event>
 	      <Event>s3:ObjectCreated:*</Event>
 	      <Event>s3:ObjectRemoved:*</Event>
@@ -522,7 +522,7 @@ func TestConfigValidate(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -550,7 +550,7 @@ func TestConfigValidate(t *testing.T) {
                </FilterRule>
            </S3Key>
       </Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectCreated:Put</Event>
    </QueueConfiguration>
 </NotificationConfiguration>
@@ -565,7 +565,7 @@ func TestConfigValidate(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -584,7 +584,7 @@ func TestConfigValidate(t *testing.T) {
                </FilterRule>
            </S3Key>
       </Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectCreated:Put</Event>
    </QueueConfiguration>
 </NotificationConfiguration>
@@ -629,7 +629,7 @@ func TestConfigSetRegion(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -657,7 +657,7 @@ func TestConfigSetRegion(t *testing.T) {
                </FilterRule>
            </S3Key>
       </Filter>
-      <Queue>arn:minio:sqs::1:webhook</Queue>
+      <Queue>arn:otterio:sqs::1:webhook</Queue>
       <Event>s3:ObjectCreated:Put</Event>
    </QueueConfiguration>
 </NotificationConfiguration>
@@ -672,7 +672,7 @@ func TestConfigSetRegion(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -691,7 +691,7 @@ func TestConfigSetRegion(t *testing.T) {
                </FilterRule>
            </S3Key>
       </Filter>
-      <Queue>arn:minio:sqs:us-east-1:2:amqp</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:2:amqp</Queue>
       <Event>s3:ObjectCreated:Put</Event>
    </QueueConfiguration>
 </NotificationConfiguration>
@@ -733,7 +733,7 @@ func TestConfigToRulesMap(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -761,7 +761,7 @@ func TestConfigToRulesMap(t *testing.T) {
                </FilterRule>
            </S3Key>
       </Filter>
-      <Queue>arn:minio:sqs::1:webhook</Queue>
+      <Queue>arn:otterio:sqs::1:webhook</Queue>
       <Event>s3:ObjectCreated:Put</Event>
    </QueueConfiguration>
 </NotificationConfiguration>
@@ -776,7 +776,7 @@ func TestConfigToRulesMap(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -795,7 +795,7 @@ func TestConfigToRulesMap(t *testing.T) {
                </FilterRule>
            </S3Key>
       </Filter>
-      <Queue>arn:minio:sqs:us-east-1:2:amqp</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:2:amqp</Queue>
       <Event>s3:ObjectCreated:Put</Event>
    </QueueConfiguration>
 </NotificationConfiguration>
@@ -836,7 +836,7 @@ func TestParseConfig(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -860,7 +860,7 @@ func TestParseConfig(t *testing.T) {
                </FilterRule>
            </S3Key>
       </Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectCreated:Put</Event>
    </QueueConfiguration>
 </NotificationConfiguration>
@@ -871,7 +871,7 @@ func TestParseConfig(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>
@@ -890,7 +890,7 @@ func TestParseConfig(t *testing.T) {
                </FilterRule>
            </S3Key>
       </Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectCreated:Put</Event>
    </QueueConfiguration>
 </NotificationConfiguration>
@@ -901,7 +901,7 @@ func TestParseConfig(t *testing.T) {
    <QueueConfiguration>
       <Id>1</Id>
       <Filter></Filter>
-      <Queue>arn:minio:sqs:us-east-1:1:webhook</Queue>
+      <Queue>arn:otterio:sqs:us-east-1:1:webhook</Queue>
       <Event>s3:ObjectAccessed:*</Event>
       <Event>s3:ObjectCreated:*</Event>
       <Event>s3:ObjectRemoved:*</Event>

@@ -836,7 +836,7 @@ func (h *healSequence) healFromSourceCh() {
 func (h *healSequence) healDiskMeta(objAPI ObjectLayer) error {
 	// Try to pro-actively heal backend-encrypted file.
 	if err := h.queueHealTask(healSource{
-		bucket: minioMetaBucket,
+		bucket: otterioMetaBucket,
 		object: backendEncryptedFile,
 	}, madmin.HealItemBucketMetadata); err != nil {
 		if !isErrObjectNotFound(err) && !isErrVersionNotFound(err) {
@@ -845,7 +845,7 @@ func (h *healSequence) healDiskMeta(objAPI ObjectLayer) error {
 	}
 
 	// Start healing the config prefix.
-	return h.healMinioSysMeta(objAPI, minioConfigPrefix)()
+	return h.healOtterioSysMeta(objAPI, otterioConfigPrefix)()
 }
 
 func (h *healSequence) healItems(objAPI ObjectLayer, bucketsOnly bool) error {
@@ -870,14 +870,14 @@ func (h *healSequence) traverseAndHeal(objAPI ObjectLayer) {
 	close(h.traverseAndHealDoneCh)
 }
 
-// healMinioSysMeta - heals all files under a given meta prefix, returns a function
+// healOtterioSysMeta - heals all files under a given meta prefix, returns a function
 // which in-turn heals the respective meta directory path and any files in int.
-func (h *healSequence) healMinioSysMeta(objAPI ObjectLayer, metaPrefix string) func() error {
+func (h *healSequence) healOtterioSysMeta(objAPI ObjectLayer, metaPrefix string) func() error {
 	return func() error {
 		// NOTE: Healing on meta is run regardless
 		// of any bucket being selected, this is to ensure that
 		// meta are always upto date and correct.
-		return objAPI.HealObjects(h.ctx, minioMetaBucket, metaPrefix, h.settings, func(bucket, object, versionID string) error {
+		return objAPI.HealObjects(h.ctx, otterioMetaBucket, metaPrefix, h.settings, func(bucket, object, versionID string) error {
 			if h.isQuitting() {
 				return errHealStopSignalled
 			}

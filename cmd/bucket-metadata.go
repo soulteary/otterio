@@ -283,7 +283,7 @@ func (b *BucketMetadata) convertLegacyConfigs(ctx context.Context, objectAPI Obj
 			switch err.(type) {
 			case ObjectExistsAsDirectory:
 				// in FS mode it possible that we have actual
-				// files in this folder with `.minio.sys/buckets/bucket/configFile`
+				// files in this folder with `.otterio.sys/buckets/bucket/configFile`
 				continue
 			}
 			if errors.Is(err, errConfigNotFound) {

@@ -1,13 +1,13 @@
 # Golang Admin Client API Reference [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
-The MinIO Admin Golang Client SDK provides APIs to manage MinIO services.
+The OtterIO Admin Golang Client SDK provides APIs to manage OtterIO services.
 
-This quickstart guide will show you how to install the MinIO Admin client SDK, connect to MinIO admin service, and provide a walkthrough of a simple file uploader.
+This quickstart guide will show you how to install the OtterIO Admin client SDK, connect to OtterIO admin service, and provide a walkthrough of a simple file uploader.
 
 This document assumes that you have a working [Golang setup](https://golang.org/doc/install).
 
-## Initialize MinIO Admin Client object.
+## Initialize OtterIO Admin Client object.
 
-##  MinIO
+##  OtterIO
 
 ```go
 
@@ -23,8 +23,8 @@ func main() {
     // Use a secure connection.
     ssl := true
 
-    // Initialize minio client object.
-    mdmClnt, err := madmin.New("your-minio.example.com:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETKEY", ssl)
+    // Initialize otterio client object.
+    mdmClnt, err := madmin.New("your-otterio.example.com:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETKEY", ssl)
     if err != nil {
         fmt.Println(err)
         return
@@ -59,7 +59,7 @@ func main() {
 |                         | [`AddCannedPolicy`](#AddCannedPolicy) |                                                   |                                 |
 
 ## 1. Constructor
-<a name="MinIO"></a>
+<a name="OtterIO"></a>
 
 ### New(endpoint string, accessKeyID string, secretAccessKey string, ssl bool) (*AdminClient, error)
 Initializes a new admin client object.
@@ -68,7 +68,7 @@ __Parameters__
 
 | Param             | Type     | Description                                               |
 |:------------------|:---------|:----------------------------------------------------------|
-| `endpoint`        | _string_ | MinIO endpoint.                                           |
+| `endpoint`        | _string_ | OtterIO endpoint.                                           |
 | `accessKeyID`     | _string_ | Access key for the object storage endpoint.               |
 | `secretAccessKey` | _string_ | Secret key for the object storage endpoint.               |
 | `ssl`             | _bool_   | Set this value to 'true' to enable secure (HTTPS) access. |
@@ -104,7 +104,7 @@ Fetch service status, replies disk space used, backend type and total disks offl
 
 <a name="ServiceRestart"></a>
 ### ServiceRestart(ctx context.Context) error
-Sends a service action restart command to MinIO server.
+Sends a service action restart command to OtterIO server.
 
  __Example__
 
@@ -119,7 +119,7 @@ Sends a service action restart command to MinIO server.
 
 <a name="ServiceStop"></a>
 ### ServiceStop(ctx context.Context) error
-Sends a service action stop command to MinIO server.
+Sends a service action stop command to OtterIO server.
 
  __Example__
 
@@ -134,7 +134,7 @@ Sends a service action stop command to MinIO server.
 
 <a name="ServiceTrace"></a>
 ### ServiceTrace(ctx context.Context, allTrace bool, doneCh <-chan struct{}) <-chan TraceInfo
-Enable HTTP request tracing on all nodes in a MinIO cluster
+Enable HTTP request tracing on all nodes in a OtterIO cluster
 
 __Example__
 
@@ -359,7 +359,7 @@ __Example__
 
 <a name="GetConfig"></a>
 ### GetConfig(ctx context.Context) ([]byte, error)
-Get current `config.json` of a MinIO server.
+Get current `config.json` of a OtterIO server.
 
 __Example__
 
@@ -382,7 +382,7 @@ __Example__
 
 <a name="SetConfig"></a>
 ### SetConfig(ctx context.Context, config io.Reader) error
-Set a new `config.json` for a MinIO server.
+Set a new `config.json` for a OtterIO server.
 
 __Example__
 
@@ -398,7 +398,7 @@ __Example__
 
 <a name="TopLocks"></a>
 ### TopLocks(ctx context.Context) (LockEntries, error)
-Get the oldest locks from MinIO server.
+Get the oldest locks from OtterIO server.
 
 __Example__
 
@@ -420,7 +420,7 @@ __Example__
 
 <a name="AddCannedPolicy"></a>
 ### AddCannedPolicy(ctx context.Context, policyName string, policy *iampolicy.Policy) error
-Create a new canned policy on MinIO server.
+Create a new canned policy on OtterIO server.
 
 __Example__
 
@@ -437,7 +437,7 @@ __Example__
 
 <a name="AddUser"></a>
 ### AddUser(ctx context.Context, user string, secret string) error
-Add a new user on a MinIO server.
+Add a new user on a OtterIO server.
 
 __Example__
 
@@ -449,7 +449,7 @@ __Example__
 
 <a name="SetUserPolicy"></a>
 ### SetUserPolicy(ctx context.Context, user string, policyName string) error
-Enable a canned policy `get-only` for a given user on MinIO server.
+Enable a canned policy `get-only` for a given user on OtterIO server.
 
 __Example__
 
@@ -461,7 +461,7 @@ __Example__
 
 <a name="ListUsers"></a>
 ### ListUsers(ctx context.Context) (map[string]UserInfo, error)
-Lists all users on MinIO server.
+Lists all users on OtterIO server.
 
 __Example__
 
@@ -479,7 +479,7 @@ __Example__
 
 <a name="ServerUpdate"></a>
 ### ServerUpdate(ctx context.Context, updateURL string) (ServerUpdateStatus, error)
-Sends a update command to MinIO server, to update MinIO server to latest release. In distributed setup it updates all servers atomically.
+Sends a update command to OtterIO server, to update OtterIO server to latest release. In distributed setup it updates all servers atomically.
 
  __Example__
 
@@ -553,14 +553,14 @@ __Example__
 <a name="GetKeyStatus"></a>
 ### GetKeyStatus(ctx context.Context, keyID string) (*KMSKeyStatus, error)
 Requests status information about one particular KMS master key
-from a MinIO server. The keyID is optional and the server will
-use the default master key (configured via `MINIO_KMS_VAULT_KEY_NAME`
-or `MINIO_KMS_MASTER_KEY`) if the keyID is empty.
+from a OtterIO server. The keyID is optional and the server will
+use the default master key (configured via `OTTERIO_KMS_VAULT_KEY_NAME`
+or `OTTERIO_KMS_MASTER_KEY`) if the keyID is empty.
 
 __Example__
 
 ``` go
-    keyInfo, err := madmClnt.GetKeyStatus(context.Background(), "my-minio-key")
+    keyInfo, err := madmClnt.GetKeyStatus(context.Background(), "my-otterio-key")
     if err != nil {
        log.Fatalln(err)
     }

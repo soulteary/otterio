@@ -1,30 +1,30 @@
-# How to secure access to MinIO server with TLS
+# How to secure access to OtterIO server with TLS
 
-This guide explains how to configure MinIO Server with TLS certificates on Linux and Windows platforms.
+This guide explains how to configure OtterIO Server with TLS certificates on Linux and Windows platforms.
 
-1. [Install MinIO Server](#install-minio-server)
-2. [Use an Existing Key and Certificate with MinIO](#use-an-existing-key-and-certificate-with-minio)
-3. [Generate and use Self-signed Keys and Certificates with MinIO](#generate-use-self-signed-keys-certificates)
+1. [Install OtterIO Server](#install-otterio-server)
+2. [Use an Existing Key and Certificate with OtterIO](#use-an-existing-key-and-certificate-with-otterio)
+3. [Generate and use Self-signed Keys and Certificates with OtterIO](#generate-use-self-signed-keys-certificates)
 4. [Install Certificates from Third-party CAs](#install-certificates-from-third-party-cas)
 
-## <a name="install-minio-server"></a>1. Install MinIO Server
+## <a name="install-otterio-server"></a>1. Install OtterIO Server
 
-Install MinIO Server using the instructions in the [MinIO Quickstart Guide](http://docs.min.io/docs/minio-quickstart-guide).
+Install OtterIO Server using the instructions in the [OtterIO Quickstart Guide](http://docs.min.io/docs/minio-quickstart-guide).
 
-## <a name="use-an-existing-key-and-certificate-with-minio"></a>2. Use an Existing Key and Certificate with MinIO
+## <a name="use-an-existing-key-and-certificate-with-otterio"></a>2. Use an Existing Key and Certificate with OtterIO
 
-This section describes how to use a private key and public certificate that have been obtained from a certificate authority (CA). If these files have not been obtained, skip to [3. Generate Self-signed Certificates](#generate-use-self-signed-keys-certificates) or generate them with [Let's Encrypt](https://letsencrypt.org) using these instructions: [Generate Let's Encrypt certificate using Certbot for MinIO](https://docs.min.io/docs/generate-let-s-encypt-certificate-using-concert-for-minio.html).
+This section describes how to use a private key and public certificate that have been obtained from a certificate authority (CA). If these files have not been obtained, skip to [3. Generate Self-signed Certificates](#generate-use-self-signed-keys-certificates) or generate them with [Let's Encrypt](https://letsencrypt.org) using these instructions: [Generate Let's Encrypt certificate using Certbot for OtterIO](https://docs.min.io/docs/generate-let-s-encypt-certificate-using-concert-for-minio.html).
 
 Copy the existing private key and public certificate to the `certs` directory. The default certs directory is:
-* **Linux:** `${HOME}/.minio/certs`
-* **Windows:** `%%USERPROFILE%%\.minio\certs`
+* **Linux:** `${HOME}/.otterio/certs`
+* **Windows:** `%%USERPROFILE%%\.otterio\certs`
 
 **Note:**
 * Location of custom certs directory can be specified using `--certs-dir` command line option.
 * Inside the `certs` directory, the private key must by named `private.key` and the public key must be named `public.crt`.
 * A certificate signed by a CA contains information about the issued identity (e.g. name, expiry, public key) and any intermediate certificates. The root CA is not included.
 
-## <a name="generate-use-self-signed-keys-certificates"></a>3. Generate and use Self-signed Keys and Certificates with MinIO
+## <a name="generate-use-self-signed-keys-certificates"></a>3. Generate and use Self-signed Keys and Certificates with OtterIO
 
 This section describes how to generate a self-signed certificate using various tools:
 
@@ -34,8 +34,8 @@ This section describes how to generate a self-signed certificate using various t
 * 3.4 [Use GnuTLS (for Windows) to Generate a Certificate](#using-gnu-tls)
 
 **Note:**
-* MinIO only supports keys and certificates in PEM format on Linux and Windows.
-* MinIO doesn't currently support PFX certificates.
+* OtterIO only supports keys and certificates in PEM format on Linux and Windows.
+* OtterIO doesn't currently support PFX certificates.
 
 ### <a name="using-go"></a>3.1 Use generate_cert.go to Generate a Certificate
 
@@ -109,13 +109,13 @@ Alternatively, use the following command to generate a private RSA key protected
 openssl genrsa -aes256 -passout pass:PASSWORD -out private.key 2048
 ```
 
-**Note:** When using a password-protected private key, the password must be provided through the environment variable `MINIO_CERT_PASSWD` using the following command:
+**Note:** When using a password-protected private key, the password must be provided through the environment variable `OTTERIO_CERT_PASSWD` using the following command:
 
 ```sh
-export MINIO_CERT_PASSWD=<PASSWORD>
+export OTTERIO_CERT_PASSWD=<PASSWORD>
 ```
 
-The default OpenSSL format for private encrypted keys is PKCS-8, but MinIO only supports PKCS-1. An RSA key that has been formatted with PKCS-8 can be converted to PKCS-1 using the following command:
+The default OpenSSL format for private encrypted keys is PKCS-8, but OtterIO only supports PKCS-1. An RSA key that has been formatted with PKCS-8 can be converted to PKCS-1 using the following command:
 
 ```sh
 openssl rsa -in private-pkcs8-key.key -aes256 -passout pass:PASSWORD -out private.key
@@ -228,12 +228,12 @@ certtool.exe --generate-self-signed --load-privkey private.key --template cert.c
 
 ## <a name="install-certificates-from-third-party-cas"></a>4. Install Certificates from Third-party CAs
 
-MinIO can connect to other servers, including MinIO nodes or other server types such as Redis and PostgreSQL. If these servers use certificates that were not registered with a known CA, add trust for these certificates to MinIO Server by placing these certificates under one of the following MinIO configuration paths:
-* **Linux:** `~/.minio/certs/CAs/`
-* **Windows**: `C:\Users\<Username>\.minio\certs\CAs`
+OtterIO can connect to other servers, including OtterIO nodes or other server types such as Redis and PostgreSQL. If these servers use certificates that were not registered with a known CA, add trust for these certificates to OtterIO Server by placing these certificates under one of the following OtterIO configuration paths:
+* **Linux:** `~/.otterio/certs/CAs/`
+* **Windows**: `C:\Users\<Username>\.otterio\certs\CAs`
 
 # Explore Further
-* [TLS Configuration for MinIO server on Kubernetes](https://github.com/minio/minio/tree/master/docs/tls/kubernetes)
-* [MinIO Client Complete Guide](https://docs.min.io/docs/minio-client-complete-guide)
+* [TLS Configuration for OtterIO server on Kubernetes](https://github.com/minio/minio/tree/master/docs/tls/kubernetes)
+* [OtterIO Client Complete Guide](https://docs.min.io/docs/minio-client-complete-guide)
 * [Generate Let's Encrypt Certificate](https://docs.min.io/docs/generate-let-s-encypt-certificate-using-concert-for-minio)
-* [Setup nginx Proxy with MinIO Server](https://docs.min.io/docs/setup-nginx-proxy-with-minio)
+* [Setup nginx Proxy with OtterIO Server](https://docs.min.io/docs/setup-nginx-proxy-with-minio)

@@ -36,8 +36,8 @@ import (
 	"github.com/soulteary/otterio/pkg/handlers"
 )
 
-// MinioHandler is the standard Fiber handler signature for MinIO APIs.
-type MinioHandler = fiber.Handler
+// OtterioHandler is the standard Fiber handler signature for OtterIO APIs.
+type OtterioHandler = fiber.Handler
 
 // urlVarsKey is the context key for path variables bridged from Fiber.
 type urlVarsKey struct{}
@@ -104,8 +104,8 @@ func allPathParams(c fiber.Ctx) map[string]string {
 	return m
 }
 
-// toMinioHandler adapts a legacy net/http handler to MinioHandler.
-func toMinioHandler(h func(http.ResponseWriter, *http.Request)) MinioHandler {
+// toOtterioHandler adapts a legacy net/http handler to OtterioHandler.
+func toOtterioHandler(h func(http.ResponseWriter, *http.Request)) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		r, err := fiberRequest(c)
 		if err != nil {
@@ -165,10 +165,10 @@ func (w *fiberStreamResponseWriter) signalReady() {
 	w.once.Do(func() { close(w.ready) })
 }
 
-// toMinioStreamHandler adapts a legacy net/http handler to a streaming
-// MinioHandler. Headers/status are captured from the first write and applied to
+// toOtterioStreamHandler adapts a legacy net/http handler to a streaming
+// OtterioHandler. Headers/status are captured from the first write and applied to
 // the response, then the body is streamed from the handler goroutine.
-func toMinioStreamHandler(h func(http.ResponseWriter, *http.Request)) MinioHandler {
+func toOtterioStreamHandler(h func(http.ResponseWriter, *http.Request)) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		r, err := fiberRequest(c)
 		if err != nil {
@@ -607,9 +607,9 @@ func guessIsHealthCheckReqFiber(c fiber.Ctx) bool {
 
 func guessIsMetricsReqFiber(c fiber.Ctx) bool {
 	switch c.Path() {
-	case minioReservedBucketPath + prometheusMetricsPathLegacy,
-		minioReservedBucketPath + prometheusMetricsV2ClusterPath,
-		minioReservedBucketPath + prometheusMetricsV2NodePath:
+	case otterioReservedBucketPath + prometheusMetricsPathLegacy,
+		otterioReservedBucketPath + prometheusMetricsV2ClusterPath,
+		otterioReservedBucketPath + prometheusMetricsV2NodePath:
 	default:
 		return false
 	}
@@ -624,7 +624,7 @@ func guessIsMetricsReqFiber(c fiber.Ctx) bool {
 // from fasthttp, avoiding an *http.Request allocation entirely.
 func guessIsRPCReqFiber(c fiber.Ctx) bool {
 	return c.Method() == fiber.MethodPost &&
-		strings.HasPrefix(c.Path(), minioReservedBucketPath+SlashSeparator)
+		strings.HasPrefix(c.Path(), otterioReservedBucketPath+SlashSeparator)
 }
 
 func isAdminReqFiber(c fiber.Ctx) bool {

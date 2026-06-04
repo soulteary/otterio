@@ -1,8 +1,8 @@
 # Compression Guide
 
-MinIO server allows streaming compression to ensure efficient disk space usage.
+OtterIO server allows streaming compression to ensure efficient disk space usage.
 Compression happens inflight, i.e objects are compressed before being written to disk(s).
-MinIO uses [`klauspost/compress/s2`](https://github.com/klauspost/compress/tree/master/s2)
+OtterIO uses [`klauspost/compress/s2`](https://github.com/klauspost/compress/tree/master/s2)
 streaming compression due to its stability and performance.
 
 This algorithm is specifically optimized for machine generated content.
@@ -19,43 +19,43 @@ will increase speed when the content can be compressed.
 
 ### 1. Prerequisites
 
-Install MinIO - [MinIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
+Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
 
-### 2. Run MinIO with compression
+### 2. Run OtterIO with compression
 
-Compression can be enabled by updating the `compress` config settings for MinIO server config.
+Compression can be enabled by updating the `compress` config settings for OtterIO server config.
 Config `compress` settings take extensions and mime-types to be compressed.
 
 ```bash
-~ mc admin config get myminio compression
+~ mc admin config get myotterio compression
 compression extensions=".txt,.log,.csv,.json,.tar,.xml,.bin" mime_types="text/*,application/json,application/xml"
 ```
 
 Default config includes most common highly compressible content extensions and mime-types.
 
 ```bash
-~ mc admin config set myminio compression extensions=".pdf" mime_types="application/pdf"
+~ mc admin config set myotterio compression extensions=".pdf" mime_types="application/pdf"
 ```
 
 To show help on setting compression config values.
 ```bash
-~ mc admin config set myminio compression
+~ mc admin config set myotterio compression
 ```
 
 To enable compression for all content, no matter the extension and content type
 (except for the default excluded types) set BOTH extensions and mime types to empty.
 
 ```bash
-~ mc admin config set myminio compression enable="on" extensions="" mime_types=""
+~ mc admin config set myotterio compression enable="on" extensions="" mime_types=""
 ```
 
 The compression settings may also be set through environment variables.
 When set, environment variables override the defined `compress` config settings in the server config.
 
 ```bash
-export MINIO_COMPRESS="on"
-export MINIO_COMPRESS_EXTENSIONS=".txt,.log,.csv,.json,.tar,.xml,.bin"
-export MINIO_COMPRESS_MIME_TYPES="text/*,application/json,application/xml"
+export OTTERIO_COMPRESS="on"
+export OTTERIO_COMPRESS_EXTENSIONS=".txt,.log,.csv,.json,.tar,.xml,.bin"
+export OTTERIO_COMPRESS_MIME_TYPES="text/*,application/json,application/xml"
 ```
 
 ### 3. Compression + Encryption
@@ -72,10 +72,10 @@ your setup can use this feature combination safely.
 To enable compression+encryption use:
 
 ```bash
-~ mc admin config set myminio compression allow_encryption=on
+~ mc admin config set myotterio compression allow_encryption=on
 ```
 
-Or alternatively through the environment variable `MINIO_COMPRESS_ALLOW_ENCRYPTION=on`.
+Or alternatively through the environment variable `OTTERIO_COMPRESS_ALLOW_ENCRYPTION=on`.
 
 ### 4. Excluded Types
 
@@ -117,7 +117,7 @@ even if compression is enabled for all types.
 
 ### 5. Notes
 
-- MinIO does not support compression for Gateway (Azure/GCS/NAS) implementations.
+- OtterIO does not support compression for Gateway (Azure/GCS/NAS) implementations.
 
 ## To test the setup
 
@@ -126,8 +126,8 @@ the data directory to view the size of the object.
 
 ## Explore Further
 
-- [Use `mc` with MinIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with MinIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with MinIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `minio-go` SDK with MinIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The MinIO documentation website](https://docs.min.io)
+- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
+- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
+- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
+- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
+- [The OtterIO documentation website](https://docs.min.io)

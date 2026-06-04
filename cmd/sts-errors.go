@@ -50,7 +50,7 @@ func writeSTSErrorResponse(ctx context.Context, w http.ResponseWriter, isErrCode
 	var logKind logger.Kind
 	switch errCode {
 	case ErrSTSInternalError, ErrSTSNotInitialized:
-		logKind = logger.Minio
+		logKind = logger.Otterio
 	default:
 		logKind = logger.All
 	}
@@ -136,7 +136,7 @@ var stsErrCodes = stsErrorCodeMap{
 	},
 	ErrSTSInvalidClientGrantsToken: {
 		Code:           "InvalidClientGrantsToken",
-		Description:    "The client grants token that was passed could not be validated by MinIO.",
+		Description:    "The client grants token that was passed could not be validated by OtterIO.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrSTSMalformedPolicyDocument: {

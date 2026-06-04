@@ -25,7 +25,7 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	minio "github.com/soulteary/otterio/cmd"
+	otterio "github.com/soulteary/otterio/cmd"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/hash"
 )
@@ -39,13 +39,13 @@ var (
 type gwMetaV1 struct {
 	Version string         `json:"version"` // Version of the current `gw.json`.
 	Format  string         `json:"format"`  // Format of the current `gw.json`.
-	Stat    minio.StatInfo `json:"stat"`    // Stat of the current object `gw.json`.
+	Stat    otterio.StatInfo `json:"stat"`    // Stat of the current object `gw.json`.
 	ETag    string         `json:"etag"`    // ETag of the current object
 
 	// Metadata map for current object `gw.json`.
 	Meta map[string]string `json:"meta,omitempty"`
 	// Captures all the individual object `gw.json`.
-	Parts []minio.ObjectPartInfo `json:"parts,omitempty"`
+	Parts []otterio.ObjectPartInfo `json:"parts,omitempty"`
 }
 
 // Gateway metadata constants.
@@ -78,7 +78,7 @@ func (m gwMetaV1) IsValid() bool {
 }
 
 // Converts metadata to object info.
-func (m gwMetaV1) ToObjectInfo(bucket, object string) minio.ObjectInfo {
+func (m gwMetaV1) ToObjectInfo(bucket, object string) otterio.ObjectInfo {
 	filterKeys := append([]string{
 		"ETag",
 		"Content-Length",
@@ -86,7 +86,7 @@ func (m gwMetaV1) ToObjectInfo(bucket, object string) minio.ObjectInfo {
 		"Content-Type",
 		"Expires",
 	}, defaultFilterKeys...)
-	objInfo := minio.ObjectInfo{
+	objInfo := otterio.ObjectInfo{
 		IsDir:           false,
 		Bucket:          bucket,
 		Name:            object,
@@ -94,8 +94,8 @@ func (m gwMetaV1) ToObjectInfo(bucket, object string) minio.ObjectInfo {
 		ModTime:         m.Stat.ModTime,
 		ContentType:     m.Meta["content-type"],
 		ContentEncoding: m.Meta["content-encoding"],
-		ETag:            minio.CanonicalizeETag(m.ETag),
-		UserDefined:     minio.CleanMinioInternalMetadataKeys(minio.CleanMetadataKeys(m.Meta, filterKeys...)),
+		ETag:            otterio.CanonicalizeETag(m.ETag),
+		UserDefined:     otterio.CleanOtterioInternalMetadataKeys(otterio.CleanMetadataKeys(m.Meta, filterKeys...)),
 		Parts:           m.Parts,
 	}
 
@@ -132,9 +132,9 @@ func (m gwMetaV1) ObjectToPartOffset(ctx context.Context, offset int64) (partInd
 		// Continue to towards the next part.
 		partOffset -= part.Size
 	}
-	logger.LogIf(ctx, minio.InvalidRange{})
+	logger.LogIf(ctx, otterio.InvalidRange{})
 	// Offset beyond the size of the object return InvalidRange.
-	return 0, 0, minio.InvalidRange{}
+	return 0, 0, otterio.InvalidRange{}
 }
 
 // Constructs GWMetaV1 using `jsoniter` lib to retrieve each field.
@@ -160,8 +160,8 @@ func readGWMetadata(ctx context.Context, buf bytes.Buffer) (gwMeta gwMetaV1, err
 	return gwMeta, nil
 }
 
-// getGWMetadata - unmarshals dare.meta into a *minio.PutObjReader
-func getGWMetadata(ctx context.Context, bucket, prefix string, gwMeta gwMetaV1) (*minio.PutObjReader, error) {
+// getGWMetadata - unmarshals dare.meta into a *otterio.PutObjReader
+func getGWMetadata(ctx context.Context, bucket, prefix string, gwMeta gwMetaV1) (*otterio.PutObjReader, error) {
 	// Marshal json.
 	metadataBytes, err := json.Marshal(&gwMeta)
 	if err != nil {
@@ -172,5 +172,5 @@ func getGWMetadata(ctx context.Context, bucket, prefix string, gwMeta gwMetaV1) 
 	if err != nil {
 		return nil, err
 	}
-	return minio.NewPutObjReader(hashReader), nil
+	return otterio.NewPutObjReader(hashReader), nil
 }

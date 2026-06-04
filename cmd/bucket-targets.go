@@ -27,8 +27,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	minio "github.com/minio/minio-go/v7"
-	miniogo "github.com/minio/minio-go/v7"
+	otterio "github.com/minio/minio-go/v7"
+	otteriogo "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/soulteary/otterio/cmd/crypto"
 	"github.com/soulteary/otterio/cmd/logger"
@@ -84,7 +84,7 @@ func (sys *BucketTargetSys) ListBucketTargets(ctx context.Context, bucket string
 	return nil, BucketRemoteTargetNotFound{Bucket: bucket}
 }
 
-// SetTarget - sets a new minio-go client target for this bucket.
+// SetTarget - sets a new otterio-go client target for this bucket.
 func (sys *BucketTargetSys) SetTarget(ctx context.Context, bucket string, tgt *madmin.BucketTarget, update bool) error {
 	if globalIsGateway {
 		return nil
@@ -98,14 +98,14 @@ func (sys *BucketTargetSys) SetTarget(ctx context.Context, bucket string, tgt *m
 	}
 	// validate if target credentials are ok
 	if _, err = clnt.BucketExists(ctx, tgt.TargetBucket); err != nil {
-		if minio.ToErrorResponse(err).Code == "NoSuchBucket" {
+		if otterio.ToErrorResponse(err).Code == "NoSuchBucket" {
 			return BucketRemoteTargetNotFound{Bucket: tgt.TargetBucket}
 		}
 		return BucketRemoteConnectionErr{Bucket: tgt.TargetBucket, Err: err}
 	}
 	if tgt.Type == madmin.ReplicationService {
 		if !globalIsErasure {
-			return NotImplemented{Message: "Replication is not implemented in " + getMinioMode()}
+			return NotImplemented{Message: "Replication is not implemented in " + getOtterioMode()}
 		}
 		if !globalBucketVersioningSys.Enabled(bucket) {
 			return BucketReplicationSourceNotVersioned{Bucket: bucket}
@@ -125,7 +125,7 @@ func (sys *BucketTargetSys) SetTarget(ctx context.Context, bucket string, tgt *m
 		if globalBucketVersioningSys.Enabled(bucket) {
 			vcfg, err := clnt.GetBucketVersioning(ctx, tgt.TargetBucket)
 			if err != nil {
-				if minio.ToErrorResponse(err).Code == "NoSuchBucket" {
+				if otterio.ToErrorResponse(err).Code == "NoSuchBucket" {
 					return BucketRemoteTargetNotFound{Bucket: tgt.TargetBucket}
 				}
 				return BucketRemoteConnectionErr{Bucket: tgt.TargetBucket, Err: err}
@@ -183,7 +183,7 @@ func (sys *BucketTargetSys) RemoveTarget(ctx context.Context, bucket, arnStr str
 	}
 	if arn.Type == madmin.ReplicationService {
 		if !globalIsErasure {
-			return NotImplemented{Message: "Replication is not implemented in " + getMinioMode()}
+			return NotImplemented{Message: "Replication is not implemented in " + getOtterioMode()}
 		}
 		// reject removal of remote target if replication configuration is present
 		rcfg, err := getReplicationConfig(ctx, bucket)
@@ -227,7 +227,7 @@ func (sys *BucketTargetSys) RemoveTarget(ctx context.Context, bucket, arnStr str
 	return nil
 }
 
-// GetRemoteTargetClient returns minio-go client for replication target instance
+// GetRemoteTargetClient returns otterio-go client for replication target instance
 func (sys *BucketTargetSys) GetRemoteTargetClient(ctx context.Context, arn string) *TargetClient {
 	sys.RLock()
 	defer sys.RUnlock()
@@ -327,7 +327,7 @@ func (sys *BucketTargetSys) UpdateAllTargets(bucket string, tgts *madmin.BucketT
 	sys.targetsMap[bucket] = tgts.Targets
 }
 
-// create minio-go clients for buckets having remote targets
+// create otterio-go clients for buckets having remote targets
 func (sys *BucketTargetSys) load(ctx context.Context, buckets []BucketInfo, objAPI ObjectLayer) {
 	for _, bucket := range buckets {
 		cfg, err := globalBucketMetadataSys.GetBucketTargetsConfig(bucket.Name)
@@ -357,7 +357,7 @@ func (sys *BucketTargetSys) load(ctx context.Context, buckets []BucketInfo, objA
 var getRemoteTargetInstanceTransport http.RoundTripper
 var getRemoteTargetInstanceTransportOnce sync.Once
 
-// Returns a minio-go Client configured to access remote host described in replication target config.
+// Returns a otterio-go Client configured to access remote host described in replication target config.
 func (sys *BucketTargetSys) getRemoteTargetClient(tcfg *madmin.BucketTarget) (*TargetClient, error) {
 	config := tcfg.Credentials
 	creds := credentials.NewStaticV4(config.AccessKey, config.SecretKey, "")
@@ -365,7 +365,7 @@ func (sys *BucketTargetSys) getRemoteTargetClient(tcfg *madmin.BucketTarget) (*T
 	getRemoteTargetInstanceTransportOnce.Do(func() {
 		getRemoteTargetInstanceTransport = NewRemoteTargetHTTPTransport()
 	})
-	api, err := minio.New(tcfg.Endpoint, &miniogo.Options{
+	api, err := otterio.New(tcfg.Endpoint, &otteriogo.Options{
 		Creds:     creds,
 		Secure:    tcfg.Secure,
 		Region:    tcfg.Region,
@@ -455,7 +455,7 @@ func parseBucketTargetConfig(bucket string, cdata, cmetadata []byte) (*madmin.Bu
 
 // TargetClient is the struct for remote target client.
 type TargetClient struct {
-	*miniogo.Client
+	*otteriogo.Client
 	up                  int32
 	healthCheckDuration time.Duration
 	bucket              string // remote bucket target

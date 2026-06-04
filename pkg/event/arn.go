@@ -33,7 +33,7 @@ func (arn ARN) String() string {
 		return ""
 	}
 
-	return "arn:minio:sqs:" + arn.region + ":" + arn.TargetID.String()
+	return "arn:otterio:sqs:" + arn.region + ":" + arn.TargetID.String()
 }
 
 // MarshalXML - encodes to XML data.
@@ -59,8 +59,8 @@ func (arn *ARN) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 // parseARN - parses string to ARN.
 func parseARN(s string) (*ARN, error) {
-	// ARN must be in the format of arn:minio:sqs:<REGION>:<ID>:<TYPE>
-	if !strings.HasPrefix(s, "arn:minio:sqs:") {
+	// ARN must be in the format of arn:otterio:sqs:<REGION>:<ID>:<TYPE>
+	if !strings.HasPrefix(s, "arn:otterio:sqs:") {
 		return nil, &ErrInvalidARN{s}
 	}
 

@@ -27,16 +27,16 @@ func registerHealthCheckRouterFiber(app *fiber.App) {
 	prefix := healthCheckPathPrefix
 
 	registerHealthRoute(app, prefix+healthCheckClusterPath, []routeRule{
-		{methods: []string{http.MethodGet}, handler: toMinioHandler(ClusterCheckHandler)},
+		{methods: []string{http.MethodGet}, handler: toOtterioHandler(ClusterCheckHandler)},
 	})
 	registerHealthRoute(app, prefix+healthCheckClusterReadPath, []routeRule{
-		{methods: []string{http.MethodGet}, handler: toMinioHandler(ClusterReadCheckHandler)},
+		{methods: []string{http.MethodGet}, handler: toOtterioHandler(ClusterReadCheckHandler)},
 	})
 	registerHealthRoute(app, prefix+healthCheckLivenessPath, []routeRule{
-		{methods: []string{http.MethodGet, http.MethodHead}, handler: toMinioHandler(LivenessCheckHandler)},
+		{methods: []string{http.MethodGet, http.MethodHead}, handler: toOtterioHandler(LivenessCheckHandler)},
 	})
 	registerHealthRoute(app, prefix+healthCheckReadinessPath, []routeRule{
-		{methods: []string{http.MethodGet, http.MethodHead}, handler: toMinioHandler(ReadinessCheckHandler)},
+		{methods: []string{http.MethodGet, http.MethodHead}, handler: toOtterioHandler(ReadinessCheckHandler)},
 	})
 }
 

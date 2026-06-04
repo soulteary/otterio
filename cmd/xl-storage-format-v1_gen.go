@@ -1081,31 +1081,31 @@ func (z *xlMetaV1Object) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "Erasure")
 				return
 			}
-		case "Minio":
+		case "Otterio":
 			var zb0003 uint32
 			zb0003, err = dc.ReadMapHeader()
 			if err != nil {
-				err = msgp.WrapError(err, "Minio")
+				err = msgp.WrapError(err, "Otterio")
 				return
 			}
 			for zb0003 > 0 {
 				zb0003--
 				field, err = dc.ReadMapKeyPtr()
 				if err != nil {
-					err = msgp.WrapError(err, "Minio")
+					err = msgp.WrapError(err, "Otterio")
 					return
 				}
 				switch msgp.UnsafeString(field) {
 				case "Release":
-					z.Minio.Release, err = dc.ReadString()
+					z.Otterio.Release, err = dc.ReadString()
 					if err != nil {
-						err = msgp.WrapError(err, "Minio", "Release")
+						err = msgp.WrapError(err, "Otterio", "Release")
 						return
 					}
 				default:
 					err = dc.Skip()
 					if err != nil {
-						err = msgp.WrapError(err, "Minio")
+						err = msgp.WrapError(err, "Otterio")
 						return
 					}
 				}
@@ -1241,7 +1241,7 @@ func (z *xlMetaV1Object) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Erasure")
 		return
 	}
-	// write "Minio"
+	// write "Otterio"
 	err = en.Append(0xa5, 0x4d, 0x69, 0x6e, 0x69, 0x6f)
 	if err != nil {
 		return
@@ -1252,9 +1252,9 @@ func (z *xlMetaV1Object) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	err = en.WriteString(z.Minio.Release)
+	err = en.WriteString(z.Otterio.Release)
 	if err != nil {
-		err = msgp.WrapError(err, "Minio", "Release")
+		err = msgp.WrapError(err, "Otterio", "Release")
 		return
 	}
 	// write "Meta"
@@ -1345,12 +1345,12 @@ func (z *xlMetaV1Object) MarshalMsg(b []byte) (o []byte, err error) {
 		err = msgp.WrapError(err, "Erasure")
 		return
 	}
-	// string "Minio"
+	// string "Otterio"
 	o = append(o, 0xa5, 0x4d, 0x69, 0x6e, 0x69, 0x6f)
 	// map header, size 1
 	// string "Release"
 	o = append(o, 0x81, 0xa7, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65)
-	o = msgp.AppendString(o, z.Minio.Release)
+	o = msgp.AppendString(o, z.Otterio.Release)
 	// string "Meta"
 	o = append(o, 0xa4, 0x4d, 0x65, 0x74, 0x61)
 	o = msgp.AppendMapHeader(o, uint32(len(z.Meta)))
@@ -1448,31 +1448,31 @@ func (z *xlMetaV1Object) UnmarshalMsg(bts []byte) (o []byte, err error) {
 				err = msgp.WrapError(err, "Erasure")
 				return
 			}
-		case "Minio":
+		case "Otterio":
 			var zb0003 uint32
 			zb0003, bts, err = msgp.ReadMapHeaderBytes(bts)
 			if err != nil {
-				err = msgp.WrapError(err, "Minio")
+				err = msgp.WrapError(err, "Otterio")
 				return
 			}
 			for zb0003 > 0 {
 				zb0003--
 				field, bts, err = msgp.ReadMapKeyZC(bts)
 				if err != nil {
-					err = msgp.WrapError(err, "Minio")
+					err = msgp.WrapError(err, "Otterio")
 					return
 				}
 				switch msgp.UnsafeString(field) {
 				case "Release":
-					z.Minio.Release, bts, err = msgp.ReadStringBytes(bts)
+					z.Otterio.Release, bts, err = msgp.ReadStringBytes(bts)
 					if err != nil {
-						err = msgp.WrapError(err, "Minio", "Release")
+						err = msgp.WrapError(err, "Otterio", "Release")
 						return
 					}
 				default:
 					bts, err = msgp.Skip(bts)
 					if err != nil {
-						err = msgp.WrapError(err, "Minio")
+						err = msgp.WrapError(err, "Otterio")
 						return
 					}
 				}
@@ -1552,7 +1552,7 @@ func (z *xlMetaV1Object) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *xlMetaV1Object) Msgsize() (s int) {
-	s = 1 + 8 + msgp.StringPrefixSize + len(z.Version) + 7 + msgp.StringPrefixSize + len(z.Format) + 5 + 1 + 5 + msgp.Int64Size + 8 + msgp.TimeSize + 8 + z.Erasure.Msgsize() + 6 + 1 + 8 + msgp.StringPrefixSize + len(z.Minio.Release) + 5 + msgp.MapHeaderSize
+	s = 1 + 8 + msgp.StringPrefixSize + len(z.Version) + 7 + msgp.StringPrefixSize + len(z.Format) + 5 + 1 + 5 + msgp.Int64Size + 8 + msgp.TimeSize + 8 + z.Erasure.Msgsize() + 6 + 1 + 8 + msgp.StringPrefixSize + len(z.Otterio.Release) + 5 + msgp.MapHeaderSize
 	if z.Meta != nil {
 		for za0001, za0002 := range z.Meta {
 			_ = za0002

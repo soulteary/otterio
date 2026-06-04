@@ -219,7 +219,7 @@ func newXLStorage(ep Endpoint) (*xlStorage, error) {
 	}
 
 	var rootDisk bool
-	if env.Get("MINIO_CI_CD", "") != "" {
+	if env.Get("OTTERIO_CI_CD", "") != "" {
 		rootDisk = true
 	} else {
 		if IsDocker() || IsKubernetes() {
@@ -278,7 +278,7 @@ func newXLStorage(ep Endpoint) (*xlStorage, error) {
 	}
 
 	// Create all necessary bucket folders if possible.
-	if err = p.MakeVolBulk(context.TODO(), minioMetaBucket, minioMetaTmpBucket, minioMetaMultipartBucket, dataUsageBucket); err != nil {
+	if err = p.MakeVolBulk(context.TODO(), otterioMetaBucket, otterioMetaTmpBucket, otterioMetaMultipartBucket, dataUsageBucket); err != nil {
 		return nil, err
 	}
 
@@ -286,7 +286,7 @@ func newXLStorage(ep Endpoint) (*xlStorage, error) {
 	var rnd [8]byte
 	_, _ = rand.Read(rnd[:])
 	tmpFile := ".writable-check-" + hex.EncodeToString(rnd[:]) + ".tmp"
-	filePath := pathJoin(p.diskPath, minioMetaTmpBucket, tmpFile)
+	filePath := pathJoin(p.diskPath, otterioMetaTmpBucket, tmpFile)
 	w, err := disk.OpenFileDirectIO(filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
 	if err != nil {
 		return p, err
@@ -364,7 +364,7 @@ func (s *xlStorage) SetDiskLoc(poolIdx, setIdx, diskIdx int) {
 }
 
 func (s *xlStorage) Healing() *healingTracker {
-	healingFile := pathJoin(s.diskPath, minioMetaBucket,
+	healingFile := pathJoin(s.diskPath, otterioMetaBucket,
 		bucketMetaPrefix, healingTrackerFilename)
 	b, err := ioutil.ReadFile(healingFile)
 	if err != nil {
@@ -526,7 +526,7 @@ func (s *xlStorage) GetDiskID() (string, error) {
 	}
 	s.Unlock()
 
-	formatFile := pathJoin(s.diskPath, minioMetaBucket, formatConfigFile)
+	formatFile := pathJoin(s.diskPath, otterioMetaBucket, formatConfigFile)
 	fi, err := Lstat(formatFile)
 	if err != nil {
 		// If the disk is still not initialized.
@@ -868,7 +868,7 @@ func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi F
 			}
 
 			tmpuuid := mustGetUUID()
-			if err = renameAll(filePath, pathutil.Join(s.diskPath, minioMetaTmpDeletedBucket, tmpuuid)); err != nil {
+			if err = renameAll(filePath, pathutil.Join(s.diskPath, otterioMetaTmpDeletedBucket, tmpuuid)); err != nil {
 				if err != errFileNotFound {
 					return err
 				}
@@ -888,7 +888,7 @@ func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi F
 	if err = checkPathLength(filePath); err != nil {
 		return err
 	}
-	err = renameAll(filePath, pathutil.Join(s.diskPath, minioMetaTmpDeletedBucket, mustGetUUID()))
+	err = renameAll(filePath, pathutil.Join(s.diskPath, otterioMetaTmpDeletedBucket, mustGetUUID()))
 
 	// Delete parents if needed.
 	filePath = retainSlash(pathutil.Dir(pathJoin(volumeDir, path)))
@@ -1502,9 +1502,9 @@ func (s *xlStorage) CreateFile(ctx context.Context, volume, path string, fileSiz
 	parentFilePath := pathutil.Dir(filePath)
 	defer func() {
 		if err != nil {
-			if volume == minioMetaTmpBucket {
+			if volume == otterioMetaTmpBucket {
 				// only cleanup parent path if the
-				// parent volume name is minioMetaTmpBucket
+				// parent volume name is otterioMetaTmpBucket
 				removeAll(parentFilePath)
 			}
 		}
@@ -1755,7 +1755,7 @@ func (s *xlStorage) deleteFile(basePath, deletePath string, recursive bool) erro
 
 	var err error
 	if recursive {
-		err = renameAll(deletePath, pathutil.Join(s.diskPath, minioMetaTmpDeletedBucket, mustGetUUID()))
+		err = renameAll(deletePath, pathutil.Join(s.diskPath, otterioMetaTmpDeletedBucket, mustGetUUID()))
 	} else {
 		err = Remove(deletePath)
 	}
@@ -2038,12 +2038,12 @@ func (s *xlStorage) RenameData(ctx context.Context, srcVolume, srcPath string, f
 		}
 
 		if oldDstDataPath != "" {
-			renameAll(oldDstDataPath, pathutil.Join(s.diskPath, minioMetaTmpDeletedBucket, mustGetUUID()))
+			renameAll(oldDstDataPath, pathutil.Join(s.diskPath, otterioMetaTmpDeletedBucket, mustGetUUID()))
 		}
 
 		// renameAll only for objects that have xl.meta not saved inline.
 		if len(fi.Data) == 0 && fi.Size > 0 {
-			renameAll(dstDataPath, pathutil.Join(s.diskPath, minioMetaTmpDeletedBucket, mustGetUUID()))
+			renameAll(dstDataPath, pathutil.Join(s.diskPath, otterioMetaTmpDeletedBucket, mustGetUUID()))
 			if err = renameAll(srcDataPath, dstDataPath); err != nil {
 				logger.LogIf(ctx, err)
 				return osErrToFileErr(err)

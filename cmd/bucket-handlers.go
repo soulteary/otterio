@@ -211,7 +211,7 @@ func (api objectAPIHandlers) GetBucketLocationHandler(w http.ResponseWriter, r *
 	encodedSuccessResponse := encodeResponse(LocationResponse{})
 	// Get current region.
 	region := globalServerRegion
-	if region != globalMinioDefaultRegion {
+	if region != globalOtterioDefaultRegion {
 		encodedSuccessResponse = encodeResponse(LocationResponse{
 			Location: region,
 		})
@@ -1084,7 +1084,7 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 }
 
 // GetBucketPolicyStatusHandler -  Retrieves the policy status
-// for an MinIO bucket, indicating whether the bucket is public.
+// for an OtterIO bucket, indicating whether the bucket is public.
 func (api objectAPIHandlers) GetBucketPolicyStatusHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "GetBucketPolicyStatus")
 
@@ -1195,7 +1195,7 @@ func (api objectAPIHandlers) DeleteBucketHandler(w http.ResponseWriter, r *http.
 	}
 
 	forceDelete := false
-	if value := r.Header.Get(xhttp.MinIOForceDelete); value != "" {
+	if value := r.Header.Get(xhttp.OtterIOForceDelete); value != "" {
 		var err error
 		forceDelete, err = strconv.ParseBool(value)
 		if err != nil {

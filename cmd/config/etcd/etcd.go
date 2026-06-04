@@ -45,11 +45,11 @@ const (
 	ClientCert    = "client_cert"
 	ClientCertKey = "client_cert_key"
 
-	EnvEtcdEndpoints     = "MINIO_ETCD_ENDPOINTS"
-	EnvEtcdPathPrefix    = "MINIO_ETCD_PATH_PREFIX"
-	EnvEtcdCoreDNSPath   = "MINIO_ETCD_COREDNS_PATH"
-	EnvEtcdClientCert    = "MINIO_ETCD_CLIENT_CERT"
-	EnvEtcdClientCertKey = "MINIO_ETCD_CLIENT_CERT_KEY"
+	EnvEtcdEndpoints     = "OTTERIO_ETCD_ENDPOINTS"
+	EnvEtcdPathPrefix    = "OTTERIO_ETCD_PATH_PREFIX"
+	EnvEtcdCoreDNSPath   = "OTTERIO_ETCD_COREDNS_PATH"
+	EnvEtcdClientCert    = "OTTERIO_ETCD_CLIENT_CERT"
+	EnvEtcdClientCertKey = "OTTERIO_ETCD_CLIENT_CERT_KEY"
 )
 
 // DefaultKVS - default KV settings for etcd.

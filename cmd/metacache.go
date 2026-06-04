@@ -247,5 +247,5 @@ func (m *metacache) delete(ctx context.Context) {
 		logger.LogIf(ctx, errors.New("metacache.delete: expected objAPI to be *erasureServerPools"))
 		return
 	}
-	ez.deleteAll(ctx, minioMetaBucket, metacachePrefixForID(m.bucket, m.id))
+	ez.deleteAll(ctx, otterioMetaBucket, metacachePrefixForID(m.bucket, m.id))
 }

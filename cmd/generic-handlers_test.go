@@ -34,39 +34,39 @@ func TestRedirectLocation(t *testing.T) {
 		location string
 	}{
 		{
-			// 1. When urlPath is '/minio'
-			urlPath:  minioReservedBucketPath,
-			location: minioReservedBucketPath + SlashSeparator,
+			// 1. When urlPath is '/otterio'
+			urlPath:  otterioReservedBucketPath,
+			location: otterioReservedBucketPath + SlashSeparator,
 		},
 		{
 			// 2. When urlPath is '/'
 			urlPath:  SlashSeparator,
-			location: minioReservedBucketPath + SlashSeparator,
+			location: otterioReservedBucketPath + SlashSeparator,
 		},
 		{
 			// 3. When urlPath is '/webrpc'
 			urlPath:  "/webrpc",
-			location: minioReservedBucketPath + "/webrpc",
+			location: otterioReservedBucketPath + "/webrpc",
 		},
 		{
 			// 4. When urlPath is '/login'
 			urlPath:  "/login",
-			location: minioReservedBucketPath + "/login",
+			location: otterioReservedBucketPath + "/login",
 		},
 		{
 			// 5. When urlPath is '/favicon-16x16.png'
 			urlPath:  "/favicon-16x16.png",
-			location: minioReservedBucketPath + "/favicon-16x16.png",
+			location: otterioReservedBucketPath + "/favicon-16x16.png",
 		},
 		{
 			// 6. When urlPath is '/favicon-16x16.png'
 			urlPath:  "/favicon-32x32.png",
-			location: minioReservedBucketPath + "/favicon-32x32.png",
+			location: otterioReservedBucketPath + "/favicon-32x32.png",
 		},
 		{
 			// 7. When urlPath is '/favicon-96x96.png'
 			urlPath:  "/favicon-96x96.png",
-			location: minioReservedBucketPath + "/favicon-96x96.png",
+			location: otterioReservedBucketPath + "/favicon-96x96.png",
 		},
 		{
 			// 8. When urlPath is '/unknown'
@@ -90,7 +90,7 @@ func TestGuessIsRPC(t *testing.T) {
 		t.Fatal("Unexpected return for nil request")
 	}
 
-	u, err := url.Parse("http://localhost:9000/minio/lock")
+	u, err := url.Parse("http://localhost:9000/otterio/lock")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ var containsReservedMetadataTests = []struct {
 	shouldFail bool
 }{
 	{
-		header: http.Header{"X-Minio-Key": []string{"value"}},
+		header: http.Header{"X-Otterio-Key": []string{"value"}},
 	},
 	{
 		header:     http.Header{crypto.MetaIV: []string{"iv"}},

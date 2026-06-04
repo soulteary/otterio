@@ -25,7 +25,7 @@ import (
 	"net/url"
 	"strings"
 
-	minio "github.com/minio/minio-go/v7"
+	otterio "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/tags"
 	"github.com/soulteary/otterio/cmd/config/dns"
 	"github.com/soulteary/otterio/cmd/crypto"
@@ -224,7 +224,7 @@ const (
 
 	// Add new extended error codes here.
 
-	// MinIO extended errors.
+	// OtterIO extended errors.
 	ErrReadQuorum
 	ErrWriteQuorum
 	ErrParentIsObject
@@ -239,7 +239,7 @@ const (
 	ErrClientDisconnected
 	ErrOperationMaxedOut
 	ErrInvalidRequest
-	// MinIO storage class error codes
+	// OtterIO storage class error codes
 	ErrInvalidStorageClass
 	ErrBackendDown
 	// Add new extended error codes here.
@@ -847,42 +847,42 @@ var errorCodes = errorCodeMap{
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrRemoteTargetNotFoundError: {
-		Code:           "XMinioAdminRemoteTargetNotFoundError",
+		Code:           "XOtterioAdminRemoteTargetNotFoundError",
 		Description:    "The remote target does not exist",
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrReplicationRemoteConnectionError: {
-		Code:           "XMinioAdminReplicationRemoteConnectionError",
+		Code:           "XOtterioAdminReplicationRemoteConnectionError",
 		Description:    "Remote service connection error - please check remote service credentials and target bucket",
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrBucketRemoteIdenticalToSource: {
-		Code:           "XMinioAdminRemoteIdenticalToSource",
+		Code:           "XOtterioAdminRemoteIdenticalToSource",
 		Description:    "The remote target cannot be identical to source",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrBucketRemoteAlreadyExists: {
-		Code:           "XMinioAdminBucketRemoteAlreadyExists",
+		Code:           "XOtterioAdminBucketRemoteAlreadyExists",
 		Description:    "The remote target already exists",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrBucketRemoteLabelInUse: {
-		Code:           "XMinioAdminBucketRemoteLabelInUse",
+		Code:           "XOtterioAdminBucketRemoteLabelInUse",
 		Description:    "The remote target with this label already exists",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrBucketRemoteRemoveDisallowed: {
-		Code:           "XMinioAdminRemoteRemoveDisallowed",
+		Code:           "XOtterioAdminRemoteRemoveDisallowed",
 		Description:    "This ARN is in use by an existing configuration",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrBucketRemoteArnTypeInvalid: {
-		Code:           "XMinioAdminRemoteARNTypeInvalid",
+		Code:           "XOtterioAdminRemoteARNTypeInvalid",
 		Description:    "The bucket remote ARN type is not valid",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrBucketRemoteArnInvalid: {
-		Code:           "XMinioAdminRemoteArnInvalid",
+		Code:           "XOtterioAdminRemoteArnInvalid",
 		Description:    "The bucket remote ARN does not have correct format",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
@@ -989,7 +989,7 @@ var errorCodes = errorCodeMap{
 	},
 	ErrUnsupportedNotification: {
 		Code:           "UnsupportedNotification",
-		Description:    "MinIO server does not support Topic or Cloud Function based notifications.",
+		Description:    "OtterIO server does not support Topic or Cloud Function based notifications.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidCopyPartRange: {
@@ -1100,135 +1100,135 @@ var errorCodes = errorCodeMap{
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 
-	/// MinIO extensions.
+	/// OtterIO extensions.
 	ErrStorageFull: {
-		Code:           "XMinioStorageFull",
+		Code:           "XOtterioStorageFull",
 		Description:    "Storage backend has reached its minimum free disk threshold. Please delete a few objects to proceed.",
 		HTTPStatusCode: http.StatusInsufficientStorage,
 	},
 	ErrParentIsObject: {
-		Code:           "XMinioParentIsObject",
+		Code:           "XOtterioParentIsObject",
 		Description:    "Object-prefix is already an object, please choose a different object-prefix name.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrRequestBodyParse: {
-		Code:           "XMinioRequestBodyParse",
+		Code:           "XOtterioRequestBodyParse",
 		Description:    "The request body failed to parse.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrObjectExistsAsDirectory: {
-		Code:           "XMinioObjectExistsAsDirectory",
+		Code:           "XOtterioObjectExistsAsDirectory",
 		Description:    "Object name already exists as a directory.",
 		HTTPStatusCode: http.StatusConflict,
 	},
 	ErrInvalidObjectName: {
-		Code:           "XMinioInvalidObjectName",
+		Code:           "XOtterioInvalidObjectName",
 		Description:    "Object name contains unsupported characters.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidObjectNamePrefixSlash: {
-		Code:           "XMinioInvalidObjectName",
+		Code:           "XOtterioInvalidObjectName",
 		Description:    "Object name contains a leading slash.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidResourceName: {
-		Code:           "XMinioInvalidResourceName",
+		Code:           "XOtterioInvalidResourceName",
 		Description:    "Resource name contains bad components such as \"..\" or \".\".",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrServerNotInitialized: {
-		Code:           "XMinioServerNotInitialized",
+		Code:           "XOtterioServerNotInitialized",
 		Description:    "Server not initialized, please try again.",
 		HTTPStatusCode: http.StatusServiceUnavailable,
 	},
 	ErrMalformedJSON: {
-		Code:           "XMinioMalformedJSON",
+		Code:           "XOtterioMalformedJSON",
 		Description:    "The JSON you provided was not well-formed or did not validate against our published format.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminNoSuchUser: {
-		Code:           "XMinioAdminNoSuchUser",
+		Code:           "XOtterioAdminNoSuchUser",
 		Description:    "The specified user does not exist.",
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrAdminNoSuchGroup: {
-		Code:           "XMinioAdminNoSuchGroup",
+		Code:           "XOtterioAdminNoSuchGroup",
 		Description:    "The specified group does not exist.",
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrAdminGroupNotEmpty: {
-		Code:           "XMinioAdminGroupNotEmpty",
+		Code:           "XOtterioAdminGroupNotEmpty",
 		Description:    "The specified group is not empty - cannot remove it.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminNoSuchPolicy: {
-		Code:           "XMinioAdminNoSuchPolicy",
+		Code:           "XOtterioAdminNoSuchPolicy",
 		Description:    "The canned policy does not exist.",
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrAdminInvalidArgument: {
-		Code:           "XMinioAdminInvalidArgument",
+		Code:           "XOtterioAdminInvalidArgument",
 		Description:    "Invalid arguments specified.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminInvalidAccessKey: {
-		Code:           "XMinioAdminInvalidAccessKey",
+		Code:           "XOtterioAdminInvalidAccessKey",
 		Description:    "The access key is invalid.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminInvalidSecretKey: {
-		Code:           "XMinioAdminInvalidSecretKey",
+		Code:           "XOtterioAdminInvalidSecretKey",
 		Description:    "The secret key is invalid.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminConfigNoQuorum: {
-		Code:           "XMinioAdminConfigNoQuorum",
+		Code:           "XOtterioAdminConfigNoQuorum",
 		Description:    "Configuration update failed because server quorum was not met",
 		HTTPStatusCode: http.StatusServiceUnavailable,
 	},
 	ErrAdminConfigTooLarge: {
-		Code: "XMinioAdminConfigTooLarge",
+		Code: "XOtterioAdminConfigTooLarge",
 		Description: fmt.Sprintf("Configuration data provided exceeds the allowed maximum of %d bytes",
 			maxEConfigJSONSize),
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminConfigBadJSON: {
-		Code:           "XMinioAdminConfigBadJSON",
+		Code:           "XOtterioAdminConfigBadJSON",
 		Description:    "JSON configuration provided is of incorrect format",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminConfigDuplicateKeys: {
-		Code:           "XMinioAdminConfigDuplicateKeys",
+		Code:           "XOtterioAdminConfigDuplicateKeys",
 		Description:    "JSON configuration provided has objects with duplicate keys",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminConfigNotificationTargetsFailed: {
-		Code:           "XMinioAdminNotificationTargetsTestFailed",
+		Code:           "XOtterioAdminNotificationTargetsTestFailed",
 		Description:    "Configuration update failed due an unsuccessful attempt to connect to one or more notification servers",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminProfilerNotEnabled: {
-		Code:           "XMinioAdminProfilerNotEnabled",
+		Code:           "XOtterioAdminProfilerNotEnabled",
 		Description:    "Unable to perform the requested operation because profiling is not enabled",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminCredentialsMismatch: {
-		Code:           "XMinioAdminCredentialsMismatch",
+		Code:           "XOtterioAdminCredentialsMismatch",
 		Description:    "Credentials in config mismatch with server environment variables",
 		HTTPStatusCode: http.StatusServiceUnavailable,
 	},
 	ErrAdminBucketQuotaExceeded: {
-		Code:           "XMinioAdminBucketQuotaExceeded",
+		Code:           "XOtterioAdminBucketQuotaExceeded",
 		Description:    "Bucket quota exceeded",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminNoSuchQuotaConfiguration: {
-		Code:           "XMinioAdminNoSuchQuotaConfiguration",
+		Code:           "XOtterioAdminNoSuchQuotaConfiguration",
 		Description:    "The quota configuration does not exist",
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrInsecureClientRequest: {
-		Code:           "XMinioInsecureClientRequest",
+		Code:           "XOtterioInsecureClientRequest",
 		Description:    "Cannot respond to plain-text request from TLS-encrypted server",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
@@ -1253,7 +1253,7 @@ var errorCodes = errorCodeMap{
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrObjectTampered: {
-		Code:           "XMinioObjectTampered",
+		Code:           "XOtterioObjectTampered",
 		Description:    errObjectTampered.Error(),
 		HTTPStatusCode: http.StatusPartialContent,
 	},
@@ -1272,37 +1272,37 @@ var errorCodes = errorCodeMap{
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrHealNotImplemented: {
-		Code:           "XMinioHealNotImplemented",
+		Code:           "XOtterioHealNotImplemented",
 		Description:    "This server does not implement heal functionality.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrHealNoSuchProcess: {
-		Code:           "XMinioHealNoSuchProcess",
+		Code:           "XOtterioHealNoSuchProcess",
 		Description:    "No such heal process is running on the server",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrHealInvalidClientToken: {
-		Code:           "XMinioHealInvalidClientToken",
+		Code:           "XOtterioHealInvalidClientToken",
 		Description:    "Client token mismatch",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrHealMissingBucket: {
-		Code:           "XMinioHealMissingBucket",
+		Code:           "XOtterioHealMissingBucket",
 		Description:    "A heal start request with a non-empty object-prefix parameter requires a bucket to be specified.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrHealAlreadyRunning: {
-		Code:           "XMinioHealAlreadyRunning",
+		Code:           "XOtterioHealAlreadyRunning",
 		Description:    "",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrHealOverlappingPaths: {
-		Code:           "XMinioHealOverlappingPaths",
+		Code:           "XOtterioHealOverlappingPaths",
 		Description:    "",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrBackendDown: {
-		Code:           "XMinioBackendDown",
+		Code:           "XOtterioBackendDown",
 		Description:    "Object storage backend is unreachable",
 		HTTPStatusCode: http.StatusServiceUnavailable,
 	},
@@ -1733,27 +1733,27 @@ var errorCodes = errorCodeMap{
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidDecompressedSize: {
-		Code:           "XMinioInvalidDecompressedSize",
+		Code:           "XOtterioInvalidDecompressedSize",
 		Description:    "The data provided is unfit for decompression",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAddUserInvalidArgument: {
-		Code:           "XMinioInvalidIAMCredentials",
+		Code:           "XOtterioInvalidIAMCredentials",
 		Description:    "User is not allowed to be same as admin access key",
 		HTTPStatusCode: http.StatusForbidden,
 	},
 	ErrAdminAccountNotEligible: {
-		Code:           "XMinioInvalidIAMCredentials",
+		Code:           "XOtterioInvalidIAMCredentials",
 		Description:    "The administrator key is not eligible for this operation",
 		HTTPStatusCode: http.StatusForbidden,
 	},
 	ErrAccountNotEligible: {
-		Code:           "XMinioInvalidIAMCredentials",
+		Code:           "XOtterioInvalidIAMCredentials",
 		Description:    "The account key is not eligible for this operation",
 		HTTPStatusCode: http.StatusForbidden,
 	},
 	ErrAdminServiceAccountNotFound: {
-		Code:           "XMinioInvalidIAMCredentials",
+		Code:           "XOtterioInvalidIAMCredentials",
 		Description:    "The specified service account is not found",
 		HTTPStatusCode: http.StatusNotFound,
 	},
@@ -2090,7 +2090,7 @@ func toAPIError(ctx context.Context, err error) APIError {
 			}
 		case url.EscapeError:
 			apiErr = APIError{
-				Code: "XMinioInvalidObjectName",
+				Code: "XOtterioInvalidObjectName",
 				Description: fmt.Sprintf("%s (%s)", errorCodes[ErrInvalidObjectName].Description,
 					e.Error()),
 				HTTPStatusCode: http.StatusBadRequest,
@@ -2127,11 +2127,11 @@ func toAPIError(ctx context.Context, err error) APIError {
 			}
 		case crypto.Error:
 			apiErr = APIError{
-				Code:           "XMinIOEncryptionError",
+				Code:           "XOtterIOEncryptionError",
 				Description:    e.Error(),
 				HTTPStatusCode: http.StatusBadRequest,
 			}
-		case minio.ErrorResponse:
+		case otterio.ErrorResponse:
 			apiErr = APIError{
 				Code:           e.Code,
 				Description:    e.Message,

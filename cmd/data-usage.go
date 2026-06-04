@@ -30,7 +30,7 @@ import (
 
 const (
 	dataUsageRoot   = SlashSeparator
-	dataUsageBucket = minioMetaBucket + SlashSeparator + bucketMetaPrefix
+	dataUsageBucket = otterioMetaBucket + SlashSeparator + bucketMetaPrefix
 
 	dataUsageObjName   = ".usage.json"
 	dataUsageCacheName = ".usage-cache.bin"

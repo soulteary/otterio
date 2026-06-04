@@ -23,7 +23,7 @@ import (
 )
 
 func registerMetricsRouterFiber(app *fiber.App) {
-	prefix := minioReservedBucketPath
+	prefix := otterioReservedBucketPath
 	register := func(path string, h fiber.Handler) {
 		app.All(prefix+path, h)
 	}

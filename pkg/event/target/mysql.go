@@ -19,7 +19,7 @@
 //
 // * Namespace format
 //
-// On each create or update object event in MinIO Object storage
+// On each create or update object event in OtterIO Object storage
 // server, a row is created or updated in the table in MySQL. On each
 // object removal, the corresponding row is deleted from the table.
 //
@@ -28,7 +28,7 @@
 // table name in the configuration. A sample SQL command that creates
 // a command with the required structure is:
 //
-//     CREATE TABLE myminio (
+//     CREATE TABLE myotterio (
 //         key_name VARCHAR(2048),
 //         value JSONB,
 //         PRIMARY KEY (key_name),
@@ -46,7 +46,7 @@
 // A different table schema is used for this format. A sample SQL
 // commant that creates a table with the required structure is:
 //
-// CREATE TABLE myminio (
+// CREATE TABLE myotterio (
 //     event_time TIMESTAMP WITH TIME ZONE NOT NULL,
 //     event_data JSONB
 // );
@@ -95,18 +95,18 @@ const (
 	MySQLQueueDir           = "queue_dir"
 	MySQLMaxOpenConnections = "max_open_connections"
 
-	EnvMySQLEnable             = "MINIO_NOTIFY_MYSQL_ENABLE"
-	EnvMySQLFormat             = "MINIO_NOTIFY_MYSQL_FORMAT"
-	EnvMySQLDSNString          = "MINIO_NOTIFY_MYSQL_DSN_STRING"
-	EnvMySQLTable              = "MINIO_NOTIFY_MYSQL_TABLE"
-	EnvMySQLHost               = "MINIO_NOTIFY_MYSQL_HOST"
-	EnvMySQLPort               = "MINIO_NOTIFY_MYSQL_PORT"
-	EnvMySQLUsername           = "MINIO_NOTIFY_MYSQL_USERNAME"
-	EnvMySQLPassword           = "MINIO_NOTIFY_MYSQL_PASSWORD"
-	EnvMySQLDatabase           = "MINIO_NOTIFY_MYSQL_DATABASE"
-	EnvMySQLQueueLimit         = "MINIO_NOTIFY_MYSQL_QUEUE_LIMIT"
-	EnvMySQLQueueDir           = "MINIO_NOTIFY_MYSQL_QUEUE_DIR"
-	EnvMySQLMaxOpenConnections = "MINIO_NOTIFY_MYSQL_MAX_OPEN_CONNECTIONS"
+	EnvMySQLEnable             = "OTTERIO_NOTIFY_MYSQL_ENABLE"
+	EnvMySQLFormat             = "OTTERIO_NOTIFY_MYSQL_FORMAT"
+	EnvMySQLDSNString          = "OTTERIO_NOTIFY_MYSQL_DSN_STRING"
+	EnvMySQLTable              = "OTTERIO_NOTIFY_MYSQL_TABLE"
+	EnvMySQLHost               = "OTTERIO_NOTIFY_MYSQL_HOST"
+	EnvMySQLPort               = "OTTERIO_NOTIFY_MYSQL_PORT"
+	EnvMySQLUsername           = "OTTERIO_NOTIFY_MYSQL_USERNAME"
+	EnvMySQLPassword           = "OTTERIO_NOTIFY_MYSQL_PASSWORD"
+	EnvMySQLDatabase           = "OTTERIO_NOTIFY_MYSQL_DATABASE"
+	EnvMySQLQueueLimit         = "OTTERIO_NOTIFY_MYSQL_QUEUE_LIMIT"
+	EnvMySQLQueueDir           = "OTTERIO_NOTIFY_MYSQL_QUEUE_DIR"
+	EnvMySQLMaxOpenConnections = "OTTERIO_NOTIFY_MYSQL_MAX_OPEN_CONNECTIONS"
 )
 
 // MySQLArgs - MySQL target arguments.

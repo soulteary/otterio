@@ -206,7 +206,7 @@ func (v *vaultService) Stat() (kms.Status, error) {
 // client implements the KMS interface. It always returns
 // a not-implemented error.
 //
-// Creating keys requires a KES instance between MinIO and Vault.
+// Creating keys requires a KES instance between OtterIO and Vault.
 func (v *vaultService) CreateKey(keyID string) error {
 	// Creating new keys requires KES.
 	return errors.New("crypto: creating keys is not supported by Vault")

@@ -1,14 +1,14 @@
-# 使用TLS安全的访问Minio服务
+# 使用TLS安全的访问Otterio服务
 
-本文，我们讲介绍如何在Linux和Windows上配置Minio服务使用TLS。
+本文，我们讲介绍如何在Linux和Windows上配置Otterio服务使用TLS。
 
 ## 1. 前提条件
 
-* 下载Minio server [这里](https://docs.min.io/docs/minio-quickstart-guide)
+* 下载Otterio server [这里](https://docs.min.io/docs/minio-quickstart-guide)
 
 ## 2. 配置已存在的证书
 
-如果你已经有私钥和公钥证书，你需要将它们拷贝到Minio的config/`certs`文件夹,分别取名为`private.key` 和 `public.crt`。
+如果你已经有私钥和公钥证书，你需要将它们拷贝到Otterio的config/`certs`文件夹,分别取名为`private.key` 和 `public.crt`。
 
 如果这个证书是被证书机构签发的，`public.crt`应该是服务器的证书，任何中间体的证书以及CA的根证书的级联。
 
@@ -16,7 +16,7 @@
 
 ### Linux
 
-Minio在Linux只支持使用PEM格式的key/certificate。
+Otterio在Linux只支持使用PEM格式的key/certificate。
 
 #### 使用 Let's Encrypt
 
@@ -48,7 +48,7 @@ openssl req -new -x509 -days 3650 -key private.key -out public.crt -subj "/C=US/
 
 ### Windows
 
-Minio在Windows上只支持PEM格式的key/certificate，目前不支持PFX证书。
+Otterio在Windows上只支持PEM格式的key/certificate，目前不支持PFX证书。
 
 #### 安装 GnuTLS
 
@@ -122,10 +122,10 @@ certtool.exe --generate-self-signed --load-privkey private.key --template cert.c
 
 ## 4. 安装第三方CAs
 
-Minio可以配置成连接其它服务，不管是Minio节点还是像NATs、Redis这些。如果这些服务用的不是在已知证书机构注册的证书，你可以让Minio服务信任这些CA，怎么做呢，将这些证书放到Minio配置路径下
-* **Linux:** `~/.minio/certs/CAs/`
-* **Windows**: `C:\Users\<Username>\.minio\certs\CAs`
+Otterio可以配置成连接其它服务，不管是Otterio节点还是像NATs、Redis这些。如果这些服务用的不是在已知证书机构注册的证书，你可以让Otterio服务信任这些CA，怎么做呢，将这些证书放到Otterio配置路径下
+* **Linux:** `~/.otterio/certs/CAs/`
+* **Windows**: `C:\Users\<Username>\.otterio\certs\CAs`
 
 # 了解更多
-* [Minio快速入门](https://docs.min.io/cn/minio-quickstart-guide)
-* [Minio客户端权威指南](https://docs.min.io/cn/minio-client-complete-guide)
+* [Otterio快速入门](https://docs.min.io/cn/minio-quickstart-guide)
+* [Otterio客户端权威指南](https://docs.min.io/cn/minio-client-complete-guide)

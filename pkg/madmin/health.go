@@ -36,16 +36,16 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-// HealthInfo - MinIO cluster's health Info
+// HealthInfo - OtterIO cluster's health Info
 type HealthInfo struct {
 	TimeStamp time.Time       `json:"timestamp,omitempty"`
 	Error     string          `json:"error,omitempty"`
 	Perf      PerfInfo        `json:"perf,omitempty"`
-	Minio     MinioHealthInfo `json:"minio,omitempty"`
+	Otterio     OtterioHealthInfo `json:"otterio,omitempty"`
 	Sys       SysHealthInfo   `json:"sys,omitempty"`
 }
 
-// SysHealthInfo - Includes hardware and system information of the MinIO cluster
+// SysHealthInfo - Includes hardware and system information of the OtterIO cluster
 type SysHealthInfo struct {
 	CPUInfo    []ServerCPUInfo    `json:"cpus,omitempty"`
 	DiskHwInfo []ServerDiskHwInfo `json:"drives,omitempty"`
@@ -111,7 +111,7 @@ type ServerOsInfo struct {
 	Error   string                 `json:"error,omitempty"`
 }
 
-// ServerCPUInfo - Includes cpu and timer stats of each node of the MinIO cluster
+// ServerCPUInfo - Includes cpu and timer stats of each node of the OtterIO cluster
 type ServerCPUInfo struct {
 	Addr     string          `json:"addr"`
 	CPUStat  []cpu.InfoStat  `json:"cpu,omitempty"`
@@ -119,8 +119,8 @@ type ServerCPUInfo struct {
 	Error    string          `json:"error,omitempty"`
 }
 
-// MinioHealthInfo - Includes MinIO confifuration information
-type MinioHealthInfo struct {
+// OtterioHealthInfo - Includes OtterIO confifuration information
+type OtterioHealthInfo struct {
 	Info   InfoMessage `json:"info,omitempty"`
 	Config interface{} `json:"config,omitempty"`
 	Error  string      `json:"error,omitempty"`
@@ -144,7 +144,7 @@ type PartitionStat struct {
 	SmartInfo  smart.Info `json:"smartInfo,omitempty"`
 }
 
-// PerfInfo - Includes Drive and Net perf info for the entire MinIO cluster
+// PerfInfo - Includes Drive and Net perf info for the entire OtterIO cluster
 type PerfInfo struct {
 	DriveInfo   []ServerDrivesInfo    `json:"drives,omitempty"`
 	Net         []ServerNetHealthInfo `json:"net,omitempty"`
@@ -152,7 +152,7 @@ type PerfInfo struct {
 	Error       string                `json:"error,omitempty"`
 }
 
-// ServerDrivesInfo - Drive info about all drives in a single MinIO node
+// ServerDrivesInfo - Drive info about all drives in a single OtterIO node
 type ServerDrivesInfo struct {
 	Addr     string          `json:"addr"`
 	Serial   []DrivePerfInfo `json:"serial,omitempty"`   // Drive perf info collected one drive at a time
@@ -160,7 +160,7 @@ type ServerDrivesInfo struct {
 	Error    string          `json:"error,omitempty"`
 }
 
-// DrivePerfInfo - Stats about a single drive in a MinIO node
+// DrivePerfInfo - Stats about a single drive in a OtterIO node
 type DrivePerfInfo struct {
 	Path       string          `json:"endpoint"`
 	Latency    disk.Latency    `json:"latency,omitempty"`
@@ -168,14 +168,14 @@ type DrivePerfInfo struct {
 	Error      string          `json:"error,omitempty"`
 }
 
-// ServerNetHealthInfo - Network health info about a single MinIO node
+// ServerNetHealthInfo - Network health info about a single OtterIO node
 type ServerNetHealthInfo struct {
 	Addr  string        `json:"addr"`
 	Net   []NetPerfInfo `json:"net,omitempty"`
 	Error string        `json:"error,omitempty"`
 }
 
-// NetPerfInfo - one-to-one network connectivity Stats between 2 MinIO nodes
+// NetPerfInfo - one-to-one network connectivity Stats between 2 OtterIO nodes
 type NetPerfInfo struct {
 	Addr       string         `json:"remote"`
 	Latency    net.Latency    `json:"latency,omitempty"`
@@ -190,8 +190,8 @@ type HealthDataType string
 const (
 	HealthDataTypePerfDrive   HealthDataType = "perfdrive"
 	HealthDataTypePerfNet     HealthDataType = "perfnet"
-	HealthDataTypeMinioInfo   HealthDataType = "minioinfo"
-	HealthDataTypeMinioConfig HealthDataType = "minioconfig"
+	HealthDataTypeOtterioInfo   HealthDataType = "otterioinfo"
+	HealthDataTypeOtterioConfig HealthDataType = "otterioconfig"
 	HealthDataTypeSysCPU      HealthDataType = "syscpu"
 	HealthDataTypeSysDiskHw   HealthDataType = "sysdiskhw"
 	HealthDataTypeSysDocker   HealthDataType = "sysdocker" // is this really needed?
@@ -206,8 +206,8 @@ const (
 var HealthDataTypesMap = map[string]HealthDataType{
 	"perfdrive":   HealthDataTypePerfDrive,
 	"perfnet":     HealthDataTypePerfNet,
-	"minioinfo":   HealthDataTypeMinioInfo,
-	"minioconfig": HealthDataTypeMinioConfig,
+	"otterioinfo":   HealthDataTypeOtterioInfo,
+	"otterioconfig": HealthDataTypeOtterioConfig,
 	"syscpu":      HealthDataTypeSysCPU,
 	"sysdiskhw":   HealthDataTypeSysDiskHw,
 	"sysdocker":   HealthDataTypeSysDocker,
@@ -222,8 +222,8 @@ var HealthDataTypesMap = map[string]HealthDataType{
 var HealthDataTypesList = []HealthDataType{
 	HealthDataTypePerfDrive,
 	HealthDataTypePerfNet,
-	HealthDataTypeMinioInfo,
-	HealthDataTypeMinioConfig,
+	HealthDataTypeOtterioInfo,
+	HealthDataTypeOtterioConfig,
 	HealthDataTypeSysCPU,
 	HealthDataTypeSysDiskHw,
 	HealthDataTypeSysDocker,
@@ -234,7 +234,7 @@ var HealthDataTypesList = []HealthDataType{
 	HealthDataTypeSysProcess,
 }
 
-// ServerHealthInfo - Connect to a minio server and call Health Info Management API
+// ServerHealthInfo - Connect to a otterio server and call Health Info Management API
 // to fetch server's information represented by HealthInfo structure
 func (adm *AdminClient) ServerHealthInfo(ctx context.Context, healthDataTypes []HealthDataType, deadline time.Duration) <-chan HealthInfo {
 	respChan := make(chan HealthInfo)
@@ -297,7 +297,7 @@ func (adm *AdminClient) ServerHealthInfo(ctx context.Context, healthDataTypes []
 
 		respChan <- healthInfoMessage
 
-		if v.Get(string(HealthDataTypeMinioInfo)) == "true" {
+		if v.Get(string(HealthDataTypeOtterioInfo)) == "true" {
 			info, err := adm.ServerInfo(ctx)
 			if err != nil {
 				respChan <- HealthInfo{
@@ -305,7 +305,7 @@ func (adm *AdminClient) ServerHealthInfo(ctx context.Context, healthDataTypes []
 				}
 				return
 			}
-			healthInfoMessage.Minio.Info = info
+			healthInfoMessage.Otterio.Info = info
 			respChan <- healthInfoMessage
 		}
 

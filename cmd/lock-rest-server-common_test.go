@@ -31,7 +31,7 @@ func createLockTestServer(t *testing.T) (string, *lockRESTServer, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatalf("unable initialize config file, %s", err)
 	}
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package licverifier implements a simple library to verify MinIO Subnet license keys.
+// Package licverifier implements a simple library to verify OtterIO Subnet license keys.
 package licverifier
 
 import (

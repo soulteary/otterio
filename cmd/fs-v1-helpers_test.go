@@ -528,7 +528,7 @@ func TestFSRemoveMeta(t *testing.T) {
 
 	defer rwPool.Close(filePath)
 
-	tmpDir, tmpErr := ioutil.TempDir(globalTestTmpDir, "minio-")
+	tmpDir, tmpErr := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if tmpErr != nil {
 		t.Fatal(tmpErr)
 	}
@@ -547,7 +547,7 @@ func TestFSRemoveMeta(t *testing.T) {
 }
 
 func TestFSIsFile(t *testing.T) {
-	dirPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	dirPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatalf("Unable to create tmp directory %s", err)
 	}

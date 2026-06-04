@@ -135,40 +135,40 @@ const (
 	AmzRequestID = "x-amz-request-id"
 
 	// Deployment id.
-	MinioDeploymentID = "x-minio-deployment-id"
+	OtterioDeploymentID = "x-otterio-deployment-id"
 
 	// Server-Status
-	MinIOServerStatus = "x-minio-server-status"
+	OtterIOServerStatus = "x-otterio-server-status"
 
 	// Delete special flag to force delete a bucket
-	MinIOForceDelete = "x-minio-force-delete"
+	OtterIOForceDelete = "x-otterio-force-delete"
 
 	// Header indicates if the mtime should be preserved by client
-	MinIOSourceMTime = "x-minio-source-mtime"
+	OtterIOSourceMTime = "x-otterio-source-mtime"
 
 	// Header indicates if the etag should be preserved by client
-	MinIOSourceETag = "x-minio-source-etag"
+	OtterIOSourceETag = "x-otterio-source-etag"
 
 	// Writes expected write quorum
-	MinIOWriteQuorum = "x-minio-write-quorum"
+	OtterIOWriteQuorum = "x-otterio-write-quorum"
 
 	// Reports number of drives currently healing
-	MinIOHealingDrives = "x-minio-healing-drives"
+	OtterIOHealingDrives = "x-otterio-healing-drives"
 
 	// Header indicates if the delete marker should be preserved by client
-	MinIOSourceDeleteMarker = "x-minio-source-deletemarker"
+	OtterIOSourceDeleteMarker = "x-otterio-source-deletemarker"
 
 	// Header indicates if the delete marker version needs to be purged.
-	MinIOSourceDeleteMarkerDelete = "x-minio-source-deletemarker-delete"
+	OtterIOSourceDeleteMarkerDelete = "x-otterio-source-deletemarker-delete"
 
 	// Header indicates permanent delete replication status.
-	MinIODeleteReplicationStatus = "X-Minio-Replication-Delete-Status"
+	OtterIODeleteReplicationStatus = "X-Otterio-Replication-Delete-Status"
 	// Header indicates delete-marker replication status.
-	MinIODeleteMarkerReplicationStatus = "X-Minio-Replication-DeleteMarker-Status"
+	OtterIODeleteMarkerReplicationStatus = "X-Otterio-Replication-DeleteMarker-Status"
 	// Header indicates if its a GET/HEAD proxy request for active-active replication
-	MinIOSourceProxyRequest = "X-Minio-Source-Proxy-Request"
+	OtterIOSourceProxyRequest = "X-Otterio-Source-Proxy-Request"
 	// Header indicates that this request is a replication request to create a REPLICA
-	MinIOSourceReplicationRequest = "X-Minio-Source-Replication-Request"
+	OtterIOSourceReplicationRequest = "X-Otterio-Source-Replication-Request"
 )
 
 // Common http query params S3 API

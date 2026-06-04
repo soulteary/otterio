@@ -32,11 +32,11 @@ func TestServerConfigMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	err = newTestConfig(globalMinioDefaultRegion, objLayer)
+	err = newTestConfig(globalOtterioDefaultRegion, objLayer)
 	if err != nil {
 		t.Fatalf("Init Test config failed")
 	}
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestServerConfigMigrateV1(t *testing.T) {
 // Test if all migrate code returns nil when config file does not
 // exist
 func TestServerConfigMigrateInexistentConfig(t *testing.T) {
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestServerConfigMigrateInexistentConfig(t *testing.T) {
 
 // Test if a config migration from v2 to v33 is successfully done
 func TestServerConfigMigrateV2toV33(t *testing.T) {
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestServerConfigMigrateV2toV33(t *testing.T) {
 	}
 	defer os.RemoveAll(fsDir)
 
-	configPath := rootPath + SlashSeparator + minioConfigFile
+	configPath := rootPath + SlashSeparator + otterioConfigFile
 
 	// Create a corrupted config file
 	if err := ioutil.WriteFile(configPath, []byte("{ \"version\":\"2\","), 0644); err != nil {
@@ -202,15 +202,15 @@ func TestServerConfigMigrateV2toV33(t *testing.T) {
 		t.Fatal("Unexpected error: ", err)
 	}
 
-	if err := migrateConfigToMinioSys(objLayer); err != nil {
+	if err := migrateConfigToOtterioSys(objLayer); err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}
 
-	if err := migrateMinioSysConfig(objLayer); err != nil {
+	if err := migrateOtterioSysConfig(objLayer); err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}
 
-	if err := migrateMinioSysConfigToKV(objLayer); err != nil {
+	if err := migrateOtterioSysConfigToKV(objLayer); err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}
 
@@ -233,14 +233,14 @@ func TestServerConfigMigrateV2toV33(t *testing.T) {
 
 // Test if all migrate code returns error with corrupted config files
 func TestServerConfigMigrateFaultyConfig(t *testing.T) {
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(rootPath)
 
 	globalConfigDir = &ConfigDir{path: rootPath}
-	configPath := rootPath + SlashSeparator + minioConfigFile
+	configPath := rootPath + SlashSeparator + otterioConfigFile
 
 	// Create a corrupted config file
 	if err := ioutil.WriteFile(configPath, []byte("{ \"version\":\"2\", \"test\":"), 0644); err != nil {
@@ -330,14 +330,14 @@ func TestServerConfigMigrateFaultyConfig(t *testing.T) {
 
 // Test if all migrate code returns error with corrupted config files
 func TestServerConfigMigrateCorruptedConfig(t *testing.T) {
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(rootPath)
 
 	globalConfigDir = &ConfigDir{path: rootPath}
-	configPath := rootPath + SlashSeparator + minioConfigFile
+	configPath := rootPath + SlashSeparator + otterioConfigFile
 
 	for i := 3; i <= 17; i++ {
 		// Create a corrupted config file

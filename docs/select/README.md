@@ -12,19 +12,19 @@ Type inference and automatic conversion of values is performed based on the cont
 
 The [mc sql](https://docs.min.io/docs/minio-client-complete-guide.html#sql) command can be used for executing queries using the command line.
 
-(*) Parquet is disabled on the MinIO server by default. See below how to enable it.
+(*) Parquet is disabled on the OtterIO server by default. See below how to enable it.
 
 ## Enabling Parquet Format
 
 Parquet is DISABLED by default since hostile crafted input can easily crash the server.
 
 If you are in a controlled environment where it is safe to assume no hostile content can be uploaded to your cluster you can safely enable Parquet.
-To enable Parquet set the environment variable `MINIO_API_SELECT_PARQUET=on`.
+To enable Parquet set the environment variable `OTTERIO_API_SELECT_PARQUET=on`.
 
 # Example using Python API
 
 ## 1. Prerequisites
-- Install MinIO Server from [here](http://docs.min.io/docs/minio-quickstart-guide).
+- Install OtterIO Server from [here](http://docs.min.io/docs/minio-quickstart-guide).
 - Familiarity with AWS S3 API.
 - Familiarity with Python and installing dependencies.
 
@@ -42,8 +42,8 @@ import boto3
 
 s3 = boto3.client('s3',
                   endpoint_url='http://localhost:9000',
-                  aws_access_key_id='minio',
-                  aws_secret_access_key='minio123',
+                  aws_access_key_id='otterio',
+                  aws_secret_access_key='otterio123',
                   region_name='us-east-1')
 
 r = s3.select_object_content(
@@ -73,12 +73,12 @@ for event in r['Payload']:
 ```
 
 ## 4. Run the Program
-Upload a sample dataset to MinIO using the following commands.
+Upload a sample dataset to OtterIO using the following commands.
 ```sh
 $ curl "https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv" > TotalPopulation.csv
-$ mc mb myminio/mycsvbucket
+$ mc mb myotterio/mycsvbucket
 $ gzip TotalPopulation.csv
-$ mc cp TotalPopulation.csv.gz myminio/mycsvbucket/sampledata/
+$ mc cp TotalPopulation.csv.gz myotterio/mycsvbucket/sampledata/
 ```
 
 Now let us proceed to run our select example to query for `Location` which matches `United States`.
@@ -104,12 +104,12 @@ Stats details bytesProcessed:
 For a more detailed SELECT SQL reference, please see [here](https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html)
 
 ## 5. Explore Further
-- [Use `mc` with MinIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `mc sql` with MinIO Server](https://docs.min.io/docs/minio-client-complete-guide.html#sql)
-- [Use `minio-go` SDK with MinIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [Use `aws-cli` with MinIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with MinIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [The MinIO documentation website](https://docs.min.io)
+- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
+- [Use `mc sql` with OtterIO Server](https://docs.min.io/docs/minio-client-complete-guide.html#sql)
+- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
+- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
+- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
+- [The OtterIO documentation website](https://docs.min.io)
 
 ## 6. Implementation Status
 - Full AWS S3 [SELECT SQL](https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html) syntax is supported.

@@ -27,7 +27,7 @@ jobs:
           CGO_ENABLED: 0
           GO111MODULE: on
         run: |
-          go build --ldflags="-s -w" -o %GOPATH%\bin\minio.exe
+          go build --ldflags="-s -w" -o %GOPATH%\bin\otterio.exe
           go test -v --timeout 50m ./...
       - name: Build on ${{ matrix.os }}
         if: matrix.os == 'ubuntu-latest'

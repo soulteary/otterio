@@ -39,7 +39,7 @@ func getUmask() int {
 
 // Tests if the directory and file creations happen with proper umask.
 func TestIsValidUmaskVol(t *testing.T) {
-	tmpPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	tmpPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatalf("Initializing temporary directory failed with %s.", err)
 	}
@@ -81,7 +81,7 @@ func TestIsValidUmaskVol(t *testing.T) {
 
 // Tests if the file creations happen with proper umask.
 func TestIsValidUmaskFile(t *testing.T) {
-	tmpPath, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+	tmpPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatalf("Initializing temporary directory failed with %s.", err)
 	}

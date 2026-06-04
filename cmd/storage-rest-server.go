@@ -59,7 +59,7 @@ func (s *storageRESTServer) writeErrorResponse(w http.ResponseWriter, err error)
 	w.(http.Flusher).Flush()
 }
 
-// DefaultSkewTime - skew time is 15 minutes between minio peers.
+// DefaultSkewTime - skew time is 15 minutes between otterio peers.
 const DefaultSkewTime = 15 * time.Minute
 
 // Authenticates storage client's requests and validates for skewed time.
@@ -86,7 +86,7 @@ func storageServerRequestValidate(r *http.Request) error {
 		return errAuthentication
 	}
 
-	requestTimeStr := r.Header.Get("X-Minio-Time")
+	requestTimeStr := r.Header.Get("X-Otterio-Time")
 	requestTime, err := time.Parse(time.RFC3339, requestTimeStr)
 	if err != nil {
 		return err
@@ -951,17 +951,17 @@ func logFatalErrs(err error, endpoint Endpoint, exit bool) {
 	} else if errors.Is(err, errUnsupportedDisk) {
 		var hint string
 		if endpoint.URL != nil {
-			hint = fmt.Sprintf("Disk '%s' does not support O_DIRECT flags, MinIO erasure coding requires filesystems with O_DIRECT support", endpoint.Path)
+			hint = fmt.Sprintf("Disk '%s' does not support O_DIRECT flags, OtterIO erasure coding requires filesystems with O_DIRECT support", endpoint.Path)
 		} else {
-			hint = "Disks do not support O_DIRECT flags, MinIO erasure coding requires filesystems with O_DIRECT support"
+			hint = "Disks do not support O_DIRECT flags, OtterIO erasure coding requires filesystems with O_DIRECT support"
 		}
 		logger.Fatal(config.ErrUnsupportedBackend(err).Hint(hint), "Unable to initialize backend")
 	} else if errors.Is(err, errDiskNotDir) {
 		var hint string
 		if endpoint.URL != nil {
-			hint = fmt.Sprintf("Disk '%s' is not a directory, MinIO erasure coding needs a directory", endpoint.Path)
+			hint = fmt.Sprintf("Disk '%s' is not a directory, OtterIO erasure coding needs a directory", endpoint.Path)
 		} else {
-			hint = "Disks are not directories, MinIO erasure coding needs directories"
+			hint = "Disks are not directories, OtterIO erasure coding needs directories"
 		}
 		logger.Fatal(config.ErrUnableToWriteInBackend(err).Hint(hint), "Unable to initialize backend")
 	} else if errors.Is(err, errFileAccessDenied) {

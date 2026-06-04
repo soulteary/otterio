@@ -16,9 +16,9 @@
 
 // File for all the browser constants.
 
-// minioBrowserPrefix absolute path.
+// otterioBrowserPrefix absolute path.
 var p = window.location.pathname
-export const minioBrowserPrefix = p.slice(0, p.indexOf("/", 1))
+export const otterioBrowserPrefix = p.slice(0, p.indexOf("/", 1))
 
 export const READ_ONLY = "readonly"
 export const WRITE_ONLY = "writeonly"

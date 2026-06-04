@@ -62,7 +62,7 @@ type routeRule struct {
 	queries           map[string]string // key -> value pattern; empty value means key must exist with any value
 	headerRegex       map[string]*regexp.Regexp
 	requireEmptyQuery bool
-	handler           MinioHandler
+	handler           OtterioHandler
 	apiName           string
 	traceHeaders      bool
 	maxClients        bool
@@ -153,7 +153,7 @@ func queryRules(keys ...string) map[string]string {
 	return m
 }
 
-func wrapS3Handler(api string, traceHeaders bool, h MinioHandler) MinioHandler {
+func wrapS3Handler(api string, traceHeaders bool, h OtterioHandler) OtterioHandler {
 	wrapped := h
 	wrapped = maxClientsFiber(api, wrapped)
 	wrapped = collectAPIStatsFiber(api, wrapped)
@@ -165,11 +165,11 @@ func wrapS3Handler(api string, traceHeaders bool, h MinioHandler) MinioHandler {
 	return wrapped
 }
 
-func wrapInternalHandler(h MinioHandler) MinioHandler {
+func wrapInternalHandler(h OtterioHandler) OtterioHandler {
 	return httpTraceHdrsFiber(h)
 }
 
-func httpTraceAllFiber(f MinioHandler) MinioHandler {
+func httpTraceAllFiber(f OtterioHandler) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		if globalTrace.NumSubscribers() == 0 {
 			return f(c)
@@ -180,7 +180,7 @@ func httpTraceAllFiber(f MinioHandler) MinioHandler {
 	}
 }
 
-func httpTraceHdrsFiber(f MinioHandler) MinioHandler {
+func httpTraceHdrsFiber(f OtterioHandler) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		if globalTrace.NumSubscribers() == 0 {
 			return f(c)
@@ -191,7 +191,7 @@ func httpTraceHdrsFiber(f MinioHandler) MinioHandler {
 	}
 }
 
-func collectAPIStatsFiber(api string, f MinioHandler) MinioHandler {
+func collectAPIStatsFiber(api string, f OtterioHandler) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		globalHTTPStats.currentS3Requests.Inc(api)
 		start := time.Now()
@@ -236,7 +236,7 @@ func collectAPIStatsFiber(api string, f MinioHandler) MinioHandler {
 	}
 }
 
-func maxClientsFiber(api string, f MinioHandler) MinioHandler {
+func maxClientsFiber(api string, f OtterioHandler) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		pool, deadline := globalAPIConfig.getRequestsPool()
 		if pool == nil {
@@ -279,7 +279,7 @@ func maxClientsFiber(api string, f MinioHandler) MinioHandler {
 	}
 }
 
-func methodNotAllowedHandlerFiber(api string) MinioHandler {
+func methodNotAllowedHandlerFiber(api string) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		if c.Method() == fiber.MethodOptions {
 			return nil
@@ -288,23 +288,23 @@ func methodNotAllowedHandlerFiber(api string) MinioHandler {
 		reqURL := requestURL(c)
 		switch {
 		case strings.HasPrefix(c.Path(), peerRESTPrefix):
-			desc := fmt.Sprintf("Server expects 'peer' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", peerRESTVersion, version, ReleaseTag)
+			desc := fmt.Sprintf("Server expects 'peer' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", peerRESTVersion, version, ReleaseTag)
 			writeErrorResponseStringFiber(c.Context(), c, APIError{
-				Code:           "XMinioPeerVersionMismatch",
+				Code:           "XOtterioPeerVersionMismatch",
 				Description:    desc,
 				HTTPStatusCode: fiber.StatusUpgradeRequired,
 			})
 		case strings.HasPrefix(c.Path(), storageRESTPrefix):
-			desc := fmt.Sprintf("Server expects 'storage' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", storageRESTVersion, version, ReleaseTag)
+			desc := fmt.Sprintf("Server expects 'storage' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", storageRESTVersion, version, ReleaseTag)
 			writeErrorResponseStringFiber(c.Context(), c, APIError{
-				Code:           "XMinioStorageVersionMismatch",
+				Code:           "XOtterioStorageVersionMismatch",
 				Description:    desc,
 				HTTPStatusCode: fiber.StatusUpgradeRequired,
 			})
 		case strings.HasPrefix(c.Path(), lockRESTPrefix):
-			desc := fmt.Sprintf("Server expects 'lock' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same MinIO version (%s)", lockRESTVersion, version, ReleaseTag)
+			desc := fmt.Sprintf("Server expects 'lock' API version '%s', instead found '%s' - *rolling upgrade is not allowed* - please make sure all servers are running the same OtterIO version (%s)", lockRESTVersion, version, ReleaseTag)
 			writeErrorResponseStringFiber(c.Context(), c, APIError{
-				Code:           "XMinioLockVersionMismatch",
+				Code:           "XOtterioLockVersionMismatch",
 				Description:    desc,
 				HTTPStatusCode: fiber.StatusUpgradeRequired,
 			})
@@ -313,12 +313,12 @@ func methodNotAllowedHandlerFiber(api string) MinioHandler {
 			if version == "v1" {
 				desc = fmt.Sprintf("Server expects client requests with 'admin' API version '%s', found '%s', please upgrade the client to latest releases", madmin.AdminAPIVersion, version)
 			} else if version == madmin.AdminAPIVersion {
-				desc = fmt.Sprintf("This 'admin' API is not supported by server in '%s'", getMinioMode())
+				desc = fmt.Sprintf("This 'admin' API is not supported by server in '%s'", getOtterioMode())
 			} else {
 				desc = fmt.Sprintf("Unexpected client 'admin' API version found '%s', expected '%s', please downgrade the client to older releases", version, madmin.AdminAPIVersion)
 			}
 			writeErrorResponseJSONFiber(c.Context(), c, APIError{
-				Code:           "XMinioAdminVersionMismatch",
+				Code:           "XOtterioAdminVersionMismatch",
 				Description:    desc,
 				HTTPStatusCode: fiber.StatusUpgradeRequired,
 			})
@@ -354,7 +354,7 @@ func vhostBucketMiddleware(c fiber.Ctx) error {
 	}
 	for _, domainName := range globalDomainNames {
 		if IsKubernetes() {
-			if host == minioReservedBucket+"."+domainName {
+			if host == otterioReservedBucket+"."+domainName {
 				return c.Next()
 			}
 		}

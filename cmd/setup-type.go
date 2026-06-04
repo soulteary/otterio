@@ -39,13 +39,13 @@ const (
 func (setupType SetupType) String() string {
 	switch setupType {
 	case FSSetupType:
-		return globalMinioModeFS
+		return globalOtterioModeFS
 	case ErasureSetupType:
-		return globalMinioModeErasure
+		return globalOtterioModeErasure
 	case DistErasureSetupType:
-		return globalMinioModeDistErasure
+		return globalOtterioModeDistErasure
 	case GatewaySetupType:
-		return globalMinioModeGatewayPrefix
+		return globalOtterioModeGatewayPrefix
 	}
 
 	return "unknown"

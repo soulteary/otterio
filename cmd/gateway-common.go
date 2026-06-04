@@ -30,7 +30,7 @@ import (
 	"github.com/soulteary/otterio/pkg/hash"
 	xnet "github.com/soulteary/otterio/pkg/net"
 
-	minio "github.com/minio/minio-go/v7"
+	otterio "github.com/minio/minio-go/v7"
 )
 
 var (
@@ -56,8 +56,8 @@ var (
 	IsStringEqual = isStringEqual
 )
 
-// FromMinioClientMetadata converts minio metadata to map[string]string
-func FromMinioClientMetadata(metadata map[string][]string) map[string]string {
+// FromOtterioClientMetadata converts otterio metadata to map[string]string
+func FromOtterioClientMetadata(metadata map[string][]string) map[string]string {
 	mm := make(map[string]string, len(metadata))
 	for k, v := range metadata {
 		mm[http.CanonicalHeaderKey(k)] = v[0]
@@ -65,8 +65,8 @@ func FromMinioClientMetadata(metadata map[string][]string) map[string]string {
 	return mm
 }
 
-// FromMinioClientObjectPart converts minio ObjectPart to PartInfo
-func FromMinioClientObjectPart(op minio.ObjectPart) PartInfo {
+// FromOtterioClientObjectPart converts otterio ObjectPart to PartInfo
+func FromOtterioClientObjectPart(op otterio.ObjectPart) PartInfo {
 	return PartInfo{
 		Size:         op.Size,
 		ETag:         canonicalizeETag(op.ETag),
@@ -75,13 +75,13 @@ func FromMinioClientObjectPart(op minio.ObjectPart) PartInfo {
 	}
 }
 
-// FromMinioClientListPartsInfo converts minio ListObjectPartsResult to ListPartsInfo
-func FromMinioClientListPartsInfo(lopr minio.ListObjectPartsResult) ListPartsInfo {
-	// Convert minio ObjectPart to PartInfo
-	fromMinioClientObjectParts := func(parts []minio.ObjectPart) []PartInfo {
+// FromOtterioClientListPartsInfo converts otterio ListObjectPartsResult to ListPartsInfo
+func FromOtterioClientListPartsInfo(lopr otterio.ListObjectPartsResult) ListPartsInfo {
+	// Convert otterio ObjectPart to PartInfo
+	fromOtterioClientObjectParts := func(parts []otterio.ObjectPart) []PartInfo {
 		toParts := make([]PartInfo, len(parts))
 		for i, part := range parts {
-			toParts[i] = FromMinioClientObjectPart(part)
+			toParts[i] = FromOtterioClientObjectPart(part)
 		}
 		return toParts
 	}
@@ -95,12 +95,12 @@ func FromMinioClientListPartsInfo(lopr minio.ListObjectPartsResult) ListPartsInf
 		NextPartNumberMarker: lopr.NextPartNumberMarker,
 		MaxParts:             lopr.MaxParts,
 		IsTruncated:          lopr.IsTruncated,
-		Parts:                fromMinioClientObjectParts(lopr.ObjectParts),
+		Parts:                fromOtterioClientObjectParts(lopr.ObjectParts),
 	}
 }
 
-// FromMinioClientListMultipartsInfo converts minio ListMultipartUploadsResult to ListMultipartsInfo
-func FromMinioClientListMultipartsInfo(lmur minio.ListMultipartUploadsResult) ListMultipartsInfo {
+// FromOtterioClientListMultipartsInfo converts otterio ListMultipartUploadsResult to ListMultipartsInfo
+func FromOtterioClientListMultipartsInfo(lmur otterio.ListMultipartUploadsResult) ListMultipartsInfo {
 	uploads := make([]MultipartInfo, len(lmur.Uploads))
 
 	for i, um := range lmur.Uploads {
@@ -132,9 +132,9 @@ func FromMinioClientListMultipartsInfo(lmur minio.ListMultipartUploadsResult) Li
 
 }
 
-// FromMinioClientObjectInfo converts minio ObjectInfo to gateway ObjectInfo
-func FromMinioClientObjectInfo(bucket string, oi minio.ObjectInfo) ObjectInfo {
-	userDefined := FromMinioClientMetadata(oi.Metadata)
+// FromOtterioClientObjectInfo converts otterio ObjectInfo to gateway ObjectInfo
+func FromOtterioClientObjectInfo(bucket string, oi otterio.ObjectInfo) ObjectInfo {
+	userDefined := FromOtterioClientMetadata(oi.Metadata)
 	userDefined[xhttp.ContentType] = oi.ContentType
 
 	return ObjectInfo{
@@ -151,12 +151,12 @@ func FromMinioClientObjectInfo(bucket string, oi minio.ObjectInfo) ObjectInfo {
 	}
 }
 
-// FromMinioClientListBucketV2Result converts minio ListBucketResult to ListObjectsInfo
-func FromMinioClientListBucketV2Result(bucket string, result minio.ListBucketV2Result) ListObjectsV2Info {
+// FromOtterioClientListBucketV2Result converts otterio ListBucketResult to ListObjectsInfo
+func FromOtterioClientListBucketV2Result(bucket string, result otterio.ListBucketV2Result) ListObjectsV2Info {
 	objects := make([]ObjectInfo, len(result.Contents))
 
 	for i, oi := range result.Contents {
-		objects[i] = FromMinioClientObjectInfo(bucket, oi)
+		objects[i] = FromOtterioClientObjectInfo(bucket, oi)
 	}
 
 	prefixes := make([]string, len(result.CommonPrefixes))
@@ -174,12 +174,12 @@ func FromMinioClientListBucketV2Result(bucket string, result minio.ListBucketV2R
 	}
 }
 
-// FromMinioClientListBucketResult converts minio ListBucketResult to ListObjectsInfo
-func FromMinioClientListBucketResult(bucket string, result minio.ListBucketResult) ListObjectsInfo {
+// FromOtterioClientListBucketResult converts otterio ListBucketResult to ListObjectsInfo
+func FromOtterioClientListBucketResult(bucket string, result otterio.ListBucketResult) ListObjectsInfo {
 	objects := make([]ObjectInfo, len(result.Contents))
 
 	for i, oi := range result.Contents {
-		objects[i] = FromMinioClientObjectInfo(bucket, oi)
+		objects[i] = FromOtterioClientObjectInfo(bucket, oi)
 	}
 
 	prefixes := make([]string, len(result.CommonPrefixes))
@@ -195,12 +195,12 @@ func FromMinioClientListBucketResult(bucket string, result minio.ListBucketResul
 	}
 }
 
-// FromMinioClientListBucketResultToV2Info converts minio ListBucketResult to ListObjectsV2Info
-func FromMinioClientListBucketResultToV2Info(bucket string, result minio.ListBucketResult) ListObjectsV2Info {
+// FromOtterioClientListBucketResultToV2Info converts otterio ListBucketResult to ListObjectsV2Info
+func FromOtterioClientListBucketResultToV2Info(bucket string, result otterio.ListBucketResult) ListObjectsV2Info {
 	objects := make([]ObjectInfo, len(result.Contents))
 
 	for i, oi := range result.Contents {
-		objects[i] = FromMinioClientObjectInfo(bucket, oi)
+		objects[i] = FromOtterioClientObjectInfo(bucket, oi)
 	}
 
 	prefixes := make([]string, len(result.CommonPrefixes))
@@ -217,8 +217,8 @@ func FromMinioClientListBucketResultToV2Info(bucket string, result minio.ListBuc
 	}
 }
 
-// ToMinioClientObjectInfoMetadata convertes metadata to map[string][]string
-func ToMinioClientObjectInfoMetadata(metadata map[string]string) map[string][]string {
+// ToOtterioClientObjectInfoMetadata convertes metadata to map[string][]string
+func ToOtterioClientObjectInfoMetadata(metadata map[string]string) map[string][]string {
 	mm := make(map[string][]string, len(metadata))
 	for k, v := range metadata {
 		mm[http.CanonicalHeaderKey(k)] = []string{v}
@@ -226,8 +226,8 @@ func ToMinioClientObjectInfoMetadata(metadata map[string]string) map[string][]st
 	return mm
 }
 
-// ToMinioClientMetadata converts metadata to map[string]string
-func ToMinioClientMetadata(metadata map[string]string) map[string]string {
+// ToOtterioClientMetadata converts metadata to map[string]string
+func ToOtterioClientMetadata(metadata map[string]string) map[string]string {
 	mm := make(map[string]string, len(metadata))
 	for k, v := range metadata {
 		mm[http.CanonicalHeaderKey(k)] = v
@@ -235,19 +235,19 @@ func ToMinioClientMetadata(metadata map[string]string) map[string]string {
 	return mm
 }
 
-// ToMinioClientCompletePart converts CompletePart to minio CompletePart
-func ToMinioClientCompletePart(part CompletePart) minio.CompletePart {
-	return minio.CompletePart{
+// ToOtterioClientCompletePart converts CompletePart to otterio CompletePart
+func ToOtterioClientCompletePart(part CompletePart) otterio.CompletePart {
+	return otterio.CompletePart{
 		ETag:       part.ETag,
 		PartNumber: part.PartNumber,
 	}
 }
 
-// ToMinioClientCompleteParts converts []CompletePart to minio []CompletePart
-func ToMinioClientCompleteParts(parts []CompletePart) []minio.CompletePart {
-	mparts := make([]minio.CompletePart, len(parts))
+// ToOtterioClientCompleteParts converts []CompletePart to otterio []CompletePart
+func ToOtterioClientCompleteParts(parts []CompletePart) []otterio.CompletePart {
+	mparts := make([]otterio.CompletePart, len(parts))
 	for i, part := range parts {
-		mparts[i] = ToMinioClientCompletePart(part)
+		mparts[i] = ToOtterioClientCompletePart(part)
 	}
 	return mparts
 }
@@ -270,7 +270,7 @@ func IsBackendOnline(ctx context.Context, host string) bool {
 	return true
 }
 
-// ErrorRespToObjectError converts MinIO errors to minio object layer errors.
+// ErrorRespToObjectError converts OtterIO errors to otterio object layer errors.
 func ErrorRespToObjectError(err error, params ...string) error {
 	if err == nil {
 		return nil
@@ -289,14 +289,14 @@ func ErrorRespToObjectError(err error, params ...string) error {
 		return BackendDown{}
 	}
 
-	minioErr, ok := err.(minio.ErrorResponse)
+	otterioErr, ok := err.(otterio.ErrorResponse)
 	if !ok {
-		// We don't interpret non MinIO errors. As minio errors will
+		// We don't interpret non OtterIO errors. As otterio errors will
 		// have StatusCode to help to convert to object errors.
 		return err
 	}
 
-	switch minioErr.Code {
+	switch otterioErr.Code {
 	case "BucketAlreadyOwnedByYou":
 		err = BucketAlreadyOwnedByYou{}
 	case "BucketNotEmpty":
@@ -317,7 +317,7 @@ func ErrorRespToObjectError(err error, params ...string) error {
 		} else {
 			err = BucketNotFound{Bucket: bucket}
 		}
-	case "XMinioInvalidObjectName":
+	case "XOtterioInvalidObjectName":
 		err = ObjectNameInvalid{}
 	case "AccessDenied":
 		err = PrefixAccessDenied{
@@ -371,12 +371,12 @@ func gatewayHandleEnvVars() {
 			"Unable to validate credentials inherited from the shell environment")
 	}
 
-	gwsseVal := env.Get("MINIO_GATEWAY_SSE", "")
+	gwsseVal := env.Get("OTTERIO_GATEWAY_SSE", "")
 	if gwsseVal != "" {
 		var err error
 		GlobalGatewaySSE, err = parseGatewaySSE(gwsseVal)
 		if err != nil {
-			logger.Fatal(err, "Unable to parse MINIO_GATEWAY_SSE value (`%s`)", gwsseVal)
+			logger.Fatal(err, "Unable to parse OTTERIO_GATEWAY_SSE value (`%s`)", gwsseVal)
 		}
 	}
 }

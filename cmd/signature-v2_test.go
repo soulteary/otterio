@@ -45,7 +45,7 @@ func TestDoesPresignedV2SignatureMatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatal(err)
 	}
 
@@ -165,7 +165,7 @@ func TestValidateV2AuthHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatal(err)
 	}
 
@@ -244,7 +244,7 @@ func TestDoesPolicySignatureV2Match(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, obj); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
 		t.Fatal(err)
 	}
 

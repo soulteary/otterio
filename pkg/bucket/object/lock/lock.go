@@ -117,7 +117,7 @@ var (
 )
 
 const (
-	ntpServerEnv = "MINIO_NTP_SERVER"
+	ntpServerEnv = "OTTERIO_NTP_SERVER"
 )
 
 var (

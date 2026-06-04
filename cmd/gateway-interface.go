@@ -21,9 +21,9 @@ import (
 	"github.com/soulteary/otterio/pkg/auth"
 )
 
-// GatewayMinioSysTmp prefix is used to save metadata sent by Initialize Multipart Upload API.
+// GatewayOtterioSysTmp prefix is used to save metadata sent by Initialize Multipart Upload API.
 const (
-	GatewayMinioSysTmp = "minio.sys.tmp/"
+	GatewayOtterioSysTmp = "otterio.sys.tmp/"
 	NASBackendGateway  = "nas"
 	S3BackendGateway   = "s3"
 )

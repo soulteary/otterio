@@ -27,7 +27,7 @@ import (
 	"github.com/soulteary/otterio/pkg/words"
 )
 
-// GlobalFlags - global flags for minio.
+// GlobalFlags - global flags for otterio.
 var GlobalFlags = []cli.Flag{
 	// Deprecated flag, so its hidden now - existing deployments will keep working.
 	cli.StringFlag{
@@ -67,8 +67,8 @@ var GlobalFlags = []cli.Flag{
 	},
 }
 
-// Help template for minio.
-var minioHelpTemplate = `NAME:
+// Help template for otterio.
+var otterioHelpTemplate = `NAME:
   {{.Name}} - {{.Usage}}
 
 DESCRIPTION:
@@ -88,10 +88,10 @@ VERSION:
 `
 
 func newApp(name string) *cli.App {
-	// Collection of minio commands currently supported are.
+	// Collection of otterio commands currently supported are.
 	commands := []cli.Command{}
 
-	// Collection of minio commands currently supported in a trie tree.
+	// Collection of otterio commands currently supported in a trie tree.
 	commandsTree := trie.NewTrie()
 
 	// registerCommand registers a cli command.
@@ -136,13 +136,13 @@ func newApp(name string) *cli.App {
 	app.Author = "MinIO, Inc."
 	app.Version = ReleaseTag
 	app.Usage = "High Performance Object Storage"
-	app.Description = `Build high performance data infrastructure for machine learning, analytics and application data workloads with MinIO`
+	app.Description = `Build high performance data infrastructure for machine learning, analytics and application data workloads with OtterIO`
 	app.Flags = GlobalFlags
-	app.HideHelpCommand = true // Hide `help, h` command, we already have `minio --help`.
+	app.HideHelpCommand = true // Hide `help, h` command, we already have `otterio --help`.
 	app.Commands = commands
-	app.CustomAppHelpTemplate = minioHelpTemplate
+	app.CustomAppHelpTemplate = otterioHelpTemplate
 	app.CommandNotFound = func(ctx *cli.Context, command string) {
-		console.Printf("‘%s’ is not a minio sub-command. See ‘minio --help’.\n", command)
+		console.Printf("‘%s’ is not a otterio sub-command. See ‘otterio --help’.\n", command)
 		closestCommands := findClosestCommands(command)
 		if len(closestCommands) > 0 {
 			console.Println()
@@ -158,9 +158,9 @@ func newApp(name string) *cli.App {
 	return app
 }
 
-// Main main for minio server.
+// Main main for otterio server.
 func Main(args []string) {
-	// Set the minio app name.
+	// Set the otterio app name.
 	appName := filepath.Base(args[0])
 
 	// Run the app - exit on error.

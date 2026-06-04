@@ -36,7 +36,7 @@ func TestGetPoliciesFromClaims(t *testing.T) {
   "iat": 1594689552,
   "auth_time": 1594689552,
   "jti": "18ed05c9-2c69-45d5-a33f-8c94aca99ad5",
-  "iss": "http://localhost:8080/auth/realms/minio",
+  "iss": "http://localhost:8080/auth/realms/otterio",
   "aud": "account",
   "sub": "7e5e2f30-1c97-4616-8623-2eae14dee9b1",
   "typ": "ID",

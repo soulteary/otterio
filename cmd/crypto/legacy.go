@@ -29,51 +29,51 @@ const (
 	// EnvKMSMasterKeyLegacy is the environment variable used to specify
 	// a KMS master key used to protect SSE-S3 per-object keys.
 	// Valid values must be of the from: "KEY_ID:32_BYTE_HEX_VALUE".
-	EnvKMSMasterKeyLegacy = "MINIO_SSE_MASTER_KEY"
+	EnvKMSMasterKeyLegacy = "OTTERIO_SSE_MASTER_KEY"
 
 	// EnvAutoEncryptionLegacy is the environment variable used to en/disable
 	// SSE-S3 auto-encryption. SSE-S3 auto-encryption, if enabled,
 	// requires a valid KMS configuration and turns any non-SSE-C
 	// request into an SSE-S3 request.
 	// If present EnvAutoEncryption must be either "on" or "off".
-	EnvAutoEncryptionLegacy = "MINIO_SSE_AUTO_ENCRYPTION"
+	EnvAutoEncryptionLegacy = "OTTERIO_SSE_AUTO_ENCRYPTION"
 )
 
 const (
 	// EnvLegacyVaultEndpoint is the environment variable used to specify
 	// the vault HTTPS endpoint.
-	EnvLegacyVaultEndpoint = "MINIO_SSE_VAULT_ENDPOINT"
+	EnvLegacyVaultEndpoint = "OTTERIO_SSE_VAULT_ENDPOINT"
 
 	// EnvLegacyVaultAuthType is the environment variable used to specify
 	// the authentication type for vault.
-	EnvLegacyVaultAuthType = "MINIO_SSE_VAULT_AUTH_TYPE"
+	EnvLegacyVaultAuthType = "OTTERIO_SSE_VAULT_AUTH_TYPE"
 
 	// EnvLegacyVaultAppRoleID is the environment variable used to specify
 	// the vault AppRole ID.
-	EnvLegacyVaultAppRoleID = "MINIO_SSE_VAULT_APPROLE_ID"
+	EnvLegacyVaultAppRoleID = "OTTERIO_SSE_VAULT_APPROLE_ID"
 
 	// EnvLegacyVaultAppSecretID is the environment variable used to specify
 	// the vault AppRole secret corresponding to the AppRole ID.
-	EnvLegacyVaultAppSecretID = "MINIO_SSE_VAULT_APPROLE_SECRET"
+	EnvLegacyVaultAppSecretID = "OTTERIO_SSE_VAULT_APPROLE_SECRET"
 
 	// EnvLegacyVaultKeyVersion is the environment variable used to specify
 	// the vault key version.
-	EnvLegacyVaultKeyVersion = "MINIO_SSE_VAULT_KEY_VERSION"
+	EnvLegacyVaultKeyVersion = "OTTERIO_SSE_VAULT_KEY_VERSION"
 
 	// EnvLegacyVaultKeyName is the environment variable used to specify
 	// the vault named key-ring. In the S3 context it's referred as
 	// customer master key ID (CMK-ID).
-	EnvLegacyVaultKeyName = "MINIO_SSE_VAULT_KEY_NAME"
+	EnvLegacyVaultKeyName = "OTTERIO_SSE_VAULT_KEY_NAME"
 
 	// EnvLegacyVaultCAPath is the environment variable used to specify the
 	// path to a directory of PEM-encoded CA cert files. These CA cert
-	// files are used to authenticate MinIO to Vault over mTLS.
-	EnvLegacyVaultCAPath = "MINIO_SSE_VAULT_CAPATH"
+	// files are used to authenticate OtterIO to Vault over mTLS.
+	EnvLegacyVaultCAPath = "OTTERIO_SSE_VAULT_CAPATH"
 
 	// EnvLegacyVaultNamespace is the environment variable used to specify
 	// vault namespace. The vault namespace is used if the enterprise
 	// version of Hashicorp Vault is used.
-	EnvLegacyVaultNamespace = "MINIO_SSE_VAULT_NAMESPACE"
+	EnvLegacyVaultNamespace = "OTTERIO_SSE_VAULT_NAMESPACE"
 )
 
 // SetKMSConfig helper to migrate from older KMSConfig to new KV.

@@ -48,7 +48,7 @@ import (
 )
 
 // serverDebugLog will enable debug printing
-var serverDebugLog = env.Get("_MINIO_SERVER_DEBUG", config.EnableOff) == config.EnableOn
+var serverDebugLog = env.Get("_OTTERIO_SERVER_DEBUG", config.EnableOff) == config.EnableOn
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -97,7 +97,7 @@ func verifyObjectLayerFeatures(name string, objAPI ObjectLayer) {
 
 	if strings.HasPrefix(name, "gateway") {
 		if GlobalGatewaySSE.IsSet() && GlobalKMS == nil {
-			uiErr := config.ErrInvalidGWSSEEnvValue(nil).Msg("MINIO_GATEWAY_SSE set but KMS is not configured")
+			uiErr := config.ErrInvalidGWSSEEnvValue(nil).Msg("OTTERIO_GATEWAY_SSE set but KMS is not configured")
 			logger.Fatal(uiErr, "Unable to start gateway with SSE")
 		}
 	}
@@ -112,13 +112,13 @@ func verifyObjectLayerFeatures(name string, objAPI ObjectLayer) {
 
 // Check for updates and print a notification message
 func checkUpdate(mode string) {
-	updateURL := minioReleaseInfoURL()
+	updateURL := otterioReleaseInfoURL()
 	if runtime.GOOS == globalWindowsOSName {
-		updateURL = minioReleaseWindowsInfoURL()
+		updateURL = otterioReleaseWindowsInfoURL()
 	}
 
 	// This fork does not operate a release server. When no release URL is
-	// configured (MINIO_UPDATE_RELEASE_URL), skip the update check entirely so
+	// configured (OTTERIO_UPDATE_RELEASE_URL), skip the update check entirely so
 	// the server never phones home to the upstream download server.
 	if updateURL == "" {
 		return
@@ -219,7 +219,7 @@ func handleCommonCmdArgs(ctx *cli.Context) {
 
 	// Fetch address option
 	globalCLIContext.Addr = ctx.GlobalString("address")
-	if globalCLIContext.Addr == "" || globalCLIContext.Addr == ":"+GlobalMinioDefaultPort {
+	if globalCLIContext.Addr == "" || globalCLIContext.Addr == ":"+GlobalOtterioDefaultPort {
 		globalCLIContext.Addr = ctx.String("address")
 	}
 
@@ -252,17 +252,17 @@ func handleCommonEnvVars() {
 		logger.Fatal(config.ErrInvalidWormValue(err), "Invalid worm configuration")
 	}
 	if wormEnabled {
-		logger.Fatal(errors.New("WORM is deprecated"), "global MINIO_WORM support is removed, please downgrade your server or migrate to https://github.com/soulteary/otterio/tree/master/docs/retention")
+		logger.Fatal(errors.New("WORM is deprecated"), "global OTTERIO_WORM support is removed, please downgrade your server or migrate to https://github.com/soulteary/otterio/tree/master/docs/retention")
 	}
 
 	globalBrowserEnabled, err = config.ParseBool(env.Get(config.EnvBrowser, config.EnableOn))
 	if err != nil {
-		logger.Fatal(config.ErrInvalidBrowserValue(err), "Invalid MINIO_BROWSER value in environment variable")
+		logger.Fatal(config.ErrInvalidBrowserValue(err), "Invalid OTTERIO_BROWSER value in environment variable")
 	}
 
 	globalFSOSync, err = config.ParseBool(env.Get(config.EnvFSOSync, config.EnableOff))
 	if err != nil {
-		logger.Fatal(config.ErrInvalidFSOSyncValue(err), "Invalid MINIO_FS_OSYNC value in environment variable")
+		logger.Fatal(config.ErrInvalidFSOSyncValue(err), "Invalid OTTERIO_FS_OSYNC value in environment variable")
 	}
 
 	domains := env.Get(config.EnvDomain, "")
@@ -270,7 +270,7 @@ func handleCommonEnvVars() {
 		for _, domainName := range strings.Split(domains, config.ValueSeparator) {
 			if _, ok := dns2.IsDomainName(domainName); !ok {
 				logger.Fatal(config.ErrInvalidDomainValue(nil).Msg("Unknown value `%s`", domainName),
-					"Invalid MINIO_DOMAIN value in environment variable")
+					"Invalid OTTERIO_DOMAIN value in environment variable")
 			}
 			globalDomainNames = append(globalDomainNames, domainName)
 		}
@@ -279,21 +279,21 @@ func handleCommonEnvVars() {
 		for _, domainName := range globalDomainNames {
 			if domainName == lcpSuf && len(globalDomainNames) > 1 {
 				logger.Fatal(config.ErrOverlappingDomainValue(nil).Msg("Overlapping domains `%s` not allowed", globalDomainNames),
-					"Invalid MINIO_DOMAIN value in environment variable")
+					"Invalid OTTERIO_DOMAIN value in environment variable")
 			}
 		}
 	}
 
 	publicIPs := env.Get(config.EnvPublicIPs, "")
 	if len(publicIPs) != 0 {
-		minioEndpoints := strings.Split(publicIPs, config.ValueSeparator)
+		otterioEndpoints := strings.Split(publicIPs, config.ValueSeparator)
 		var domainIPs = set.NewStringSet()
-		for _, endpoint := range minioEndpoints {
+		for _, endpoint := range otterioEndpoints {
 			if net.ParseIP(endpoint) == nil {
 				// Checking if the IP is a DNS entry.
 				addrs, err := net.LookupHost(endpoint)
 				if err != nil {
-					logger.FatalIf(err, "Unable to initialize MinIO server with [%s] invalid entry found in MINIO_PUBLIC_IPS", endpoint)
+					logger.FatalIf(err, "Unable to initialize OtterIO server with [%s] invalid entry found in OTTERIO_PUBLIC_IPS", endpoint)
 				}
 				for _, addr := range addrs {
 					domainIPs.Add(addr)
@@ -312,8 +312,8 @@ func handleCommonEnvVars() {
 		updateDomainIPs(domainIPs)
 	}
 
-	// In place update is true by default if the MINIO_UPDATE is not set
-	// or is not set to 'off', if MINIO_UPDATE is set to 'off' then
+	// In place update is true by default if the OTTERIO_UPDATE is not set
+	// or is not set to 'off', if OTTERIO_UPDATE is set to 'off' then
 	// in-place update is off.
 	globalInplaceUpdateDisabled = strings.EqualFold(env.Get(config.EnvUpdate, config.EnableOn), config.EnableOff)
 
@@ -381,7 +381,7 @@ func getTLSConfig() (x509Certs []*x509.Certificate, manager *certs.Manager, secu
 		return nil, nil, false, err
 	}
 
-	// MinIO has support for multiple certificates. It expects the following structure:
+	// OtterIO has support for multiple certificates. It expects the following structure:
 	//  certs/
 	//   │
 	//   ├─ public.crt
@@ -438,7 +438,7 @@ func getTLSConfig() (x509Certs []*x509.Certificate, manager *certs.Manager, secu
 		}
 		if err = manager.AddCertificate(certFile, keyFile); err != nil {
 			err = fmt.Errorf("Unable to load TLS certificate '%s,%s': %w", certFile, keyFile, err)
-			logger.LogIf(GlobalContext, err, logger.Minio)
+			logger.LogIf(GlobalContext, err, logger.Otterio)
 		}
 	}
 	secureConn = true

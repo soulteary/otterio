@@ -30,7 +30,7 @@ var exports = {
   output: {
     path: path.resolve(__dirname, 'dev'),
     filename: 'index_bundle.js',
-    publicPath: '/minio/'
+    publicPath: '/otterio/'
   },
   module: {
     rules: [{
@@ -62,17 +62,17 @@ var exports = {
   },
   devServer: {
     historyApiFallback: {
-      index: '/minio/'
+      index: '/otterio/'
     },
     proxy: [
       {
-        context: ['/minio/webrpc'],
+        context: ['/otterio/webrpc'],
         target: 'http://localhost:9000',
         secure: false,
         headers: {'Host': "localhost:9000"}
       },
       {
-        context: ['/minio/upload', '/minio/download', '/minio/zip'],
+        context: ['/otterio/upload', '/otterio/download', '/otterio/zip'],
         target: 'http://localhost:9000',
         secure: false
       }

@@ -21,29 +21,29 @@ import (
 const (
 	// MetaMultipart indicates that the object has been uploaded
 	// in multiple parts - via the S3 multipart API.
-	MetaMultipart = "X-Minio-Internal-Encrypted-Multipart"
+	MetaMultipart = "X-Otterio-Internal-Encrypted-Multipart"
 
 	// MetaIV is the random initialization vector (IV) used for
-	// the MinIO-internal key derivation.
-	MetaIV = "X-Minio-Internal-Server-Side-Encryption-Iv"
+	// the OtterIO-internal key derivation.
+	MetaIV = "X-Otterio-Internal-Server-Side-Encryption-Iv"
 
 	// MetaAlgorithm is the algorithm used to derive internal keys
 	// and encrypt the objects.
-	MetaAlgorithm = "X-Minio-Internal-Server-Side-Encryption-Seal-Algorithm"
+	MetaAlgorithm = "X-Otterio-Internal-Server-Side-Encryption-Seal-Algorithm"
 
 	// MetaSealedKeySSEC is the sealed object encryption key in case of SSE-C.
-	MetaSealedKeySSEC = "X-Minio-Internal-Server-Side-Encryption-Sealed-Key"
+	MetaSealedKeySSEC = "X-Otterio-Internal-Server-Side-Encryption-Sealed-Key"
 	// MetaSealedKeyS3 is the sealed object encryption key in case of SSE-S3
-	MetaSealedKeyS3 = "X-Minio-Internal-Server-Side-Encryption-S3-Sealed-Key"
+	MetaSealedKeyS3 = "X-Otterio-Internal-Server-Side-Encryption-S3-Sealed-Key"
 	// MetaSealedKeyKMS is the sealed object encryption key in case of SSE-KMS
-	MetaSealedKeyKMS = "X-Minio-Internal-Server-Side-Encryption-Kms-Sealed-Key"
+	MetaSealedKeyKMS = "X-Otterio-Internal-Server-Side-Encryption-Kms-Sealed-Key"
 
 	// MetaKeyID is the KMS master key ID used to generate/encrypt the data
 	// encryption key (DEK).
-	MetaKeyID = "X-Minio-Internal-Server-Side-Encryption-S3-Kms-Key-Id"
+	MetaKeyID = "X-Otterio-Internal-Server-Side-Encryption-S3-Kms-Key-Id"
 	// MetaDataEncryptionKey is the sealed data encryption key (DEK) received from
 	// the KMS.
-	MetaDataEncryptionKey = "X-Minio-Internal-Server-Side-Encryption-S3-Kms-Sealed-Key"
+	MetaDataEncryptionKey = "X-Otterio-Internal-Server-Side-Encryption-S3-Kms-Sealed-Key"
 
 	// MetaContext is the KMS context provided by a client when encrypting an
 	// object with SSE-KMS. A client may not send a context in which case the
@@ -52,7 +52,7 @@ const (
 	// added it. However, when decrypting an object the bucket/object name must
 	// be part of the object. Therefore, the bucket/object name must be added
 	// to the context, if not present, whenever a decryption is performed.
-	MetaContext = "X-Minio-Internal-Server-Side-Encryption-Context"
+	MetaContext = "X-Otterio-Internal-Server-Side-Encryption-Context"
 )
 
 // IsMultiPart returns true if the object metadata indicates

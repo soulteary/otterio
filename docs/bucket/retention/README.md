@@ -1,6 +1,6 @@
 # Object Lock and Immutablity Guide
 
-MinIO server allows WORM for specific objects or by configuring a bucket with default object lock configuration that applies default retention mode and retention duration to all objects. This makes objects in the bucket immutable i.e. delete of the version are not allowed until an expiry specified in the bucket's object lock configuration or object retention.
+OtterIO server allows WORM for specific objects or by configuring a bucket with default object lock configuration that applies default retention mode and retention duration to all objects. This makes objects in the bucket immutable i.e. delete of the version are not allowed until an expiry specified in the bucket's object lock configuration or object retention.
 
 Object locking requires locking to be enabled on a bucket at the time of bucket creation, object locking also automatically enables versioning on the bucket. In addition, a default retention period and retention mode can be configured on a bucket to be applied to objects created in that bucket.
 
@@ -10,7 +10,7 @@ Independent of retention, an object can also be under legal hold. This effective
 
 ### 1. Prerequisites
 
-- Install MinIO - [MinIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
+- Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
 - Install `awscli` - [Installing AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
 
 ### 2. Set bucket WORM configuration
@@ -48,13 +48,13 @@ See https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock-overview.html fo
   - New objects inherit the retention settings of the bucket object lock configuration automatically
   - Retention headers can be optionally set when uploading objects
   - Explicitly calling PutObjectRetention API call on the object
-- *MINIO_NTP_SERVER* environment variable can be set to remote NTP server endpoint if system time is not desired for setting retention dates.
+- *OTTERIO_NTP_SERVER* environment variable can be set to remote NTP server endpoint if system time is not desired for setting retention dates.
 - **Object locking feature is only available in erasure coded and distributed erasure coded setups**.
 
 ## Explore Further
 
-- [Use `mc` with MinIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with MinIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with MinIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `minio-go` SDK with MinIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The MinIO documentation website](https://docs.min.io)
+- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
+- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
+- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
+- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
+- [The OtterIO documentation website](https://docs.min.io)

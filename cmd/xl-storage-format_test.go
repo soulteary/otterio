@@ -73,7 +73,7 @@ func newTestXLMetaV1() xlMetaV1Object {
 	xlMeta := xlMetaV1Object{}
 	xlMeta.Version = xlMetaVersion101
 	xlMeta.Format = xlMetaFormat
-	xlMeta.Minio.Release = "test"
+	xlMeta.Otterio.Release = "test"
 	xlMeta.Erasure = ErasureInfo{
 		Algorithm:    "klauspost/reedsolomon/vandermonde",
 		DataBlocks:   5,
@@ -194,8 +194,8 @@ func compareXLMetaV1(t *testing.T, unMarshalXLMeta, jsoniterXLMeta xlMetaV1Objec
 		}
 	}
 
-	if unMarshalXLMeta.Minio.Release != jsoniterXLMeta.Minio.Release {
-		t.Errorf("Expected the Release string to be \"%s\", but got \"%s\".", unMarshalXLMeta.Minio.Release, jsoniterXLMeta.Minio.Release)
+	if unMarshalXLMeta.Otterio.Release != jsoniterXLMeta.Otterio.Release {
+		t.Errorf("Expected the Release string to be \"%s\", but got \"%s\".", unMarshalXLMeta.Otterio.Release, jsoniterXLMeta.Otterio.Release)
 	}
 	if len(unMarshalXLMeta.Parts) != len(jsoniterXLMeta.Parts) {
 		t.Errorf("Expected info of  %d parts to be present, but got %d instead.", len(unMarshalXLMeta.Parts), len(jsoniterXLMeta.Parts))

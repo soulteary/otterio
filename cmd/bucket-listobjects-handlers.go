@@ -49,7 +49,7 @@ func concurrentDecryptETag(ctx context.Context, objects []ObjectInfo) {
 
 // Validate all the ListObjects query arguments, returns an APIErrorCode
 // if one of the args do not meet the required conditions.
-// Special conditions required by MinIO server are as below
+// Special conditions required by OtterIO server are as below
 //   - delimiter if set should be equal to '/', otherwise the request is rejected.
 //   - marker if set should have a common prefix with 'prefix' param, otherwise
 //     the request is rejected.
@@ -131,7 +131,7 @@ func (api objectAPIHandlers) ListObjectVersionsHandler(w http.ResponseWriter, r 
 // criteria to return a subset of the objects in a bucket.
 //
 // NOTE: It is recommended that this API to be used for application development.
-// MinIO continues to support ListObjectsV1 and V2 for supporting legacy tools.
+// OtterIO continues to support ListObjectsV1 and V2 for supporting legacy tools.
 func (api objectAPIHandlers) ListObjectsV2MHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ListObjectsV2M")
 
@@ -197,7 +197,7 @@ func (api objectAPIHandlers) ListObjectsV2MHandler(w http.ResponseWriter, r *htt
 // criteria to return a subset of the objects in a bucket.
 //
 // NOTE: It is recommended that this API to be used for application development.
-// MinIO continues to support ListObjectsV1 for supporting legacy tools.
+// OtterIO continues to support ListObjectsV1 for supporting legacy tools.
 func (api objectAPIHandlers) ListObjectsV2Handler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ListObjectsV2")
 

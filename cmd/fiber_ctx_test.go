@@ -28,7 +28,7 @@ import (
 
 func TestFiberResponseWriterHeaders(t *testing.T) {
 	app := fiber.New()
-	app.Get("/test", toMinioHandler(func(w http.ResponseWriter, r *http.Request) {
+	app.Get("/test", toOtterioHandler(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
 		w.Header().Set("X-Test", "value")
 		w.WriteHeader(http.StatusCreated)

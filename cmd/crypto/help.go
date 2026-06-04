@@ -28,7 +28,7 @@ var (
 		},
 		config.HelpKV{
 			Key:         KMSVaultKeyName,
-			Description: `unique transit key name - e.g. "my-minio-key"`,
+			Description: `unique transit key name - e.g. "my-otterio-key"`,
 			Type:        "string",
 		},
 		config.HelpKV{
@@ -80,7 +80,7 @@ var (
 		},
 		config.HelpKV{
 			Key:         KMSKesKeyName,
-			Description: `unique key name - e.g. "my-minio-key"`,
+			Description: `unique key name - e.g. "my-otterio-key"`,
 			Type:        "string",
 		},
 		config.HelpKV{

@@ -78,7 +78,7 @@ func printStartupMessage(apiEndpoints []string, err error) {
 
 	// Prints `mc` cli configuration message chooses
 	// first endpoint as default.
-	printCLIAccessMsg(strippedAPIEndpoints[0], "myminio")
+	printCLIAccessMsg(strippedAPIEndpoints[0], "myotterio")
 
 	// Prints documentation message.
 	printObjectAPIMsg()
@@ -116,7 +116,7 @@ func stripStandardPorts(apiEndpoints []string) (newAPIEndpoints []string) {
 		if err != nil {
 			continue
 		}
-		if globalMinioHost == "" && isNotIPv4(u.Host) {
+		if globalOtterioHost == "" && isNotIPv4(u.Host) {
 			// Skip all non-IPv4 endpoints when we bind to all interfaces.
 			continue
 		}
@@ -177,7 +177,7 @@ func printCLIAccessMsg(endPoint string, alias string) {
 	// Get saved credentials.
 	cred := globalActiveCred
 
-	// Configure 'mc', following block prints platform specific information for minio client.
+	// Configure 'mc', following block prints platform specific information for otterio client.
 	if color.IsTerminal() && !globalCLIContext.Anonymous {
 		logStartupMessage(color.Blue("\nCommand-line Access: ") + mcQuickStartGuide)
 		if runtime.GOOS == globalWindowsOSName {

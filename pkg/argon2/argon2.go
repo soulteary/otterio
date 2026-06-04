@@ -38,6 +38,7 @@
 // allocations done by memory hard PBKDF.
 //
 // All the changes are governed by the LICENSE file MinIO project.
+// All the changes are governed by the LICENSE file OtterIO project.
 package argon2
 
 import (

@@ -226,12 +226,12 @@ const (
 	ClientID    = "client_id"
 	Scopes      = "scopes"
 
-	EnvIdentityOpenIDClientID    = "MINIO_IDENTITY_OPENID_CLIENT_ID"
-	EnvIdentityOpenIDJWKSURL     = "MINIO_IDENTITY_OPENID_JWKS_URL"
-	EnvIdentityOpenIDURL         = "MINIO_IDENTITY_OPENID_CONFIG_URL"
-	EnvIdentityOpenIDClaimName   = "MINIO_IDENTITY_OPENID_CLAIM_NAME"
-	EnvIdentityOpenIDClaimPrefix = "MINIO_IDENTITY_OPENID_CLAIM_PREFIX"
-	EnvIdentityOpenIDScopes      = "MINIO_IDENTITY_OPENID_SCOPES"
+	EnvIdentityOpenIDClientID    = "OTTERIO_IDENTITY_OPENID_CLIENT_ID"
+	EnvIdentityOpenIDJWKSURL     = "OTTERIO_IDENTITY_OPENID_JWKS_URL"
+	EnvIdentityOpenIDURL         = "OTTERIO_IDENTITY_OPENID_CONFIG_URL"
+	EnvIdentityOpenIDClaimName   = "OTTERIO_IDENTITY_OPENID_CLAIM_NAME"
+	EnvIdentityOpenIDClaimPrefix = "OTTERIO_IDENTITY_OPENID_CLAIM_PREFIX"
+	EnvIdentityOpenIDScopes      = "OTTERIO_IDENTITY_OPENID_SCOPES"
 )
 
 // DiscoveryDoc - parses the output from openid-configuration

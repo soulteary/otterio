@@ -32,15 +32,15 @@ import (
 )
 
 func renameAllBucketMetacache(epPath string) error {
-	// Rename all previous `.minio.sys/buckets/<bucketname>/.metacache` to
-	// to `.minio.sys/tmp/` for deletion.
-	return readDirFn(pathJoin(epPath, minioMetaBucket, bucketMetaPrefix), func(name string, typ os.FileMode) error {
+	// Rename all previous `.otterio.sys/buckets/<bucketname>/.metacache` to
+	// to `.otterio.sys/tmp/` for deletion.
+	return readDirFn(pathJoin(epPath, otterioMetaBucket, bucketMetaPrefix), func(name string, typ os.FileMode) error {
 		if typ == os.ModeDir {
-			tmpMetacacheOld := pathutil.Join(epPath, minioMetaTmpDeletedBucket, mustGetUUID())
-			if err := renameAll(pathJoin(epPath, minioMetaBucket, metacachePrefixForID(name, slashSeparator)),
+			tmpMetacacheOld := pathutil.Join(epPath, otterioMetaTmpDeletedBucket, mustGetUUID())
+			if err := renameAll(pathJoin(epPath, otterioMetaBucket, metacachePrefixForID(name, slashSeparator)),
 				tmpMetacacheOld); err != nil && err != errFileNotFound {
 				return fmt.Errorf("unable to rename (%s -> %s) %w",
-					pathJoin(epPath, minioMetaBucket+metacachePrefixForID(minioMetaBucket, slashSeparator)),
+					pathJoin(epPath, otterioMetaBucket+metacachePrefixForID(otterioMetaBucket, slashSeparator)),
 					tmpMetacacheOld,
 					osErrToFileErr(err))
 			}

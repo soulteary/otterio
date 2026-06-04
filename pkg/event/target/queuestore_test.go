@@ -27,7 +27,7 @@ import (
 )
 
 // TestDir
-var queueDir = filepath.Join(os.TempDir(), "minio_test")
+var queueDir = filepath.Join(os.TempDir(), "otterio_test")
 
 // Sample test event.
 var testEvent = event.Event{EventVersion: "1.0", EventSource: "test_source", AwsRegion: "test_region", EventTime: "test_time", EventName: event.ObjectAccessedGet}

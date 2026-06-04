@@ -68,7 +68,7 @@ func (adm *AdminClient) HelpConfigKV(ctx context.Context, subSys, key string, en
 		queryValues: v,
 	}
 
-	// Execute GET on /minio/admin/v3/help-config-kv
+	// Execute GET on /otterio/admin/v3/help-config-kv
 	resp, err := adm.executeMethod(ctx, http.MethodGet, reqData)
 	if err != nil {
 		return Help{}, err

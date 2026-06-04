@@ -1,4 +1,4 @@
-## MinIO Server Limits Per Tenant
+## OtterIO Server Limits Per Tenant
 
 ### Erasure Code (Multiple Drives / Servers)
 
@@ -35,10 +35,10 @@
 |Maximum number of objects returned per list objects request| 10000|
 |Maximum number of multipart uploads returned per list multipart uploads request| 1000|
 
-### List of Amazon S3 API's not supported on MinIO
+### List of Amazon S3 API's not supported on OtterIO
 We found the following APIs to be redundant or less useful outside of AWS S3. If you have a different view on any of the APIs we missed, please open a [github issue](https://github.com/minio/minio/issues).
 
-#### List of Amazon S3 Bucket API's not supported on MinIO
+#### List of Amazon S3 Bucket API's not supported on OtterIO
 
 - BucketACL (Use [bucket policies](https://docs.min.io/docs/minio-client-complete-guide#policy) instead)
 - BucketCORS (CORS enabled by default on all buckets for all HTTP verbs)
@@ -46,10 +46,10 @@ We found the following APIs to be redundant or less useful outside of AWS S3. If
 - BucketAnalytics, BucketMetrics, BucketLogging (Use [bucket notification](https://docs.min.io/docs/minio-client-complete-guide#events) APIs)
 - BucketRequestPayment
 
-#### List of Amazon S3 Object API's not supported on MinIO
+#### List of Amazon S3 Object API's not supported on OtterIO
 
 - ObjectACL (Use [bucket policies](https://docs.min.io/docs/minio-client-complete-guide#policy) instead)
 - ObjectTorrent
 
-### Object name restrictions on MinIO
+### Object name restrictions on OtterIO
 Object names that contain characters `^*|\/&";` are unsupported on Windows and other file systems which do not support filenames with these characters. Note that this list is not exhaustive, and depends on the maintainers of the filesystem itself.

@@ -306,7 +306,7 @@ func (er erasureObjects) getOnlineDisksWithHealing() (newDisks []StorageAPI, hea
 	return newDisks, healing
 }
 
-// Clean-up previously deleted objects. from .minio.sys/tmp/.trash/
+// Clean-up previously deleted objects. from .otterio.sys/tmp/.trash/
 func (er erasureObjects) cleanupDeletedObjects(ctx context.Context) {
 	// run multiple cleanup's local to this server.
 	var wg sync.WaitGroup
@@ -316,9 +316,9 @@ func (er erasureObjects) cleanupDeletedObjects(ctx context.Context) {
 			go func(disk StorageAPI) {
 				defer wg.Done()
 				diskPath := disk.Endpoint().Path
-				readDirFn(pathJoin(diskPath, minioMetaTmpDeletedBucket), func(ddir string, typ os.FileMode) error {
+				readDirFn(pathJoin(diskPath, otterioMetaTmpDeletedBucket), func(ddir string, typ os.FileMode) error {
 					wait := er.deletedCleanupSleeper.Timer(ctx)
-					removeAll(pathJoin(diskPath, minioMetaTmpDeletedBucket, ddir))
+					removeAll(pathJoin(diskPath, otterioMetaTmpDeletedBucket, ddir))
 					wait()
 					return nil
 				})

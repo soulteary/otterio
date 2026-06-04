@@ -119,7 +119,7 @@ export class ChangePasswordModal extends React.Component {
         <Modal bsSize="sm" animation={false} show={true}>
           <ModalHeader>Change Password</ModalHeader>
           <ModalBody>
-            Credentials of this user cannot be updated through MinIO Browser.
+            Credentials of this user cannot be updated through OtterIO Browser.
           </ModalBody>
           <div className="modal-footer">
             <button

@@ -122,78 +122,78 @@ const (
 	// EnvKMSMasterKey is the environment variable used to specify
 	// a KMS master key used to protect SSE-S3 per-object keys.
 	// Valid values must be of the from: "KEY_ID:32_BYTE_HEX_VALUE".
-	EnvKMSMasterKey = "MINIO_KMS_MASTER_KEY"
+	EnvKMSMasterKey = "OTTERIO_KMS_MASTER_KEY"
 
 	// EnvKMSAutoEncryption is the environment variable used to en/disable
 	// SSE-S3 auto-encryption. SSE-S3 auto-encryption, if enabled,
 	// requires a valid KMS configuration and turns any non-SSE-C
 	// request into an SSE-S3 request.
 	// If present EnvAutoEncryption must be either "on" or "off".
-	EnvKMSAutoEncryption = "MINIO_KMS_AUTO_ENCRYPTION"
+	EnvKMSAutoEncryption = "OTTERIO_KMS_AUTO_ENCRYPTION"
 )
 
 const (
 	// EnvKMSVaultEndpoint is the environment variable used to specify
 	// the vault HTTPS endpoint.
-	EnvKMSVaultEndpoint = "MINIO_KMS_VAULT_ENDPOINT"
+	EnvKMSVaultEndpoint = "OTTERIO_KMS_VAULT_ENDPOINT"
 
 	// EnvKMSVaultAuthType is the environment variable used to specify
 	// the authentication type for vault.
-	EnvKMSVaultAuthType = "MINIO_KMS_VAULT_AUTH_TYPE"
+	EnvKMSVaultAuthType = "OTTERIO_KMS_VAULT_AUTH_TYPE"
 
 	// EnvKMSVaultAppRoleID is the environment variable used to specify
 	// the vault AppRole ID.
-	EnvKMSVaultAppRoleID = "MINIO_KMS_VAULT_APPROLE_ID"
+	EnvKMSVaultAppRoleID = "OTTERIO_KMS_VAULT_APPROLE_ID"
 
 	// EnvKMSVaultAppSecretID is the environment variable used to specify
 	// the vault AppRole secret corresponding to the AppRole ID.
-	EnvKMSVaultAppSecretID = "MINIO_KMS_VAULT_APPROLE_SECRET"
+	EnvKMSVaultAppSecretID = "OTTERIO_KMS_VAULT_APPROLE_SECRET"
 
 	// EnvKMSVaultKeyVersion is the environment variable used to specify
 	// the vault key version.
-	EnvKMSVaultKeyVersion = "MINIO_KMS_VAULT_KEY_VERSION"
+	EnvKMSVaultKeyVersion = "OTTERIO_KMS_VAULT_KEY_VERSION"
 
 	// EnvKMSVaultKeyName is the environment variable used to specify
 	// the vault named key-ring. In the S3 context it's referred as
 	// customer master key ID (CMK-ID).
-	EnvKMSVaultKeyName = "MINIO_KMS_VAULT_KEY_NAME"
+	EnvKMSVaultKeyName = "OTTERIO_KMS_VAULT_KEY_NAME"
 
 	// EnvKMSVaultCAPath is the environment variable used to specify the
 	// path to a directory of PEM-encoded CA cert files. These CA cert
-	// files are used to authenticate MinIO to Vault over mTLS.
-	EnvKMSVaultCAPath = "MINIO_KMS_VAULT_CAPATH"
+	// files are used to authenticate OtterIO to Vault over mTLS.
+	EnvKMSVaultCAPath = "OTTERIO_KMS_VAULT_CAPATH"
 
 	// EnvKMSVaultNamespace is the environment variable used to specify
 	// vault namespace. The vault namespace is used if the enterprise
 	// version of Hashicorp Vault is used.
-	EnvKMSVaultNamespace = "MINIO_KMS_VAULT_NAMESPACE"
+	EnvKMSVaultNamespace = "OTTERIO_KMS_VAULT_NAMESPACE"
 )
 
 const (
 	// EnvKMSKesEndpoint is the environment variable used to specify
 	// one or multiple KES server HTTPS endpoints. The individual
 	// endpoints should be separated by ','.
-	EnvKMSKesEndpoint = "MINIO_KMS_KES_ENDPOINT"
+	EnvKMSKesEndpoint = "OTTERIO_KMS_KES_ENDPOINT"
 
 	// EnvKMSKesKeyFile is the environment variable used to specify
-	// the TLS private key used by MinIO to authenticate to the kes
+	// the TLS private key used by OtterIO to authenticate to the kes
 	// server HTTPS via mTLS.
-	EnvKMSKesKeyFile = "MINIO_KMS_KES_KEY_FILE"
+	EnvKMSKesKeyFile = "OTTERIO_KMS_KES_KEY_FILE"
 
 	// EnvKMSKesCertFile is the environment variable used to specify
-	// the TLS certificate used by MinIO to authenticate to the kes
+	// the TLS certificate used by OtterIO to authenticate to the kes
 	// server HTTPS via mTLS.
-	EnvKMSKesCertFile = "MINIO_KMS_KES_CERT_FILE"
+	EnvKMSKesCertFile = "OTTERIO_KMS_KES_CERT_FILE"
 
 	// EnvKMSKesCAPath is the environment variable used to specify
-	// the TLS root certificates used by MinIO to verify the certificate
+	// the TLS root certificates used by OtterIO to verify the certificate
 	// presented by to the kes server when establishing a TLS connection.
-	EnvKMSKesCAPath = "MINIO_KMS_KES_CA_PATH"
+	EnvKMSKesCAPath = "OTTERIO_KMS_KES_CA_PATH"
 
 	// EnvKMSKesKeyName is the environment variable used to specify
 	// the (default) key at the kes server. In the S3 context it's
 	// referred as customer master key ID (CMK-ID).
-	EnvKMSKesKeyName = "MINIO_KMS_KES_KEY_NAME"
+	EnvKMSKesKeyName = "OTTERIO_KMS_KES_KEY_NAME"
 )
 
 var defaultVaultCfg = VaultConfig{
@@ -411,8 +411,8 @@ func NewKMS(cfg KMSConfig) (kms KMS, err error) {
 	} else if cfg.Vault.Enabled && cfg.Kes.Enabled {
 		return kms, errors.New("Ambiguous KMS configuration: vault configuration and kes configuration are provided at the same time")
 	} else if cfg.Vault.Enabled {
-		if v, ok := os.LookupEnv("MINIO_KMS_VAULT_DEPRECATION"); !ok || v != "off" { // TODO(aead): Remove once Vault support has been removed
-			return kms, errors.New("Hashicorp Vault is deprecated and will be removed Oct. 2021. To temporarily enable Hashicorp Vault support, set MINIO_KMS_VAULT_DEPRECATION=off")
+		if v, ok := os.LookupEnv("OTTERIO_KMS_VAULT_DEPRECATION"); !ok || v != "off" { // TODO(aead): Remove once Vault support has been removed
+			return kms, errors.New("Hashicorp Vault is deprecated and will be removed Oct. 2021. To temporarily enable Hashicorp Vault support, set OTTERIO_KMS_VAULT_DEPRECATION=off")
 		}
 		kms, err = NewVault(cfg.Vault)
 		if err != nil {

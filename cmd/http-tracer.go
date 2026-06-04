@@ -294,7 +294,7 @@ func headerByteSize(h http.Header) int {
 }
 
 // TraceFiber gets trace of a Fiber HTTP request.
-func TraceFiber(f MinioHandler, logBody bool, c fiber.Ctx) trace.Info {
+func TraceFiber(f OtterioHandler, logBody bool, c fiber.Ctx) trace.Info {
 	name := getOpName(runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name())
 
 	now := time.Now().UTC()

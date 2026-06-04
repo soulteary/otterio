@@ -22,12 +22,12 @@ import (
 )
 
 const (
-	adminPathPrefix         = minioReservedBucketPath + "/admin"
+	adminPathPrefix         = otterioReservedBucketPath + "/admin"
 	adminAPIVersionV2       = madmin.AdminAPIVersionV2
 	adminAPIVersion         = madmin.AdminAPIVersion
 	adminAPIVersionPrefix   = SlashSeparator + adminAPIVersion
 	adminAPIVersionV2Prefix = SlashSeparator + adminAPIVersionV2
 )
 
-// adminAPIHandlers provides HTTP handlers for MinIO admin API.
+// adminAPIHandlers provides HTTP handlers for OtterIO admin API.
 type adminAPIHandlers struct{}

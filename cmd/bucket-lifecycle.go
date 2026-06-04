@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	miniogo "github.com/minio/minio-go/v7"
+	otteriogo "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/tags"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
@@ -205,7 +205,7 @@ func validateTransitionDestination(ctx context.Context, bucket string, targetLab
 	if found, _ := clnt.BucketExists(ctx, arn.Bucket); !found {
 		return false, "", BucketRemoteDestinationNotFound{Bucket: arn.Bucket}
 	}
-	sameTarget, _ := isLocalHost(clnt.EndpointURL().Hostname(), clnt.EndpointURL().Port(), globalMinioPort)
+	sameTarget, _ := isLocalHost(clnt.EndpointURL().Hostname(), clnt.EndpointURL().Port(), globalOtterioPort)
 	return sameTarget, arn.Bucket, nil
 }
 
@@ -245,15 +245,15 @@ func transitionSCInUse(ctx context.Context, lfc *lifecycle.Lifecycle, bucket, ar
 }
 
 // set PutObjectOptions for PUT operation to transition data to target cluster
-func putTransitionOpts(objInfo ObjectInfo) (putOpts miniogo.PutObjectOptions, err error) {
+func putTransitionOpts(objInfo ObjectInfo) (putOpts otteriogo.PutObjectOptions, err error) {
 	meta := make(map[string]string)
 
-	putOpts = miniogo.PutObjectOptions{
+	putOpts = otteriogo.PutObjectOptions{
 		UserMetadata:    meta,
 		ContentType:     objInfo.ContentType,
 		ContentEncoding: objInfo.ContentEncoding,
 		StorageClass:    objInfo.StorageClass,
-		Internal: miniogo.AdvancedPutOptions{
+		Internal: otteriogo.AdvancedPutOptions{
 			SourceVersionID: objInfo.VersionID,
 			SourceMTime:     objInfo.ModTime,
 			SourceETag:      objInfo.ETag,
@@ -278,7 +278,7 @@ func putTransitionOpts(objInfo ObjectInfo) (putOpts miniogo.PutObjectOptions, er
 		putOpts.CacheControl = cc
 	}
 	if mode, ok := lkMap.Lookup(xhttp.AmzObjectLockMode); ok {
-		rmode := miniogo.RetentionMode(mode)
+		rmode := otteriogo.RetentionMode(mode)
 		putOpts.Mode = rmode
 	}
 	if retainDateStr, ok := lkMap.Lookup(xhttp.AmzObjectLockRetainUntilDate); ok {
@@ -289,7 +289,7 @@ func putTransitionOpts(objInfo ObjectInfo) (putOpts miniogo.PutObjectOptions, er
 		putOpts.RetainUntilDate = rdate
 	}
 	if lhold, ok := lkMap.Lookup(xhttp.AmzObjectLockLegalHold); ok {
-		putOpts.LegalHold = miniogo.LegalHoldStatus(lhold)
+		putOpts.LegalHold = otteriogo.LegalHoldStatus(lhold)
 	}
 
 	return putOpts, nil
@@ -330,7 +330,7 @@ func deleteTransitionedObject(ctx context.Context, objectAPI ObjectLayer, bucket
 
 	// When an object is past expiry, delete the data from transitioned tier and
 	// metadata from source
-	if err := tgt.RemoveObject(context.Background(), arn.Bucket, object, miniogo.RemoveObjectOptions{VersionID: lcOpts.VersionID}); err != nil {
+	if err := tgt.RemoveObject(context.Background(), arn.Bucket, object, otteriogo.RemoveObjectOptions{VersionID: lcOpts.VersionID}); err != nil {
 		logger.LogIf(ctx, err)
 	}
 
@@ -464,7 +464,7 @@ func getTransitionedObjectReader(ctx context.Context, bucket, object string, rs 
 	if err != nil {
 		return nil, ErrorRespToObjectError(err, bucket, object)
 	}
-	gopts := miniogo.GetObjectOptions{VersionID: opts.VersionID}
+	gopts := otteriogo.GetObjectOptions{VersionID: opts.VersionID}
 
 	// get correct offsets for encrypted object
 	if off >= 0 && length >= 0 {

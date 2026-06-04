@@ -19,7 +19,7 @@ package cmd
 const (
 	storageRESTVersion       = "v31" // Added RenameData with fileInfo()
 	storageRESTVersionPrefix = SlashSeparator + storageRESTVersion
-	storageRESTPrefix        = minioReservedBucketPath + "/storage"
+	storageRESTPrefix        = otterioReservedBucketPath + "/storage"
 )
 
 const (

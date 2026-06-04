@@ -76,7 +76,7 @@ func parseDirEnt(buf []byte) (consumed int, name []byte, typ os.FileMode, err er
 		typ = os.ModeSymlink
 	default:
 		// Skip all other file types. Revisit if/when this code needs
-		// to handle such files, MinIO is only interested in
+		// to handle such files, OtterIO is only interested in
 		// files and directories.
 		typ = unexpectedFileMode
 	}

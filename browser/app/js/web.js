@@ -15,7 +15,7 @@
  */
 
 import JSONrpc from './jsonrpc'
-import { minioBrowserPrefix } from './constants.js'
+import { otterioBrowserPrefix } from './constants.js'
 import Moment from 'moment'
 import storage from 'local-storage-fallback'
 
@@ -39,7 +39,7 @@ class Web {
         }
         if (err.status)
           throw new Error(`Server returned error [${err.status}]`)
-        throw new Error('MinIO server is unreachable')
+        throw new Error('OtterIO server is unreachable')
       })
       .then(res => {
         let json = JSON.parse(res.text)
@@ -52,7 +52,7 @@ class Web {
           throw new Error("Invalid UI version in the JSON-RPC response")
         }
         if (result.uiVersion !== currentUiVersion
-          && currentUiVersion !== 'MINIO_UI_VERSION') {
+          && currentUiVersion !== 'OTTERIO_UI_VERSION') {
           storage.setItem('newlyUpdated', true)
           location.reload()
         }
@@ -133,6 +133,6 @@ class Web {
   }
 }
 
-const web = new Web(`${window.location.protocol}//${window.location.host}${minioBrowserPrefix}/webrpc`);
+const web = new Web(`${window.location.protocol}//${window.location.host}${otterioBrowserPrefix}/webrpc`);
 
 export default web;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package trie implements a simple trie tree for minio server/tools borrows
+// Package trie implements a simple trie tree for otterio server/tools borrows
 // idea from - https://godoc.org/golang.org/x/text/internal/triegen.
 package trie
 

@@ -25,7 +25,7 @@ import { getCurrentBucket } from "../buckets/selectors"
 import { getCurrentPrefix, getCheckedList } from "./selectors"
 import * as alertActions from "../alert/actions"
 import {
-  minioBrowserPrefix,
+  otterioBrowserPrefix,
   SORT_BY_NAME,
   SORT_BY_SIZE,
   SORT_BY_LAST_MODIFIED,
@@ -323,7 +323,7 @@ export const getObjectURL = (object, callback) => {
       return web
         .CreateURLToken()
         .then((res) => {
-          const url = `${window.location.origin}${minioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=${res.token}`
+          const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=${res.token}`
           callback(url)
         })
         .catch((err) => {
@@ -335,7 +335,7 @@ export const getObjectURL = (object, callback) => {
           )
         })
     } else {
-      const url = `${window.location.origin}${minioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=`
+      const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=`
       callback(url)
     }
   }
@@ -350,7 +350,7 @@ export const downloadObject = (object) => {
       return web
         .CreateURLToken()
         .then((res) => {
-          const url = `${window.location.origin}${minioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=${res.token}`
+          const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=${res.token}`
           window.location = url
         })
         .catch((err) => {
@@ -362,7 +362,7 @@ export const downloadObject = (object) => {
           )
         })
     } else {
-      const url = `${window.location.origin}${minioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=`
+      const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=`
       window.location = url
     }
   }
@@ -417,7 +417,7 @@ const downloadObjects = (bucketName, prefix, objects, filename, dispatch) => {
       return web
         .CreateURLToken()
         .then((res) => {
-          const requestUrl = `${location.origin}${minioBrowserPrefix}/zip?token=${res.token}`
+          const requestUrl = `${location.origin}${otterioBrowserPrefix}/zip?token=${res.token}`
           downloadZip(requestUrl, req, filename, dispatch)
         })
         .catch((err) =>
@@ -429,7 +429,7 @@ const downloadObjects = (bucketName, prefix, objects, filename, dispatch) => {
           )
         )
     } else {
-      const requestUrl = `${location.origin}${minioBrowserPrefix}/zip?token=`
+      const requestUrl = `${location.origin}${otterioBrowserPrefix}/zip?token=`
       downloadZip(requestUrl, req, filename, dispatch)
     }
 }

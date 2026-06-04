@@ -3,8 +3,8 @@
 Enable object lifecycle configuration on buckets to setup automatic deletion of objects after a specified number of days or a specified date.
 
 ## 1. Prerequisites
-- Install MinIO - [MinIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
-- Install `mc` - [mc Quickstart Guide](https://docs.minio.io/docs/minio-client-quickstart-guide.html)
+- Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
+- Install `mc` - [mc Quickstart Guide](https://docs.otterio.io/docs/otterio-client-quickstart-guide.html)
 
 ## 2. Enable bucket lifecycle configuration
 
@@ -100,5 +100,5 @@ When an object has only one version as a delete marker, the latter can be automa
 ```
 
 ## Explore Further
-- [MinIO | Golang Client API Reference](https://docs.min.io/docs/golang-client-api-reference.html#SetBucketLifecycle)
+- [OtterIO | Golang Client API Reference](https://docs.min.io/docs/golang-client-api-reference.html#SetBucketLifecycle)
 - [Object Lifecycle Management](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html)

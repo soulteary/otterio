@@ -54,7 +54,7 @@ func validateAdminUsersReq(ctx context.Context, w http.ResponseWriter, r *http.R
 	return objectAPI, cred
 }
 
-// RemoveUser - DELETE /minio/admin/v3/remove-user?accessKey=<access_key>
+// RemoveUser - DELETE /otterio/admin/v3/remove-user?accessKey=<access_key>
 func (a adminAPIHandlers) RemoveUser(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "RemoveUser")
 
@@ -82,7 +82,7 @@ func (a adminAPIHandlers) RemoveUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Notify all other MinIO peers to delete user.
+	// Notify all other OtterIO peers to delete user.
 	for _, nerr := range globalNotificationSys.DeleteUser(accessKey) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -91,7 +91,7 @@ func (a adminAPIHandlers) RemoveUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ListUsers - GET /minio/admin/v3/list-users
+// ListUsers - GET /otterio/admin/v3/list-users
 func (a adminAPIHandlers) ListUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ListUsers")
 
@@ -125,7 +125,7 @@ func (a adminAPIHandlers) ListUsers(w http.ResponseWriter, r *http.Request) {
 	writeSuccessResponseJSON(w, econfigData)
 }
 
-// GetUserInfo - GET /minio/admin/v3/user-info
+// GetUserInfo - GET /otterio/admin/v3/user-info
 func (a adminAPIHandlers) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "GetUserInfo")
 
@@ -181,7 +181,7 @@ func (a adminAPIHandlers) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	writeSuccessResponseJSON(w, data)
 }
 
-// UpdateGroupMembers - PUT /minio/admin/v3/update-group-members
+// UpdateGroupMembers - PUT /otterio/admin/v3/update-group-members
 func (a adminAPIHandlers) UpdateGroupMembers(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "UpdateGroupMembers")
 
@@ -217,7 +217,7 @@ func (a adminAPIHandlers) UpdateGroupMembers(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Notify all other MinIO peers to load group.
+	// Notify all other OtterIO peers to load group.
 	for _, nerr := range globalNotificationSys.LoadGroup(updReq.Group) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -226,7 +226,7 @@ func (a adminAPIHandlers) UpdateGroupMembers(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// GetGroup - /minio/admin/v3/group?group=mygroup1
+// GetGroup - /otterio/admin/v3/group?group=mygroup1
 func (a adminAPIHandlers) GetGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "GetGroup")
 
@@ -254,7 +254,7 @@ func (a adminAPIHandlers) GetGroup(w http.ResponseWriter, r *http.Request) {
 	writeSuccessResponseJSON(w, body)
 }
 
-// ListGroups - GET /minio/admin/v3/groups
+// ListGroups - GET /otterio/admin/v3/groups
 func (a adminAPIHandlers) ListGroups(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ListGroups")
 
@@ -280,7 +280,7 @@ func (a adminAPIHandlers) ListGroups(w http.ResponseWriter, r *http.Request) {
 	writeSuccessResponseJSON(w, body)
 }
 
-// SetGroupStatus - PUT /minio/admin/v3/set-group-status?group=mygroup1&status=enabled
+// SetGroupStatus - PUT /otterio/admin/v3/set-group-status?group=mygroup1&status=enabled
 func (a adminAPIHandlers) SetGroupStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "SetGroupStatus")
 
@@ -307,7 +307,7 @@ func (a adminAPIHandlers) SetGroupStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Notify all other MinIO peers to reload user.
+	// Notify all other OtterIO peers to reload user.
 	for _, nerr := range globalNotificationSys.LoadGroup(group) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -316,7 +316,7 @@ func (a adminAPIHandlers) SetGroupStatus(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// SetUserStatus - PUT /minio/admin/v3/set-user-status?accessKey=<access_key>&status=[enabled|disabled]
+// SetUserStatus - PUT /otterio/admin/v3/set-user-status?accessKey=<access_key>&status=[enabled|disabled]
 func (a adminAPIHandlers) SetUserStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "SetUserStatus")
 
@@ -341,7 +341,7 @@ func (a adminAPIHandlers) SetUserStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Notify all other MinIO peers to reload user.
+	// Notify all other OtterIO peers to reload user.
 	for _, nerr := range globalNotificationSys.LoadUser(accessKey, false) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -350,7 +350,7 @@ func (a adminAPIHandlers) SetUserStatus(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// AddUser - PUT /minio/admin/v3/add-user?accessKey=<access_key>
+// AddUser - PUT /otterio/admin/v3/add-user?accessKey=<access_key>
 func (a adminAPIHandlers) AddUser(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "AddUser")
 
@@ -442,7 +442,7 @@ func (a adminAPIHandlers) AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Notify all other Minio peers to reload user
+	// Notify all other Otterio peers to reload user
 	for _, nerr := range globalNotificationSys.LoadUser(accessKey, false) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -451,7 +451,7 @@ func (a adminAPIHandlers) AddUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// AddServiceAccount - PUT /minio/admin/v3/add-service-account
+// AddServiceAccount - PUT /otterio/admin/v3/add-service-account
 func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "AddServiceAccount")
 
@@ -550,7 +550,7 @@ func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Notify all other Minio peers to reload user the service account
+	// Notify all other Otterio peers to reload user the service account
 	for _, nerr := range globalNotificationSys.LoadServiceAccount(newCred.AccessKey) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -580,7 +580,7 @@ func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Reque
 	writeSuccessResponseJSON(w, encryptedData)
 }
 
-// UpdateServiceAccount - POST /minio/admin/v3/update-service-account
+// UpdateServiceAccount - POST /otterio/admin/v3/update-service-account
 func (a adminAPIHandlers) UpdateServiceAccount(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "UpdateServiceAccount")
 
@@ -658,7 +658,7 @@ func (a adminAPIHandlers) UpdateServiceAccount(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Notify all other Minio peers to reload user the service account
+	// Notify all other Otterio peers to reload user the service account
 	for _, nerr := range globalNotificationSys.LoadServiceAccount(accessKey) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -669,7 +669,7 @@ func (a adminAPIHandlers) UpdateServiceAccount(w http.ResponseWriter, r *http.Re
 	writeSuccessNoContent(w)
 }
 
-// InfoServiceAccount - GET /minio/admin/v3/info-service-account
+// InfoServiceAccount - GET /otterio/admin/v3/info-service-account
 func (a adminAPIHandlers) InfoServiceAccount(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "InfoServiceAccount")
 
@@ -768,7 +768,7 @@ func (a adminAPIHandlers) InfoServiceAccount(w http.ResponseWriter, r *http.Requ
 	writeSuccessResponseJSON(w, encryptedData)
 }
 
-// ListServiceAccounts - GET /minio/admin/v3/list-service-accounts
+// ListServiceAccounts - GET /otterio/admin/v3/list-service-accounts
 func (a adminAPIHandlers) ListServiceAccounts(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ListServiceAccounts")
 
@@ -846,7 +846,7 @@ func (a adminAPIHandlers) ListServiceAccounts(w http.ResponseWriter, r *http.Req
 	writeSuccessResponseJSON(w, encryptedData)
 }
 
-// DeleteServiceAccount - DELETE /minio/admin/v3/delete-service-account
+// DeleteServiceAccount - DELETE /otterio/admin/v3/delete-service-account
 func (a adminAPIHandlers) DeleteServiceAccount(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "DeleteServiceAccount")
 
@@ -1008,7 +1008,7 @@ func (a adminAPIHandlers) AccountInfoHandler(w http.ResponseWriter, r *http.Requ
 	accountName := cred.AccessKey
 	var policies []string
 	switch globalIAMSys.usersSysType {
-	case MinIOUsersSysType:
+	case OtterIOUsersSysType:
 		policies, err = globalIAMSys.PolicyDBGet(accountName, false)
 	case LDAPUsersSysType:
 		parentUser := accountName
@@ -1059,7 +1059,7 @@ func (a adminAPIHandlers) AccountInfoHandler(w http.ResponseWriter, r *http.Requ
 	writeSuccessResponseJSON(w, usageInfoJSON)
 }
 
-// InfoCannedPolicyV2 - GET /minio/admin/v2/info-canned-policy?name={policyName}
+// InfoCannedPolicyV2 - GET /otterio/admin/v2/info-canned-policy?name={policyName}
 func (a adminAPIHandlers) InfoCannedPolicyV2(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "InfoCannedPolicyV2")
 
@@ -1086,7 +1086,7 @@ func (a adminAPIHandlers) InfoCannedPolicyV2(w http.ResponseWriter, r *http.Requ
 	w.(http.Flusher).Flush()
 }
 
-// InfoCannedPolicy - GET /minio/admin/v3/info-canned-policy?name={policyName}
+// InfoCannedPolicy - GET /otterio/admin/v3/info-canned-policy?name={policyName}
 func (a adminAPIHandlers) InfoCannedPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "InfoCannedPolicy")
 
@@ -1110,7 +1110,7 @@ func (a adminAPIHandlers) InfoCannedPolicy(w http.ResponseWriter, r *http.Reques
 	w.(http.Flusher).Flush()
 }
 
-// ListCannedPoliciesV2 - GET /minio/admin/v2/list-canned-policies
+// ListCannedPoliciesV2 - GET /otterio/admin/v2/list-canned-policies
 func (a adminAPIHandlers) ListCannedPoliciesV2(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ListCannedPoliciesV2")
 
@@ -1144,7 +1144,7 @@ func (a adminAPIHandlers) ListCannedPoliciesV2(w http.ResponseWriter, r *http.Re
 	w.(http.Flusher).Flush()
 }
 
-// ListCannedPolicies - GET /minio/admin/v3/list-canned-policies
+// ListCannedPolicies - GET /otterio/admin/v3/list-canned-policies
 func (a adminAPIHandlers) ListCannedPolicies(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ListCannedPolicies")
 
@@ -1178,7 +1178,7 @@ func (a adminAPIHandlers) ListCannedPolicies(w http.ResponseWriter, r *http.Requ
 	w.(http.Flusher).Flush()
 }
 
-// RemoveCannedPolicy - DELETE /minio/admin/v3/remove-canned-policy?name=<policy_name>
+// RemoveCannedPolicy - DELETE /otterio/admin/v3/remove-canned-policy?name=<policy_name>
 func (a adminAPIHandlers) RemoveCannedPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "RemoveCannedPolicy")
 
@@ -1196,7 +1196,7 @@ func (a adminAPIHandlers) RemoveCannedPolicy(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Notify all other MinIO peers to delete policy
+	// Notify all other OtterIO peers to delete policy
 	for _, nerr := range globalNotificationSys.DeletePolicy(policyName) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -1205,7 +1205,7 @@ func (a adminAPIHandlers) RemoveCannedPolicy(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// AddCannedPolicy - PUT /minio/admin/v3/add-canned-policy?name=<policy_name>
+// AddCannedPolicy - PUT /otterio/admin/v3/add-canned-policy?name=<policy_name>
 func (a adminAPIHandlers) AddCannedPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "AddCannedPolicy")
 
@@ -1247,7 +1247,7 @@ func (a adminAPIHandlers) AddCannedPolicy(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Notify all other MinIO peers to reload policy
+	// Notify all other OtterIO peers to reload policy
 	for _, nerr := range globalNotificationSys.LoadPolicy(policyName) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -1256,7 +1256,7 @@ func (a adminAPIHandlers) AddCannedPolicy(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// SetPolicyForUserOrGroup - PUT /minio/admin/v3/set-policy?policy=xxx&user-or-group=?[&is-group]
+// SetPolicyForUserOrGroup - PUT /otterio/admin/v3/set-policy?policy=xxx&user-or-group=?[&is-group]
 func (a adminAPIHandlers) SetPolicyForUserOrGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "SetPolicyForUserOrGroup")
 
@@ -1288,7 +1288,7 @@ func (a adminAPIHandlers) SetPolicyForUserOrGroup(w http.ResponseWriter, r *http
 		return
 	}
 
-	// Notify all other MinIO peers to reload policy
+	// Notify all other OtterIO peers to reload policy
 	for _, nerr := range globalNotificationSys.LoadPolicyMapping(entityName, isGroup) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())

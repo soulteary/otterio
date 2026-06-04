@@ -31,12 +31,12 @@ func TestParseMasterKey(t *testing.T) {
 			success:  false,
 		},
 		{
-			envValue: "myminio-key:not-a-hex",
+			envValue: "myotterio-key:not-a-hex",
 			success:  false,
 		},
 		{
-			envValue:      "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574",
-			expectedKeyID: "my-minio-key",
+			envValue:      "my-otterio-key:6368616e676520746869732070617373776f726420746f206120736563726574",
+			expectedKeyID: "my-otterio-key",
 			success:       true,
 		},
 	}

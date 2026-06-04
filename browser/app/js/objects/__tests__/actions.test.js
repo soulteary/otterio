@@ -19,7 +19,7 @@ import thunk from "redux-thunk"
 import * as actionsObjects from "../actions"
 import * as alertActions from "../../alert/actions"
 import {
-  minioBrowserPrefix,
+  otterioBrowserPrefix,
   SORT_BY_NAME,
   SORT_ORDER_ASC,
   SORT_BY_LAST_MODIFIED,
@@ -436,7 +436,7 @@ describe("Objects actions", () => {
       store.dispatch(actionsObjects.downloadObject("obj1"))
       const url = `${
         window.location.origin
-      }${minioBrowserPrefix}/download/bk1/${encodeURI("pre1/obj1")}?token=`
+      }${otterioBrowserPrefix}/download/bk1/${encodeURI("pre1/obj1")}?token=`
       expect(setLocation).toHaveBeenCalledWith(url)
     })
 
@@ -459,7 +459,7 @@ describe("Objects actions", () => {
       return store.dispatch(actionsObjects.downloadObject("obj1")).then(() => {
         const url = `${
           window.location.origin
-        }${minioBrowserPrefix}/download/bk1/${encodeURI(
+        }${otterioBrowserPrefix}/download/bk1/${encodeURI(
           "pre1/obj1"
         )}?token=test`
         expect(setLocation).toHaveBeenCalledWith(url)
@@ -504,7 +504,7 @@ describe("Objects actions", () => {
     return store.dispatch(actionsObjects.downloadPrefix("pre2/")).then(() => {
       const requestUrl = `${
         location.origin
-      }${minioBrowserPrefix}/zip?token=test`
+      }${otterioBrowserPrefix}/zip?token=test`
       expect(open).toHaveBeenCalledWith("POST", requestUrl, true)
       expect(send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -570,7 +570,7 @@ describe("Objects actions", () => {
     return store.dispatch(actionsObjects.downloadCheckedObjects()).then(() => {
       const requestUrl = `${
         location.origin
-      }${minioBrowserPrefix}/zip?token=test`
+      }${otterioBrowserPrefix}/zip?token=test`
       expect(open).toHaveBeenCalledWith("POST", requestUrl, true)
       expect(send).toHaveBeenCalledWith(
         JSON.stringify({

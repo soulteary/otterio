@@ -36,7 +36,7 @@ import (
 const (
 	bootstrapRESTVersion       = "v1"
 	bootstrapRESTVersionPrefix = SlashSeparator + bootstrapRESTVersion
-	bootstrapRESTPrefix        = minioReservedBucketPath + "/bootstrap"
+	bootstrapRESTPrefix        = otterioReservedBucketPath + "/bootstrap"
 	bootstrapRESTPath          = bootstrapRESTPrefix + bootstrapRESTVersionPrefix
 )
 
@@ -50,35 +50,35 @@ type bootstrapRESTServer struct{}
 
 // ServerSystemConfig - captures information about server configuration.
 type ServerSystemConfig struct {
-	MinioPlatform  string
-	MinioRuntime   string
-	MinioEndpoints EndpointServerPools
+	OtterioPlatform  string
+	OtterioRuntime   string
+	OtterioEndpoints EndpointServerPools
 }
 
 // Diff - returns error on first difference found in two configs.
 func (s1 ServerSystemConfig) Diff(s2 ServerSystemConfig) error {
-	if s1.MinioPlatform != s2.MinioPlatform {
+	if s1.OtterioPlatform != s2.OtterioPlatform {
 		return fmt.Errorf("Expected platform '%s', found to be running '%s'",
-			s1.MinioPlatform, s2.MinioPlatform)
+			s1.OtterioPlatform, s2.OtterioPlatform)
 	}
-	if s1.MinioEndpoints.NEndpoints() != s2.MinioEndpoints.NEndpoints() {
-		return fmt.Errorf("Expected number of endpoints %d, seen %d", s1.MinioEndpoints.NEndpoints(),
-			s2.MinioEndpoints.NEndpoints())
+	if s1.OtterioEndpoints.NEndpoints() != s2.OtterioEndpoints.NEndpoints() {
+		return fmt.Errorf("Expected number of endpoints %d, seen %d", s1.OtterioEndpoints.NEndpoints(),
+			s2.OtterioEndpoints.NEndpoints())
 	}
 
-	for i, ep := range s1.MinioEndpoints {
-		if ep.SetCount != s2.MinioEndpoints[i].SetCount {
+	for i, ep := range s1.OtterioEndpoints {
+		if ep.SetCount != s2.OtterioEndpoints[i].SetCount {
 			return fmt.Errorf("Expected set count %d, seen %d", ep.SetCount,
-				s2.MinioEndpoints[i].SetCount)
+				s2.OtterioEndpoints[i].SetCount)
 		}
-		if ep.DrivesPerSet != s2.MinioEndpoints[i].DrivesPerSet {
+		if ep.DrivesPerSet != s2.OtterioEndpoints[i].DrivesPerSet {
 			return fmt.Errorf("Expected drives pet set %d, seen %d", ep.DrivesPerSet,
-				s2.MinioEndpoints[i].DrivesPerSet)
+				s2.OtterioEndpoints[i].DrivesPerSet)
 		}
 		for j, endpoint := range ep.Endpoints {
-			if endpoint.String() != s2.MinioEndpoints[i].Endpoints[j].String() {
+			if endpoint.String() != s2.OtterioEndpoints[i].Endpoints[j].String() {
 				return fmt.Errorf("Expected endpoint %s, seen %s", endpoint,
-					s2.MinioEndpoints[i].Endpoints[j])
+					s2.OtterioEndpoints[i].Endpoints[j])
 			}
 		}
 
@@ -88,8 +88,8 @@ func (s1 ServerSystemConfig) Diff(s2 ServerSystemConfig) error {
 
 func getServerSystemCfg() ServerSystemConfig {
 	return ServerSystemConfig{
-		MinioPlatform:  fmt.Sprintf("OS: %s | Arch: %s", runtime.GOOS, runtime.GOARCH),
-		MinioEndpoints: globalEndpoints,
+		OtterioPlatform:  fmt.Sprintf("OS: %s | Arch: %s", runtime.GOOS, runtime.GOARCH),
+		OtterioEndpoints: globalEndpoints,
 	}
 }
 

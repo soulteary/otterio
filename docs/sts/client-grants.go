@@ -32,7 +32,7 @@ import (
 	"net/url"
 	"strings"
 
-	minio "github.com/minio/minio-go/v7"
+	otterio "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
@@ -51,7 +51,7 @@ var (
 
 func init() {
 	flag.StringVar(&stsEndpoint, "sts-ep", "http://localhost:9000", "STS endpoint")
-	flag.StringVar(&idpEndpoint, "idp-ep", "http://localhost:8080/auth/realms/minio/protocol/openid-connect/token", "IDP token endpoint")
+	flag.StringVar(&idpEndpoint, "idp-ep", "http://localhost:8080/auth/realms/otterio/protocol/openid-connect/token", "IDP token endpoint")
 	flag.StringVar(&clientID, "cid", "", "Client ID")
 	flag.StringVar(&clientSecret, "csec", "", "Client secret")
 }
@@ -102,12 +102,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Uncomment this to use MinIO API operations by initializing minio
+	// Uncomment this to use OtterIO API operations by initializing otterio
 	// client with obtained credentials.
 
-	opts := &minio.Options{
+	opts := &otterio.Options{
 		Creds:        sts,
-		BucketLookup: minio.BucketLookupAuto,
+		BucketLookup: otterio.BucketLookupAuto,
 	}
 
 	u, err := url.Parse(stsEndpoint)
@@ -115,13 +115,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	clnt, err := minio.New(u.Host, opts)
+	clnt, err := otterio.New(u.Host, opts)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	d := bytes.NewReader([]byte("Hello, World"))
-	n, err := clnt.PutObject(context.Background(), "my-bucketname", "my-objectname", d, d.Size(), minio.PutObjectOptions{})
+	n, err := clnt.PutObject(context.Background(), "my-bucketname", "my-objectname", d, d.Size(), otterio.PutObjectOptions{})
 	if err != nil {
 		log.Fatalln(err)
 	}

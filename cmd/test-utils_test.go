@@ -117,7 +117,7 @@ func TestMain(m *testing.M) {
 
 	resetTestGlobals()
 
-	os.Setenv("MINIO_CI_CD", "ci")
+	os.Setenv("OTTERIO_CI_CD", "ci")
 
 	os.Exit(m.Run())
 }
@@ -226,7 +226,7 @@ func initFSObjects(disk string, t *testing.T) (obj ObjectLayer) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newTestConfig(globalMinioDefaultRegion, obj)
+	newTestConfig(globalOtterioDefaultRegion, obj)
 	return obj
 }
 
@@ -290,7 +290,7 @@ func isSameType(obj1, obj2 interface{}) bool {
 	return reflect.TypeOf(obj1) == reflect.TypeOf(obj2)
 }
 
-// TestServer encapsulates an instantiation of a MinIO instance with a temporary backend.
+// TestServer encapsulates an instantiation of a OtterIO instance with a temporary backend.
 // Example usage:
 //
 //	s := StartTestServer(t,"Erasure")
@@ -319,7 +319,7 @@ func UnstartedTestServer(t TestErrHandler, instanceType string) TestServer {
 	}
 
 	// set the server configuration.
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatalf("%s", err)
 	}
 
@@ -346,9 +346,9 @@ func UnstartedTestServer(t TestErrHandler, instanceType string) TestServer {
 
 	// initialize peer rpc
 	host, port := mustSplitHostPort(testServer.Server.Listener.Addr().String())
-	globalMinioHost = host
-	globalMinioPort = port
-	globalMinioAddr = getEndpointsLocalAddr(testServer.Disks)
+	globalOtterioHost = host
+	globalOtterioPort = port
+	globalOtterioAddr = getEndpointsLocalAddr(testServer.Disks)
 
 	newAllSubsystems()
 
@@ -652,7 +652,7 @@ func signStreamingRequest(req *http.Request, accessKey, secretKey string, currTi
 	// Get scope.
 	scope := strings.Join([]string{
 		currTime.Format(yyyymmdd),
-		globalMinioDefaultRegion,
+		globalOtterioDefaultRegion,
 		string(serviceS3),
 		"aws4_request",
 	}, SlashSeparator)
@@ -662,7 +662,7 @@ func signStreamingRequest(req *http.Request, accessKey, secretKey string, currTi
 	stringToSign = stringToSign + getSHA256Hash([]byte(canonicalRequest))
 
 	date := sumHMAC([]byte("AWS4"+secretKey), []byte(currTime.Format(yyyymmdd)))
-	region := sumHMAC(date, []byte(globalMinioDefaultRegion))
+	region := sumHMAC(date, []byte(globalOtterioDefaultRegion))
 	service := sumHMAC(region, []byte(string(serviceS3)))
 	signingKey := sumHMAC(service, []byte("aws4_request"))
 
@@ -867,7 +867,7 @@ func preSignV2(req *http.Request, accessKeyID, secretAccessKey string, expires i
 		return errors.New("Presign cannot be generated without access and secret keys")
 	}
 
-	// FIXME: Remove following portion of code after fixing a bug in minio-go preSignV2.
+	// FIXME: Remove following portion of code after fixing a bug in otterio-go preSignV2.
 
 	d := UTCNow()
 	// Find epoch expires when the request will expire.
@@ -1176,7 +1176,7 @@ func newTestSignedRequestV4(method, urlStr string, contentLength int64, body io.
 
 // Return new WebRPC request object.
 func newWebRPCRequest(methodRPC, authorization string, body io.ReadSeeker) (*http.Request, error) {
-	req, err := http.NewRequest(http.MethodPost, "/minio/webrpc", nil)
+	req, err := http.NewRequest(http.MethodPost, "/otterio/webrpc", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1541,11 +1541,11 @@ func getTestRoot() (string, error) {
 	return ioutil.TempDir(globalTestTmpDir, "api-")
 }
 
-// getRandomDisks - Creates a slice of N random disks, each of the form - minio-XXX
+// getRandomDisks - Creates a slice of N random disks, each of the form - otterio-XXX
 func getRandomDisks(N int) ([]string, error) {
 	var erasureDisks []string
 	for i := 0; i < N; i++ {
-		path, err := ioutil.TempDir(globalTestTmpDir, "minio-")
+		path, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
 		if err != nil {
 			// Remove directories created so far.
 			removeRoots(erasureDisks)
@@ -1676,7 +1676,7 @@ func ExecObjectLayerAPIAnonTest(t *testing.T, obj ObjectLayer, testName, bucketN
 	// simple function which returns a message which gives the context of the test
 	// and then followed by the the actual error message.
 	failTestStr := func(testType, failMsg string) string {
-		return fmt.Sprintf("MinIO %s: %s fail for \"%s\": \n<Error> %s", instanceType, testType, testName, failMsg)
+		return fmt.Sprintf("OtterIO %s: %s fail for \"%s\": \n<Error> %s", instanceType, testType, testName, failMsg)
 	}
 
 	// httptest Recorder to capture all the response by the http handler.
@@ -1796,20 +1796,20 @@ func ExecObjectLayerAPINilTest(t TestErrHandler, bucketName, objectName, instanc
 		// read the response body.
 		actualContent, err := ioutil.ReadAll(rec.Body)
 		if err != nil {
-			t.Fatalf("MinIO %s: Failed parsing response body: <ERROR> %v", instanceType, err)
+			t.Fatalf("OtterIO %s: Failed parsing response body: <ERROR> %v", instanceType, err)
 		}
 
 		actualError := &APIErrorResponse{}
 		if err = xml.Unmarshal(actualContent, actualError); err != nil {
-			t.Errorf("MinIO %s: error response failed to parse error XML", instanceType)
+			t.Errorf("OtterIO %s: error response failed to parse error XML", instanceType)
 		}
 
 		if actualError.BucketName != bucketName {
-			t.Errorf("MinIO %s: error response bucket name differs from expected value", instanceType)
+			t.Errorf("OtterIO %s: error response bucket name differs from expected value", instanceType)
 		}
 
 		if actualError.Key != objectName {
-			t.Errorf("MinIO %s: error response object name differs from expected value", instanceType)
+			t.Errorf("OtterIO %s: error response object name differs from expected value", instanceType)
 		}
 	}
 }
@@ -1836,7 +1836,7 @@ func ExecObjectLayerAPITest(t *testing.T, objAPITest objAPITestType, endpoints [
 
 	// initialize the server and obtain the credentials and root.
 	// credentials are necessary to sign the HTTP request.
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatalf("Unable to initialize server config. %s", err)
 	}
 
@@ -1904,7 +1904,7 @@ func ExecObjectLayerTest(t TestErrHandler, objTest objTestType) {
 
 	// initialize the server and obtain the credentials and root.
 	// credentials are necessary to sign the HTTP request.
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatal("Unexpected error", err)
 	}
 
@@ -1952,7 +1952,7 @@ func ExecObjectLayerTestWithDirs(t TestErrHandler, objTest objTestTypeWithDirs) 
 
 	// initialize the server and obtain the credentials and root.
 	// credentials are necessary to sign the HTTP request.
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatal("Unexpected error", err)
 	}
 
@@ -1973,7 +1973,7 @@ func ExecObjectLayerDiskAlteredTest(t *testing.T, objTest objTestDiskNotFoundTyp
 	}
 	defer objLayer.Shutdown(ctx)
 
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatal("Failed to create config directory", err)
 	}
 
@@ -1986,7 +1986,7 @@ func ExecObjectLayerDiskAlteredTest(t *testing.T, objTest objTestDiskNotFoundTyp
 type objTestStaleFilesType func(obj ObjectLayer, instanceType string, dirs []string, t *testing.T)
 
 // ExecObjectLayerStaleFilesTest - executes object layer tests those leaves stale
-// files/directories under .minio/tmp.  Creates Erasure ObjectLayer instance and runs test for Erasure layer.
+// files/directories under .otterio/tmp.  Creates Erasure ObjectLayer instance and runs test for Erasure layer.
 func ExecObjectLayerStaleFilesTest(t *testing.T, objTest objTestStaleFilesType) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -2000,7 +2000,7 @@ func ExecObjectLayerStaleFilesTest(t *testing.T, objTest objTestStaleFilesType) 
 	if err != nil {
 		t.Fatalf("Initialization of object layer failed for Erasure setup: %s", err)
 	}
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatal("Failed to create config directory", err)
 	}
 
@@ -2133,7 +2133,7 @@ func getEndpointsLocalAddr(endpointServerPools EndpointServerPools) string {
 		}
 	}
 
-	return net.JoinHostPort(globalMinioHost, globalMinioPort)
+	return net.JoinHostPort(globalOtterioHost, globalOtterioPort)
 }
 
 // fetches a random number between range min-max.

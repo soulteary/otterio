@@ -52,7 +52,7 @@ const (
 	cacheExpiryDays   = 90 * time.Hour * 24 // defaults to 90 days
 	// SSECacheEncrypted is the metadata key indicating that the object
 	// is a cache entry encrypted with cache KMS master key in globalCacheKMS.
-	SSECacheEncrypted = "X-Minio-Internal-Encrypted-Cache"
+	SSECacheEncrypted = "X-Otterio-Internal-Encrypted-Cache"
 )
 
 // CacheChecksumInfoV1 - carries checksums of individual blocks on disk.
@@ -111,7 +111,7 @@ func (m *cacheMeta) ToObjectInfo(bucket, object string) (o ObjectInfo) {
 	if storageClass, ok := m.Meta[xhttp.AmzStorageClass]; ok {
 		o.StorageClass = storageClass
 	} else {
-		o.StorageClass = globalMinioDefaultStorageClass
+		o.StorageClass = globalOtterioDefaultStorageClass
 	}
 	var (
 		t time.Time
@@ -319,7 +319,7 @@ func (c *diskCache) purge(ctx context.Context) {
 	}
 
 	filterFn := func(name string, typ os.FileMode) error {
-		if name == minioMetaBucket {
+		if name == otterioMetaBucket {
 			// Proceed to next file.
 			return nil
 		}
@@ -1004,7 +1004,7 @@ func (c *diskCache) Exists(ctx context.Context, bucket, object string) bool {
 func (c *diskCache) scanCacheWritebackFailures(ctx context.Context) {
 	defer close(c.retryWritebackCh)
 	filterFn := func(name string, typ os.FileMode) error {
-		if name == minioMetaBucket {
+		if name == otterioMetaBucket {
 			// Proceed to next file.
 			return nil
 		}

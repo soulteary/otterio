@@ -1385,11 +1385,11 @@ func (args eventArgs) ToEvent(escape bool) event.Event {
 
 	respElements := map[string]string{
 		"x-amz-request-id":        args.RespElements["requestId"],
-		"x-minio-origin-endpoint": globalMinioEndpoint, // MinIO specific custom elements.
+		"x-otterio-origin-endpoint": globalOtterioEndpoint, // OtterIO specific custom elements.
 	}
 	// Add deployment as part of
 	if globalDeploymentID != "" {
-		respElements["x-minio-deployment-id"] = globalDeploymentID
+		respElements["x-otterio-deployment-id"] = globalDeploymentID
 	}
 	if args.RespElements["content-length"] != "" {
 		respElements["content-length"] = args.RespElements["content-length"]
@@ -1400,7 +1400,7 @@ func (args eventArgs) ToEvent(escape bool) event.Event {
 	}
 	newEvent := event.Event{
 		EventVersion:      "2.0",
-		EventSource:       "minio:s3",
+		EventSource:       "otterio:s3",
 		AwsRegion:         args.ReqParams["region"],
 		EventTime:         eventTime.Format(event.AMZTimeFormat),
 		EventName:         args.EventName,
@@ -1441,7 +1441,7 @@ func sendEvent(args eventArgs) {
 	args.Object.Size, _ = args.Object.GetActualSize()
 
 	// avoid generating a notification for REPLICA creation event.
-	if _, ok := args.ReqParams[xhttp.MinIOSourceReplicationRequest]; ok {
+	if _, ok := args.ReqParams[xhttp.OtterIOSourceReplicationRequest]; ok {
 		return
 	}
 	// remove sensitive encryption entries in metadata.

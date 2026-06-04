@@ -20,7 +20,7 @@ import "github.com/soulteary/otterio/cmd/config"
 
 // Legacy envs
 const (
-	EnvIamJwksURL = "MINIO_IAM_JWKS_URL"
+	EnvIamJwksURL = "OTTERIO_IAM_JWKS_URL"
 )
 
 // SetIdentityOpenID - One time migration code needed, for migrating from older config to new for OpenIDConfig.

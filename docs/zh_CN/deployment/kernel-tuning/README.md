@@ -1,6 +1,6 @@
-# Linux服务器上MinIO生产环境的内核调优
+# Linux服务器上OtterIO生产环境的内核调优
 
-这儿有一份针对MinIO服务器内核调优的建议， 你可以拷贝这个[脚本](https://github.com/minio/minio/blob/master/docs/deployment/kernel-tuning/sysctl.sh)到你的服务器上使用。
+这儿有一份针对OtterIO服务器内核调优的建议， 你可以拷贝这个[脚本](https://github.com/minio/minio/blob/master/docs/deployment/kernel-tuning/sysctl.sh)到你的服务器上使用。
 
 > 注意: 这是Linux服务器上的通用建议，不过在使用前也要非常小心。这些设置不是强制性的，而且也不能解决硬件的问题，所以不要使用它们提高
 > 性能掩盖硬件本身的问题。在任何情况下，都应该先进行硬件基准测试，达到预期结果后才真正的执行优化。

@@ -26,13 +26,13 @@ import (
 
 func TestDecryptData(t *testing.T) {
 	cred1 := auth.Credentials{
-		AccessKey: "minio",
-		SecretKey: "minio123",
+		AccessKey: "otterio",
+		SecretKey: "otterio123",
 	}
 
 	cred2 := auth.Credentials{
-		AccessKey: "minio",
-		SecretKey: "minio1234",
+		AccessKey: "otterio",
+		SecretKey: "otterio1234",
 	}
 
 	data := []byte(`config data`)

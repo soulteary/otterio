@@ -54,19 +54,19 @@ const (
 	// BandwidthMonitorAction - allow monitoring bandwidth usage
 	BandwidthMonitorAction = "admin:BandwidthMonitor"
 
-	// ServerUpdateAdminAction - allow MinIO binary update
+	// ServerUpdateAdminAction - allow OtterIO binary update
 	ServerUpdateAdminAction = "admin:ServerUpdate"
-	// ServiceRestartAdminAction - allow restart of MinIO service.
+	// ServiceRestartAdminAction - allow restart of OtterIO service.
 	ServiceRestartAdminAction = "admin:ServiceRestart"
-	// ServiceStopAdminAction - allow stopping MinIO service.
+	// ServiceStopAdminAction - allow stopping OtterIO service.
 	ServiceStopAdminAction = "admin:ServiceStop"
 
-	// ConfigUpdateAdminAction - allow MinIO config management
+	// ConfigUpdateAdminAction - allow OtterIO config management
 	ConfigUpdateAdminAction = "admin:ConfigUpdate"
 
-	// CreateUserAdminAction - allow creating MinIO user
+	// CreateUserAdminAction - allow creating OtterIO user
 	CreateUserAdminAction = "admin:CreateUser"
-	// DeleteUserAdminAction - allow deleting MinIO user
+	// DeleteUserAdminAction - allow deleting OtterIO user
 	DeleteUserAdminAction = "admin:DeleteUser"
 	// ListUsersAdminAction - allow list users permission
 	ListUsersAdminAction = "admin:ListUsers"

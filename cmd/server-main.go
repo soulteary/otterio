@@ -50,7 +50,7 @@ import (
 var ServerFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "address",
-		Value: ":" + GlobalMinioDefaultPort,
+		Value: ":" + GlobalOtterioDefaultPort,
 		Usage: "bind to a specific ADDRESS:PORT, ADDRESS can be an IP or hostname",
 	},
 }
@@ -79,20 +79,20 @@ FLAGS:
   {{range .VisibleFlags}}{{.}}
   {{end}}{{end}}
 EXAMPLES:
-  1. Start minio server on "/home/shared" directory.
+  1. Start otterio server on "/home/shared" directory.
      {{.Prompt}} {{.HelpName}} /home/shared
 
   2. Start single node server with 64 local drives "/mnt/data1" to "/mnt/data64".
      {{.Prompt}} {{.HelpName}} /mnt/data{1...64}
 
-  3. Start distributed minio server on an 32 node setup with 32 drives each, run following command on all the nodes
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_ROOT_USER{{.AssignmentOperator}}minio
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_ROOT_PASSWORD{{.AssignmentOperator}}miniostorage
+  3. Start distributed otterio server on an 32 node setup with 32 drives each, run following command on all the nodes
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_USER{{.AssignmentOperator}}otterio
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_PASSWORD{{.AssignmentOperator}}otteriostorage
      {{.Prompt}} {{.HelpName}} http://node{1...32}.example.com/mnt/export{1...32}
 
-  4. Start distributed minio server in an expanded setup, run the following command on all the nodes
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_ROOT_USER{{.AssignmentOperator}}minio
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_ROOT_PASSWORD{{.AssignmentOperator}}miniostorage
+  4. Start distributed otterio server in an expanded setup, run the following command on all the nodes
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_USER{{.AssignmentOperator}}otterio
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_PASSWORD{{.AssignmentOperator}}otteriostorage
      {{.Prompt}} {{.HelpName}} http://node{1...16}.example.com/mnt/export{1...32} \
             http://node{17...64}.example.com/mnt/export{1...64}
 `,
@@ -101,7 +101,7 @@ EXAMPLES:
 func serverCmdArgs(ctx *cli.Context) []string {
 	v := env.Get(config.EnvArgs, "")
 	if v == "" {
-		// Fall back to older ENV MINIO_ENDPOINTS
+		// Fall back to older ENV OTTERIO_ENDPOINTS
 		v = env.Get(config.EnvEndpoints, "")
 	}
 	if v == "" {
@@ -138,13 +138,13 @@ func serverHandleCmdArgs(ctx *cli.Context) {
 	// Register root CAs for remote ENVs
 	env.RegisterGlobalCAs(globalRootCAs)
 
-	globalMinioAddr = globalCLIContext.Addr
+	globalOtterioAddr = globalCLIContext.Addr
 
-	globalMinioHost, globalMinioPort = mustSplitHostPort(globalMinioAddr)
+	globalOtterioHost, globalOtterioPort = mustSplitHostPort(globalOtterioAddr)
 	globalEndpoints, setupType, err = createServerEndpoints(globalCLIContext.Addr, serverCmdArgs(ctx)...)
 	logger.FatalIf(err, "Invalid command line arguments")
 
-	globalLocalNodeName = GetLocalPeer(globalEndpoints, globalMinioHost, globalMinioPort)
+	globalLocalNodeName = GetLocalPeer(globalEndpoints, globalOtterioHost, globalOtterioPort)
 
 	globalRemoteEndpoints = make(map[string]Endpoint)
 	for _, z := range globalEndpoints {
@@ -171,10 +171,10 @@ func serverHandleCmdArgs(ctx *cli.Context) {
 	}, rest.DefaultTimeout)()
 
 	// On macOS, if a process already listens on LOCALIPADDR:PORT, net.Listen() falls back
-	// to IPv6 address ie minio will start listening on IPv6 address whereas another
-	// (non-)minio process is listening on IPv4 of given port.
+	// to IPv6 address ie otterio will start listening on IPv6 address whereas another
+	// (non-)otterio process is listening on IPv4 of given port.
 	// To avoid this error situation we check for port availability.
-	logger.FatalIf(checkPortAvailability(globalMinioHost, globalMinioPort), "Unable to start the server")
+	logger.FatalIf(checkPortAvailability(globalOtterioHost, globalOtterioPort), "Unable to start the server")
 
 	globalIsErasure = (setupType == ErasureSetupType)
 	globalIsDistErasure = (setupType == DistErasureSetupType)
@@ -276,7 +276,7 @@ func initServer(ctx context.Context, newObject ObjectLayer) error {
 	// at a given time, this big transaction lock ensures this
 	// appropriately. This is also true for rotation of encrypted
 	// content.
-	txnLk := newObject.NewNSLock(minioMetaBucket, minioConfigPrefix+"/transaction.lock")
+	txnLk := newObject.NewNSLock(otterioMetaBucket, otterioConfigPrefix+"/transaction.lock")
 
 	// ****  WARNING ****
 	// Migrating to encrypted backend should happen before initialization of any
@@ -298,7 +298,7 @@ func initServer(ctx context.Context, newObject ObjectLayer) error {
 		// let one of the server acquire the lock, if not let them timeout.
 		// which shall be retried again by this loop.
 		if _, err = txnLk.GetLock(ctx, lockTimeout); err != nil {
-			logger.Info("Waiting for all MinIO sub-systems to be initialized.. trying to acquire lock")
+			logger.Info("Waiting for all OtterIO sub-systems to be initialized.. trying to acquire lock")
 
 			time.Sleep(time.Duration(r.Float64() * float64(5*time.Second)))
 			continue
@@ -306,7 +306,7 @@ func initServer(ctx context.Context, newObject ObjectLayer) error {
 
 		// These messages only meant primarily for distributed setup, so only log during distributed setup.
 		if globalIsDistErasure {
-			logger.Info("Waiting for all MinIO sub-systems to be initialized.. lock acquired")
+			logger.Info("Waiting for all OtterIO sub-systems to be initialized.. lock acquired")
 		}
 
 		// Migrate all backend configs to encrypted backend configs, optionally
@@ -320,7 +320,7 @@ func initServer(ctx context.Context, newObject ObjectLayer) error {
 				// All successful return.
 				if globalIsDistErasure {
 					// These messages only meant primarily for distributed setup, so only log during distributed setup.
-					logger.Info("All MinIO sub-systems initialized successfully")
+					logger.Info("All OtterIO sub-systems initialized successfully")
 				}
 				return nil
 			}
@@ -329,7 +329,7 @@ func initServer(ctx context.Context, newObject ObjectLayer) error {
 		txnLk.Unlock() // Unlock the transaction lock and allow other nodes to acquire the lock if possible.
 
 		if configRetriableErrors(err) {
-			logger.Info("Waiting for all MinIO sub-systems to be initialized.. possible cause (%v)", err)
+			logger.Info("Waiting for all OtterIO sub-systems to be initialized.. possible cause (%v)", err)
 			time.Sleep(time.Duration(r.Float64() * float64(5*time.Second)))
 			continue
 		}
@@ -404,7 +404,7 @@ func initAllSubsystems(ctx context.Context, newObject ObjectLayer) (err error) {
 	return nil
 }
 
-// serverMain handler called for 'minio server' command.
+// serverMain handler called for 'otterio server' command.
 func serverMain(ctx *cli.Context) {
 	defer globalDNSCache.Stop()
 
@@ -438,12 +438,12 @@ func serverMain(ctx *cli.Context) {
 	// Initialize all sub-systems
 	newAllSubsystems()
 
-	globalMinioEndpoint = func() string {
-		host := globalMinioHost
+	globalOtterioEndpoint = func() string {
+		host := globalOtterioHost
 		if host == "" {
 			host = sortIPs(localIP4.ToSlice())[0]
 		}
-		return fmt.Sprintf("%s://%s", getURLScheme(globalIsTLS), net.JoinHostPort(host, globalMinioPort))
+		return fmt.Sprintf("%s://%s", getURLScheme(globalIsTLS), net.JoinHostPort(host, globalOtterioPort))
 	}()
 
 	// Is distributed setup, error out if no certificates are found for HTTPS endpoints.
@@ -458,7 +458,7 @@ func serverMain(ctx *cli.Context) {
 
 	if !globalCLIContext.Quiet && !globalInplaceUpdateDisabled {
 		// Check for new updates from dl.min.io.
-		checkUpdate(getMinioMode())
+		checkUpdate(getOtterioMode())
 	}
 
 	if !globalActiveCred.IsValid() && globalIsDistErasure {
@@ -480,7 +480,7 @@ func serverMain(ctx *cli.Context) {
 		getCert = globalTLSCerts.GetCertificate
 	}
 
-	httpServer := xhttp.NewServer([]string{globalMinioAddr}, app, getCert)
+	httpServer := xhttp.NewServer([]string{globalOtterioAddr}, app, getCert)
 	httpServer.BaseContext = func(listener net.Listener) context.Context {
 		return GlobalContext
 	}
@@ -555,7 +555,7 @@ func serverMain(ctx *cli.Context) {
 	printStartupMessage(getAPIEndpoints(), err)
 
 	if globalActiveCred.Equal(auth.DefaultCredentials) {
-		msg := fmt.Sprintf("Detected default credentials '%s', please change the credentials immediately using 'MINIO_ROOT_USER' and 'MINIO_ROOT_PASSWORD'", globalActiveCred)
+		msg := fmt.Sprintf("Detected default credentials '%s', please change the credentials immediately using 'OTTERIO_ROOT_USER' and 'OTTERIO_ROOT_PASSWORD'", globalActiveCred)
 		logger.StartupMessage(color.RedBold(msg))
 	}
 

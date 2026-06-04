@@ -1,5 +1,5 @@
 # WSO2 Quickstart Guide
-WSO2 is an Identity Server open source and is released under Apache Software License Version 2.0, this document covers configuring WSO2 to be used as an identity provider for MinIO server STS API.
+WSO2 is an Identity Server open source and is released under Apache Software License Version 2.0, this document covers configuring WSO2 to be used as an identity provider for OtterIO server STS API.
 
 ## Get started
 ### 1. Prerequisites
@@ -12,7 +12,7 @@ Once WSO2 is up and running, configure WSO2 to generate Self contained access to
 1. The access token is an identifier that is hard to guess. For example, a randomly generated string of sufficient length, that the server handling the protected resource can use to lookup the associated authorization information.
 2. The access token self-contains the authorization information in a manner that can be verified. For example, by encoding authorization information along with a signature into the token.
 
-WSO2 generates tokens in first style by default, but if to be used with MinIO we should configure WSO2 to provide JWT tokens instead.
+WSO2 generates tokens in first style by default, but if to be used with OtterIO we should configure WSO2 to provide JWT tokens instead.
 
 ### 3. Generate Self-contained Access Tokens
 By default, a UUID is issued as an access token in WSO2 Identity Server, which is of the first type above. But, it also can be configured to issue a self-contained access token (JWT), which is of the second type above.
@@ -62,19 +62,19 @@ The access token received is a signed JSON Web Token (JWT). Use a JWT decoder to
 |jti| _string_ | Unique identifier for the JWT token. |
 |policy| _string_ | Canned policy name to be applied for STS credentials. (Recommended) |
 
-Using the above `access_token` we can perform an STS request to MinIO to get temporary credentials for MinIO API operations. MinIO STS API uses [JSON Web Key Set Endpoint](https://docs.wso2.com/display/IS541/JSON+Web+Key+Set+Endpoint) to validate if JWT is valid and is properly signed.
+Using the above `access_token` we can perform an STS request to OtterIO to get temporary credentials for OtterIO API operations. OtterIO STS API uses [JSON Web Key Set Endpoint](https://docs.wso2.com/display/IS541/JSON+Web+Key+Set+Endpoint) to validate if JWT is valid and is properly signed.
 
 **We recommend setting `policy` as a custom claim for the JWT service provider follow [here](https://docs.wso2.com/display/IS550/Configuring+Claims+for+a+Service+Provider) and [here](https://docs.wso2.com/display/IS550/Handling+Custom+Claims+with+the+JWT+Bearer+Grant+Type) for relevant docs on how to configure claims for a service provider.**
 
-### 5. Setup MinIO with OpenID configuration URL
-MinIO server expects environment variable for OpenID configuration url as `MINIO_IDENTITY_OPENID_CONFIG_URL`, this environment variable takes a single entry.
+### 5. Setup OtterIO with OpenID configuration URL
+OtterIO server expects environment variable for OpenID configuration url as `OTTERIO_IDENTITY_OPENID_CONFIG_URL`, this environment variable takes a single entry.
 ```
-export MINIO_IDENTITY_OPENID_CONFIG_URL=https://localhost:9443/oauth2/oidcdiscovery/.well-known/openid-configuration
-export MINIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
-minio server /mnt/data
+export OTTERIO_IDENTITY_OPENID_CONFIG_URL=https://localhost:9443/oauth2/oidcdiscovery/.well-known/openid-configuration
+export OTTERIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
+otterio server /mnt/data
 ```
 
-Assuming that MinIO server is configured to support STS API by following the doc [MinIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide), execute the following command to temporary credentials from MinIO server.
+Assuming that OtterIO server is configured to support STS API by following the doc [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide), execute the following command to temporary credentials from OtterIO server.
 ```
 go run client-grants.go -cid PoEgXP6uVO45IsENRngDXj5Au5Ya -csec eKsw6z8CtOJVBtrOWvhRWL4TUCga
 
@@ -87,8 +87,8 @@ go run client-grants.go -cid PoEgXP6uVO45IsENRngDXj5Au5Ya -csec eKsw6z8CtOJVBtrO
 }
 ```
 
-These credentials can now be used to perform MinIO API operations, these credentials automatically expire in 1hr. To understand more about credential expiry duration and client grants STS API read further [here](https://github.com/minio/minio/blob/master/docs/sts/client-grants.md).
+These credentials can now be used to perform OtterIO API operations, these credentials automatically expire in 1hr. To understand more about credential expiry duration and client grants STS API read further [here](https://github.com/minio/minio/blob/master/docs/sts/client-grants.md).
 
 ## Explore Further
-- [MinIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
-- [The MinIO documentation website](https://docs.min.io)
+- [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
+- [The OtterIO documentation website](https://docs.min.io)

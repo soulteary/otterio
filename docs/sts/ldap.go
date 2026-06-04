@@ -26,12 +26,12 @@ import (
 	"log"
 	"net/url"
 
-	"github.com/minio/minio-go/v7"
+	otterio "github.com/minio/minio-go/v7"
 	cr "github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 var (
-	// LDAP integrated Minio endpoint
+	// LDAP integrated Otterio endpoint
 	stsEndpoint string
 
 	// LDAP credentials
@@ -52,7 +52,7 @@ func main() {
 		return
 	}
 
-	// The credentials package in minio-go provides an interface to call the
+	// The credentials package in otterio-go provides an interface to call the
 	// LDAP STS API.
 
 	// Initialize LDAP credentials
@@ -63,21 +63,21 @@ func main() {
 		log.Fatalf("Err: %v", err)
 	}
 
-	opts := &minio.Options{
+	opts := &otterio.Options{
 		Creds:  li,
 		Secure: stsEndpointURL.Scheme == "https",
 	}
 
 	fmt.Println(li.Get())
-	// Use generated credentials to authenticate with MinIO server
-	minioClient, err := minio.New(stsEndpointURL.Host, opts)
+	// Use generated credentials to authenticate with OtterIO server
+	otterioClient, err := otterio.New(stsEndpointURL.Host, opts)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	// Use minIO Client object normally like the regular client.
 	fmt.Println("Calling list objects with temp creds: ")
-	objCh := minioClient.ListObjects(context.Background(), ldapUsername, minio.ListObjectsOptions{})
+	objCh := otterioClient.ListObjects(context.Background(), ldapUsername, otterio.ListObjectsOptions{})
 	for obj := range objCh {
 		if obj.Err != nil {
 			if err != nil {

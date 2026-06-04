@@ -107,7 +107,7 @@ func initHelp() {
 		},
 		config.HelpKV{
 			Key:         config.KmsKesSubSys,
-			Description: "enable external MinIO key encryption service",
+			Description: "enable external OtterIO key encryption service",
 		},
 		config.HelpKV{
 			Key:         config.APISubSys,
@@ -374,7 +374,7 @@ func lookupConfigs(s config.Config, setDriveCounts []int) {
 				globalDNSConfig, err = dns.NewCoreDNS(etcdCfg.Config,
 					dns.DomainNames(globalDomainNames),
 					dns.DomainIPs(globalDomainIPs),
-					dns.DomainPort(globalMinioPort),
+					dns.DomainPort(globalOtterioPort),
 					dns.CoreDNSPath(etcdCfg.CoreDNSPath),
 				)
 				if err != nil {
@@ -489,7 +489,7 @@ If you need help to migrate smoothly visit: https://min.io/pricing`
 	}
 
 	// Load logger targets based on user's configuration
-	loggerUserAgent := getUserAgent(getMinioMode())
+	loggerUserAgent := getUserAgent(getOtterioMode())
 
 	loggerCfg, err := logger.LookupConfig(s)
 	if err != nil {

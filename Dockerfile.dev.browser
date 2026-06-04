@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 
-LABEL maintainer="MinIO Inc <dev@min.io>"
+LABEL maintainer="soulteary (community fork of Apache-licensed MinIO codebase, https://github.com/soulteary/otterio)"
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --no-install-suggests \
       git golang make curl ca-certificates unzip && \

@@ -1,15 +1,15 @@
 # 分布式服务器设计指南
-该文档介绍了分布式MinIO服务器的设计、架构和高级用法。
+该文档介绍了分布式OtterIO服务器的设计、架构和高级用法。
 
 ## 命令行
 ```
 NAME:
-  minio server - start object storage server
+  otterio server - start object storage server
 
 USAGE:
-  minio server [FLAGS] DIR1 [DIR2..]
-  minio server [FLAGS] DIR{1...64}
-  minio server [FLAGS] DIR{1...64} DIR{65...128}
+  otterio server [FLAGS] DIR1 [DIR2..]
+  otterio server [FLAGS] DIR{1...64}
+  otterio server [FLAGS] DIR{1...64} DIR{65...128}
 
 DIR:
   DIR points to a directory on a filesystem. When you want to combine
@@ -23,22 +23,22 @@ DIR:
 
 具有4个纠删码集合，每个集合带有16块硬盘的独立纠删码模式部署配置。
 ```
-minio server dir{1...64}
+otterio server dir{1...64}
 ```
 
 具有64个纠删码集合，每个集合16块硬盘的分布式纠删码模式部署配置。
 
 ```
-minio server http://host{1...16}/export{1...64}
+otterio server http://host{1...16}/export{1...64}
 ```
 
 ## 架构
 
-MinIO可以基于省略号这种扩展方式自动的选择纠删集合的大小。下面是我们的纠删码行为的一些底层实现细节。
+OtterIO可以基于省略号这种扩展方式自动的选择纠删集合的大小。下面是我们的纠删码行为的一些底层实现细节。
 
-- MinIO采用的是 [Reed-Solomon](https://github.com/klauspost/reedsolomon) 纠删码方案, 该方案最大分片数为256个，也就是128个数据片和128个奇偶校验片。 基于一些实用的架构考虑，MinIO的设计超越了这个限制。
+- OtterIO采用的是 [Reed-Solomon](https://github.com/klauspost/reedsolomon) 纠删码方案, 该方案最大分片数为256个，也就是128个数据片和128个奇偶校验片。 基于一些实用的架构考虑，OtterIO的设计超越了这个限制。
 
-- 在MinIO部署中，纠删集合是一个独立的纠删码单元。 一个对象会被分片在一个纠删集合中。纠删集合的大小是根据磁盘的数量自动计算的。 MinIO支持无限数量的磁盘，但每个纠删集合最多有16个磁盘，最少有4个磁盘。
+- 在OtterIO部署中，纠删集合是一个独立的纠删码单元。 一个对象会被分片在一个纠删集合中。纠删集合的大小是根据磁盘的数量自动计算的。 OtterIO支持无限数量的磁盘，但每个纠删集合最多有16个磁盘，最少有4个磁盘。
 
 - 我们将纠删集合的磁盘数量限制为16个，是因为超过16个纠删码分片会变得混乱，并且没有任何性能优势。此外，由于16个磁盘的纠删集合默认情况下为每个对象提供8个磁盘的容量，因此在任何实际情况下都足够使用。
 
@@ -48,10 +48,10 @@ MinIO可以基于省略号这种扩展方式自动的选择纠删集合的大小
 
 - *如果纠删集合中的磁盘总数是奇数，那么GCD算法提供了对奇数纠删集合的亲和力，以便节点可以均匀分布*。 这是为了确保参与任何纠删集合的磁盘数量相同。例如，如果你有2个主机节点，共有180个磁盘，那么GCD是15(奇数)，但这将导致磁盘分配不均匀，其中一个节点将会有更多的磁盘。为了避免这种情况，对节点给予亲和力，使用次优的GCD系数为12，提供均匀的分布。
 
-- 在这个算法中，我们还确保了将磁盘均匀的分布。MinIO服务器会对传递的省略号参数进行扩展。下面是一个示例来演示这个过程。
+- 在这个算法中，我们还确保了将磁盘均匀的分布。OtterIO服务器会对传递的省略号参数进行扩展。下面是一个示例来演示这个过程。
 
 ```
-minio server http://host{1...2}/export{1...8}
+otterio server http://host{1...2}/export{1...8}
 ```
 
 预期扩展
@@ -92,14 +92,14 @@ func sipHashMod(key string, cardinality int, id [16]byte) int {
 
 - 仅在对象的纠删集合中需要满足读写仲裁。还可以在包含对象的纠删集合中对每个对象进行修复。
 
-- 与其他对象存储不同，MinIO的纠删编码是在对象级别而不是卷级别。这允许应用程序通过为每个上传的对象设置`x-amz-storage-class=STANDARD/REDUCED_REDUNDANCY`来选择不同的存储类型，从而有效地利用集群的容量。
+- 与其他对象存储不同，OtterIO的纠删编码是在对象级别而不是卷级别。这允许应用程序通过为每个上传的对象设置`x-amz-storage-class=STANDARD/REDUCED_REDUNDANCY`来选择不同的存储类型，从而有效地利用集群的容量。
 
-- MinIO还支持通过扩展区域的方式扩展现有集群。每个区域都是一个独立的实体，每个对象具有与原有群集相同的SLA（读/写仲裁）。通过使用现有的命名控件进行查询验证，MinIO确保不会创建冲突的对象。如果不存在这样的对象，那么MinIO只会选择使用量最少的区域存储该对象。
+- OtterIO还支持通过扩展区域的方式扩展现有集群。每个区域都是一个独立的实体，每个对象具有与原有群集相同的SLA（读/写仲裁）。通过使用现有的命名控件进行查询验证，OtterIO确保不会创建冲突的对象。如果不存在这样的对象，那么OtterIO只会选择使用量最少的区域存储该对象。
 
 __可以组合很多个区域成一个集群，区域数量没有限制__
 
 ```
-minio server http://host{1...32}/export{1...32} http://host{5...6}/export{1...8}
+otterio server http://host{1...32}/export{1...32} http://host{5...6}/export{1...8}
 ```
 
 以上示例有两个区域
@@ -110,7 +110,7 @@ minio server http://host{1...32}/export{1...32} http://host{5...6}/export{1...8}
 > 注意这里对通用SLA的要求，原来的集群有1024个磁盘，每个纠删集合有16个磁盘，第二个区域至少要有16个磁盘才能符合原来集群的SLA，或者应该是16的倍数。
 
 
-MinIO根据每个区域的可用空间比例将新对象放置在区域中。以下伪代码演示了此行为。
+OtterIO根据每个区域的可用空间比例将新对象放置在区域中。以下伪代码演示了此行为。
 ```go
 func getAvailablePoolIdx(ctx context.Context) int {
         serverPools := z.getServerPoolsAvailableSpace(ctx)
@@ -135,20 +135,20 @@ func getAvailablePoolIdx(ctx context.Context) int {
 
 一个独立的纠删模式配置，通过controller组合生成，它有4个纠删集合，每个集合有16个磁盘。
 ```
-minio server /mnt/controller{1...4}/data{1...16}
+otterio server /mnt/controller{1...4}/data{1...16}
 ```
 
 一个独立的纠删模式配置，通过mounts和controller组合生成，它有16个纠删集合，每个集合有16个磁盘。
 ```
-minio server /mnt{1...4}/controller{1...4}/data{1...16}
+otterio server /mnt{1...4}/controller{1...4}/data{1...16}
 ```
 
 一个分布式的纠删模式配置，通过host组合生成，它有2个纠删集合，每个集合有16个磁盘。
 ```
-minio server http://host{1...32}/disk1
+otterio server http://host{1...32}/disk1
 ```
 
 一个机柜级别冗余的分布式纠删模式配置，它有32个纠删集合，每个集合有16个磁盘。
 ```
-minio server http://rack{1...4}-host{1...8}.example.net/export{1...16}
+otterio server http://rack{1...4}-host{1...8}.example.net/export{1...16}
 ```

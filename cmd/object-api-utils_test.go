@@ -176,25 +176,25 @@ func TestGetCompleteMultipartMD5(t *testing.T) {
 	}
 }
 
-// TestIsMinioBucketName - Tests isMinioBucketName helper function.
-func TestIsMinioMetaBucketName(t *testing.T) {
+// TestIsOtterioBucketName - Tests isOtterioBucketName helper function.
+func TestIsOtterioMetaBucketName(t *testing.T) {
 	testCases := []struct {
 		bucket string
 		result bool
 	}{
-		// MinIO meta bucket.
+		// OtterIO meta bucket.
 		{
-			bucket: minioMetaBucket,
+			bucket: otterioMetaBucket,
 			result: true,
 		},
-		// MinIO meta bucket.
+		// OtterIO meta bucket.
 		{
-			bucket: minioMetaMultipartBucket,
+			bucket: otterioMetaMultipartBucket,
 			result: true,
 		},
-		// MinIO meta bucket.
+		// OtterIO meta bucket.
 		{
-			bucket: minioMetaTmpBucket,
+			bucket: otterioMetaTmpBucket,
 			result: true,
 		},
 		// Normal bucket
@@ -205,7 +205,7 @@ func TestIsMinioMetaBucketName(t *testing.T) {
 	}
 
 	for i, test := range testCases {
-		actual := isMinioMetaBucketName(test.bucket)
+		actual := isOtterioMetaBucketName(test.bucket)
 		if actual != test.result {
 			t.Errorf("Test %d - expected %v but received %v",
 				i+1, test.result, actual)
@@ -319,7 +319,7 @@ func TestIsCompressed(t *testing.T) {
 	}{
 		0: {
 			objInfo: ObjectInfo{
-				UserDefined: map[string]string{"X-Minio-Internal-compression": compressionAlgorithmV1,
+				UserDefined: map[string]string{"X-Otterio-Internal-compression": compressionAlgorithmV1,
 					"content-type": "application/octet-stream",
 					"etag":         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 			},
@@ -327,7 +327,7 @@ func TestIsCompressed(t *testing.T) {
 		},
 		1: {
 			objInfo: ObjectInfo{
-				UserDefined: map[string]string{"X-Minio-Internal-compression": compressionAlgorithmV2,
+				UserDefined: map[string]string{"X-Otterio-Internal-compression": compressionAlgorithmV2,
 					"content-type": "application/octet-stream",
 					"etag":         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 			},
@@ -335,7 +335,7 @@ func TestIsCompressed(t *testing.T) {
 		},
 		2: {
 			objInfo: ObjectInfo{
-				UserDefined: map[string]string{"X-Minio-Internal-compression": "unknown/compression/type",
+				UserDefined: map[string]string{"X-Otterio-Internal-compression": "unknown/compression/type",
 					"content-type": "application/octet-stream",
 					"etag":         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 			},
@@ -344,7 +344,7 @@ func TestIsCompressed(t *testing.T) {
 		},
 		3: {
 			objInfo: ObjectInfo{
-				UserDefined: map[string]string{"X-Minio-Internal-compression": compressionAlgorithmV2,
+				UserDefined: map[string]string{"X-Otterio-Internal-compression": compressionAlgorithmV2,
 					"content-type": "application/octet-stream",
 					"etag":         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 					crypto.MetaIV:  "yes",
@@ -355,7 +355,7 @@ func TestIsCompressed(t *testing.T) {
 		},
 		4: {
 			objInfo: ObjectInfo{
-				UserDefined: map[string]string{"X-Minio-Internal-XYZ": "klauspost/compress/s2",
+				UserDefined: map[string]string{"X-Otterio-Internal-XYZ": "klauspost/compress/s2",
 					"content-type": "application/octet-stream",
 					"etag":         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 			},
@@ -467,8 +467,8 @@ func TestGetActualSize(t *testing.T) {
 	}{
 		{
 			objInfo: ObjectInfo{
-				UserDefined: map[string]string{"X-Minio-Internal-compression": "klauspost/compress/s2",
-					"X-Minio-Internal-actual-size": "100000001",
+				UserDefined: map[string]string{"X-Otterio-Internal-compression": "klauspost/compress/s2",
+					"X-Otterio-Internal-actual-size": "100000001",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 				Parts: []ObjectPartInfo{
@@ -486,8 +486,8 @@ func TestGetActualSize(t *testing.T) {
 		},
 		{
 			objInfo: ObjectInfo{
-				UserDefined: map[string]string{"X-Minio-Internal-compression": "klauspost/compress/s2",
-					"X-Minio-Internal-actual-size": "841",
+				UserDefined: map[string]string{"X-Otterio-Internal-compression": "klauspost/compress/s2",
+					"X-Otterio-Internal-actual-size": "841",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 				Parts: []ObjectPartInfo{},
@@ -496,7 +496,7 @@ func TestGetActualSize(t *testing.T) {
 		},
 		{
 			objInfo: ObjectInfo{
-				UserDefined: map[string]string{"X-Minio-Internal-compression": "klauspost/compress/s2",
+				UserDefined: map[string]string{"X-Otterio-Internal-compression": "klauspost/compress/s2",
 					"content-type": "application/octet-stream",
 					"etag":         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 				Parts: []ObjectPartInfo{},

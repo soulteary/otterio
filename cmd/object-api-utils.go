@@ -53,16 +53,16 @@ import (
 )
 
 const (
-	// MinIO meta bucket.
-	minioMetaBucket = ".minio.sys"
+	// OtterIO meta bucket.
+	otterioMetaBucket = ".otterio.sys"
 	// Multipart meta prefix.
 	mpartMetaPrefix = "multipart"
-	// MinIO Multipart meta prefix.
-	minioMetaMultipartBucket = minioMetaBucket + SlashSeparator + mpartMetaPrefix
-	// MinIO tmp meta prefix.
-	minioMetaTmpBucket = minioMetaBucket + "/tmp"
-	// MinIO tmp meta prefix for deleted objects.
-	minioMetaTmpDeletedBucket = minioMetaTmpBucket + "/.trash"
+	// OtterIO Multipart meta prefix.
+	otterioMetaMultipartBucket = otterioMetaBucket + SlashSeparator + mpartMetaPrefix
+	// OtterIO tmp meta prefix.
+	otterioMetaTmpBucket = otterioMetaBucket + "/tmp"
+	// OtterIO tmp meta prefix for deleted objects.
+	otterioMetaTmpDeletedBucket = otterioMetaTmpBucket + "/.trash"
 
 	// DNS separator (period), used for bucket name validation.
 	dnsDelimiter = "."
@@ -74,12 +74,12 @@ const (
 	compReadAheadBufSize = 1 << 20
 )
 
-// isMinioBucket returns true if given bucket is a MinIO internal
+// isOtterioBucket returns true if given bucket is a OtterIO internal
 // bucket and false otherwise.
-func isMinioMetaBucketName(bucket string) bool {
-	return bucket == minioMetaBucket ||
-		bucket == minioMetaMultipartBucket ||
-		bucket == minioMetaTmpBucket ||
+func isOtterioMetaBucketName(bucket string) bool {
+	return bucket == otterioMetaBucket ||
+		bucket == otterioMetaMultipartBucket ||
+		bucket == otterioMetaTmpBucket ||
 		bucket == dataUsageBucket
 }
 
@@ -92,7 +92,7 @@ func isMinioMetaBucketName(bucket string) bool {
 // http://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
 func IsValidBucketName(bucket string) bool {
 	// Special case when bucket is equal to one of the meta buckets.
-	if isMinioMetaBucketName(bucket) {
+	if isOtterioMetaBucketName(bucket) {
 		return true
 	}
 	if len(bucket) < 3 || len(bucket) > 63 {
@@ -148,7 +148,7 @@ func IsValidBucketName(bucket string) bool {
 //
 // - Backslash ("\")
 //
-// additionally minio does not support object names with trailing SlashSeparator.
+// additionally otterio does not support object names with trailing SlashSeparator.
 func IsValidObjectName(object string) bool {
 	if len(object) == 0 {
 		return false
@@ -345,17 +345,17 @@ func isReservedOrInvalidBucket(bucketEntry string, strict bool) bool {
 			return true
 		}
 	}
-	return isMinioMetaBucket(bucketEntry) || isMinioReservedBucket(bucketEntry)
+	return isOtterioMetaBucket(bucketEntry) || isOtterioReservedBucket(bucketEntry)
 }
 
-// Returns true if input bucket is a reserved minio meta bucket '.minio.sys'.
-func isMinioMetaBucket(bucketName string) bool {
-	return bucketName == minioMetaBucket
+// Returns true if input bucket is a reserved otterio meta bucket '.otterio.sys'.
+func isOtterioMetaBucket(bucketName string) bool {
+	return bucketName == otterioMetaBucket
 }
 
-// Returns true if input bucket is a reserved minio bucket 'minio'.
-func isMinioReservedBucket(bucketName string) bool {
-	return bucketName == minioReservedBucket
+// Returns true if input bucket is a reserved otterio bucket 'otterio'.
+func isOtterioReservedBucket(bucketName string) bool {
+	return bucketName == otterioReservedBucket
 }
 
 // returns a slice of hosts by reading a slice of DNS records
@@ -901,12 +901,12 @@ func sealETagFn(key crypto.ObjectKey) SealMD5CurrFn {
 	return fn
 }
 
-// CleanMinioInternalMetadataKeys removes X-Amz-Meta- prefix from minio internal
-// encryption metadata that was sent by minio gateway
-func CleanMinioInternalMetadataKeys(metadata map[string]string) map[string]string {
+// CleanOtterioInternalMetadataKeys removes X-Amz-Meta- prefix from otterio internal
+// encryption metadata that was sent by otterio gateway
+func CleanOtterioInternalMetadataKeys(metadata map[string]string) map[string]string {
 	var newMeta = make(map[string]string, len(metadata))
 	for k, v := range metadata {
-		if strings.HasPrefix(k, "X-Amz-Meta-X-Minio-Internal-") {
+		if strings.HasPrefix(k, "X-Amz-Meta-X-Otterio-Internal-") {
 			newMeta[strings.TrimPrefix(k, "X-Amz-Meta-")] = v
 		} else {
 			newMeta[k] = v

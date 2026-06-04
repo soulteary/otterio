@@ -207,7 +207,7 @@ func (lc Lifecycle) FilterActionableRules(obj ObjectOpts) []Rule {
 		if !strings.HasPrefix(obj.Name, rule.GetPrefix()) {
 			continue
 		}
-		// Indicates whether MinIO will remove a delete marker with no
+		// Indicates whether OtterIO will remove a delete marker with no
 		// noncurrent versions. If set to true, the delete marker will
 		// be expired; if set to false the policy takes no action. This
 		// cannot be specified with Days or Date in a Lifecycle
@@ -216,14 +216,14 @@ func (lc Lifecycle) FilterActionableRules(obj ObjectOpts) []Rule {
 			rules = append(rules, rule)
 			continue
 		}
-		// The NoncurrentVersionExpiration action requests MinIO to expire
+		// The NoncurrentVersionExpiration action requests OtterIO to expire
 		// noncurrent versions of objects x days after the objects become
 		// noncurrent.
 		if !rule.NoncurrentVersionExpiration.IsDaysNull() {
 			rules = append(rules, rule)
 			continue
 		}
-		// The NoncurrentVersionTransition action requests MinIO to transition
+		// The NoncurrentVersionTransition action requests OtterIO to transition
 		// noncurrent versions of objects x days after the objects become
 		// noncurrent.
 		if !rule.NoncurrentVersionTransition.IsDaysNull() {
@@ -274,7 +274,7 @@ func (lc Lifecycle) ComputeAction(obj ObjectOpts) Action {
 
 	for _, rule := range lc.FilterActionableRules(obj) {
 		if obj.ExpiredObjectDeleteMarker() && rule.Expiration.DeleteMarker.val {
-			// Indicates whether MinIO will remove a delete marker with no noncurrent versions.
+			// Indicates whether OtterIO will remove a delete marker with no noncurrent versions.
 			// Only latest marker is removed. If set to true, the delete marker will be expired;
 			// if set to false the policy takes no action. This cannot be specified with Days or
 			// Date in a Lifecycle Expiration Policy.

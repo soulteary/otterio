@@ -51,7 +51,7 @@ func (d DeleteMarkerReplication) Validate() error {
 	return nil
 }
 
-// DeleteReplication - whether versioned deletes are replicated - this is a MinIO only
+// DeleteReplication - whether versioned deletes are replicated - this is a OtterIO only
 // extension.
 type DeleteReplication struct {
 	Status Status `xml:"Status"` // should be set to "Disabled" by default
@@ -96,7 +96,7 @@ type Rule struct {
 	Status                  Status                  `xml:"Status" json:"Status"`
 	Priority                int                     `xml:"Priority" json:"Priority"`
 	DeleteMarkerReplication DeleteMarkerReplication `xml:"DeleteMarkerReplication" json:"DeleteMarkerReplication"`
-	// MinIO extension to replicate versioned deletes
+	// OtterIO extension to replicate versioned deletes
 	DeleteReplication DeleteReplication `xml:"DeleteReplication" json:"DeleteReplication"`
 	Destination       Destination       `xml:"Destination" json:"Destination"`
 	Filter            Filter            `xml:"Filter" json:"Filter"`

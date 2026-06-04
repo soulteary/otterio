@@ -1,14 +1,14 @@
-# MinIO Storage Class Quickstart Guide
+# OtterIO Storage Class Quickstart Guide
 
-MinIO server supports storage class in erasure coding mode. This allows configurable data and parity disks per object.
+OtterIO server supports storage class in erasure coding mode. This allows configurable data and parity disks per object.
 
-This page is intended as a summary of MinIO Erasure Coding. For a more complete explanation, see https://docs.min.io/minio/baremetal/concepts/erasure-coding.html.
+This page is intended as a summary of OtterIO Erasure Coding. For a more complete explanation, see https://docs.min.io/minio/baremetal/concepts/erasure-coding.html.
 
 ## Overview
 
-MinIO supports two storage classes, Reduced Redundancy class and Standard class. These classes can be defined using environment variables
-set before starting MinIO server. After the data and parity disks for each storage class are defined using environment variables,
-you can set the storage class of an object via request metadata field `x-amz-storage-class`. MinIO server then honors the storage class by
+OtterIO supports two storage classes, Reduced Redundancy class and Standard class. These classes can be defined using environment variables
+set before starting OtterIO server. After the data and parity disks for each storage class are defined using environment variables,
+you can set the storage class of an object via request metadata field `x-amz-storage-class`. OtterIO server then honors the storage class by
 saving the object in specific number of data and parity disks.
 
 ## Storage usage
@@ -17,11 +17,11 @@ The selection of varying data and parity drives has a direct impact on the drive
 redundancy or better drive space utilization.
 
 To get an idea of how various combinations of data and parity drives affect the storage usage, let’s take an example of a 100 MiB file stored
-on 16 drive MinIO deployment. If you use eight data and eight parity drives, the file space usage will be approximately twice, i.e. 100 MiB
+on 16 drive OtterIO deployment. If you use eight data and eight parity drives, the file space usage will be approximately twice, i.e. 100 MiB
 file will take 200 MiB space. But, if you use ten data and six parity drives, same 100 MiB file takes around 160 MiB. If you use 14 data and
 two parity drives, 100 MiB file takes only approximately 114 MiB.
 
-Below is a list of data/parity drives and corresponding _approximate_ storage space usage on a 16 drive MinIO deployment. The field _storage
+Below is a list of data/parity drives and corresponding _approximate_ storage space usage on a 16 drive OtterIO deployment. The field _storage
 usage ratio_ is simply the drive space used by the file after erasure-encoding, divided by actual file size.
 
 | Total Drives (N) | Data Drives (D) | Parity Drives (P) | Storage Usage Ratio |
@@ -53,8 +53,8 @@ The default value for the `STANDARD` storage class depends on the number of volu
 | 6-7              |                 EC:3  |
 | 8 or more        |                 EC:4  |
 
-Prior to the ``RELEASE.2021-01-30T00-20-58Z`` MinIO release, the default `STANDARD` value was `EC(N/2)` where `N` was the number of erasure set drives.
-For more complete documentation on Erasure Set sizing, see the [MinIO Documentation on Erasure Sets](https://docs.min.io/minio/baremetal/concepts/erasure-coding.html#erasure-sets).
+Prior to the ``RELEASE.2021-01-30T00-20-58Z`` OtterIO release, the default `STANDARD` value was `EC(N/2)` where `N` was the number of erasure set drives.
+For more complete documentation on Erasure Set sizing, see the [OtterIO Documentation on Erasure Sets](https://docs.min.io/minio/baremetal/concepts/erasure-coding.html#erasure-sets).
 
 ### Allowed values for REDUCED_REDUNDANCY storage class
 
@@ -73,14 +73,14 @@ Default value for `REDUCED_REDUNDANCY` storage class is `2`.
 
 The format to set storage class environment variables is as follows
 
-`MINIO_STORAGE_CLASS_STANDARD=EC:parity`
-`MINIO_STORAGE_CLASS_RRS=EC:parity`
+`OTTERIO_STORAGE_CLASS_STANDARD=EC:parity`
+`OTTERIO_STORAGE_CLASS_RRS=EC:parity`
 
-For example, set `MINIO_STORAGE_CLASS_RRS` parity 2 and `MINIO_STORAGE_CLASS_STANDARD` parity 3
+For example, set `OTTERIO_STORAGE_CLASS_RRS` parity 2 and `OTTERIO_STORAGE_CLASS_STANDARD` parity 3
 
 ```sh
-export MINIO_STORAGE_CLASS_STANDARD=EC:3
-export MINIO_STORAGE_CLASS_RRS=EC:2
+export OTTERIO_STORAGE_CLASS_STANDARD=EC:3
+export OTTERIO_STORAGE_CLASS_RRS=EC:2
 ```
 
 Storage class can also be set via `mc admin config` get/set commands to update the configuration. Refer [storage class](https://github.com/minio/minio/tree/master/docs/config#storage-class) for
@@ -88,18 +88,18 @@ more details.
 
 *Note*
 
-- If `STANDARD` storage class is set via environment variables or `mc admin config` get/set commands, and `x-amz-storage-class` is not present in request metadata, MinIO server will
+- If `STANDARD` storage class is set via environment variables or `mc admin config` get/set commands, and `x-amz-storage-class` is not present in request metadata, OtterIO server will
 apply `STANDARD` storage class to the object. This means the data and parity disks will be used as set in `STANDARD` storage class.
 
-- If storage class is not defined before starting MinIO server, and subsequent PutObject metadata field has `x-amz-storage-class` present
-with values `REDUCED_REDUNDANCY` or `STANDARD`, MinIO server uses default parity values.
+- If storage class is not defined before starting OtterIO server, and subsequent PutObject metadata field has `x-amz-storage-class` present
+with values `REDUCED_REDUNDANCY` or `STANDARD`, OtterIO server uses default parity values.
 
 ### Set metadata
 
-In below example `minio-go` is used to set the storage class to `REDUCED_REDUNDANCY`. This means this object will be split across 6 data disks and 2 parity disks (as per the storage class set in previous step).
+In below example `otterio-go` is used to set the storage class to `REDUCED_REDUNDANCY`. This means this object will be split across 6 data disks and 2 parity disks (as per the storage class set in previous step).
 
 ```go
-s3Client, err := minio.New("localhost:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
+s3Client, err := otterio.New("localhost:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
 if err != nil {
 	log.Fatalln(err)
 }
@@ -114,7 +114,7 @@ if err != nil {
 	log.Fatalln(err)
 }
 
-n, err := s3Client.PutObject("my-bucketname", "my-objectname", object, objectStat.Size(), minio.PutObjectOptions{ContentType: "application/octet-stream", StorageClass: "REDUCED_REDUNDANCY"})
+n, err := s3Client.PutObject("my-bucketname", "my-objectname", object, objectStat.Size(), otterio.PutObjectOptions{ContentType: "application/octet-stream", StorageClass: "REDUCED_REDUNDANCY"})
 if err != nil {
 	log.Fatalln(err)
 }

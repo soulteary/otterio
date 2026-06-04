@@ -30,7 +30,7 @@ var errConfigNotFound = errors.New("config file not found")
 
 func readConfig(ctx context.Context, objAPI ObjectLayer, configFile string) ([]byte, error) {
 	// Read entire content by setting size to -1
-	r, err := objAPI.GetObjectNInfo(ctx, minioMetaBucket, configFile, nil, http.Header{}, readLock, ObjectOptions{})
+	r, err := objAPI.GetObjectNInfo(ctx, otterioMetaBucket, configFile, nil, http.Header{}, readLock, ObjectOptions{})
 	if err != nil {
 		// Treat object not found as config not found.
 		if isErrObjectNotFound(err) {
@@ -56,7 +56,7 @@ type objectDeleter interface {
 }
 
 func deleteConfig(ctx context.Context, objAPI objectDeleter, configFile string) error {
-	_, err := objAPI.DeleteObject(ctx, minioMetaBucket, configFile, ObjectOptions{})
+	_, err := objAPI.DeleteObject(ctx, otterioMetaBucket, configFile, ObjectOptions{})
 	if err != nil && isErrObjectNotFound(err) {
 		return errConfigNotFound
 	}
@@ -69,12 +69,12 @@ func saveConfig(ctx context.Context, objAPI ObjectLayer, configFile string, data
 		return err
 	}
 
-	_, err = objAPI.PutObject(ctx, minioMetaBucket, configFile, NewPutObjReader(hashReader), ObjectOptions{MaxParity: true})
+	_, err = objAPI.PutObject(ctx, otterioMetaBucket, configFile, NewPutObjReader(hashReader), ObjectOptions{MaxParity: true})
 	return err
 }
 
 func checkConfig(ctx context.Context, objAPI ObjectLayer, configFile string) error {
-	if _, err := objAPI.GetObjectInfo(ctx, minioMetaBucket, configFile, ObjectOptions{}); err != nil {
+	if _, err := objAPI.GetObjectInfo(ctx, otterioMetaBucket, configFile, ObjectOptions{}); err != nil {
 		// Treat object not found as config not found.
 		if isErrObjectNotFound(err) {
 			return errConfigNotFound

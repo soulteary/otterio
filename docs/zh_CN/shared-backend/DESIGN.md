@@ -1,12 +1,12 @@
 介绍
 ------------
 
-该特性可以让多个Minio实例使用一个共享的NAS存储，而且不需要做什么特殊的设置。文件默认已经做了同步以及加锁。
+该特性可以让多个Otterio实例使用一个共享的NAS存储，而且不需要做什么特殊的设置。文件默认已经做了同步以及加锁。
 
 目的
 ----------
 
-由于Minio的设计理念是为单租户场景服务，所以用户希望采用在一个存储后端上运行多个Minio实例，这个存储后端可能是一个已有的NAS。Minio支持这种共享存储后端的特性，而且不需要用户做额外的设置。
+由于Otterio的设计理念是为单租户场景服务，所以用户希望采用在一个存储后端上运行多个Otterio实例，这个存储后端可能是一个已有的NAS。Otterio支持这种共享存储后端的特性，而且不需要用户做额外的设置。
 
 
 限制
@@ -20,46 +20,46 @@
 
 ## 如何运行?
 
-运行共享存储后端的Minio和直接运行在一块独立磁盘的Minio没有啥区别，不需要做额外设置来开启这个特性。访问NAS上的文件默认就会加锁和同步。以下示例将对您选择的每个操作系统上的操作进行阐述：
+运行共享存储后端的Otterio和直接运行在一块独立磁盘的Otterio没有啥区别，不需要做额外设置来开启这个特性。访问NAS上的文件默认就会加锁和同步。以下示例将对您选择的每个操作系统上的操作进行阐述：
 
 ### Ubuntu 16.04 LTS
 
-示例1: 运行Minio实例在持载在`/path/to/nfs-volume`路径下的共享后端存储。
+示例1: 运行Otterio实例在持载在`/path/to/nfs-volume`路径下的共享后端存储。
 
 On linux server1
 ```shell
-minio server /path/to/nfs-volume
+otterio server /path/to/nfs-volume
 ```
 
 On linux server2
 ```shell
-minio server /path/to/nfs-volume
+otterio server /path/to/nfs-volume
 ```
 
 ### Windows 2012 Server
 
-示例1: 运行Minio实例在持载在`\\remote-server\cifs`路径下的共享后端存储。
+示例1: 运行Otterio实例在持载在`\\remote-server\cifs`路径下的共享后端存储。
 
 On windows server1
 ```cmd
-minio.exe server \\remote-server\cifs\data
+otterio.exe server \\remote-server\cifs\data
 ```
 
 On windows server2
 ```cmd
-minio.exe server \\remote-server\cifs\data
+otterio.exe server \\remote-server\cifs\data
 ```
 
 或者共享存储挂载在`D:\`盘.
 
 On windows server1
 ```cmd
-minio.exe server D:\data
+otterio.exe server D:\data
 ```
 
 On windows server2
 ```cmd
-minio.exe server D:\data
+otterio.exe server D:\data
 ```
 
 架构
@@ -69,7 +69,7 @@ minio.exe server D:\data
 
 ### Lock process
 
-在同一个Minio实例中，lock由现有的内存命名空间锁（** sync.RWMutex **等）处理。 为了在许多Minio实例之间同步锁，我们利用Unix上的POSIX`fcntl（）`锁定和Windows`LockFileEx（）`Win32 API）。 如果相邻Minio实例在同一路径上有任何读锁，则写锁请求会被阻塞。 如果有正在进行的写锁，读锁也是如此。
+在同一个Otterio实例中，lock由现有的内存命名空间锁（** sync.RWMutex **等）处理。 为了在许多Otterio实例之间同步锁，我们利用Unix上的POSIX`fcntl（）`锁定和Windows`LockFileEx（）`Win32 API）。 如果相邻Otterio实例在同一路径上有任何读锁，则写锁请求会被阻塞。 如果有正在进行的写锁，读锁也是如此。
 
 ### Unlock process
 
@@ -85,7 +85,7 @@ minio.exe server D:\data
 GetObject()持有`fs.json`的一个读锁。
 
 ```go
-	fsMetaPath := pathJoin(fs.fsPath, minioMetaBucket, bucketMetaPrefix, bucket, object, fsMetaJSONFile)
+	fsMetaPath := pathJoin(fs.fsPath, otterioMetaBucket, bucketMetaPrefix, bucket, object, fsMetaJSONFile)
 	rlk, err := fs.rwPool.Open(fsMetaPath)
 	if err != nil {
 		return toObjectErr(err, bucket, object)
@@ -103,7 +103,7 @@ GetObject()持有`fs.json`的一个读锁。
 在同一个对象上请求一个并发的PutObject, PutObject()尝试获取一个`fs.json`上的写锁。
 
 ```go
-	fsMetaPath := pathJoin(fs.fsPath, minioMetaBucket, bucketMetaPrefix, bucket, object, fsMetaJSONFile)
+	fsMetaPath := pathJoin(fs.fsPath, otterioMetaBucket, bucketMetaPrefix, bucket, object, fsMetaJSONFile)
 	wlk, err := fs.rwPool.Create(fsMetaPath)
 	if err != nil {
 		return ObjectInfo{}, toObjectErr(err, bucket, object)
@@ -122,20 +122,20 @@ GetObject()持有`fs.json`的一个读锁。
 
 ### 警告 (并发)
 
-假设有3个Minio服务共享一个存储后端
+假设有3个Otterio服务共享一个存储后端
 
-minio1
+otterio1
 
 - DeleteObject(object1) --> 在object1删除操作时持有`fs.json`的锁。
 
-minio2
+otterio2
 
 - PutObject(object1) --> 等DeleteObject完毕后进行锁定。
 
-minio3
+otterio3
 
-- PutObject(object1) --> (concurrent request during PutObject minio2 checking if `fs.json` exists)
+- PutObject(object1) --> (concurrent request during PutObject otterio2 checking if `fs.json` exists)
 
-一旦获取到锁之后，minio2验证文件是否真的存在，以避免获得已被删除的fd的锁。但是这种情况与minio3存在竞争，因为minio3也在尝试写同一个文件。这就存在一种可能，`fs.json`已经被创建了，所以minio2获得的锁就无效，这样就可能会导致数据不一致。
+一旦获取到锁之后，otterio2验证文件是否真的存在，以避免获得已被删除的fd的锁。但是这种情况与otterio3存在竞争，因为otterio3也在尝试写同一个文件。这就存在一种可能，`fs.json`已经被创建了，所以otterio2获得的锁就无效，这样就可能会导致数据不一致。
 
 这是一种已知的问题，而且没办法通过POSIX fcntl锁来解决。这种情况是共享存储后端的限制，请你知晓。

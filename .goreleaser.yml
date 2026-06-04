@@ -1,11 +1,11 @@
-project_name: minio
+project_name: otterio
 
 release:
-   name_template: "Version {{.MinIO.Version}}"
+   name_template: "Version {{.Version}}"
    disable: true
    github:
-    owner: minio
-    name: minio
+    owner: soulteary
+    name: otterio
 
 env:
   - CGO_ENABLED=0
@@ -76,12 +76,12 @@ archives:
 
 nfpms:
   -
-    id: minio
-    package_name: minio
-    vendor: MinIO, Inc.
-    homepage: https://min.io/
-    maintainer: dev@min.io
-    description: MinIO is a High Performance Object Storage released under Apache License v2.0. It is API compatible with Amazon S3 cloud storage service. Use MinIO to build high performance infrastructure for machine learning, analytics and application data workloads.
+    id: otterio
+    package_name: otterio
+    vendor: soulteary
+    homepage: https://github.com/soulteary/otterio
+    maintainer: soulteary
+    description: OtterIO is a High Performance Object Storage released under Apache License v2.0. It is API compatible with Amazon S3 cloud storage service. Use OtterIO to build high performance infrastructure for machine learning, analytics and application data workloads. Community-maintained fork of MinIO, not affiliated with MinIO, Inc.
     license: Apache 2.0
     bindir: /usr/bin
     formats:
@@ -93,10 +93,10 @@ nfpms:
         replacements:
           arm: armv7
         files:
-          "NOTICE": "/usr/share/minio/NOTICE"
-          "CREDITS": "/usr/share/minio/CREDITS"
-          "LICENSE": "/usr/share/minio/LICENSE"
-          "README.md": "/usr/share/minio/README.md"
+          "NOTICE": "/usr/share/otterio/NOTICE"
+          "CREDITS": "/usr/share/otterio/CREDITS"
+          "LICENSE": "/usr/share/otterio/LICENSE"
+          "README.md": "/usr/share/otterio/README.md"
       rpm:
         file_name_template: "{{ .Binary }}-release/rpms/{{ .ProjectName }}-{{ .Version }}.{{ .Arch }}"
         replacements:
@@ -104,10 +104,10 @@ nfpms:
           arm64: aarch64
           arm: armv7
         files:
-          "NOTICE": "/usr/share/minio/NOTICE"
-          "CREDITS": "/usr/share/minio/CREDITS"
-          "LICENSE": "/usr/share/minio/LICENSE"
-          "README.md": "/usr/share/minio/README.md"
+          "NOTICE": "/usr/share/otterio/NOTICE"
+          "CREDITS": "/usr/share/otterio/CREDITS"
+          "LICENSE": "/usr/share/otterio/LICENSE"
+          "README.md": "/usr/share/otterio/README.md"
 
 checksum:
   algorithm: sha256
@@ -118,7 +118,7 @@ signs:
     cmd: "sh"
     args:
       - '-c'
-      - 'minisign -s /media/${USER}/minio/minisign.key -qQSm ${artifact} < /media/${USER}/minio/minisign-passphrase'
+      - 'minisign -s /media/${USER}/otterio/minisign.key -qQSm ${artifact} < /media/${USER}/otterio/minisign-passphrase'
     artifacts: all
 
 changelog:
@@ -133,5 +133,5 @@ dockers:
     goarch: amd64
     dockerfile: Dockerfile.release
     image_templates:
-      - minio/minio:{{ .Tag }}
-      - minio/minio:latest
+      - soulteary/otterio:{{ .Tag }}
+      - soulteary/otterio:latest

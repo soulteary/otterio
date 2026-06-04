@@ -28,7 +28,7 @@ func TestValidateBucketSSEConfig(t *testing.T) {
 		expectedErr error
 		shouldPass  bool
 	}{
-		// MinIO supported XML
+		// OtterIO supported XML
 		{
 			inputXML: `<ServerSideEncryptionConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
 			<Rule>

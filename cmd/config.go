@@ -31,15 +31,15 @@ import (
 )
 
 const (
-	minioConfigPrefix = "config"
+	otterioConfigPrefix = "config"
 
 	kvPrefix = ".kv"
 
 	// Captures all the previous SetKV operations and allows rollback.
-	minioConfigHistoryPrefix = minioConfigPrefix + "/history"
+	otterioConfigHistoryPrefix = otterioConfigPrefix + "/history"
 
-	// MinIO configuration file.
-	minioConfigFile = "config.json"
+	// OtterIO configuration file.
+	otterioConfigFile = "config.json"
 )
 
 func listServerConfigHistory(ctx context.Context, objAPI ObjectLayer, withData bool, count int) (
@@ -50,7 +50,7 @@ func listServerConfigHistory(ctx context.Context, objAPI ObjectLayer, withData b
 	// List all kvs
 	marker := ""
 	for {
-		res, err := objAPI.ListObjects(ctx, minioMetaBucket, minioConfigHistoryPrefix, marker, "", maxObjectList)
+		res, err := objAPI.ListObjects(ctx, otterioMetaBucket, otterioConfigHistoryPrefix, marker, "", maxObjectList)
 		if err != nil {
 			return nil, err
 		}
@@ -91,13 +91,13 @@ func listServerConfigHistory(ctx context.Context, objAPI ObjectLayer, withData b
 }
 
 func delServerConfigHistory(ctx context.Context, objAPI ObjectLayer, uuidKV string) error {
-	historyFile := pathJoin(minioConfigHistoryPrefix, uuidKV+kvPrefix)
-	_, err := objAPI.DeleteObject(ctx, minioMetaBucket, historyFile, ObjectOptions{})
+	historyFile := pathJoin(otterioConfigHistoryPrefix, uuidKV+kvPrefix)
+	_, err := objAPI.DeleteObject(ctx, otterioMetaBucket, historyFile, ObjectOptions{})
 	return err
 }
 
 func readServerConfigHistory(ctx context.Context, objAPI ObjectLayer, uuidKV string) ([]byte, error) {
-	historyFile := pathJoin(minioConfigHistoryPrefix, uuidKV+kvPrefix)
+	historyFile := pathJoin(otterioConfigHistoryPrefix, uuidKV+kvPrefix)
 	data, err := readConfig(ctx, objAPI, historyFile)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func readServerConfigHistory(ctx context.Context, objAPI ObjectLayer, uuidKV str
 
 func saveServerConfigHistory(ctx context.Context, objAPI ObjectLayer, kv []byte) error {
 	uuidKV := mustGetUUID() + kvPrefix
-	historyFile := pathJoin(minioConfigHistoryPrefix, uuidKV)
+	historyFile := pathJoin(otterioConfigHistoryPrefix, uuidKV)
 
 	var err error
 	if globalConfigEncrypted {
@@ -139,13 +139,13 @@ func saveServerConfig(ctx context.Context, objAPI ObjectLayer, config interface{
 		}
 	}
 
-	configFile := path.Join(minioConfigPrefix, minioConfigFile)
+	configFile := path.Join(otterioConfigPrefix, otterioConfigFile)
 	// Save the new config in the std config path
 	return saveConfig(ctx, objAPI, configFile, data)
 }
 
 func readServerConfig(ctx context.Context, objAPI ObjectLayer) (config.Config, error) {
-	configFile := path.Join(minioConfigPrefix, minioConfigFile)
+	configFile := path.Join(otterioConfigPrefix, otterioConfigFile)
 	configData, err := readConfig(ctx, objAPI, configFile)
 	if err != nil {
 		// Config not found for some reason, allow things to continue
@@ -210,23 +210,23 @@ func initConfig(objAPI ObjectLayer) error {
 		}
 	}
 
-	// Migrates ${HOME}/.minio/config.json or config.json.deprecated
-	// to '<export_path>/.minio.sys/config/config.json'
+	// Migrates ${HOME}/.otterio/config.json or config.json.deprecated
+	// to '<export_path>/.otterio.sys/config/config.json'
 	// ignore if the file doesn't exist.
 	// If etcd is set then migrates /config/config.json
-	// to '<export_path>/.minio.sys/config/config.json'
-	if err := migrateConfigToMinioSys(objAPI); err != nil {
+	// to '<export_path>/.otterio.sys/config/config.json'
+	if err := migrateConfigToOtterioSys(objAPI); err != nil {
 		return err
 	}
 
-	// Migrates backend '<export_path>/.minio.sys/config/config.json' to latest version.
-	if err := migrateMinioSysConfig(objAPI); err != nil {
+	// Migrates backend '<export_path>/.otterio.sys/config/config.json' to latest version.
+	if err := migrateOtterioSysConfig(objAPI); err != nil {
 		return err
 	}
 
-	// Migrates backend '<export_path>/.minio.sys/config/config.json' to
+	// Migrates backend '<export_path>/.otterio.sys/config/config.json' to
 	// latest config format.
-	if err := migrateMinioSysConfigToKV(objAPI); err != nil {
+	if err := migrateOtterioSysConfigToKV(objAPI); err != nil {
 		return err
 	}
 

@@ -108,7 +108,7 @@ func (adm *AdminClient) RemoveUser(ctx context.Context, accessKey string) error 
 		queryValues: queryValues,
 	}
 
-	// Execute DELETE on /minio/admin/v3/remove-user to remove a user.
+	// Execute DELETE on /otterio/admin/v3/remove-user to remove a user.
 	resp, err := adm.executeMethod(ctx, http.MethodDelete, reqData)
 
 	defer closeResponse(resp)
@@ -129,7 +129,7 @@ func (adm *AdminClient) ListUsers(ctx context.Context) (map[string]UserInfo, err
 		relPath: adminAPIPrefix + "/list-users",
 	}
 
-	// Execute GET on /minio/admin/v3/list-users
+	// Execute GET on /otterio/admin/v3/list-users
 	resp, err := adm.executeMethod(ctx, http.MethodGet, reqData)
 
 	defer closeResponse(resp)
@@ -164,7 +164,7 @@ func (adm *AdminClient) GetUserInfo(ctx context.Context, name string) (u UserInf
 		queryValues: queryValues,
 	}
 
-	// Execute GET on /minio/admin/v3/user-info
+	// Execute GET on /otterio/admin/v3/user-info
 	resp, err := adm.executeMethod(ctx, http.MethodGet, reqData)
 
 	defer closeResponse(resp)
@@ -220,7 +220,7 @@ func (adm *AdminClient) SetUser(ctx context.Context, accessKey, secretKey string
 		content:     econfigBytes,
 	}
 
-	// Execute PUT on /minio/admin/v3/add-user to set a user.
+	// Execute PUT on /otterio/admin/v3/add-user to set a user.
 	resp, err := adm.executeMethod(ctx, http.MethodPut, reqData)
 
 	defer closeResponse(resp)
@@ -251,7 +251,7 @@ func (adm *AdminClient) SetUserStatus(ctx context.Context, accessKey string, sta
 		queryValues: queryValues,
 	}
 
-	// Execute PUT on /minio/admin/v3/set-user-status to set status.
+	// Execute PUT on /otterio/admin/v3/set-user-status to set status.
 	resp, err := adm.executeMethod(ctx, http.MethodPut, reqData)
 
 	defer closeResponse(resp)
@@ -303,7 +303,7 @@ func (adm *AdminClient) AddServiceAccount(ctx context.Context, opts AddServiceAc
 		content: econfigBytes,
 	}
 
-	// Execute PUT on /minio/admin/v3/add-service-account to set a user.
+	// Execute PUT on /otterio/admin/v3/add-service-account to set a user.
 	resp, err := adm.executeMethod(ctx, http.MethodPut, reqData)
 	defer closeResponse(resp)
 	if err != nil {
@@ -360,7 +360,7 @@ func (adm *AdminClient) UpdateServiceAccount(ctx context.Context, accessKey stri
 		queryValues: queryValues,
 	}
 
-	// Execute POST on /minio/admin/v3/update-service-account to edit a service account
+	// Execute POST on /otterio/admin/v3/update-service-account to edit a service account
 	resp, err := adm.executeMethod(ctx, http.MethodPost, reqData)
 	defer closeResponse(resp)
 	if err != nil {
@@ -389,7 +389,7 @@ func (adm *AdminClient) ListServiceAccounts(ctx context.Context, user string) (L
 		queryValues: queryValues,
 	}
 
-	// Execute GET on /minio/admin/v3/list-service-accounts
+	// Execute GET on /otterio/admin/v3/list-service-accounts
 	resp, err := adm.executeMethod(ctx, http.MethodGet, reqData)
 	defer closeResponse(resp)
 	if err != nil {
@@ -430,7 +430,7 @@ func (adm *AdminClient) InfoServiceAccount(ctx context.Context, accessKey string
 		queryValues: queryValues,
 	}
 
-	// Execute GET on /minio/admin/v3/info-service-account
+	// Execute GET on /otterio/admin/v3/info-service-account
 	resp, err := adm.executeMethod(ctx, http.MethodGet, reqData)
 	defer closeResponse(resp)
 	if err != nil {
@@ -468,7 +468,7 @@ func (adm *AdminClient) DeleteServiceAccount(ctx context.Context, serviceAccount
 		queryValues: queryValues,
 	}
 
-	// Execute DELETE on /minio/admin/v3/delete-service-account
+	// Execute DELETE on /otterio/admin/v3/delete-service-account
 	resp, err := adm.executeMethod(ctx, http.MethodDelete, reqData)
 	defer closeResponse(resp)
 	if err != nil {

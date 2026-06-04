@@ -6,7 +6,7 @@ GOARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
 
 VERSION ?= $(shell git describe --tags)
-TAG ?= "minio/minio:$(VERSION)"
+TAG ?= "soulteary/otterio:$(VERSION)"
 
 all: build
 
@@ -34,7 +34,7 @@ lint:
 	@GO111MODULE=on ${GOPATH}/bin/golangci-lint cache clean
 	@GO111MODULE=on ${GOPATH}/bin/golangci-lint run --config ./.golangci.yml
 
-# Builds minio, runs the verifiers then runs the tests.
+# Builds otterio, runs the verifiers then runs the tests.
 check: test
 test: verifiers build
 	@echo "Running unit tests"
@@ -44,48 +44,48 @@ test-race: verifiers build
 	@echo "Running unit tests under -race"
 	@(env bash $(PWD)/buildscripts/race.sh)
 
-# Verify minio binary
+# Verify otterio binary
 verify:
 	@echo "Verifying build with race"
-	@GO111MODULE=on CGO_ENABLED=1 go build -tags kqueue -trimpath --ldflags "$(LDFLAGS)" -o $(PWD)/minio 1>/dev/null
+	@GO111MODULE=on CGO_ENABLED=1 go build -tags kqueue -trimpath --ldflags "$(LDFLAGS)" -o $(PWD)/otterio 1>/dev/null
 	@(env bash $(PWD)/buildscripts/verify-build.sh)
 
-# Verify healing of disks with minio binary
+# Verify healing of disks with otterio binary
 verify-healing:
 	@echo "Verify healing build with race"
-	@GO111MODULE=on CGO_ENABLED=1 go build -race -tags kqueue -trimpath --ldflags "$(LDFLAGS)" -o $(PWD)/minio 1>/dev/null
+	@GO111MODULE=on CGO_ENABLED=1 go build -race -tags kqueue -trimpath --ldflags "$(LDFLAGS)" -o $(PWD)/otterio 1>/dev/null
 	@(env bash $(PWD)/buildscripts/verify-healing.sh)
 
-# Builds minio locally.
+# Builds otterio locally.
 build: checks
-	@echo "Building minio binary to './minio'"
-	@GO111MODULE=on CGO_ENABLED=0 go build -tags kqueue -trimpath --ldflags "$(LDFLAGS)" -o $(PWD)/minio 1>/dev/null
+	@echo "Building otterio binary to './otterio'"
+	@GO111MODULE=on CGO_ENABLED=0 go build -tags kqueue -trimpath --ldflags "$(LDFLAGS)" -o $(PWD)/otterio 1>/dev/null
 
 hotfix-vars:
-	$(eval LDFLAGS := $(shell MINIO_RELEASE="RELEASE" MINIO_HOTFIX="hotfix.$(shell git rev-parse --short HEAD)" go run buildscripts/gen-ldflags.go $(shell git describe --tags --abbrev=0 | \
+	$(eval LDFLAGS := $(shell OTTERIO_RELEASE="RELEASE" OTTERIO_HOTFIX="hotfix.$(shell git rev-parse --short HEAD)" go run buildscripts/gen-ldflags.go $(shell git describe --tags --abbrev=0 | \
     sed 's#RELEASE\.\([0-9]\+\)-\([0-9]\+\)-\([0-9]\+\)T\([0-9]\+\)-\([0-9]\+\)-\([0-9]\+\)Z#\1-\2-\3T\4:\5:\6Z#')))
-	$(eval TAG := "minio/minio:$(shell git describe --tags --abbrev=0).hotfix.$(shell git rev-parse --short HEAD)")
+	$(eval TAG := "soulteary/otterio:$(shell git describe --tags --abbrev=0).hotfix.$(shell git rev-parse --short HEAD)")
 hotfix: hotfix-vars install
 
 docker-hotfix: hotfix checks
-	@echo "Building minio docker image '$(TAG)'"
+	@echo "Building otterio docker image '$(TAG)'"
 	@docker build -t $(TAG) . -f Dockerfile.dev
 
 docker: build checks
-	@echo "Building minio docker image '$(TAG)'"
+	@echo "Building otterio docker image '$(TAG)'"
 	@docker build -t $(TAG) . -f Dockerfile.dev
 
-# Builds minio and installs it to $GOPATH/bin.
+# Builds otterio and installs it to $GOPATH/bin.
 install: build
-	@echo "Installing minio binary to '$(GOPATH)/bin/minio'"
-	@mkdir -p $(GOPATH)/bin && cp -f $(PWD)/minio $(GOPATH)/bin/minio
-	@echo "Installation successful. To learn more, try \"minio --help\"."
+	@echo "Installing otterio binary to '$(GOPATH)/bin/otterio'"
+	@mkdir -p $(GOPATH)/bin && cp -f $(PWD)/otterio $(GOPATH)/bin/otterio
+	@echo "Installation successful. To learn more, try \"otterio --help\"."
 
 clean:
 	@echo "Cleaning up all the generated files"
 	@find . -name '*.test' | xargs rm -fv
 	@find . -name '*~' | xargs rm -fv
-	@rm -rvf minio
+	@rm -rvf otterio
 	@rm -rvf build
 	@rm -rvf release
 	@rm -rvf .verify*

@@ -28,10 +28,10 @@ var isMultipartTests = []struct {
 	Multipart bool
 }{
 	{Multipart: true, Metadata: map[string]string{MetaMultipart: ""}},                          // 0
-	{Multipart: true, Metadata: map[string]string{"X-Minio-Internal-Encrypted-Multipart": ""}}, // 1
+	{Multipart: true, Metadata: map[string]string{"X-Otterio-Internal-Encrypted-Multipart": ""}}, // 1
 	{Multipart: true, Metadata: map[string]string{MetaMultipart: "some-value"}},                // 2
 	{Multipart: false, Metadata: map[string]string{"": ""}},                                    // 3
-	{Multipart: false, Metadata: map[string]string{"X-Minio-Internal-EncryptedMultipart": ""}}, // 4
+	{Multipart: false, Metadata: map[string]string{"X-Otterio-Internal-EncryptedMultipart": ""}}, // 4
 }
 
 func TestIsMultipart(t *testing.T) {
@@ -54,7 +54,7 @@ var isEncryptedTests = []struct {
 	{Encrypted: true, Metadata: map[string]string{MetaKeyID: ""}},                                  // 5
 	{Encrypted: true, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                      // 6
 	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
-	{Encrypted: false, Metadata: map[string]string{"X-Minio-Internal-Server-Side-Encryption": ""}}, // 8
+	{Encrypted: false, Metadata: map[string]string{"X-Otterio-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
 func TestIsEncrypted(t *testing.T) {
@@ -77,7 +77,7 @@ var s3IsEncryptedTests = []struct {
 	{Encrypted: false, Metadata: map[string]string{MetaKeyID: ""}},                                 // 5
 	{Encrypted: false, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                     // 6
 	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
-	{Encrypted: false, Metadata: map[string]string{"X-Minio-Internal-Server-Side-Encryption": ""}}, // 8
+	{Encrypted: false, Metadata: map[string]string{"X-Otterio-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
 func TestS3IsEncrypted(t *testing.T) {
@@ -100,7 +100,7 @@ var ssecIsEncryptedTests = []struct {
 	{Encrypted: false, Metadata: map[string]string{MetaKeyID: ""}},                                 // 5
 	{Encrypted: false, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                     // 6
 	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
-	{Encrypted: false, Metadata: map[string]string{"X-Minio-Internal-Server-Side-Encryption": ""}}, // 8
+	{Encrypted: false, Metadata: map[string]string{"X-Otterio-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
 func TestSSECIsEncrypted(t *testing.T) {
@@ -305,7 +305,7 @@ var s3CreateMetadataTests = []struct {
 }{
 
 	{KeyID: "", SealedDataKey: nil, SealedKey: SealedKey{Algorithm: SealAlgorithm}},
-	{KeyID: "my-minio-key", SealedDataKey: make([]byte, 48), SealedKey: SealedKey{Algorithm: SealAlgorithm}},
+	{KeyID: "my-otterio-key", SealedDataKey: make([]byte, 48), SealedKey: SealedKey{Algorithm: SealAlgorithm}},
 	{KeyID: "cafebabe", SealedDataKey: make([]byte, 48), SealedKey: SealedKey{Algorithm: SealAlgorithm}},
 	{KeyID: "deadbeef", SealedDataKey: make([]byte, 32), SealedKey: SealedKey{IV: [32]byte{0xf7}, Key: [64]byte{0xea}, Algorithm: SealAlgorithm}},
 }
@@ -426,11 +426,11 @@ var removeInternalEntriesTests = []struct {
 			MetaMultipart:        "",
 			MetaIV:               "",
 			"X-Amz-Meta-A":       "X",
-			"X-Minio-Internal-B": "Y",
+			"X-Otterio-Internal-B": "Y",
 		},
 		Expected: map[string]string{
 			"X-Amz-Meta-A":       "X",
-			"X-Minio-Internal-B": "Y",
+			"X-Otterio-Internal-B": "Y",
 		},
 	},
 }

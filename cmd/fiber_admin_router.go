@@ -139,7 +139,7 @@ func registerAdminRouterFiber(app *fiber.App, enableConfigOps, enableIAMOps bool
 
 		registerAdminRoute(app, verPrefix+"/trace", []routeRule{{
 			methods:   []string{http.MethodGet},
-			handler:   toMinioStreamHandler(adminAPI.TraceHandler),
+			handler:   toOtterioStreamHandler(adminAPI.TraceHandler),
 			skipTrace: true,
 		}})
 		registerAdminRoute(app, verPrefix+"/log", []routeRule{
@@ -301,7 +301,7 @@ func adminRule(method string, h func(http.ResponseWriter, *http.Request), traceH
 	return routeRule{
 		methods:      []string{method},
 		queries:      queries,
-		handler:      toMinioHandler(h),
+		handler:      toOtterioHandler(h),
 		traceHeaders: traceHdrs,
 	}
 }
@@ -315,7 +315,7 @@ func adminStreamRule(method string, h func(http.ResponseWriter, *http.Request), 
 	return routeRule{
 		methods:   []string{method},
 		queries:   queries,
-		handler:   toMinioStreamHandler(h),
+		handler:   toOtterioStreamHandler(h),
 		skipTrace: true,
 	}
 }

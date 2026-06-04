@@ -71,13 +71,13 @@ func updateServer(u *url.URL, sha256Sum []byte, lrTime time.Time, releaseInfo st
 	}
 
 	us.CurrentVersion = Version
-	us.UpdatedVersion = lrTime.Format(minioReleaseTagTimeLayout)
+	us.UpdatedVersion = lrTime.Format(otterioReleaseTagTimeLayout)
 	return us, nil
 }
 
-// ServerUpdateHandler - POST /minio/admin/v3/update?updateURL={updateURL}
+// ServerUpdateHandler - POST /otterio/admin/v3/update?updateURL={updateURL}
 // ----------
-// updates all minio servers and restarts them gracefully.
+// updates all otterio servers and restarts them gracefully.
 func (a adminAPIHandlers) ServerUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "ServerUpdate")
 
@@ -89,26 +89,26 @@ func (a adminAPIHandlers) ServerUpdateHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if globalInplaceUpdateDisabled {
-		// if MINIO_UPDATE=off - inplace update is disabled, mostly in containers.
+		// if OTTERIO_UPDATE=off - inplace update is disabled, mostly in containers.
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrMethodNotAllowed), r.URL)
 		return
 	}
 
 	updateURL := urlVar(r, "updateURL")
-	mode := getMinioMode()
+	mode := getOtterioMode()
 	if updateURL == "" {
-		updateURL = minioReleaseInfoURL()
+		updateURL = otterioReleaseInfoURL()
 		if runtime.GOOS == globalWindowsOSName {
-			updateURL = minioReleaseWindowsInfoURL()
+			updateURL = otterioReleaseWindowsInfoURL()
 		}
 		// This fork does not operate a release server. Without an explicit
-		// updateURL and without MINIO_UPDATE_RELEASE_URL configured, refuse to
+		// updateURL and without OTTERIO_UPDATE_RELEASE_URL configured, refuse to
 		// fall back to the upstream download server (which would replace this
 		// fork's binary with the upstream binary).
 		if updateURL == "" {
 			writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, AdminError{
 				Code:       AdminUpdateUnexpectedFailure,
-				Message:    "no update source configured: set MINIO_UPDATE_RELEASE_URL or pass an explicit updateURL to `mc admin update`",
+				Message:    "no update source configured: set OTTERIO_UPDATE_RELEASE_URL or pass an explicit updateURL to `mc admin update`",
 				StatusCode: http.StatusBadRequest,
 			}), r.URL)
 			return
@@ -183,7 +183,7 @@ func (a adminAPIHandlers) ServerUpdateHandler(w http.ResponseWriter, r *http.Req
 
 	writeSuccessResponseJSON(w, jsonBytes)
 
-	// Notify all other MinIO peers signal service.
+	// Notify all other OtterIO peers signal service.
 	for _, nerr := range globalNotificationSys.SignalService(serviceRestart) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -194,9 +194,9 @@ func (a adminAPIHandlers) ServerUpdateHandler(w http.ResponseWriter, r *http.Req
 	globalServiceSignalCh <- serviceRestart
 }
 
-// ServiceHandler - POST /minio/admin/v3/service?action={action}
+// ServiceHandler - POST /otterio/admin/v3/service?action={action}
 // ----------
-// restarts/stops minio server gracefully. In a distributed setup,
+// restarts/stops otterio server gracefully. In a distributed setup,
 func (a adminAPIHandlers) ServiceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "Service")
 
@@ -227,7 +227,7 @@ func (a adminAPIHandlers) ServiceHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Notify all other MinIO peers signal service.
+	// Notify all other OtterIO peers signal service.
 	for _, nerr := range globalNotificationSys.SignalService(serviceSig) {
 		if nerr.Err != nil {
 			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
@@ -235,7 +235,7 @@ func (a adminAPIHandlers) ServiceHandler(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	// Reply to the client before restarting, stopping MinIO server.
+	// Reply to the client before restarting, stopping OtterIO server.
 	writeSuccessResponseHeadersOnly(w)
 
 	globalServiceSignalCh <- serviceSig
@@ -281,7 +281,7 @@ type ServerHTTPStats struct {
 	TotalS3RejectedInvalid uint64             `json:"totalS3RejectedInvalid"`
 }
 
-// StorageInfoHandler - GET /minio/admin/v3/storageinfo
+// StorageInfoHandler - GET /otterio/admin/v3/storageinfo
 // ----------
 // Get server information
 func (a adminAPIHandlers) StorageInfoHandler(w http.ResponseWriter, r *http.Request) {
@@ -324,7 +324,7 @@ func (a adminAPIHandlers) StorageInfoHandler(w http.ResponseWriter, r *http.Requ
 
 }
 
-// DataUsageInfoHandler - GET /minio/admin/v3/datausage
+// DataUsageInfoHandler - GET /otterio/admin/v3/datausage
 // ----------
 // Get server/cluster data usage info
 func (a adminAPIHandlers) DataUsageInfoHandler(w http.ResponseWriter, r *http.Request) {
@@ -493,7 +493,7 @@ type StartProfilingResult struct {
 	Error    string `json:"error"`
 }
 
-// StartProfilingHandler - POST /minio/admin/v3/profiling/start?profilerType={profilerType}
+// StartProfilingHandler - POST /otterio/admin/v3/profiling/start?profilerType={profilerType}
 // ----------
 // Enable server profiling
 func (a adminAPIHandlers) StartProfilingHandler(w http.ResponseWriter, r *http.Request) {
@@ -524,7 +524,7 @@ func (a adminAPIHandlers) StartProfilingHandler(w http.ResponseWriter, r *http.R
 	defer globalProfilerMu.Unlock()
 
 	if globalProfiler == nil {
-		globalProfiler = make(map[string]minioProfiler, 10)
+		globalProfiler = make(map[string]otterioProfiler, 10)
 	}
 
 	// Stop profiler of all types if already running
@@ -597,7 +597,7 @@ func (f dummyFileInfo) ModTime() time.Time { return f.modTime }
 func (f dummyFileInfo) IsDir() bool        { return f.isDir }
 func (f dummyFileInfo) Sys() interface{}   { return f.sys }
 
-// DownloadProfilingHandler - POST /minio/admin/v3/profiling/download
+// DownloadProfilingHandler - POST /otterio/admin/v3/profiling/download
 // ----------
 // Download profiling information of all nodes in a zip format
 func (a adminAPIHandlers) DownloadProfilingHandler(w http.ResponseWriter, r *http.Request) {
@@ -688,7 +688,7 @@ func extractHealInitParams(vars map[string]string, qParms url.Values, r io.Reade
 	return
 }
 
-// HealHandler - POST /minio/admin/v3/heal/
+// HealHandler - POST /otterio/admin/v3/heal/
 // -----------
 // Start heal processing and return heal status items.
 //
@@ -950,9 +950,9 @@ func (ae AdminError) Error() string {
 
 // Admin API errors
 const (
-	AdminUpdateUnexpectedFailure = "XMinioAdminUpdateUnexpectedFailure"
-	AdminUpdateURLNotReachable   = "XMinioAdminUpdateURLNotReachable"
-	AdminUpdateApplyFailure      = "XMinioAdminUpdateApplyFailure"
+	AdminUpdateUnexpectedFailure = "XOtterioAdminUpdateUnexpectedFailure"
+	AdminUpdateURLNotReachable   = "XOtterioAdminUpdateURLNotReachable"
+	AdminUpdateApplyFailure      = "XOtterioAdminUpdateApplyFailure"
 )
 
 // toAdminAPIErrCode - converts errErasureWriteQuorum error to admin API
@@ -975,13 +975,13 @@ func toAdminAPIErr(ctx context.Context, err error) APIError {
 	switch e := err.(type) {
 	case iampolicy.Error:
 		apiErr = APIError{
-			Code:           "XMinioMalformedIAMPolicy",
+			Code:           "XOtterioMalformedIAMPolicy",
 			Description:    e.Error(),
 			HTTPStatusCode: http.StatusBadRequest,
 		}
 	case config.Error:
 		apiErr = APIError{
-			Code:           "XMinioConfigError",
+			Code:           "XOtterioConfigError",
 			Description:    e.Error(),
 			HTTPStatusCode: http.StatusBadRequest,
 		}
@@ -995,25 +995,25 @@ func toAdminAPIErr(ctx context.Context, err error) APIError {
 		switch {
 		case errors.Is(err, errConfigNotFound):
 			apiErr = APIError{
-				Code:           "XMinioConfigError",
+				Code:           "XOtterioConfigError",
 				Description:    err.Error(),
 				HTTPStatusCode: http.StatusNotFound,
 			}
 		case errors.Is(err, errIAMActionNotAllowed):
 			apiErr = APIError{
-				Code:           "XMinioIAMActionNotAllowed",
+				Code:           "XOtterioIAMActionNotAllowed",
 				Description:    err.Error(),
 				HTTPStatusCode: http.StatusForbidden,
 			}
 		case errors.Is(err, errIAMNotInitialized):
 			apiErr = APIError{
-				Code:           "XMinioIAMNotInitialized",
+				Code:           "XOtterioIAMNotInitialized",
 				Description:    err.Error(),
 				HTTPStatusCode: http.StatusServiceUnavailable,
 			}
 		case errors.Is(err, crypto.ErrKESKeyExists):
 			apiErr = APIError{
-				Code:           "XMinioKMSKeyExists",
+				Code:           "XOtterioKMSKeyExists",
 				Description:    err.Error(),
 				HTTPStatusCode: http.StatusConflict,
 			}
@@ -1057,11 +1057,11 @@ func mustTrace(entry interface{}, opts madmin.ServiceTraceOpts) (shouldTrace boo
 		}
 	}
 
-	if opts.Internal && trcInfo.TraceType == trace.HTTP && HasPrefix(trcInfo.ReqInfo.Path, minioReservedBucketPath+SlashSeparator) {
+	if opts.Internal && trcInfo.TraceType == trace.HTTP && HasPrefix(trcInfo.ReqInfo.Path, otterioReservedBucketPath+SlashSeparator) {
 		return true
 	}
 
-	if opts.S3 && trcInfo.TraceType == trace.HTTP && !HasPrefix(trcInfo.ReqInfo.Path, minioReservedBucketPath+SlashSeparator) {
+	if opts.S3 && trcInfo.TraceType == trace.HTTP && !HasPrefix(trcInfo.ReqInfo.Path, otterioReservedBucketPath+SlashSeparator) {
 		return true
 	}
 
@@ -1099,7 +1099,7 @@ func extractTraceOptions(r *http.Request) (opts madmin.ServiceTraceOpts, err err
 	return
 }
 
-// TraceHandler - POST /minio/admin/v3/trace
+// TraceHandler - POST /otterio/admin/v3/trace
 // ----------
 // The handler sends http trace to the connected HTTP client.
 func (a adminAPIHandlers) TraceHandler(w http.ResponseWriter, r *http.Request) {
@@ -1231,7 +1231,7 @@ func (a adminAPIHandlers) ConsoleLogHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// KMSCreateKeyHandler - POST /minio/admin/v3/kms/key/create?key-id=<master-key-id>
+// KMSCreateKeyHandler - POST /otterio/admin/v3/kms/key/create?key-id=<master-key-id>
 func (a adminAPIHandlers) KMSCreateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "KMSCreateKey")
 	defer logger.AuditLog(ctx, w, r, mustGetClaimsFromToken(r))
@@ -1253,7 +1253,7 @@ func (a adminAPIHandlers) KMSCreateKeyHandler(w http.ResponseWriter, r *http.Req
 	writeSuccessResponseHeadersOnly(w)
 }
 
-// KMSKeyStatusHandler - GET /minio/admin/v3/kms/key/status?key-id=<master-key-id>
+// KMSKeyStatusHandler - GET /otterio/admin/v3/kms/key/status?key-id=<master-key-id>
 func (a adminAPIHandlers) KMSKeyStatusHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "KMSKeyStatus")
 
@@ -1282,7 +1282,7 @@ func (a adminAPIHandlers) KMSKeyStatusHandler(w http.ResponseWriter, r *http.Req
 		KeyID: keyID,
 	}
 
-	kmsContext := kms.Context{"MinIO admin API": "KMSKeyStatusHandler"} // Context for a test key operation
+	kmsContext := kms.Context{"OtterIO admin API": "KMSKeyStatusHandler"} // Context for a test key operation
 	// 1. Generate a new key using the KMS.
 	key, err := GlobalKMS.GenerateKey(keyID, kmsContext)
 	if err != nil {
@@ -1329,7 +1329,7 @@ func (a adminAPIHandlers) KMSKeyStatusHandler(w http.ResponseWriter, r *http.Req
 	writeSuccessResponseJSON(w, resp)
 }
 
-// HealthInfoHandler - GET /minio/admin/v3/healthinfo
+// HealthInfoHandler - GET /otterio/admin/v3/healthinfo
 // ----------
 // Get server health info
 func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Request) {
@@ -1379,7 +1379,7 @@ func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Reque
 	defer cancel()
 
 	var err error
-	nsLock := objectAPI.NewNSLock(minioMetaBucket, "health-check-in-progress")
+	nsLock := objectAPI.NewNSLock(otterioMetaBucket, "health-check-in-progress")
 	ctx, err = nsLock.GetLock(ctx, newDynamicTimeout(deadline, deadline))
 	if err != nil { // returns a locked lock
 		errResp(err)
@@ -1430,10 +1430,10 @@ func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Reque
 			partialWrite(healthInfo)
 		}
 
-		if config := query.Get("minioconfig"); config == "true" {
+		if config := query.Get("otterioconfig"); config == "true" {
 			cfg, err := readServerConfig(ctx, objectAPI)
 			logger.LogIf(ctx, err)
-			healthInfo.Minio.Config = cfg
+			healthInfo.Otterio.Config = cfg
 			partialWrite(healthInfo)
 		}
 
@@ -1459,7 +1459,7 @@ func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Reque
 			healthInfo.Perf.DriveInfo = append(healthInfo.Perf.DriveInfo, driveInfo)
 			partialWrite(healthInfo)
 
-			// Notify all other MinIO peers to report drive perf numbers
+			// Notify all other OtterIO peers to report drive perf numbers
 			driveInfos := globalNotificationSys.DrivePerfInfoChan(deadlinedCtx)
 			for obd := range driveInfos {
 				healthInfo.Perf.DriveInfo = append(healthInfo.Perf.DriveInfo, obd)
@@ -1509,7 +1509,7 @@ func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Reque
 
 }
 
-// BandwidthMonitorHandler - GET /minio/admin/v3/bandwidth
+// BandwidthMonitorHandler - GET /otterio/admin/v3/bandwidth
 // ----------
 // Get bandwidth consumption information
 func (a adminAPIHandlers) BandwidthMonitorHandler(w http.ResponseWriter, r *http.Request) {
@@ -1565,7 +1565,7 @@ func (a adminAPIHandlers) BandwidthMonitorHandler(w http.ResponseWriter, r *http
 	}
 }
 
-// ServerInfoHandler - GET /minio/admin/v3/info
+// ServerInfoHandler - GET /otterio/admin/v3/info
 // ----------
 // Get server information
 func (a adminAPIHandlers) ServerInfoHandler(w http.ResponseWriter, r *http.Request) {
@@ -1769,7 +1769,7 @@ func fetchKMSStatus() madmin.KMS {
 		} else {
 			kmsStat.Status = string(madmin.ItemOnline)
 
-			kmsContext := kms.Context{"MinIO admin API": "ServerInfoHandler"} // Context for a test key operation
+			kmsContext := kms.Context{"OtterIO admin API": "ServerInfoHandler"} // Context for a test key operation
 			// 1. Generate a new key using the KMS.
 			key, err := GlobalKMS.GenerateKey("", kmsContext)
 			if err != nil {

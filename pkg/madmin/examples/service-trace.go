@@ -34,13 +34,13 @@ func main() {
 	// dummy values, please replace them with original values.
 
 	// API requests are secure (HTTPS) if secure=true and insecure (HTTP) otherwise.
-	// New returns an MinIO Admin client object.
-	madmClnt, err := madmin.New("your-minio.example.com:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
+	// New returns an OtterIO Admin client object.
+	madmClnt, err := madmin.New("your-otterio.example.com:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	// Start listening on all http trace activity from all servers in the minio cluster.
+	// Start listening on all http trace activity from all servers in the otterio cluster.
 	traceCh := madmClnt.ServiceTrace(context.Background(), madmin.ServiceTraceOpts{
 		S3:        true,
 		Internal:  true,

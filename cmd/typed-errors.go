@@ -50,8 +50,8 @@ var errRPCAPIVersionUnsupported = errors.New("Unsupported rpc API version")
 // errServerTimeMismatch - server times are too far apart.
 var errServerTimeMismatch = errors.New("Server times are too far apart")
 
-// errInvalidBucketName - bucket name is reserved for MinIO, usually
-// returned for 'minio', '.minio.sys', buckets with capital letters.
+// errInvalidBucketName - bucket name is reserved for OtterIO, usually
+// returned for 'otterio', '.otterio.sys', buckets with capital letters.
 var errInvalidBucketName = errors.New("The specified bucket is not valid")
 
 // errInvalidRange - returned when given range value is not valid.

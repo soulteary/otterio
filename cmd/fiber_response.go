@@ -62,7 +62,7 @@ func writeSuccessResponseHeadersOnlyFiber(c fiber.Ctx) {
 func writeErrorResponseFiber(ctx context.Context, c fiber.Ctx, err APIError, browser bool) {
 	reqURL := requestURL(c)
 	switch err.Code {
-	case "SlowDown", "XMinioServerNotInitialized", "XMinioReadQuorum", "XMinioWriteQuorum":
+	case "SlowDown", "XOtterioServerNotInitialized", "XOtterioReadQuorum", "XOtterioWriteQuorum":
 		c.Set(xhttp.RetryAfter, "120")
 	case "InvalidRegion":
 		err.Description = fmt.Sprintf("Region does not match; expecting '%s'.", globalServerRegion)
@@ -70,7 +70,7 @@ func writeErrorResponseFiber(ctx context.Context, c fiber.Ctx, err APIError, bro
 		err.Description = fmt.Sprintf("The authorization header is malformed; the region is wrong; expecting '%s'.", globalServerRegion)
 	case "AccessDenied":
 		if browser && globalBrowserEnabled {
-			c.Set(xhttp.Location, minioReservedBucketPath+reqURL.Path)
+			c.Set(xhttp.Location, otterioReservedBucketPath+reqURL.Path)
 			c.Status(fiber.StatusTemporaryRedirect)
 			return
 		}
@@ -98,7 +98,7 @@ func writeErrorResponseJSONFiber(ctx context.Context, c fiber.Ctx, err APIError)
 }
 
 func setCommonHeadersFiber(c fiber.Ctx) {
-	c.Set(xhttp.ServerInfo, "MinIO")
+	c.Set(xhttp.ServerInfo, "OtterIO")
 	if region := globalServerRegion; region != "" {
 		c.Set(xhttp.AmzBucketRegion, region)
 	}

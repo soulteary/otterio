@@ -518,8 +518,8 @@ func enableCompression(t *testing.T, encrypt bool) {
 	globalCompressConfigMu.Unlock()
 	if encrypt {
 		globalAutoEncryption = encrypt
-		os.Setenv("MINIO_KMS_MASTER_KEY", "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
-		defer os.Setenv("MINIO_KMS_MASTER_KEY", "")
+		os.Setenv("OTTERIO_KMS_MASTER_KEY", "my-otterio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
+		defer os.Setenv("OTTERIO_KMS_MASTER_KEY", "")
 		var err error
 		GlobalKMS, err = crypto.NewKMS(crypto.KMSConfig{})
 		if err != nil {
@@ -535,8 +535,8 @@ func enableEncrytion(t *testing.T) {
 	globalCompressConfigMu.Unlock()
 
 	globalAutoEncryption = true
-	os.Setenv("MINIO_KMS_MASTER_KEY", "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
-	defer os.Setenv("MINIO_KMS_MASTER_KEY", "")
+	os.Setenv("OTTERIO_KMS_MASTER_KEY", "my-otterio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
+	defer os.Setenv("OTTERIO_KMS_MASTER_KEY", "")
 	var err error
 	GlobalKMS, err = crypto.NewKMS(crypto.KMSConfig{})
 	if err != nil {
@@ -867,11 +867,11 @@ func testContentType(obj ObjectLayer, instanceType string, t TestErrHandler) {
 	var opts ObjectOptions
 	uploadContent := "The specified multipart upload does not exist. The upload ID might be invalid, or the multipart upload might have been aborted or completed."
 	// Test empty.
-	_, err = obj.PutObject(context.Background(), "bucket", "minio.png", mustGetPutObjReader(t, bytes.NewBufferString(uploadContent), int64(len(uploadContent)), "", ""), opts)
+	_, err = obj.PutObject(context.Background(), "bucket", "otterio.png", mustGetPutObjReader(t, bytes.NewBufferString(uploadContent), int64(len(uploadContent)), "", ""), opts)
 	if err != nil {
 		t.Fatalf("%s: <ERROR> %s", instanceType, err)
 	}
-	objInfo, err := obj.GetObjectInfo(context.Background(), "bucket", "minio.png", opts)
+	objInfo, err := obj.GetObjectInfo(context.Background(), "bucket", "otterio.png", opts)
 	if err != nil {
 		t.Fatalf("%s: <ERROR> %s", instanceType, err)
 	}

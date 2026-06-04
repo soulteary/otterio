@@ -352,7 +352,7 @@ func TestIsReqAuthenticated(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatalf("unable initialize config file, %s", err)
 	}
 
@@ -399,7 +399,7 @@ func TestCheckAdminRequestAuthType(t *testing.T) {
 	}
 	defer os.RemoveAll(fsDir)
 
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatalf("unable initialize config file, %s", err)
 	}
 
@@ -437,7 +437,7 @@ func TestValidateAdminSignature(t *testing.T) {
 	}
 	defer os.RemoveAll(fsDir)
 
-	if err = newTestConfig(globalMinioDefaultRegion, objLayer); err != nil {
+	if err = newTestConfig(globalOtterioDefaultRegion, objLayer); err != nil {
 		t.Fatalf("unable initialize config file, %s", err)
 	}
 
@@ -465,7 +465,7 @@ func TestValidateAdminSignature(t *testing.T) {
 		if err := signRequestV4(req, testCase.AccessKey, testCase.SecretKey); err != nil {
 			t.Fatalf("Unable to inititalized new signed http request %s", err)
 		}
-		_, _, _, s3Error := validateAdminSignature(ctx, req, globalMinioDefaultRegion)
+		_, _, _, s3Error := validateAdminSignature(ctx, req, globalOtterioDefaultRegion)
 		if s3Error != testCase.ErrCode {
 			t.Errorf("Test %d: Unexpected s3error returned wanted %d, got %d", i+1, testCase.ErrCode, s3Error)
 		}

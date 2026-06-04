@@ -64,7 +64,7 @@ var (
 type Config struct {
 	XMLName xml.Name `xml:"ReplicationConfiguration" json:"-"`
 	Rules   []Rule   `xml:"Rule" json:"Rules"`
-	// RoleArn is being reused for MinIO replication ARN
+	// RoleArn is being reused for OtterIO replication ARN
 	RoleArn string `xml:"Role" json:"Role"`
 }
 
@@ -181,7 +181,7 @@ func (c Config) Replicate(obj ObjectOpts) bool {
 		if obj.OpType == DeleteReplicationType {
 			switch {
 			case obj.VersionID != "":
-				// // check MinIO extension for versioned deletes
+				// // check OtterIO extension for versioned deletes
 				return rule.DeleteReplication.Status == Enabled
 			default:
 				return rule.DeleteMarkerReplication.Status == Enabled

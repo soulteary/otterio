@@ -41,7 +41,7 @@ const (
 type Config struct {
 	Enabled bool `json:"enabled"`
 
-	// E.g. "ldap.minio.io:636"
+	// E.g. "ldap.otterio.io:636"
 	ServerAddr string `json:"serverAddr"`
 
 	// STS credentials expiry duration
@@ -87,18 +87,18 @@ const (
 	ServerInsecure     = "server_insecure"
 	ServerStartTLS     = "server_starttls"
 
-	EnvServerAddr         = "MINIO_IDENTITY_LDAP_SERVER_ADDR"
-	EnvSTSExpiry          = "MINIO_IDENTITY_LDAP_STS_EXPIRY"
-	EnvTLSSkipVerify      = "MINIO_IDENTITY_LDAP_TLS_SKIP_VERIFY"
-	EnvServerInsecure     = "MINIO_IDENTITY_LDAP_SERVER_INSECURE"
-	EnvServerStartTLS     = "MINIO_IDENTITY_LDAP_SERVER_STARTTLS"
-	EnvUsernameFormat     = "MINIO_IDENTITY_LDAP_USERNAME_FORMAT"
-	EnvUserDNSearchBaseDN = "MINIO_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN"
-	EnvUserDNSearchFilter = "MINIO_IDENTITY_LDAP_USER_DN_SEARCH_FILTER"
-	EnvGroupSearchFilter  = "MINIO_IDENTITY_LDAP_GROUP_SEARCH_FILTER"
-	EnvGroupSearchBaseDN  = "MINIO_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN"
-	EnvLookupBindDN       = "MINIO_IDENTITY_LDAP_LOOKUP_BIND_DN"
-	EnvLookupBindPassword = "MINIO_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD"
+	EnvServerAddr         = "OTTERIO_IDENTITY_LDAP_SERVER_ADDR"
+	EnvSTSExpiry          = "OTTERIO_IDENTITY_LDAP_STS_EXPIRY"
+	EnvTLSSkipVerify      = "OTTERIO_IDENTITY_LDAP_TLS_SKIP_VERIFY"
+	EnvServerInsecure     = "OTTERIO_IDENTITY_LDAP_SERVER_INSECURE"
+	EnvServerStartTLS     = "OTTERIO_IDENTITY_LDAP_SERVER_STARTTLS"
+	EnvUsernameFormat     = "OTTERIO_IDENTITY_LDAP_USERNAME_FORMAT"
+	EnvUserDNSearchBaseDN = "OTTERIO_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN"
+	EnvUserDNSearchFilter = "OTTERIO_IDENTITY_LDAP_USER_DN_SEARCH_FILTER"
+	EnvGroupSearchFilter  = "OTTERIO_IDENTITY_LDAP_GROUP_SEARCH_FILTER"
+	EnvGroupSearchBaseDN  = "OTTERIO_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN"
+	EnvLookupBindDN       = "OTTERIO_IDENTITY_LDAP_LOOKUP_BIND_DN"
+	EnvLookupBindPassword = "OTTERIO_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD"
 )
 
 var removedKeys = []string{

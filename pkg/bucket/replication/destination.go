@@ -32,7 +32,7 @@ type Destination struct {
 	XMLName      xml.Name `xml:"Destination" json:"Destination"`
 	Bucket       string   `xml:"Bucket" json:"Bucket"`
 	StorageClass string   `xml:"StorageClass" json:"StorageClass"`
-	//EncryptionConfiguration TODO: not needed for MinIO
+	//EncryptionConfiguration TODO: not needed for OtterIO
 }
 
 func (d Destination) isValidStorageClass() bool {

@@ -19,8 +19,8 @@ set -e
 set -E
 set -o pipefail
 
-if [ ! -x "$PWD/minio" ]; then
-    echo "minio executable binary not found in current directory"
+if [ ! -x "$PWD/otterio" ]; then
+    echo "otterio executable binary not found in current directory"
     exit 1
 fi
 
@@ -29,68 +29,68 @@ WORK_DIR="$PWD/.verify-$RANDOM"
 export MINT_MODE=core
 export MINT_DATA_DIR="$WORK_DIR/data"
 export SERVER_ENDPOINT="127.0.0.1:9000"
-export ACCESS_KEY="minio"
-export SECRET_KEY="minio123"
+export ACCESS_KEY="otterio"
+export SECRET_KEY="otterio123"
 export ENABLE_HTTPS=0
 export GO111MODULE=on
 export GOGC=25
 
-MINIO_CONFIG_DIR="$WORK_DIR/.minio"
-MINIO=( "$PWD/minio" --config-dir "$MINIO_CONFIG_DIR" )
+OTTERIO_CONFIG_DIR="$WORK_DIR/.otterio"
+OTTERIO=( "$PWD/otterio" --config-dir "$OTTERIO_CONFIG_DIR" )
 
 FILE_1_MB="$MINT_DATA_DIR/datafile-1-MB"
 FILE_65_MB="$MINT_DATA_DIR/datafile-65-MB"
 
 FUNCTIONAL_TESTS="$WORK_DIR/functional-tests.sh"
 
-function start_minio_fs()
+function start_otterio_fs()
 {
-    "${MINIO[@]}" server "${WORK_DIR}/fs-disk" >"$WORK_DIR/fs-minio.log" 2>&1 &
+    "${OTTERIO[@]}" server "${WORK_DIR}/fs-disk" >"$WORK_DIR/fs-otterio.log" 2>&1 &
     sleep 10
 }
 
-function start_minio_erasure()
+function start_otterio_erasure()
 {
-    "${MINIO[@]}" server "${WORK_DIR}/erasure-disk1" "${WORK_DIR}/erasure-disk2" "${WORK_DIR}/erasure-disk3" "${WORK_DIR}/erasure-disk4" >"$WORK_DIR/erasure-minio.log" 2>&1 &
+    "${OTTERIO[@]}" server "${WORK_DIR}/erasure-disk1" "${WORK_DIR}/erasure-disk2" "${WORK_DIR}/erasure-disk3" "${WORK_DIR}/erasure-disk4" >"$WORK_DIR/erasure-otterio.log" 2>&1 &
     sleep 15
 }
 
-function start_minio_erasure_sets()
+function start_otterio_erasure_sets()
 {
-    export MINIO_ENDPOINTS="${WORK_DIR}/erasure-disk-sets{1...32}"
-    "${MINIO[@]}" server > "$WORK_DIR/erasure-minio-sets.log" 2>&1 &
+    export OTTERIO_ENDPOINTS="${WORK_DIR}/erasure-disk-sets{1...32}"
+    "${OTTERIO[@]}" server > "$WORK_DIR/erasure-otterio-sets.log" 2>&1 &
     sleep 15
 }
 
-function start_minio_pool_erasure_sets()
+function start_otterio_pool_erasure_sets()
 {
-    export MINIO_ROOT_USER=$ACCESS_KEY
-    export MINIO_ROOT_PASSWORD=$SECRET_KEY
-    export MINIO_ENDPOINTS="http://127.0.0.1:9000${WORK_DIR}/pool-disk-sets{1...4} http://127.0.0.1:9001${WORK_DIR}/pool-disk-sets{5...8}"
-    "${MINIO[@]}" server --address ":9000" > "$WORK_DIR/pool-minio-9000.log" 2>&1 &
-    "${MINIO[@]}" server --address ":9001" > "$WORK_DIR/pool-minio-9001.log" 2>&1 &
+    export OTTERIO_ROOT_USER=$ACCESS_KEY
+    export OTTERIO_ROOT_PASSWORD=$SECRET_KEY
+    export OTTERIO_ENDPOINTS="http://127.0.0.1:9000${WORK_DIR}/pool-disk-sets{1...4} http://127.0.0.1:9001${WORK_DIR}/pool-disk-sets{5...8}"
+    "${OTTERIO[@]}" server --address ":9000" > "$WORK_DIR/pool-otterio-9000.log" 2>&1 &
+    "${OTTERIO[@]}" server --address ":9001" > "$WORK_DIR/pool-otterio-9001.log" 2>&1 &
 
     sleep 40
 }
 
-function start_minio_pool_erasure_sets_ipv6()
+function start_otterio_pool_erasure_sets_ipv6()
 {
-    export MINIO_ROOT_USER=$ACCESS_KEY
-    export MINIO_ROOT_PASSWORD=$SECRET_KEY
-    export MINIO_ENDPOINTS="http://[::1]:9000${WORK_DIR}/pool-disk-sets{1...4} http://[::1]:9001${WORK_DIR}/pool-disk-sets{5...8}"
-    "${MINIO[@]}" server --address="[::1]:9000" > "$WORK_DIR/pool-minio-ipv6-9000.log" 2>&1 &
-    "${MINIO[@]}" server --address="[::1]:9001" > "$WORK_DIR/pool-minio-ipv6-9001.log" 2>&1 &
+    export OTTERIO_ROOT_USER=$ACCESS_KEY
+    export OTTERIO_ROOT_PASSWORD=$SECRET_KEY
+    export OTTERIO_ENDPOINTS="http://[::1]:9000${WORK_DIR}/pool-disk-sets{1...4} http://[::1]:9001${WORK_DIR}/pool-disk-sets{5...8}"
+    "${OTTERIO[@]}" server --address="[::1]:9000" > "$WORK_DIR/pool-otterio-ipv6-9000.log" 2>&1 &
+    "${OTTERIO[@]}" server --address="[::1]:9001" > "$WORK_DIR/pool-otterio-ipv6-9001.log" 2>&1 &
 
     sleep 40
 }
 
-function start_minio_dist_erasure()
+function start_otterio_dist_erasure()
 {
-    export MINIO_ROOT_USER=$ACCESS_KEY
-    export MINIO_ROOT_PASSWORD=$SECRET_KEY
-    export MINIO_ENDPOINTS="http://127.0.0.1:9000${WORK_DIR}/dist-disk1 http://127.0.0.1:9001${WORK_DIR}/dist-disk2 http://127.0.0.1:9002${WORK_DIR}/dist-disk3 http://127.0.0.1:9003${WORK_DIR}/dist-disk4"
+    export OTTERIO_ROOT_USER=$ACCESS_KEY
+    export OTTERIO_ROOT_PASSWORD=$SECRET_KEY
+    export OTTERIO_ENDPOINTS="http://127.0.0.1:9000${WORK_DIR}/dist-disk1 http://127.0.0.1:9001${WORK_DIR}/dist-disk2 http://127.0.0.1:9002${WORK_DIR}/dist-disk3 http://127.0.0.1:9003${WORK_DIR}/dist-disk4"
     for i in $(seq 0 3); do
-        "${MINIO[@]}" server --address ":900${i}" > "$WORK_DIR/dist-minio-900${i}.log" 2>&1 &
+        "${OTTERIO[@]}" server --address ":900${i}" > "$WORK_DIR/dist-otterio-900${i}.log" 2>&1 &
     done
 
     sleep 40
@@ -98,59 +98,59 @@ function start_minio_dist_erasure()
 
 function run_test_fs()
 {
-    start_minio_fs
+    start_otterio_fs
 
     (cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
     rv=$?
 
-    pkill minio
+    pkill otterio
     sleep 3
 
     if [ "$rv" -ne 0 ]; then
-        cat "$WORK_DIR/fs-minio.log"
+        cat "$WORK_DIR/fs-otterio.log"
     fi
-    rm -f "$WORK_DIR/fs-minio.log"
+    rm -f "$WORK_DIR/fs-otterio.log"
 
     return "$rv"
 }
 
 function run_test_erasure_sets()
 {
-    start_minio_erasure_sets
+    start_otterio_erasure_sets
 
     (cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
     rv=$?
 
-    pkill minio
+    pkill otterio
     sleep 3
 
     if [ "$rv" -ne 0 ]; then
-        cat "$WORK_DIR/erasure-minio-sets.log"
+        cat "$WORK_DIR/erasure-otterio-sets.log"
     fi
-    rm -f "$WORK_DIR/erasure-minio-sets.log"
+    rm -f "$WORK_DIR/erasure-otterio-sets.log"
 
     return "$rv"
 }
 
 function run_test_pool_erasure_sets()
 {
-    start_minio_pool_erasure_sets
+    start_otterio_pool_erasure_sets
 
     (cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
     rv=$?
 
-    pkill minio
+    pkill otterio
     sleep 3
 
     if [ "$rv" -ne 0 ]; then
         for i in $(seq 0 1); do
             echo "server$i log:"
-            cat "$WORK_DIR/pool-minio-900$i.log"
+            cat "$WORK_DIR/pool-otterio-900$i.log"
         done
     fi
 
     for i in $(seq 0 1); do
-        rm -f "$WORK_DIR/pool-minio-900$i.log"
+        rm -f "$WORK_DIR/pool-otterio-900$i.log"
     done
 
     return "$rv"
@@ -158,25 +158,25 @@ function run_test_pool_erasure_sets()
 
 function run_test_pool_erasure_sets_ipv6()
 {
-    start_minio_pool_erasure_sets_ipv6
+    start_otterio_pool_erasure_sets_ipv6
 
     export SERVER_ENDPOINT="[::1]:9000"
 
     (cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
     rv=$?
 
-    pkill minio
+    pkill otterio
     sleep 3
 
     if [ "$rv" -ne 0 ]; then
         for i in $(seq 0 1); do
             echo "server$i log:"
-            cat "$WORK_DIR/pool-minio-ipv6-900$i.log"
+            cat "$WORK_DIR/pool-otterio-ipv6-900$i.log"
         done
     fi
 
     for i in $(seq 0 1); do
-        rm -f "$WORK_DIR/pool-minio-ipv6-900$i.log"
+        rm -f "$WORK_DIR/pool-otterio-ipv6-900$i.log"
     done
 
     return "$rv"
@@ -184,44 +184,44 @@ function run_test_pool_erasure_sets_ipv6()
 
 function run_test_erasure()
 {
-    start_minio_erasure
+    start_otterio_erasure
 
     (cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
     rv=$?
 
-    pkill minio
+    pkill otterio
     sleep 3
 
     if [ "$rv" -ne 0 ]; then
-        cat "$WORK_DIR/erasure-minio.log"
+        cat "$WORK_DIR/erasure-otterio.log"
     fi
-    rm -f "$WORK_DIR/erasure-minio.log"
+    rm -f "$WORK_DIR/erasure-otterio.log"
 
     return "$rv"
 }
 
 function run_test_dist_erasure()
 {
-    start_minio_dist_erasure
+    start_otterio_dist_erasure
 
     (cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
     rv=$?
 
-    pkill minio
+    pkill otterio
     sleep 3
 
     if [ "$rv" -ne 0 ]; then
         echo "server1 log:"
-        cat "$WORK_DIR/dist-minio-9000.log"
+        cat "$WORK_DIR/dist-otterio-9000.log"
         echo "server2 log:"
-        cat "$WORK_DIR/dist-minio-9001.log"
+        cat "$WORK_DIR/dist-otterio-9001.log"
         echo "server3 log:"
-        cat "$WORK_DIR/dist-minio-9002.log"
+        cat "$WORK_DIR/dist-otterio-9002.log"
         echo "server4 log:"
-        cat "$WORK_DIR/dist-minio-9003.log"
+        cat "$WORK_DIR/dist-otterio-9003.log"
     fi
 
-    rm -f "$WORK_DIR/dist-minio-9000.log" "$WORK_DIR/dist-minio-9001.log" "$WORK_DIR/dist-minio-9002.log" "$WORK_DIR/dist-minio-9003.log"
+    rm -f "$WORK_DIR/dist-otterio-9000.log" "$WORK_DIR/dist-otterio-9001.log" "$WORK_DIR/dist-otterio-9002.log" "$WORK_DIR/dist-otterio-9003.log"
 
     return "$rv"
 }
@@ -235,7 +235,7 @@ function __init__()
 {
     echo "Initializing environment"
     mkdir -p "$WORK_DIR"
-    mkdir -p "$MINIO_CONFIG_DIR"
+    mkdir -p "$OTTERIO_CONFIG_DIR"
     mkdir -p "$MINT_DATA_DIR"
 
     MC_BUILD_DIR="mc-$RANDOM"
@@ -253,11 +253,11 @@ function __init__()
     shred -n 1 -s 1M - 1>"$FILE_1_MB" 2>/dev/null
     shred -n 1 -s 65M - 1>"$FILE_65_MB" 2>/dev/null
 
-    ## version is purposefully set to '3' for minio to migrate configuration file
-    echo '{"version": "3", "credential": {"accessKey": "minio", "secretKey": "minio123"}, "region": "us-east-1"}' > "$MINIO_CONFIG_DIR/config.json"
+    ## version is purposefully set to '3' for otterio to migrate configuration file
+    echo '{"version": "3", "credential": {"accessKey": "otterio", "secretKey": "otterio123"}, "region": "us-east-1"}' > "$OTTERIO_CONFIG_DIR/config.json"
 
-    if ! wget -q -O "$FUNCTIONAL_TESTS" https://raw.githubusercontent.com/minio/mc/master/functional-tests.sh; then
-        echo "failed to download https://raw.githubusercontent.com/minio/mc/master/functional-tests.sh"
+    if ! wget -q -O "$FUNCTIONAL_TESTS" https://raw.githubusercontent.com/otterio/mc/master/functional-tests.sh; then
+        echo "failed to download https://raw.githubusercontent.com/otterio/mc/master/functional-tests.sh"
         exit 1
     fi
 

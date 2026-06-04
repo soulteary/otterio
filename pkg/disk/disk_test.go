@@ -29,7 +29,7 @@ import (
 )
 
 func TestFree(t *testing.T) {
-	path, err := ioutil.TempDir(os.TempDir(), "minio-")
+	path, err := ioutil.TempDir(os.TempDir(), "otterio-")
 	defer os.RemoveAll(path)
 	if err != nil {
 		t.Fatal(err)

@@ -19,12 +19,12 @@
 
 ## Introduction
 
-Returns a set of temporary security credentials that you can use to access MinIO resources. AssumeRole requires authorization credentials for an existing user on MinIO. The advantages of this API are
+Returns a set of temporary security credentials that you can use to access OtterIO resources. AssumeRole requires authorization credentials for an existing user on OtterIO. The advantages of this API are
 
 - To be able to reliably use S3 multipart APIs feature of the SDKs without re-inventing the wheel of pre-signing the each URL in multipart API. This is very tedious to implement with all the scenarios of fault tolerance that's already implemented by the client SDK. The general client SDKs don't support multipart with presigned URLs.
 - To be able to easily get the temporary credentials to upload to a prefix. Make it possible for a client to upload a whole folder using the session. The server side applications need not create a presigned URL and serve to the client for each file. Since, the client would have the session it can do it by itself.
 
-The temporary security credentials returned by this API consists of an access key, a secret key, and a security token. Applications can use these temporary security credentials to sign calls to MinIO API operations. The policy applied to these temporary credentials is inherited from the MinIO user credentials. By default, the temporary security credentials created by AssumeRole last for one hour. However, use the optional DurationSeconds parameter to specify the duration of the credentials. This value varies from 900 seconds (15 minutes) up to the maximum session duration of 7 days.
+The temporary security credentials returned by this API consists of an access key, a secret key, and a security token. Applications can use these temporary security credentials to sign calls to OtterIO API operations. The policy applied to these temporary credentials is inherited from the OtterIO user credentials. By default, the temporary security credentials created by AssumeRole last for one hour. However, use the optional DurationSeconds parameter to specify the duration of the credentials. This value varies from 900 seconds (15 minutes) up to the maximum session duration of 7 days.
 
 ## API Request Parameters
 ### Version
@@ -64,7 +64,7 @@ XML error response for this API is similar to [AWS STS AssumeRole](https://docs.
 
 ## Sample `POST` Request
 ```
-http://minio:9000/?Action=AssumeRole&DurationSeconds=3600&Version=2011-06-15&Policy={"Version":"2012-10-17","Statement":[{"Sid":"Stmt1","Effect":"Allow","Action":"s3:*","Resource":"arn:aws:s3:::*"}]}&AUTHPARAMS
+http://otterio:9000/?Action=AssumeRole&DurationSeconds=3600&Version=2011-06-15&Policy={"Version":"2012-10-17","Statement":[{"Sid":"Stmt1","Effect":"Allow","Action":"s3:*","Resource":"arn:aws:s3:::*"}]}&AUTHPARAMS
 ```
 
 ## Sample Response
@@ -91,9 +91,9 @@ http://minio:9000/?Action=AssumeRole&DurationSeconds=3600&Version=2011-06-15&Pol
 
 ## Using AssumeRole API
 ```
-$ export MINIO_ROOT_USER=minio
-$ export MINIO_ROOT_PASSWORD=minio123
-$ minio server ~/test
+$ export OTTERIO_ROOT_USER=otterio
+$ export OTTERIO_ROOT_PASSWORD=otterio123
+$ otterio server ~/test
 ```
 
 Create new users following the multi-user guide [here](https://docs.min.io/docs/minio-multi-user-quickstart-guide.html)
@@ -108,7 +108,7 @@ aws_access_key_id = foobar
 aws_secret_access_key = foo12345
 ```
 
-> NOTE: In the following commands `--role-arn` and `--role-session-name` are not meaningful for MinIO and can be set to any value satisfying the command line requirements.
+> NOTE: In the following commands `--role-arn` and `--role-session-name` are not meaningful for OtterIO and can be set to any value satisfying the command line requirements.
 
 ```
 $ aws --profile foobar --endpoint-url http://localhost:9000 sts assume-role --policy '{"Version":"2012-10-17","Statement":[{"Sid":"Stmt1","Effect":"Allow","Action":"s3:*","Resource":"arn:aws:s3:::*"}]}' --role-arn arn:xxx:xxx:xxx:xxxx --role-session-name anything
@@ -126,5 +126,5 @@ $ aws --profile foobar --endpoint-url http://localhost:9000 sts assume-role --po
 ```
 
 ## Explore Further
-- [MinIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The MinIO documentation website](https://docs.min.io)
+- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
+- [The OtterIO documentation website](https://docs.min.io)

@@ -43,7 +43,7 @@ var (
 	errEncryptedObject      = errors.New("The object was stored using a form of SSE")
 	errInvalidSSEParameters = errors.New("The SSE-C key for key-rotation is not correct") // special access denied
 	errKMSNotConfigured     = errors.New("KMS not configured for a server side encrypted object")
-	// Additional MinIO errors for SSE-C requests.
+	// Additional OtterIO errors for SSE-C requests.
 	errObjectTampered = errors.New("The requested object was modified and may be compromised")
 	// error returned when invalid encryption parameters are specified
 	errInvalidEncryptionParameters = errors.New("The encryption parameters are not applicable to this object")
@@ -527,7 +527,7 @@ func (o *ObjectInfo) DecryptedSize() (int64, error) {
 // it consists of a 128 bit hex value (32 hex chars) and exactly
 // one '-' followed by a 32-bit number.
 // This special case adresses randomly-generated ETags generated
-// by the MinIO server when running in non-compat mode. These
+// by the OtterIO server when running in non-compat mode. These
 // random ETags are not encrypt.
 //
 // Calling DecryptETag with a non-randomly generated ETag will

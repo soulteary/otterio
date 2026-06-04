@@ -20,12 +20,12 @@
 
 package cmd
 
-// minioReleaseInfoURL returns the FIPS release-info (sha256sum) URL for this
-// fork, or "" when updates are not configured (see MINIO_UPDATE_RELEASE_URL).
-func minioReleaseInfoURL() string {
-	base := minioReleaseBaseURL()
+// otterioReleaseInfoURL returns the FIPS release-info (sha256sum) URL for this
+// fork, or "" when updates are not configured (see OTTERIO_UPDATE_RELEASE_URL).
+func otterioReleaseInfoURL() string {
+	base := otterioReleaseBaseURL()
 	if base == "" {
 		return ""
 	}
-	return base + "minio.fips.sha256sum"
+	return base + "otterio.fips.sha256sum"
 }

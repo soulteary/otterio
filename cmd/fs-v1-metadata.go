@@ -49,7 +49,7 @@ const (
 	fsMetaVersion101 = "1.0.1"
 
 	// FS backend meta 1.0.2
-	// Removed the fields "Format" and "MinIO" from fsMetaV1 as they were unused. Added "Checksum" field - to be used in future for bit-rot protection.
+	// Removed the fields "Format" and "OtterIO" from fsMetaV1 as they were unused. Added "Checksum" field - to be used in future for bit-rot protection.
 	fsMetaVersion = "1.0.2"
 
 	// Add more constants here.
@@ -171,7 +171,7 @@ func (m fsMetaV1) ToObjectInfo(bucket, object string, fi os.FileInfo) ObjectInfo
 	if storageClass, ok := m.Meta[xhttp.AmzStorageClass]; ok {
 		objInfo.StorageClass = storageClass
 	} else {
-		objInfo.StorageClass = globalMinioDefaultStorageClass
+		objInfo.StorageClass = globalOtterioDefaultStorageClass
 	}
 	var (
 		t time.Time
@@ -188,7 +188,7 @@ func (m fsMetaV1) ToObjectInfo(bucket, object string, fi os.FileInfo) ObjectInfo
 
 	// etag/md5Sum has already been extracted. We need to
 	// remove to avoid it from appearing as part of
-	// response headers. e.g, X-Minio-* or X-Amz-*.
+	// response headers. e.g, X-Otterio-* or X-Amz-*.
 	// Tags have also been extracted, we remove that as well.
 	objInfo.UserDefined = cleanMetadata(m.Meta)
 

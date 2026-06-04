@@ -524,7 +524,7 @@ type objectIO interface {
 	PutObject(ctx context.Context, bucket, object string, data *PutObjReader, opts ObjectOptions) (objInfo ObjectInfo, err error)
 }
 
-// load the cache content with name from minioMetaBackgroundOpsBucket.
+// load the cache content with name from otterioMetaBackgroundOpsBucket.
 // Only backend errors are returned as errors.
 // If the object is not found or unable to deserialize d is cleared and nil error is returned.
 func (d *dataUsageCache) load(ctx context.Context, store objectIO, name string) error {
@@ -548,7 +548,7 @@ func (d *dataUsageCache) load(ctx context.Context, store objectIO, name string) 
 	return nil
 }
 
-// save the content of the cache to minioMetaBackgroundOpsBucket with the provided name.
+// save the content of the cache to otterioMetaBackgroundOpsBucket with the provided name.
 func (d *dataUsageCache) save(ctx context.Context, store objectIO, name string) error {
 	pr, pw := io.Pipe()
 	go func() {

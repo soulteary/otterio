@@ -38,21 +38,21 @@ const (
 	apiExtendListCacheLife     = "extend_list_cache_life"
 	apiReplicationWorkers      = "replication_workers"
 
-	EnvAPIRequestsMax             = "MINIO_API_REQUESTS_MAX"
-	EnvAPIRequestsDeadline        = "MINIO_API_REQUESTS_DEADLINE"
-	EnvAPIClusterDeadline         = "MINIO_API_CLUSTER_DEADLINE"
-	EnvAPICorsAllowOrigin         = "MINIO_API_CORS_ALLOW_ORIGIN"
-	EnvAPIRemoteTransportDeadline = "MINIO_API_REMOTE_TRANSPORT_DEADLINE"
-	EnvAPIListQuorum              = "MINIO_API_LIST_QUORUM"
-	EnvAPIExtendListCacheLife     = "MINIO_API_EXTEND_LIST_CACHE_LIFE"
-	EnvAPISecureCiphers           = "MINIO_API_SECURE_CIPHERS"
-	EnvAPIReplicationWorkers      = "MINIO_API_REPLICATION_WORKERS"
+	EnvAPIRequestsMax             = "OTTERIO_API_REQUESTS_MAX"
+	EnvAPIRequestsDeadline        = "OTTERIO_API_REQUESTS_DEADLINE"
+	EnvAPIClusterDeadline         = "OTTERIO_API_CLUSTER_DEADLINE"
+	EnvAPICorsAllowOrigin         = "OTTERIO_API_CORS_ALLOW_ORIGIN"
+	EnvAPIRemoteTransportDeadline = "OTTERIO_API_REMOTE_TRANSPORT_DEADLINE"
+	EnvAPIListQuorum              = "OTTERIO_API_LIST_QUORUM"
+	EnvAPIExtendListCacheLife     = "OTTERIO_API_EXTEND_LIST_CACHE_LIFE"
+	EnvAPISecureCiphers           = "OTTERIO_API_SECURE_CIPHERS"
+	EnvAPIReplicationWorkers      = "OTTERIO_API_REPLICATION_WORKERS"
 )
 
 // Deprecated key and ENVs
 const (
 	apiReadyDeadline    = "ready_deadline"
-	EnvAPIReadyDeadline = "MINIO_API_READY_DEADLINE"
+	EnvAPIReadyDeadline = "OTTERIO_API_READY_DEADLINE"
 )
 
 // DefaultKVS - default storage class config

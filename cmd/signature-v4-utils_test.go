@@ -106,8 +106,8 @@ func TestIsValidRegion(t *testing.T) {
 	}{
 
 		{"", "", true},
-		{globalMinioDefaultRegion, "", true},
-		{globalMinioDefaultRegion, "US", true},
+		{globalOtterioDefaultRegion, "", true},
+		{globalOtterioDefaultRegion, "US", true},
 		{"us-west-1", "US", false},
 		{"us-west-1", "us-west-1", true},
 		// "US" was old naming convention for 'us-east-1'.

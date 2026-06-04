@@ -19,7 +19,7 @@
 //
 // * Namespace format
 //
-// On each create or update object event in MinIO Object storage
+// On each create or update object event in OtterIO Object storage
 // server, a row is created or updated in the table in Postgres. On
 // each object removal, the corresponding row is deleted from the
 // table.
@@ -29,7 +29,7 @@
 // table name in the configuration. A sample SQL command that creates
 // a table with the required structure is:
 //
-//     CREATE TABLE myminio (
+//     CREATE TABLE myotterio (
 //         key VARCHAR PRIMARY KEY,
 //         value JSONB
 //     );
@@ -46,7 +46,7 @@
 // A different table schema is used for this format. A sample SQL
 // commant that creates a table with the required structure is:
 //
-// CREATE TABLE myminio (
+// CREATE TABLE myotterio (
 //     event_time TIMESTAMP WITH TIME ZONE NOT NULL,
 //     event_data JSONB
 // );
@@ -96,18 +96,18 @@ const (
 	PostgresQueueLimit         = "queue_limit"
 	PostgresMaxOpenConnections = "max_open_connections"
 
-	EnvPostgresEnable             = "MINIO_NOTIFY_POSTGRES_ENABLE"
-	EnvPostgresFormat             = "MINIO_NOTIFY_POSTGRES_FORMAT"
-	EnvPostgresConnectionString   = "MINIO_NOTIFY_POSTGRES_CONNECTION_STRING"
-	EnvPostgresTable              = "MINIO_NOTIFY_POSTGRES_TABLE"
-	EnvPostgresHost               = "MINIO_NOTIFY_POSTGRES_HOST"
-	EnvPostgresPort               = "MINIO_NOTIFY_POSTGRES_PORT"
-	EnvPostgresUsername           = "MINIO_NOTIFY_POSTGRES_USERNAME"
-	EnvPostgresPassword           = "MINIO_NOTIFY_POSTGRES_PASSWORD"
-	EnvPostgresDatabase           = "MINIO_NOTIFY_POSTGRES_DATABASE"
-	EnvPostgresQueueDir           = "MINIO_NOTIFY_POSTGRES_QUEUE_DIR"
-	EnvPostgresQueueLimit         = "MINIO_NOTIFY_POSTGRES_QUEUE_LIMIT"
-	EnvPostgresMaxOpenConnections = "MINIO_NOTIFY_POSTGRES_MAX_OPEN_CONNECTIONS"
+	EnvPostgresEnable             = "OTTERIO_NOTIFY_POSTGRES_ENABLE"
+	EnvPostgresFormat             = "OTTERIO_NOTIFY_POSTGRES_FORMAT"
+	EnvPostgresConnectionString   = "OTTERIO_NOTIFY_POSTGRES_CONNECTION_STRING"
+	EnvPostgresTable              = "OTTERIO_NOTIFY_POSTGRES_TABLE"
+	EnvPostgresHost               = "OTTERIO_NOTIFY_POSTGRES_HOST"
+	EnvPostgresPort               = "OTTERIO_NOTIFY_POSTGRES_PORT"
+	EnvPostgresUsername           = "OTTERIO_NOTIFY_POSTGRES_USERNAME"
+	EnvPostgresPassword           = "OTTERIO_NOTIFY_POSTGRES_PASSWORD"
+	EnvPostgresDatabase           = "OTTERIO_NOTIFY_POSTGRES_DATABASE"
+	EnvPostgresQueueDir           = "OTTERIO_NOTIFY_POSTGRES_QUEUE_DIR"
+	EnvPostgresQueueLimit         = "OTTERIO_NOTIFY_POSTGRES_QUEUE_LIMIT"
+	EnvPostgresMaxOpenConnections = "OTTERIO_NOTIFY_POSTGRES_MAX_OPEN_CONNECTIONS"
 )
 
 // PostgreSQLArgs - PostgreSQL target arguments.
@@ -118,7 +118,7 @@ type PostgreSQLArgs struct {
 	Table              string    `json:"table"`
 	Host               xnet.Host `json:"host"`     // default: localhost
 	Port               string    `json:"port"`     // default: 5432
-	Username           string    `json:"username"` // default: user running minio
+	Username           string    `json:"username"` // default: user running otterio
 	Password           string    `json:"password"` // default: no password
 	Database           string    `json:"database"` // default: same as user
 	QueueDir           string    `json:"queueDir"`

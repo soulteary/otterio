@@ -20,7 +20,7 @@ import Path from "../objects/Path"
 import StorageInfo from "./StorageInfo"
 import BrowserDropdown from "./BrowserDropdown"
 import web from "../web"
-import { minioBrowserPrefix } from "../constants"
+import { otterioBrowserPrefix } from "../constants"
 
 export const Header = () => {
   const loggedIn = web.LoggedIn()
@@ -33,7 +33,7 @@ export const Header = () => {
         {loggedIn ? (
           <BrowserDropdown />
         ) : (
-          <a className="btn btn-danger" href={minioBrowserPrefix + "/login"}>
+          <a className="btn btn-danger" href={otterioBrowserPrefix + "/login"}>
             Login
           </a>
         )}

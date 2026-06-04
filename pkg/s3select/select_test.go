@@ -29,7 +29,7 @@ import (
 	"testing"
 
 	"github.com/klauspost/cpuid/v2"
-	"github.com/minio/minio-go/v7"
+	otterio "github.com/minio/minio-go/v7"
 	"github.com/minio/simdjson-go"
 )
 
@@ -464,7 +464,7 @@ func TestJSONQueries(t *testing.T) {
 				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
-			res, err := minio.NewSelectResults(&resp, "testbucket")
+			res, err := otterio.NewSelectResults(&resp, "testbucket")
 			if err != nil {
 				t.Error(err)
 				return
@@ -512,7 +512,7 @@ func TestJSONQueries(t *testing.T) {
 				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
-			res, err := minio.NewSelectResults(&resp, "testbucket")
+			res, err := otterio.NewSelectResults(&resp, "testbucket")
 			if err != nil {
 				t.Error(err)
 				return
@@ -595,7 +595,7 @@ func TestCSVQueries(t *testing.T) {
 				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
-			res, err := minio.NewSelectResults(&resp, "testbucket")
+			res, err := otterio.NewSelectResults(&resp, "testbucket")
 			if err != nil {
 				t.Error(err)
 				return
@@ -721,7 +721,7 @@ func TestCSVQueries2(t *testing.T) {
 				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
-			res, err := minio.NewSelectResults(&resp, "testbucket")
+			res, err := otterio.NewSelectResults(&resp, "testbucket")
 			if err != nil {
 				t.Error(err)
 				return
@@ -867,7 +867,7 @@ true`,
 				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
-			res, err := minio.NewSelectResults(&resp, "testbucket")
+			res, err := otterio.NewSelectResults(&resp, "testbucket")
 			if err != nil {
 				t.Error(err)
 				return
@@ -1015,7 +1015,7 @@ func TestCSVInput(t *testing.T) {
 					Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 					ContentLength: int64(len(w.response)),
 				}
-				res, err := minio.NewSelectResults(&resp, "testbucket")
+				res, err := otterio.NewSelectResults(&resp, "testbucket")
 				if err != nil {
 					t.Error(err)
 					return
@@ -1139,7 +1139,7 @@ func TestJSONInput(t *testing.T) {
 					Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 					ContentLength: int64(len(w.response)),
 				}
-				res, err := minio.NewSelectResults(&resp, "testbucket")
+				res, err := otterio.NewSelectResults(&resp, "testbucket")
 				if err != nil {
 					t.Error(err)
 					return
@@ -1157,8 +1157,8 @@ func TestJSONInput(t *testing.T) {
 }
 
 func TestParquetInput(t *testing.T) {
-	os.Setenv("MINIO_API_SELECT_PARQUET", "on")
-	defer os.Setenv("MINIO_API_SELECT_PARQUET", "off")
+	os.Setenv("OTTERIO_API_SELECT_PARQUET", "on")
+	defer os.Setenv("OTTERIO_API_SELECT_PARQUET", "off")
 
 	var testTable = []struct {
 		requestXML     []byte
@@ -1256,7 +1256,7 @@ func TestParquetInput(t *testing.T) {
 					Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 					ContentLength: int64(len(w.response)),
 				}
-				res, err := minio.NewSelectResults(&resp, "testbucket")
+				res, err := otterio.NewSelectResults(&resp, "testbucket")
 				if err != nil {
 					t.Error(err)
 					return
@@ -1274,8 +1274,8 @@ func TestParquetInput(t *testing.T) {
 }
 
 func TestParquetInputSchema(t *testing.T) {
-	os.Setenv("MINIO_API_SELECT_PARQUET", "on")
-	defer os.Setenv("MINIO_API_SELECT_PARQUET", "off")
+	os.Setenv("OTTERIO_API_SELECT_PARQUET", "on")
+	defer os.Setenv("OTTERIO_API_SELECT_PARQUET", "off")
 
 	var testTable = []struct {
 		requestXML []byte
@@ -1375,7 +1375,7 @@ func TestParquetInputSchema(t *testing.T) {
 				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
-			res, err := minio.NewSelectResults(&resp, "testbucket")
+			res, err := otterio.NewSelectResults(&resp, "testbucket")
 			if err != nil {
 				t.Error(err)
 				return
@@ -1395,8 +1395,8 @@ func TestParquetInputSchema(t *testing.T) {
 }
 
 func TestParquetInputSchemaCSV(t *testing.T) {
-	os.Setenv("MINIO_API_SELECT_PARQUET", "on")
-	defer os.Setenv("MINIO_API_SELECT_PARQUET", "off")
+	os.Setenv("OTTERIO_API_SELECT_PARQUET", "on")
+	defer os.Setenv("OTTERIO_API_SELECT_PARQUET", "off")
 
 	var testTable = []struct {
 		requestXML []byte
@@ -1494,7 +1494,7 @@ func TestParquetInputSchemaCSV(t *testing.T) {
 				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
-			res, err := minio.NewSelectResults(&resp, "testbucket")
+			res, err := otterio.NewSelectResults(&resp, "testbucket")
 			if err != nil {
 				t.Error(err)
 				return

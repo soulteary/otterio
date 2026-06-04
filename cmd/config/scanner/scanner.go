@@ -30,11 +30,11 @@ const (
 	MaxWait = "max_wait"
 	Cycle   = "cycle"
 
-	EnvDelay         = "MINIO_SCANNER_DELAY"
-	EnvCycle         = "MINIO_SCANNER_CYCLE"
-	EnvDelayLegacy   = "MINIO_CRAWLER_DELAY"
-	EnvMaxWait       = "MINIO_SCANNER_MAX_WAIT"
-	EnvMaxWaitLegacy = "MINIO_CRAWLER_MAX_WAIT"
+	EnvDelay         = "OTTERIO_SCANNER_DELAY"
+	EnvCycle         = "OTTERIO_SCANNER_CYCLE"
+	EnvDelayLegacy   = "OTTERIO_CRAWLER_DELAY"
+	EnvMaxWait       = "OTTERIO_SCANNER_MAX_WAIT"
+	EnvMaxWaitLegacy = "OTTERIO_CRAWLER_MAX_WAIT"
 )
 
 // Config represents the heal settings.

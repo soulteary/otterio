@@ -1,4 +1,4 @@
-# MinIO Multi-Tenant Deployment Guide
+# OtterIO Multi-Tenant Deployment Guide
 
 This topic provides commands to set up different configurations of hosts, nodes, and drives. The examples provided here can be used as a starting point for other configurations.
 
@@ -8,16 +8,16 @@ This topic provides commands to set up different configurations of hosts, nodes,
 
 ## <a name="standalone-deployment"></a>1. Standalone Deployment
 
-To host multiple tenants on a single machine, run one MinIO Server per tenant with a dedicated HTTPS port, configuration, and data directory.
+To host multiple tenants on a single machine, run one OtterIO Server per tenant with a dedicated HTTPS port, configuration, and data directory.
 
 ### 1.1 Host Multiple Tenants on a Single Drive
 
 Use the following commands to host 3 tenants on a single drive:
 
 ```sh
-minio server --address :9001 /data/tenant1
-minio server --address :9002 /data/tenant2
-minio server --address :9003 /data/tenant3
+otterio server --address :9001 /data/tenant1
+otterio server --address :9002 /data/tenant2
+otterio server --address :9003 /data/tenant3
 ```
 
 ![Example-1](https://github.com/minio/minio/blob/master/docs/screenshots/Example-1.jpg?raw=true)
@@ -27,41 +27,41 @@ minio server --address :9003 /data/tenant3
 Use the following commands to host 3 tenants on multiple drives:
 
 ```sh
-minio server --address :9001 /disk{1...4}/data/tenant1
-minio server --address :9002 /disk{1...4}/data/tenant2
-minio server --address :9003 /disk{1...4}/data/tenant3
+otterio server --address :9001 /disk{1...4}/data/tenant1
+otterio server --address :9002 /disk{1...4}/data/tenant2
+otterio server --address :9003 /disk{1...4}/data/tenant3
 ```
 
 ![Example-2](https://github.com/minio/minio/blob/master/docs/screenshots/Example-2.jpg?raw=true)
 
 ## <a name="distributed-deployment"></a>2. Distributed Deployment
 
-To host multiple tenants in a distributed environment, run several distributed MinIO Server instances concurrently.
+To host multiple tenants in a distributed environment, run several distributed OtterIO Server instances concurrently.
 
 ### 2.1 Host Multiple Tenants on Multiple Drives (Erasure Code)
 
 Use the following commands to host 3 tenants on a 4-node distributed configuration:
 
 ```sh
-export MINIO_ROOT_USER=<TENANT1_ACCESS_KEY>
-export MINIO_ROOT_PASSWORD=<TENANT1_SECRET_KEY>
-minio server --address :9001 http://192.168.10.1{1...4}/data/tenant1
+export OTTERIO_ROOT_USER=<TENANT1_ACCESS_KEY>
+export OTTERIO_ROOT_PASSWORD=<TENANT1_SECRET_KEY>
+otterio server --address :9001 http://192.168.10.1{1...4}/data/tenant1
 
-export MINIO_ROOT_USER=<TENANT2_ACCESS_KEY>
-export MINIO_ROOT_PASSWORD=<TENANT2_SECRET_KEY>
-minio server --address :9002 http://192.168.10.1{1...4}/data/tenant2
+export OTTERIO_ROOT_USER=<TENANT2_ACCESS_KEY>
+export OTTERIO_ROOT_PASSWORD=<TENANT2_SECRET_KEY>
+otterio server --address :9002 http://192.168.10.1{1...4}/data/tenant2
 
-export MINIO_ROOT_USER=<TENANT3_ACCESS_KEY>
-export MINIO_ROOT_PASSWORD=<TENANT3_SECRET_KEY>
-minio server --address :9003 http://192.168.10.1{1...4}/data/tenant3
+export OTTERIO_ROOT_USER=<TENANT3_ACCESS_KEY>
+export OTTERIO_ROOT_PASSWORD=<TENANT3_SECRET_KEY>
+otterio server --address :9003 http://192.168.10.1{1...4}/data/tenant3
 ```
 
 **Note:** Execute the commands on all 4 nodes.
 
 ![Example-3](https://github.com/minio/minio/blob/master/docs/screenshots/Example-3.jpg?raw=true)
 
-**Note**: On distributed systems, credentials must be defined and exported using the `MINIO_ROOT_USER` and  `MINIO_ROOT_PASSWORD` environment variables. If a domain is required, it must be specified by defining and exporting the `MINIO_DOMAIN` environment variable.
+**Note**: On distributed systems, credentials must be defined and exported using the `OTTERIO_ROOT_USER` and  `OTTERIO_ROOT_PASSWORD` environment variables. If a domain is required, it must be specified by defining and exporting the `OTTERIO_DOMAIN` environment variable.
 
 ## <a name="cloud-scale-deployment"></a>Cloud Scale Deployment
 
-A container orchestration platform (e.g. Kubernetes) is recommended for large-scale, multi-tenant MinIO deployments. See the [MinIO Deployment Quickstart Guide](https://docs.min.io/docs/minio-deployment-quickstart-guide) to get started with MinIO on orchestration platforms.
+A container orchestration platform (e.g. Kubernetes) is recommended for large-scale, multi-tenant OtterIO deployments. See the [OtterIO Deployment Quickstart Guide](https://docs.min.io/docs/minio-deployment-quickstart-guide) to get started with OtterIO on orchestration platforms.

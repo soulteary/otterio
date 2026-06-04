@@ -25,11 +25,11 @@ import (
 type Type int
 
 const (
-	// HTTP tracing (MinIO S3 & Internode)
+	// HTTP tracing (OtterIO S3 & Internode)
 	HTTP Type = iota
 	// OS tracing (Golang os package calls)
 	OS
-	// Storage tracing (MinIO Storage Layer)
+	// Storage tracing (OtterIO Storage Layer)
 	Storage
 )
 
@@ -50,7 +50,7 @@ type Info struct {
 	OSStats      OSStats      `json:"osStats"`
 }
 
-// StorageStats statistics on MinIO Storage layer calls
+// StorageStats statistics on OtterIO Storage layer calls
 type StorageStats struct {
 	Path     string        `json:"path"`
 	Duration time.Duration `json:"duration"`

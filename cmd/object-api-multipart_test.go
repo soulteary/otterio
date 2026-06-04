@@ -36,15 +36,15 @@ func TestObjectNewMultipartUpload(t *testing.T) {
 // Tests validate creation of new multipart upload instance.
 func testObjectNewMultipartUpload(obj ObjectLayer, instanceType string, t TestErrHandler) {
 
-	bucket := "minio-bucket"
-	object := "minio-object"
+	bucket := "otterio-bucket"
+	object := "otterio-object"
 	opts := ObjectOptions{}
 	_, err := obj.NewMultipartUpload(context.Background(), "--", object, opts)
 	if err == nil {
 		t.Fatalf("%s: Expected to fail since bucket name is invalid.", instanceType)
 	}
 
-	errMsg := "Bucket not found: minio-bucket"
+	errMsg := "Bucket not found: otterio-bucket"
 	// opearation expected to fail since the bucket on which NewMultipartUpload is being initiated doesn't exist.
 	_, err = obj.NewMultipartUpload(context.Background(), bucket, object, opts)
 	if err == nil {
@@ -85,8 +85,8 @@ func TestObjectAbortMultipartUpload(t *testing.T) {
 // Tests validate creation of abort multipart upload instance.
 func testObjectAbortMultipartUpload(obj ObjectLayer, instanceType string, t TestErrHandler) {
 
-	bucket := "minio-bucket"
-	object := "minio-object"
+	bucket := "otterio-bucket"
+	object := "otterio-object"
 	opts := ObjectOptions{}
 	// Create bucket before intiating NewMultipartUpload.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
@@ -131,8 +131,8 @@ func TestObjectAPIIsUploadIDExists(t *testing.T) {
 
 // Tests validates the validator for existence of uploadID.
 func testObjectAPIIsUploadIDExists(obj ObjectLayer, instanceType string, t TestErrHandler) {
-	bucket := "minio-bucket"
-	object := "minio-object"
+	bucket := "otterio-bucket"
+	object := "otterio-object"
 
 	// Create bucket before intiating NewMultipartUpload.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
@@ -163,8 +163,8 @@ func TestObjectAPIPutObjectPart(t *testing.T) {
 // Tests validate correctness of PutObjectPart.
 func testObjectAPIPutObjectPart(obj ObjectLayer, instanceType string, t TestErrHandler) {
 	// Generating cases for which the PutObjectPart fails.
-	bucket := "minio-bucket"
-	object := "minio-object"
+	bucket := "otterio-bucket"
+	object := "otterio-object"
 	opts := ObjectOptions{}
 	// Create bucket before intiating NewMultipartUpload.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
@@ -211,7 +211,7 @@ func testObjectAPIPutObjectPart(obj ObjectLayer, instanceType string, t TestErrH
 		{"a", "obj", "", 1, "", "", "", 0, false, "", fmt.Errorf("%s", "Bucket not found: a")},
 		// Test case - 5.
 		// Case with invalid object names.
-		{bucket, "", "", 1, "", "", "", 0, false, "", fmt.Errorf("%s", "Object name invalid: minio-bucket/")},
+		{bucket, "", "", 1, "", "", "", 0, false, "", fmt.Errorf("%s", "Object name invalid: otterio-bucket/")},
 		// Test case - 6.
 		// Valid object and bucket names but non-existent bucket.
 		{"abc", "def", "", 1, "", "", "", 0, false, "", fmt.Errorf("%s", "Bucket not found: abc")},
@@ -295,8 +295,8 @@ func TestListMultipartUploads(t *testing.T) {
 // testListMultipartUploads - Tests validate listing of multipart uploads.
 func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHandler) {
 
-	bucketNames := []string{"minio-bucket", "minio-2-bucket", "minio-3-bucket"}
-	objectNames := []string{"minio-object-1.txt", "minio-object.txt", "neymar-1.jpeg", "neymar.jpeg", "parrot-1.png", "parrot.png"}
+	bucketNames := []string{"otterio-bucket", "otterio-2-bucket", "otterio-3-bucket"}
+	objectNames := []string{"otterio-object-1.txt", "otterio-object.txt", "neymar-1.jpeg", "neymar.jpeg", "parrot-1.png", "parrot.png"}
 	uploadIDs := []string{}
 	opts := ObjectOptions{}
 	// bucketnames[0].
@@ -424,7 +424,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// ListMultipartUploads doesn't list the parts.
 		{
 			MaxUploads: 100,
-			KeyMarker:  "minio-object-1.txt",
+			KeyMarker:  "otterio-object-1.txt",
 		},
 		// listMultipartResults - 3.
 		// `KeyMarker` is set, no MultipartInfo expected.
@@ -496,7 +496,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// Expecting the result to contain one MultipartInfo entry and IsTruncated to be false.
 		{
 			MaxUploads:  2,
-			KeyMarker:   "minio-object",
+			KeyMarker:   "otterio-object",
 			IsTruncated: false,
 			Uploads: []MultipartInfo{
 				{
@@ -511,7 +511,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// Expecting the result to contain one MultipartInfo entry and IsTruncated to be false.
 		{
 			MaxUploads:  2,
-			Prefix:      "minio-object-1.txt",
+			Prefix:      "otterio-object-1.txt",
 			IsTruncated: false,
 			Uploads: []MultipartInfo{
 				{
@@ -612,7 +612,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// Will be used to list on bucketNames[1].
 		{
 			MaxUploads:     100,
-			KeyMarker:      "minio-object-1.txt",
+			KeyMarker:      "otterio-object-1.txt",
 			UploadIDMarker: uploadIDs[1],
 			IsTruncated:    false,
 			Uploads: []MultipartInfo{
@@ -634,7 +634,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// Will be used to list on bucketNames[1].
 		{
 			MaxUploads:     100,
-			KeyMarker:      "minio-object-1.txt",
+			KeyMarker:      "otterio-object-1.txt",
 			UploadIDMarker: uploadIDs[2],
 			IsTruncated:    false,
 			Uploads: []MultipartInfo{
@@ -752,7 +752,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// Will be used to list on bucketNames[1].
 		{
 			MaxUploads:     10,
-			KeyMarker:      "minio-object-1.txt",
+			KeyMarker:      "otterio-object-1.txt",
 			IsTruncated:    false,
 			Prefix:         "min",
 			UploadIDMarker: uploadIDs[1],
@@ -970,7 +970,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		{
 			MaxUploads:  10,
 			IsTruncated: false,
-			Prefix:      "minio-object",
+			Prefix:      "otterio-object",
 			KeyMarker:   objectNames[1],
 		},
 		// listMultipartResults - 36.
@@ -978,7 +978,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		{
 			MaxUploads:     10,
 			IsTruncated:    false,
-			Prefix:         "minio",
+			Prefix:         "otterio",
 			UploadIDMarker: uploadIDs[4],
 			Uploads: []MultipartInfo{
 				{
@@ -992,7 +992,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		{
 			MaxUploads:     10,
 			IsTruncated:    false,
-			KeyMarker:      "minio-object.txt",
+			KeyMarker:      "otterio-object.txt",
 			UploadIDMarker: uploadIDs[5],
 		},
 	}
@@ -1039,7 +1039,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// Test case with multiple parts for a single uploadID (Test number 13).
 		{bucketNames[0], "", "", "", "", 100, listMultipartResults[0], nil, true},
 		// Test with a KeyMarker (Test number 14-17).
-		{bucketNames[0], "", "minio-object-1.txt", "", "", 100, listMultipartResults[1], nil, true},
+		{bucketNames[0], "", "otterio-object-1.txt", "", "", 100, listMultipartResults[1], nil, true},
 		{bucketNames[0], "", "orange", "", "", 100, listMultipartResults[2], nil, true},
 		{bucketNames[0], "", "orange", "", "", 1, listMultipartResults[3], nil, true},
 		{bucketNames[0], "", "min", "", "", 10, listMultipartResults[4], nil, true},
@@ -1051,10 +1051,10 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// {bucketNames[0], "", "min", "", "", -1, listMultipartResults[7], nil, true},
 		// The result contains only one entry. The  KeyPrefix is set to the object name in the result.
 		// Expecting the result to skip the KeyPrefix entry in the result (Test number 21).
-		{bucketNames[0], "", "minio-object", "", "", 2, listMultipartResults[8], nil, true},
+		{bucketNames[0], "", "otterio-object", "", "", 2, listMultipartResults[8], nil, true},
 		// Test case containing prefix values.
 		// Setting prefix to be equal to object name.(Test number 22).
-		{bucketNames[0], "minio-object-1.txt", "", "", "", 2, listMultipartResults[9], nil, true},
+		{bucketNames[0], "otterio-object-1.txt", "", "", "", 2, listMultipartResults[9], nil, true},
 		// Setting `prefix` to contain the object name as its prefix (Test number 23).
 		{bucketNames[0], "min", "", "", "", 2, listMultipartResults[10], nil, true},
 		// Setting `prefix` to contain the object name as its prefix (Test number 24).
@@ -1068,8 +1068,8 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		{bucketNames[1], "", "", "", "", 100, listMultipartResults[15], nil, true},
 		// Test case with multiple uploadID listing for given object, but uploadID marker set.
 		// Testing whether the marker entry is skipped (Test number 29-30).
-		{bucketNames[1], "", "minio-object-1.txt", uploadIDs[1], "", 100, listMultipartResults[16], nil, true},
-		{bucketNames[1], "", "minio-object-1.txt", uploadIDs[2], "", 100, listMultipartResults[17], nil, true},
+		{bucketNames[1], "", "otterio-object-1.txt", uploadIDs[1], "", 100, listMultipartResults[16], nil, true},
+		{bucketNames[1], "", "otterio-object-1.txt", uploadIDs[2], "", 100, listMultipartResults[17], nil, true},
 		// Test cases with multiple uploadID listing for a given object (Test number 31-32).
 		// MaxKeys set to values lesser than the number of entries in the MultipartInfo.
 		// IsTruncated is expected to be true.
@@ -1085,7 +1085,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		{bucketNames[1], "orange", "", "", "", 10, listMultipartResults[22], nil, true},
 		{bucketNames[1], "Asia", "", "", "", 10, listMultipartResults[23], nil, true},
 		// Test case with `Prefix` and `UploadIDMarker` (Test number 37).
-		{bucketNames[1], "min", "minio-object-1.txt", uploadIDs[1], "", 10, listMultipartResults[24], nil, true},
+		{bucketNames[1], "min", "otterio-object-1.txt", uploadIDs[1], "", 10, listMultipartResults[24], nil, true},
 		// Test case for bucket with multiple objects in it.
 		//	Bucket used : `bucketNames[2]`.
 		//	Objects used: `objectNames[1-5]`.
@@ -1110,7 +1110,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		//	Test case with `KeyMarker` (Test number 47).
 		{bucketNames[2], "", objectNames[3], "", "", 10, listMultipartResults[33], nil, true},
 		//	Test case with `prefix` and `KeyMarker` (Test number 48).
-		{bucketNames[2], "minio-object", objectNames[1], "", "", 10, listMultipartResults[34], nil, true},
+		{bucketNames[2], "otterio-object", objectNames[1], "", "", 10, listMultipartResults[34], nil, true},
 	}
 
 	for i, testCase := range testCases {
@@ -1159,8 +1159,8 @@ func TestListObjectPartsDiskNotFound(t *testing.T) {
 // testListObjectParts - Tests validate listing of object parts when disks go offline.
 func testListObjectPartsDiskNotFound(obj ObjectLayer, instanceType string, disks []string, t *testing.T) {
 
-	bucketNames := []string{"minio-bucket", "minio-2-bucket"}
-	objectNames := []string{"minio-object-1.txt"}
+	bucketNames := []string{"otterio-bucket", "otterio-2-bucket"}
+	objectNames := []string{"otterio-object-1.txt"}
 	uploadIDs := []string{}
 
 	// bucketnames[0].
@@ -1404,8 +1404,8 @@ func TestListObjectParts(t *testing.T) {
 // testListObjectParts - test validate listing of object parts.
 func testListObjectParts(obj ObjectLayer, instanceType string, t TestErrHandler) {
 
-	bucketNames := []string{"minio-bucket", "minio-2-bucket"}
-	objectNames := []string{"minio-object-1.txt"}
+	bucketNames := []string{"otterio-bucket", "otterio-2-bucket"}
+	objectNames := []string{"otterio-object-1.txt"}
 	uploadIDs := []string{}
 	opts := ObjectOptions{}
 	// bucketnames[0].
@@ -1650,8 +1650,8 @@ func TestObjectCompleteMultipartUpload(t *testing.T) {
 func testObjectCompleteMultipartUpload(obj ObjectLayer, instanceType string, t TestErrHandler) {
 	var err error
 	var uploadID string
-	bucketNames := []string{"minio-bucket", "minio-2-bucket"}
-	objectNames := []string{"minio-object-1.txt"}
+	bucketNames := []string{"otterio-bucket", "otterio-2-bucket"}
+	objectNames := []string{"otterio-object-1.txt"}
 	uploadIDs := []string{}
 
 	// bucketnames[0].

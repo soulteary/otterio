@@ -64,7 +64,7 @@ func (sys *BucketMetadataSys) Set(bucket string, meta BucketMetadata) {
 		return
 	}
 
-	if bucket != minioMetaBucket {
+	if bucket != otterioMetaBucket {
 		sys.Lock()
 		sys.metadataMap[bucket] = meta
 		sys.Unlock()
@@ -131,7 +131,7 @@ func (sys *BucketMetadataSys) Update(bucket string, configFile string, configDat
 		return NotImplemented{}
 	}
 
-	if bucket == minioMetaBucket {
+	if bucket == otterioMetaBucket {
 		return errInvalidArgument
 	}
 
@@ -201,7 +201,7 @@ func (sys *BucketMetadataSys) Update(bucket string, configFile string, configDat
 // For all other bucket specific metadata, use the relevant
 // calls implemented specifically for each of those features.
 func (sys *BucketMetadataSys) Get(bucket string) (BucketMetadata, error) {
-	if globalIsGateway || bucket == minioMetaBucket {
+	if globalIsGateway || bucket == otterioMetaBucket {
 		return newBucketMetadata(bucket), errConfigNotFound
 	}
 
@@ -403,7 +403,7 @@ func (sys *BucketMetadataSys) GetConfig(bucket string) (BucketMetadata, error) {
 		return newBucketMetadata(bucket), NotImplemented{}
 	}
 
-	if bucket == minioMetaBucket {
+	if bucket == otterioMetaBucket {
 		return newBucketMetadata(bucket), errInvalidArgument
 	}
 

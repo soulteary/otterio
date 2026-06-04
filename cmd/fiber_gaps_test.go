@@ -43,7 +43,7 @@ func TestFiberRequestBindsContext(t *testing.T) {
 	var sawRequestValue bool
 	app.Post("/ctxcheck", func(c fiber.Ctx) error {
 		c.RequestCtx().SetUserValue(ctxBindTestKey{}, "bound")
-		return toMinioHandler(func(w http.ResponseWriter, r *http.Request) {
+		return toOtterioHandler(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			// The zero-value *http.Request returns the context.Background
 			// singleton; after binding it must be the request-scoped context.
@@ -77,7 +77,7 @@ func TestFiberRequestBindsContext(t *testing.T) {
 func TestFiberResponseWriterTrailer(t *testing.T) {
 	app := newFiberApp()
 
-	app.Post("/netinfo", toMinioHandler(func(w http.ResponseWriter, r *http.Request) {
+	app.Post("/netinfo", toOtterioHandler(func(w http.ResponseWriter, r *http.Request) {
 		// Mirror peer-rest-server.go NetInfoHandler semantics.
 		w.Header().Set("Trailer", "FinalStatus")
 		w.Header().Set("Content-Type", "application/octet-stream")
@@ -118,7 +118,7 @@ func TestFiberRequestInputByteCounting(t *testing.T) {
 	const payload = "the quick brown fox jumps over the lazy dog"
 	var counted int64
 	app.Post("/upload", func(c fiber.Ctx) error {
-		h := toMinioHandler(func(w http.ResponseWriter, r *http.Request) {
+		h := toOtterioHandler(func(w http.ResponseWriter, r *http.Request) {
 			_, _ = io.Copy(io.Discard, r.Body)
 			w.WriteHeader(http.StatusOK)
 		})

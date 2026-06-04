@@ -28,7 +28,7 @@ type DeletedObject struct {
 	ObjectName            string `xml:"Key,omitempty"`
 	VersionID             string `xml:"VersionId,omitempty"`
 
-	// MinIO extensions to support delete marker replication
+	// OtterIO extensions to support delete marker replication
 	// Replication status of DeleteMarker
 	DeleteMarkerReplicationStatus string `xml:"DeleteMarkerReplicationStatus,omitempty"`
 	// MTime of DeleteMarker on source that needs to be propagated to replica

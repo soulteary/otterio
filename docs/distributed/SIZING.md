@@ -2,7 +2,7 @@
 
 ### Toy Setups
 
-Capacity constrained environments, MinIO will work but not recommended for production.
+Capacity constrained environments, OtterIO will work but not recommended for production.
 
 | servers | drives (per node) | stripe_size | parity chosen (default) | tolerance for reads (servers) | tolerance for writes (servers) |
 |--------:|------------------:|------------:|------------------------:|------------------------------:|-------------------------------:|

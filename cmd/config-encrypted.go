@@ -58,7 +58,7 @@ func handleEncryptedConfigBackend(objAPI ObjectLayer) error {
 
 	// Migrate IAM configuration
 	if err = migrateConfigPrefixToEncrypted(objAPI, globalOldCred, encrypted); err != nil {
-		return fmt.Errorf("Unable to migrate all config at .minio.sys/config/: %w", err)
+		return fmt.Errorf("Unable to migrate all config at .otterio.sys/config/: %w", err)
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func migrateIAMConfigsEtcdToEncrypted(ctx context.Context, client *etcd.Client) 
 	listCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
-	r, err := client.Get(listCtx, minioConfigPrefix, etcd.WithPrefix(), etcd.WithKeysOnly())
+	r, err := client.Get(listCtx, otterioConfigPrefix, etcd.WithPrefix(), etcd.WithKeysOnly())
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func migrateIAMConfigsEtcdToEncrypted(ctx context.Context, client *etcd.Client) 
 	}
 
 	if encrypted && globalActiveCred.IsValid() && globalOldCred.IsValid() {
-		logger.Info("Rotation complete, please make sure to unset MINIO_ROOT_USER_OLD and MINIO_ROOT_PASSWORD_OLD envs")
+		logger.Info("Rotation complete, please make sure to unset OTTERIO_ROOT_USER_OLD and OTTERIO_ROOT_PASSWORD_OLD envs")
 	}
 
 	return saveKeyEtcd(ctx, client, backendEncryptedFile, backendEncryptedMigrationComplete)
@@ -226,9 +226,9 @@ func migrateConfigPrefixToEncrypted(objAPI ObjectLayer, activeCredOld auth.Crede
 		if activeCredOld.Equal(globalActiveCred) {
 			return nil
 		}
-		logger.Info("Attempting rotation of encrypted config, IAM users and policies on MinIO with newly supplied credentials")
+		logger.Info("Attempting rotation of encrypted config, IAM users and policies on OtterIO with newly supplied credentials")
 	} else {
-		logger.Info("Attempting encryption of all config, IAM users and policies on MinIO backend")
+		logger.Info("Attempting encryption of all config, IAM users and policies on OtterIO backend")
 	}
 
 	err := saveConfig(GlobalContext, objAPI, backendEncryptedFile, backendEncryptedMigrationIncomplete)
@@ -238,8 +238,8 @@ func migrateConfigPrefixToEncrypted(objAPI ObjectLayer, activeCredOld auth.Crede
 
 	var marker string
 	for {
-		res, err := objAPI.ListObjects(GlobalContext, minioMetaBucket,
-			minioConfigPrefix, marker, "", maxObjectList)
+		res, err := objAPI.ListObjects(GlobalContext, otterioMetaBucket,
+			otterioConfigPrefix, marker, "", maxObjectList)
 		if err != nil {
 			return err
 		}
@@ -295,7 +295,7 @@ func migrateConfigPrefixToEncrypted(objAPI ObjectLayer, activeCredOld auth.Crede
 	}
 
 	if encrypted && globalActiveCred.IsValid() && activeCredOld.IsValid() {
-		logger.Info("Rotation complete, please make sure to unset MINIO_ROOT_USER_OLD and MINIO_ROOT_PASSWORD_OLD envs")
+		logger.Info("Rotation complete, please make sure to unset OTTERIO_ROOT_USER_OLD and OTTERIO_ROOT_PASSWORD_OLD envs")
 	}
 
 	return saveConfig(GlobalContext, objAPI, backendEncryptedFile, backendEncryptedMigrationComplete)

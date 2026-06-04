@@ -30,7 +30,7 @@ import (
 // Tests cleanup multipart uploads for filesystem backend.
 func TestFSCleanupMultipartUploadsInRoutine(t *testing.T) {
 	// Prepare for tests
-	disk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(disk)
 
 	obj := initFSObjects(disk, t)
@@ -74,7 +74,7 @@ func TestFSCleanupMultipartUploadsInRoutine(t *testing.T) {
 // TestNewMultipartUploadFaultyDisk - test NewMultipartUpload with faulty disks
 func TestNewMultipartUploadFaultyDisk(t *testing.T) {
 	// Prepare for tests
-	disk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(disk)
 	obj := initFSObjects(disk, t)
 
@@ -98,7 +98,7 @@ func TestNewMultipartUploadFaultyDisk(t *testing.T) {
 // TestPutObjectPartFaultyDisk - test PutObjectPart with faulty disks
 func TestPutObjectPartFaultyDisk(t *testing.T) {
 	// Prepare for tests
-	disk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(disk)
 	obj := initFSObjects(disk, t)
 
@@ -119,7 +119,7 @@ func TestPutObjectPartFaultyDisk(t *testing.T) {
 	md5Hex := getMD5Hash(data)
 	sha256sum := ""
 
-	newDisk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	newDisk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(newDisk)
 	obj = initFSObjects(newDisk, t)
 	if _, err = obj.PutObjectPart(GlobalContext, bucketName, objectName, uploadID, 1, mustGetPutObjReader(t, bytes.NewReader(data), dataLen, md5Hex, sha256sum), ObjectOptions{}); err != nil {
@@ -132,7 +132,7 @@ func TestPutObjectPartFaultyDisk(t *testing.T) {
 // TestCompleteMultipartUploadFaultyDisk - test CompleteMultipartUpload with faulty disks
 func TestCompleteMultipartUploadFaultyDisk(t *testing.T) {
 	// Prepare for tests
-	disk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(disk)
 	obj := initFSObjects(disk, t)
 
@@ -152,7 +152,7 @@ func TestCompleteMultipartUploadFaultyDisk(t *testing.T) {
 	md5Hex := getMD5Hash(data)
 
 	parts := []CompletePart{{PartNumber: 1, ETag: md5Hex}}
-	newDisk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	newDisk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(newDisk)
 	obj = initFSObjects(newDisk, t)
 	if _, err := obj.CompleteMultipartUpload(GlobalContext, bucketName, objectName, uploadID, parts, ObjectOptions{}); err != nil {
@@ -165,7 +165,7 @@ func TestCompleteMultipartUploadFaultyDisk(t *testing.T) {
 // TestCompleteMultipartUpload - test CompleteMultipartUpload
 func TestCompleteMultipartUpload(t *testing.T) {
 	// Prepare for tests
-	disk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(disk)
 	obj := initFSObjects(disk, t)
 
@@ -202,7 +202,7 @@ func TestAbortMultipartUpload(t *testing.T) {
 	}
 
 	// Prepare for tests
-	disk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(disk)
 	obj := initFSObjects(disk, t)
 
@@ -233,7 +233,7 @@ func TestAbortMultipartUpload(t *testing.T) {
 // TestListMultipartUploadsFaultyDisk - test ListMultipartUploads with faulty disks
 func TestListMultipartUploadsFaultyDisk(t *testing.T) {
 	// Prepare for tests
-	disk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(disk)
 
 	obj := initFSObjects(disk, t)
@@ -250,7 +250,7 @@ func TestListMultipartUploadsFaultyDisk(t *testing.T) {
 		t.Fatal("Unexpected error ", err)
 	}
 
-	newDisk := filepath.Join(globalTestTmpDir, "minio-"+nextSuffix())
+	newDisk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(newDisk)
 	obj = initFSObjects(newDisk, t)
 	if _, err := obj.ListMultipartUploads(GlobalContext, bucketName, objectName, "", "", "", 1000); err != nil {

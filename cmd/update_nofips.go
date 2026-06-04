@@ -20,12 +20,12 @@
 
 package cmd
 
-// minioReleaseInfoURL returns the release-info (sha256sum) URL for this fork,
-// or "" when updates are not configured (see MINIO_UPDATE_RELEASE_URL).
-func minioReleaseInfoURL() string {
-	base := minioReleaseBaseURL()
+// otterioReleaseInfoURL returns the release-info (sha256sum) URL for this fork,
+// or "" when updates are not configured (see OTTERIO_UPDATE_RELEASE_URL).
+func otterioReleaseInfoURL() string {
+	base := otterioReleaseBaseURL()
 	if base == "" {
 		return ""
 	}
-	return base + "minio.sha256sum"
+	return base + "otterio.sha256sum"
 }

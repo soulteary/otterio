@@ -91,7 +91,7 @@ func (endpoint Endpoint) HTTPS() bool {
 // UpdateIsLocal - resolves the host and updates if it is local or not.
 func (endpoint *Endpoint) UpdateIsLocal() (err error) {
 	if !endpoint.IsLocal {
-		endpoint.IsLocal, err = isLocalHost(endpoint.Hostname(), endpoint.Port(), globalMinioPort)
+		endpoint.IsLocal, err = isLocalHost(endpoint.Hostname(), endpoint.Port(), globalOtterioPort)
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ func NewEndpoint(arg string) (ep Endpoint, e error) {
 		// On windows having a preceding SlashSeparator will cause problems, if the
 		// command line already has C:/<export-folder/ in it. Final resulting
 		// path on windows might become C:/C:/ this will cause problems
-		// of starting minio server properly in distributed mode on windows.
+		// of starting otterio server properly in distributed mode on windows.
 		// As a special case make sure to trim the separator.
 
 		// NOTE: It is also perfectly fine for windows users to have a path
@@ -178,7 +178,7 @@ func NewEndpoint(arg string) (ep Endpoint, e error) {
 	} else {
 		// Only check if the arg is an ip address and ask for scheme since its absent.
 		// localhost, example.com, any FQDN cannot be disambiguated from a regular file path such as
-		// /mnt/export1. So we go ahead and start the minio server in FS modes in these cases.
+		// /mnt/export1. So we go ahead and start the otterio server in FS modes in these cases.
 		if isHostIP(arg) {
 			return ep, fmt.Errorf("invalid URL endpoint format: missing scheme http or https")
 		}
@@ -322,7 +322,7 @@ func (l EndpointServerPools) peers() (peers []string, local string) {
 
 			peer := endpoint.Host
 			if endpoint.IsLocal {
-				if _, port := mustSplitHostPort(peer); port == globalMinioPort {
+				if _, port := mustSplitHostPort(peer); port == globalOtterioPort {
 					local = peer
 				}
 			}
@@ -448,7 +448,7 @@ func (endpoints Endpoints) UpdateIsLocal(foundPrevLocal bool) error {
 				// We use IsKubernetes() to check for Kubernetes environment
 				isLocal, err := isLocalHost(endpoints[i].Hostname(),
 					endpoints[i].Port(),
-					globalMinioPort,
+					globalOtterioPort,
 				)
 				if err != nil && !orchestrated {
 					return err
@@ -756,7 +756,7 @@ func CreateEndpoints(serverAddr string, foundLocal bool, args ...[]string) (Endp
 	return endpoints, setupType, nil
 }
 
-// GetLocalPeer - returns local peer value, returns globalMinioAddr
+// GetLocalPeer - returns local peer value, returns globalOtterioAddr
 // for FS and Erasure mode. In case of distributed server return
 // the first element from the set of peers which indicate that
 // they are local. There is always one entry that is local
@@ -775,7 +775,7 @@ func GetLocalPeer(endpointServerPools EndpointServerPools, host, port string) (l
 	}
 	if peerSet.IsEmpty() {
 		// Local peer can be empty in FS or Erasure coded mode.
-		// If so, return globalMinioHost + globalMinioPort value.
+		// If so, return globalOtterioHost + globalOtterioPort value.
 		if host != "" {
 			return net.JoinHostPort(host, port)
 		}
@@ -849,7 +849,7 @@ func getOnlineProxyEndpointIdx() int {
 			if resp.StatusCode != http.StatusOK {
 				return errors.New(resp.Status)
 			}
-			if v := resp.Header.Get(xhttp.MinIOServerStatus); v == unavailable {
+			if v := resp.Header.Get(xhttp.OtterIOServerStatus); v == unavailable {
 				return errors.New(v)
 			}
 			return nil
@@ -895,7 +895,7 @@ func updateDomainIPs(endPoints set.StringSet) {
 		if err != nil {
 			if strings.Contains(err.Error(), "missing port in address") {
 				host = e
-				port = globalMinioPort
+				port = globalOtterioPort
 			} else {
 				continue
 			}

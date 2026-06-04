@@ -25,7 +25,7 @@ import (
 // Key used for Get/SetReqInfo
 type contextKeyType string
 
-const contextLogKey = contextKeyType("miniolog")
+const contextLogKey = contextKeyType("otteriolog")
 
 // KeyVal - appended to ReqInfo.Tags
 type KeyVal struct {
@@ -38,7 +38,7 @@ type ReqInfo struct {
 	RemoteHost   string   // Client Host/IP
 	Host         string   // Node Host/IP
 	UserAgent    string   // User Agent
-	DeploymentID string   // x-minio-deployment-id
+	DeploymentID string   // x-otterio-deployment-id
 	RequestID    string   // x-amz-request-id
 	API          string   // API name - GetObject PutObject NewMultipartUpload etc.
 	BucketName   string   // Bucket name

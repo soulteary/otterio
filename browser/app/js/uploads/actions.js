@@ -20,7 +20,7 @@ import * as alertActions from "../alert/actions"
 import * as objectsActions from "../objects/actions"
 import { getCurrentBucket } from "../buckets/selectors"
 import { getCurrentPrefix } from "../objects/selectors"
-import { minioBrowserPrefix } from "../constants"
+import { otterioBrowserPrefix } from "../constants"
 
 export const ADD = "uploads/ADD"
 export const UPDATE_PROGRESS = "uploads/UPDATE_PROGRESS"
@@ -97,7 +97,7 @@ export const uploadFile = file => {
     const objectName = encodeURIComponent(`${currentPrefix}${filePath}`)
     const uploadUrl = `${
       window.location.origin
-    }${minioBrowserPrefix}/upload/${currentBucket}/${objectName}`
+    }${otterioBrowserPrefix}/upload/${currentBucket}/${objectName}`
     const slug = `${currentBucket}-${currentPrefix}-${filePath}`
 
     let xhr = new XMLHttpRequest()

@@ -51,15 +51,15 @@ const (
 	ClientCert = "client_cert"
 	ClientKey  = "client_key"
 
-	EnvLoggerWebhookEnable    = "MINIO_LOGGER_WEBHOOK_ENABLE"
-	EnvLoggerWebhookEndpoint  = "MINIO_LOGGER_WEBHOOK_ENDPOINT"
-	EnvLoggerWebhookAuthToken = "MINIO_LOGGER_WEBHOOK_AUTH_TOKEN"
+	EnvLoggerWebhookEnable    = "OTTERIO_LOGGER_WEBHOOK_ENABLE"
+	EnvLoggerWebhookEndpoint  = "OTTERIO_LOGGER_WEBHOOK_ENDPOINT"
+	EnvLoggerWebhookAuthToken = "OTTERIO_LOGGER_WEBHOOK_AUTH_TOKEN"
 
-	EnvAuditWebhookEnable     = "MINIO_AUDIT_WEBHOOK_ENABLE"
-	EnvAuditWebhookEndpoint   = "MINIO_AUDIT_WEBHOOK_ENDPOINT"
-	EnvAuditWebhookAuthToken  = "MINIO_AUDIT_WEBHOOK_AUTH_TOKEN"
-	EnvAuditWebhookClientCert = "MINIO_AUDIT_WEBHOOK_CLIENT_CERT"
-	EnvAuditWebhookClientKey  = "MINIO_AUDIT_WEBHOOK_CLIENT_KEY"
+	EnvAuditWebhookEnable     = "OTTERIO_AUDIT_WEBHOOK_ENABLE"
+	EnvAuditWebhookEndpoint   = "OTTERIO_AUDIT_WEBHOOK_ENDPOINT"
+	EnvAuditWebhookAuthToken  = "OTTERIO_AUDIT_WEBHOOK_AUTH_TOKEN"
+	EnvAuditWebhookClientCert = "OTTERIO_AUDIT_WEBHOOK_CLIENT_CERT"
+	EnvAuditWebhookClientKey  = "OTTERIO_AUDIT_WEBHOOK_CLIENT_KEY"
 )
 
 // Default KVS for loggerHTTP and loggerAuditHTTP

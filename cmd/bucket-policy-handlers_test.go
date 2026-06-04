@@ -287,7 +287,7 @@ func testPutBucketPolicyHandler(obj ObjectLayer, instanceType, bucketName string
 		int64(len(bucketPolicyStr)), bytes.NewReader([]byte(bucketPolicyStr)))
 
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
+		t.Fatalf("OtterIO %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
 			instanceType, bucketName, err)
 	}
 
@@ -306,7 +306,7 @@ func testPutBucketPolicyHandler(obj ObjectLayer, instanceType, bucketName string
 		0, nil, "", "", nil)
 
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("OtterIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -494,7 +494,7 @@ func testGetBucketPolicyHandler(obj ObjectLayer, instanceType, bucketName string
 	anonReq, err := newTestRequest(http.MethodGet, getPutPolicyURL("", bucketName), 0, nil)
 
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
+		t.Fatalf("OtterIO %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
 			instanceType, bucketName, err)
 	}
 
@@ -513,7 +513,7 @@ func testGetBucketPolicyHandler(obj ObjectLayer, instanceType, bucketName string
 		0, nil, "", "", nil)
 
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("OtterIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -697,7 +697,7 @@ func testDeleteBucketPolicyHandler(obj ObjectLayer, instanceType, bucketName str
 	anonReq, err := newTestRequest(http.MethodDelete, getPutPolicyURL("", bucketName), 0, nil)
 
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
+		t.Fatalf("OtterIO %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
 			instanceType, bucketName, err)
 	}
 
@@ -716,7 +716,7 @@ func testDeleteBucketPolicyHandler(obj ObjectLayer, instanceType, bucketName str
 		0, nil, "", "", nil)
 
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("OtterIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.

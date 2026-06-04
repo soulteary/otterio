@@ -50,11 +50,11 @@ const (
 	ClassDMA      = "dma"
 
 	// Reduced redundancy storage class environment variable
-	RRSEnv = "MINIO_STORAGE_CLASS_RRS"
+	RRSEnv = "OTTERIO_STORAGE_CLASS_RRS"
 	// Standard storage class environment variable
-	StandardEnv = "MINIO_STORAGE_CLASS_STANDARD"
+	StandardEnv = "OTTERIO_STORAGE_CLASS_STANDARD"
 	// DMA storage class environment variable
-	DMAEnv = "MINIO_STORAGE_CLASS_DMA"
+	DMAEnv = "OTTERIO_STORAGE_CLASS_DMA"
 
 	// Supported storage class scheme is EC
 	schemePrefix = "EC"
@@ -226,8 +226,8 @@ func validateParity(ssParity, rrsParity, setDriveCount int) (err error) {
 }
 
 // GetParityForSC - Returns the data and parity drive count based on storage class
-// If storage class is set using the env vars MINIO_STORAGE_CLASS_RRS and
-// MINIO_STORAGE_CLASS_STANDARD or server config fields corresponding values are
+// If storage class is set using the env vars OTTERIO_STORAGE_CLASS_RRS and
+// OTTERIO_STORAGE_CLASS_STANDARD or server config fields corresponding values are
 // returned.
 //
 // -- if input storage class is empty then standard is assumed

@@ -1,12 +1,12 @@
-# MinIO Admin Multi-user Quickstart Guide
-MinIO supports multiple admin users in addition to default operator credential created during server startup. New admins can be added after server starts up, and server can be configured to deny or allow access to different admin operations for these users. This document explains how to add/remove admin users and modify their access rights.
+# OtterIO Admin Multi-user Quickstart Guide
+OtterIO supports multiple admin users in addition to default operator credential created during server startup. New admins can be added after server starts up, and server can be configured to deny or allow access to different admin operations for these users. This document explains how to add/remove admin users and modify their access rights.
 
 ## Get started
 In this document we will explain in detail on how to configure admin users.
 
 ### 1. Prerequisites
-- Install mc - [MinIO Client Quickstart Guide](https://docs.min.io/docs/minio-client-quickstart-guide.html)
-- Install MinIO - [MinIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
+- Install mc - [OtterIO Client Quickstart Guide](https://docs.min.io/docs/minio-client-quickstart-guide.html)
+- Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
 
 ### 2. Create a new admin user with CreateUser, DeleteUser and ConfigUpdate permissions
 Use [`mc admin policy`](https://docs.min.io/docs/minio-admin-complete-guide.html#policies) to create custom admin policies.
@@ -44,29 +44,29 @@ EOF
 
 Create new canned policy by name `userManager` using `userManager.json` policy file.
 ```
-mc admin policy add myminio userManager adminManageUser.json
+mc admin policy add myotterio userManager adminManageUser.json
 ```
 
-Create a new admin user `admin1` on MinIO use `mc admin user`.
+Create a new admin user `admin1` on OtterIO use `mc admin user`.
 ```
-mc admin user add myminio admin1 admin123
+mc admin user add myotterio admin1 admin123
 ```
 
 Once the user is successfully created you can now apply the `userManage` policy for this user.
 
 ```
-mc admin policy set myminio userManager user=admin1
+mc admin policy set myotterio userManager user=admin1
 ```
 
 This admin user will then be allowed to perform create/delete user operations via `mc admin user`
 
 ### 3. Configure `mc` and create another user user1 with attached policy user1policy
 ```
-mc alias set myminio-admin1 http://localhost:9000 admin1 admin123 --api s3v4
+mc alias set myotterio-admin1 http://localhost:9000 admin1 admin123 --api s3v4
 
-mc admin user add myminio-admin1 user1 user123
-mc admin policy add myminio-admin1 user1policy ~/user1policy.json
-mc admin policy set myminio-admin1 user1policy user=user1
+mc admin user add myotterio-admin1 user1 user123
+mc admin policy add myotterio-admin1 user1policy ~/user1policy.json
+mc admin policy set myotterio-admin1 user1policy user=user1
 ```
 
 ### 4. List of permissions defined for admin operations
@@ -113,10 +113,10 @@ mc admin policy set myminio-admin1 user1policy user=user1
 
 ### 5. Using an external IDP for admin users
 Admin users can also be externally managed by an IDP by configuring admin policy with
-special permissions listed above. Follow [MinIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide) to manage users with an IDP.
+special permissions listed above. Follow [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide) to manage users with an IDP.
 
 ## Explore Further
-- [MinIO Client Complete Guide](https://docs.min.io/docs/minio-client-complete-guide)
-- [MinIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
-- [MinIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The MinIO documentation website](https://docs.min.io)
+- [OtterIO Client Complete Guide](https://docs.min.io/docs/minio-client-complete-guide)
+- [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
+- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
+- [The OtterIO documentation website](https://docs.min.io)

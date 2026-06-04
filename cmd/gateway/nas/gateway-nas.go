@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/minio/cli"
-	minio "github.com/soulteary/otterio/cmd"
+	otterio "github.com/soulteary/otterio/cmd"
 	"github.com/soulteary/otterio/pkg/auth"
 	"github.com/soulteary/otterio/pkg/madmin"
 )
@@ -39,25 +39,25 @@ PATH:
   path to NAS mount point
 
 EXAMPLES:
-  1. Start minio gateway server for NAS backend
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_ROOT_USER{{.AssignmentOperator}}accesskey
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_ROOT_PASSWORD{{.AssignmentOperator}}secretkey
+  1. Start otterio gateway server for NAS backend
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_USER{{.AssignmentOperator}}accesskey
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_PASSWORD{{.AssignmentOperator}}secretkey
      {{.Prompt}} {{.HelpName}} /shared/nasvol
 
-  2. Start minio gateway server for NAS with edge caching enabled
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_ROOT_USER{{.AssignmentOperator}}accesskey
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_ROOT_PASSWORD{{.AssignmentOperator}}secretkey
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_CACHE_DRIVES{{.AssignmentOperator}}"/mnt/drive1,/mnt/drive2,/mnt/drive3,/mnt/drive4"
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_CACHE_EXCLUDE{{.AssignmentOperator}}"bucket1/*,*.png"
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_CACHE_QUOTA{{.AssignmentOperator}}90
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_CACHE_AFTER{{.AssignmentOperator}}3
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_CACHE_WATERMARK_LOW{{.AssignmentOperator}}75
-     {{.Prompt}} {{.EnvVarSetCommand}} MINIO_CACHE_WATERMARK_HIGH{{.AssignmentOperator}}85
+  2. Start otterio gateway server for NAS with edge caching enabled
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_USER{{.AssignmentOperator}}accesskey
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_PASSWORD{{.AssignmentOperator}}secretkey
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_CACHE_DRIVES{{.AssignmentOperator}}"/mnt/drive1,/mnt/drive2,/mnt/drive3,/mnt/drive4"
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_CACHE_EXCLUDE{{.AssignmentOperator}}"bucket1/*,*.png"
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_CACHE_QUOTA{{.AssignmentOperator}}90
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_CACHE_AFTER{{.AssignmentOperator}}3
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_CACHE_WATERMARK_LOW{{.AssignmentOperator}}75
+     {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_CACHE_WATERMARK_HIGH{{.AssignmentOperator}}85
      {{.Prompt}} {{.HelpName}} /shared/nasvol
 `
 
-	minio.RegisterGatewayCommand(cli.Command{
-		Name:               minio.NASBackendGateway,
+	otterio.RegisterGatewayCommand(cli.Command{
+		Name:               otterio.NASBackendGateway,
 		Usage:              "Network-attached storage (NAS)",
 		Action:             nasGatewayMain,
 		CustomHelpTemplate: nasGatewayTemplate,
@@ -65,14 +65,14 @@ EXAMPLES:
 	})
 }
 
-// Handler for 'minio gateway nas' command line.
+// Handler for 'otterio gateway nas' command line.
 func nasGatewayMain(ctx *cli.Context) {
 	// Validate gateway arguments.
 	if !ctx.Args().Present() || ctx.Args().First() == "help" {
-		cli.ShowCommandHelpAndExit(ctx, minio.NASBackendGateway, 1)
+		cli.ShowCommandHelpAndExit(ctx, otterio.NASBackendGateway, 1)
 	}
 
-	minio.StartGateway(ctx, &NAS{ctx.Args().First()})
+	otterio.StartGateway(ctx, &NAS{ctx.Args().First()})
 }
 
 // NAS implements Gateway.
@@ -82,13 +82,13 @@ type NAS struct {
 
 // Name implements Gateway interface.
 func (g *NAS) Name() string {
-	return minio.NASBackendGateway
+	return otterio.NASBackendGateway
 }
 
 // NewGatewayLayer returns nas gatewaylayer.
-func (g *NAS) NewGatewayLayer(creds auth.Credentials) (minio.ObjectLayer, error) {
+func (g *NAS) NewGatewayLayer(creds auth.Credentials) (otterio.ObjectLayer, error) {
 	var err error
-	newObject, err := minio.NewFSObjectLayer(g.path)
+	newObject, err := otterio.NewFSObjectLayer(g.path)
 	if err != nil {
 		return nil, err
 	}
@@ -105,16 +105,16 @@ func (n *nasObjects) IsListenSupported() bool {
 	return false
 }
 
-func (n *nasObjects) StorageInfo(ctx context.Context) (si minio.StorageInfo, _ []error) {
+func (n *nasObjects) StorageInfo(ctx context.Context) (si otterio.StorageInfo, _ []error) {
 	si, errs := n.ObjectLayer.StorageInfo(ctx)
 	si.Backend.GatewayOnline = si.Backend.Type == madmin.FS
 	si.Backend.Type = madmin.Gateway
 	return si, errs
 }
 
-// nasObjects implements gateway for MinIO and S3 compatible object storage servers.
+// nasObjects implements gateway for OtterIO and S3 compatible object storage servers.
 type nasObjects struct {
-	minio.ObjectLayer
+	otterio.ObjectLayer
 }
 
 func (n *nasObjects) IsTaggingSupported() bool {
