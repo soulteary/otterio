@@ -48,10 +48,15 @@ class Web {
         if (error) {
           throw new Error(error.message)
         }
-        if (!Moment(result.uiVersion).isValid()) {
+        if (!result.uiVersion) {
           throw new Error("Invalid UI version in the JSON-RPC response")
         }
-        if (result.uiVersion !== currentUiVersion
+        // The server only ships a date-formatted version (RFC3339) on release
+        // builds; source/dev builds report "DEVELOPMENT.GOGET". Only treat a
+        // genuine date version as an update signal so dev builds don't crash
+        // here (Moment can't parse "DEVELOPMENT.GOGET") and never reload-loop.
+        if (Moment(result.uiVersion, Moment.ISO_8601, true).isValid()
+          && result.uiVersion !== currentUiVersion
           && currentUiVersion !== 'OTTERIO_UI_VERSION') {
           storage.setItem('newlyUpdated', true)
           location.reload()

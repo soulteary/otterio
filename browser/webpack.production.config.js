@@ -20,6 +20,7 @@ var path = require('path')
 var glob = require('glob-all')
 var CopyWebpackPlugin = require('copy-webpack-plugin')
 var { PurgeCSSPlugin } = require('purgecss-webpack-plugin')
+var TerserPlugin = require('terser-webpack-plugin')
 
 var exports = {
   context: __dirname,
@@ -30,6 +31,18 @@ var exports = {
   output: {
     path: path.resolve(__dirname, 'production'),
     filename: 'index_bundle.js'
+  },
+  resolve: {
+    // webpack 5 dropped automatic node core polyfills. jsonrpc.js uses 'url'
+    // and the mime-types dependency uses 'path', so provide browser shims.
+    fallback: {
+      url: require.resolve('url/'),
+      path: require.resolve('path-browserify')
+    }
+  },
+  optimization: {
+    // Keep the output as a single index_bundle.js (no *.LICENSE.txt sidecar).
+    minimizer: [new TerserPlugin({ extractComments: false })]
   },
   module: {
     rules: [{
@@ -55,17 +68,14 @@ var exports = {
           loader: 'css-loader'
         }]
       }, {
-        test: /\.(eot|woff|woff2|ttf|svg|png)/,
+        test: /\.(eot|woff|woff2|ttf|svg|png|jpg|jpeg|gif)/,
         type: 'asset/inline'
       }]
   },
   plugins: [
     new CopyWebpackPlugin({patterns: [
       {from: 'app/css/loader.css'},
-      {from: 'app/img/browsers/chrome.png'},
-      {from: 'app/img/browsers/firefox.png'},
-      {from: 'app/img/browsers/safari.png'},
-      {from: 'app/img/logo.svg'},
+      {from: 'app/img/logo.png'},
       {from: 'app/img/favicon/favicon-16x16.png'},
       {from: 'app/img/favicon/favicon-32x32.png'},
       {from: 'app/img/favicon/favicon-96x96.png'},

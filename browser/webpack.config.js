@@ -32,6 +32,14 @@ var exports = {
     filename: 'index_bundle.js',
     publicPath: '/otterio/'
   },
+  resolve: {
+    // webpack 5 dropped automatic node core polyfills. jsonrpc.js uses 'url'
+    // and the mime-types dependency uses 'path', so provide browser shims.
+    fallback: {
+      url: require.resolve('url/'),
+      path: require.resolve('path-browserify')
+    }
+  },
   module: {
     rules: [{
         test: /\.js$/,
@@ -56,7 +64,7 @@ var exports = {
           loader: 'css-loader'
         }]
       }, {
-        test: /\.(eot|woff|woff2|ttf|svg|png)/,
+        test: /\.(eot|woff|woff2|ttf|svg|png|jpg|jpeg|gif)/,
         type: 'asset/inline'
       }]
   },
@@ -81,10 +89,7 @@ var exports = {
   plugins: [
     new CopyWebpackPlugin({patterns: [
       {from: 'app/css/loader.css'},
-      {from: 'app/img/browsers/chrome.png'},
-      {from: 'app/img/browsers/firefox.png'},
-      {from: 'app/img/browsers/safari.png'},
-      {from: 'app/img/logo.svg'},
+      {from: 'app/img/logo.png'},
       {from: 'app/img/favicon/favicon-16x16.png'},
       {from: 'app/img/favicon/favicon-32x32.png'},
       {from: 'app/img/favicon/favicon-96x96.png'},

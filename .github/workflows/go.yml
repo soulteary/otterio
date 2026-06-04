@@ -23,11 +23,15 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Build on ${{ matrix.os }}
         if: matrix.os == 'windows-latest'
+        shell: bash
         env:
           CGO_ENABLED: 0
           GO111MODULE: on
         run: |
-          go build --ldflags="-s -w" -o %GOPATH%\bin\otterio.exe
+          # Inject version info via gen-ldflags so the binary (and the browser
+          # uiVersion it reports) is a valid RFC3339 version instead of the
+          # "DEVELOPMENT.GOGET" default, matching the Makefile/Docker builds.
+          go build --ldflags="$(go run buildscripts/gen-ldflags.go)" -o otterio.exe
           go test -v --timeout 50m ./...
       - name: Build on ${{ matrix.os }}
         if: matrix.os == 'ubuntu-latest'

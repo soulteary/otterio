@@ -16,13 +16,13 @@
 
 import React from "react"
 import { connect } from "react-redux"
-import logo from "../../img/logo.svg"
 import Alert from "../alert/Alert"
 import * as actionsAlert from "../alert/actions"
 import InputGroup from "./InputGroup"
 import web from "../web"
 import { Redirect, Link } from "react-router-dom"
 import OpenIDLoginButton from './OpenIDLoginButton'
+import logo from "../../img/logo.png"
 
 export class Login extends React.Component {
   constructor(props) {
@@ -164,12 +164,12 @@ export class Login extends React.Component {
         </div>
         <div className="l-footer">
           <a className="lf-logo" href="">
-            <img src={logo} alt="" />
+            <img src={logo} alt="OtterIO" />
           </a>
           <div className="lf-server">{window.location.host}</div>
         </div>
       </div>
-    )
+    );
   }
 }
 

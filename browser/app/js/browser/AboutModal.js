@@ -16,7 +16,7 @@
 
 import React from "react"
 import { Modal } from "react-bootstrap"
-import logo from "../../img/logo.svg"
+import logo from "../../img/logo.png"
 
 export const AboutModal = ({ serverInfo, hideAbout }) => {
   const { version, platform, runtime } = serverInfo
@@ -33,7 +33,7 @@ export const AboutModal = ({ serverInfo, hideAbout }) => {
       <div className="ma-inner">
         <div className="mai-item hidden-xs">
           <a href="https://github.com/soulteary/otterio" target="_blank">
-            <img className="maii-logo" src={logo} alt="" />
+            <img className="maii-logo" src={logo} alt="OtterIO" />
           </a>
         </div>
         <div className="mai-item">

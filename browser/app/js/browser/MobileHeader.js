@@ -17,8 +17,8 @@
 import React from "react"
 import classNames from "classnames"
 import { connect } from "react-redux"
-import logo from "../../img/logo.svg"
 import * as actionsCommon from "./actions"
+import logo from "../../img/logo.png"
 
 export const MobileHeader = ({ sidebarOpen, toggleSidebar }) => (
   <header className="fe-header-mobile hidden-lg hidden-md">
@@ -41,7 +41,7 @@ export const MobileHeader = ({ sidebarOpen, toggleSidebar }) => (
         <div className="bottom" />
       </div>
     </div>
-    <img className="mh-logo" src={logo} alt="" />
+    <img className="mh-logo" src={logo} alt="OtterIO" />
   </header>
 )
 

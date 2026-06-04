@@ -16,7 +16,6 @@
 
 import React from "react"
 import { connect } from "react-redux"
-import logo from "../../img/logo.svg"
 import Alert from "../alert/Alert"
 import * as actionsAlert from "../alert/actions"
 import InputGroup from "./InputGroup"
@@ -27,6 +26,7 @@ import { getRandomString } from "../utils"
 import storage from "local-storage-fallback"
 import jwtDecode from "jwt-decode"
 import { buildOpenIDAuthURL, OPEN_ID_NONCE_KEY } from './utils'
+import logo from "../../img/logo.png"
 
 export class OpenIDLogin extends React.Component {
   constructor(props) {
@@ -146,7 +146,7 @@ export class OpenIDLogin extends React.Component {
         </div>
         <div className="l-footer">
           <a className="lf-logo" href="">
-            <img src={logo} alt="" />
+            <img src={logo} alt="OtterIO" />
           </a>
           <div className="lf-server">{window.location.host}</div>
         </div>
