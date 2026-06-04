@@ -40,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,13 +54,34 @@ jobs:
       - name: Resolve version
         id: ver
         run: |
+          set -euo pipefail
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.tag }}"
+            TAG="${{ github.event.inputs.tag }}"
           else
-            VERSION="${GITHUB_REF_NAME}"
+            TAG="${GITHUB_REF_NAME}"
           fi
+
+          # TAG is what we publish images/releases under (the git tag itself).
+          # VERSION is what gets passed to gen-ldflags.go as cmd.Version.
+          #
+          # For MinIO-style tags (RELEASE.2026-06-04T10-53-00Z) gen-ldflags.go
+          # re-adds the "RELEASE." prefix and converts ':' -> '-', so we must
+          # hand it the plain RFC3339 timestamp (2026-06-04T10:53:00Z) instead
+          # of the already-prefixed tag, otherwise the prefix is applied twice.
+          case "${TAG}" in
+            RELEASE.*)
+              VERSION="$(echo "${TAG}" | \
+                sed 's#RELEASE\.\([0-9]\+\)-\([0-9]\+\)-\([0-9]\+\)T\([0-9]\+\)-\([0-9]\+\)-\([0-9]\+\)Z#\1-\2-\3T\4:\5:\6Z#')"
+              ;;
+            *)
+              VERSION="${TAG}"
+              ;;
+          esac
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Building version: ${VERSION}"
+          echo "Git tag:        ${TAG}"
+          echo "Build version:  ${VERSION}"
 
       - name: Cross compile
         env:
@@ -69,6 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.ver.outputs.version }}"
+          TAG="${{ steps.ver.outputs.tag }}"
           LDFLAGS="$(go run buildscripts/gen-ldflags.go "${VERSION}")"
           mkdir -p dist
           platforms="linux/amd64 linux/arm64 linux/ppc64le linux/s390x darwin/amd64 darwin/arm64 windows/amd64"
@@ -83,7 +106,7 @@ jobs:
             GOOS="${os}" GOARCH="${arch}" go build \
               -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o "${out}" .
           done
-          ( cd dist && sha256sum * > "otterio-${VERSION}-checksums.txt" )
+          ( cd dist && sha256sum * > "otterio-${TAG}-checksums.txt" )
           ls -lh dist
 
       - uses: actions/upload-artifact@v4
@@ -134,7 +157,7 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           set -euo pipefail
-          VERSION="${{ needs.binaries.outputs.version }}"
+          VERSION="${{ needs.binaries.outputs.tag }}"
           OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
           GHCR_REPO="ghcr.io/${OWNER}/otterio"
           TAGS="${GHCR_REPO}:${VERSION},${GHCR_REPO}:latest"
@@ -152,7 +175,7 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
           push: true
           build-args: |
-            RELEASE=${{ needs.binaries.outputs.version }}
+            RELEASE=${{ needs.binaries.outputs.tag }}
           tags: ${{ steps.tags.outputs.tags }}
           provenance: false
 
@@ -171,6 +194,6 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          name: Version ${{ needs.binaries.outputs.version }}
+          name: Version ${{ needs.binaries.outputs.tag }}
           files: dist/*
           generate_release_notes: true
