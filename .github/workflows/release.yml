@@ -1,0 +1,176 @@
+name: Release
+
+# Build and publish a versioned release whenever a tag is pushed.
+#
+# Triggers on tags like:
+#   - v1.2.3            (semver)
+#   - RELEASE.2026-...  (MinIO-style release tags)
+#
+# Produces:
+#   1. Cross-platform binaries (Linux/macOS/Windows, multiple arches) + checksums
+#   2. Multi-arch Docker images pushed to GHCR (always) and Docker Hub (if secrets set)
+#   3. A GitHub Release with the binaries attached
+#
+# Required configuration:
+#   - GHCR: works out of the box using the built-in GITHUB_TOKEN.
+#   - Docker Hub (optional): set repository secrets DOCKERHUB_USERNAME and
+#     DOCKERHUB_TOKEN to also push to docker.io/<username>/otterio.
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'RELEASE.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version/tag to build (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  GO_VERSION: '1.26.x'
+
+jobs:
+  binaries:
+    name: Build binaries
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gen-ldflags.go reads git history to derive commit/version info.
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION="${GITHUB_REF_NAME}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${VERSION}"
+
+      - name: Cross compile
+        env:
+          CGO_ENABLED: '0'
+          GO111MODULE: 'on'
+          OTTERIO_RELEASE: RELEASE
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.ver.outputs.version }}"
+          LDFLAGS="$(go run buildscripts/gen-ldflags.go "${VERSION}")"
+          mkdir -p dist
+          platforms="linux/amd64 linux/arm64 linux/ppc64le linux/s390x darwin/amd64 darwin/arm64 windows/amd64"
+          for p in ${platforms}; do
+            os="${p%/*}"
+            arch="${p#*/}"
+            out="dist/otterio-${os}-${arch}"
+            if [ "${os}" = "windows" ]; then
+              out="${out}.exe"
+            fi
+            echo "==> Building ${out}"
+            GOOS="${os}" GOARCH="${arch}" go build \
+              -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o "${out}" .
+          done
+          ( cd dist && sha256sum * > "otterio-${VERSION}-checksums.txt" )
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: dist/
+          retention-days: 7
+
+  docker:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    needs: binaries
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: dist
+
+      - name: Make Linux binaries executable
+        run: chmod +x dist/otterio-linux-*
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: tags
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.binaries.outputs.version }}"
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          GHCR_REPO="ghcr.io/${OWNER}/otterio"
+          TAGS="${GHCR_REPO}:${VERSION},${GHCR_REPO}:latest"
+          if [ -n "${DOCKERHUB_USERNAME}" ]; then
+            DH_REPO="${DOCKERHUB_USERNAME}/otterio"
+            TAGS="${TAGS},${DH_REPO}:${VERSION},${DH_REPO}:latest"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "Image tags: ${TAGS}"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ci
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          push: true
+          build-args: |
+            RELEASE=${{ needs.binaries.outputs.version }}
+          tags: ${{ steps.tags.outputs.tags }}
+          provenance: false
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: binaries
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Version ${{ needs.binaries.outputs.version }}
+          files: dist/*
+          generate_release_notes: true

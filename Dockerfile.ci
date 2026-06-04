@@ -1,0 +1,47 @@
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+
+# Built by the release GitHub Action: copies a pre-compiled binary for the
+# target architecture instead of compiling under QEMU. Expects the binaries to
+# live in ./dist/otterio-linux-<arch> (produced by the "binaries" job).
+ARG TARGETARCH
+ARG RELEASE
+
+# community fork of Apache-licensed MinIO codebase. Not affiliated with, endorsed by, or sponsored by MinIO, Inc.
+# "MinIO" is a trademark of MinIO, Inc.; used here solely to identify the upstream project.
+LABEL name="otterio (community fork)" \
+      vendor="soulteary" \
+      maintainer="soulteary (community fork of OtterIO, https://github.com/soulteary/otterio)" \
+      org.opencontainers.image.source="https://github.com/soulteary/otterio" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      version="${RELEASE}" \
+      release="${RELEASE}" \
+      summary="High Performance Object Storage, API compatible with Amazon S3. Community-maintained fork of OtterIO." \
+      description="A community-maintained fork of MinIO, based on the last Apache 2.0 release. High performance, S3 API compatible object storage. Not affiliated with MinIO, Inc."
+
+ENV OTTERIO_ACCESS_KEY_FILE=access_key \
+    OTTERIO_SECRET_KEY_FILE=secret_key \
+    OTTERIO_ROOT_USER_FILE=access_key \
+    OTTERIO_ROOT_PASSWORD_FILE=secret_key \
+    OTTERIO_KMS_MASTER_KEY_FILE=kms_master_key \
+    OTTERIO_SSE_MASTER_KEY_FILE=sse_master_key
+
+COPY dockerscripts/docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+COPY CREDITS /licenses/CREDITS
+COPY LICENSE /licenses/LICENSE
+COPY NOTICE /licenses/NOTICE
+COPY dist/otterio-linux-${TARGETARCH} /usr/bin/otterio
+
+RUN \
+     microdnf update --nodocs && \
+     microdnf install curl ca-certificates shadow-utils util-linux --nodocs && \
+     microdnf clean all && \
+     chmod +x /usr/bin/otterio && \
+     chmod +x /usr/bin/docker-entrypoint.sh
+
+EXPOSE 9000
+
+ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
+
+VOLUME ["/data"]
+
+CMD ["otterio"]
