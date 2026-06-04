@@ -41,10 +41,12 @@ OtterIO is a customized fork of MinIO and differs from upstream in the following
 - **Gateways**: only the `nas` and `s3` gateways remain. The `azure`, `gcs`, and `hdfs` gateways have been removed.
 - **Toolchain**: requires Go `1.26` or newer (see `go.mod`).
 
-> NOTE: Throughout this guide, upstream links (`docs.min.io`, `dl.min.io`,
-> `hub.docker.com/r/minio/minio`, etc.) and the `minio/minio` image refer to the
-> **original upstream project**, not to OtterIO. Build OtterIO from source
-> (see [Install from Source](#install-from-source)) to use the customizations above.
+> NOTE: OtterIO publishes its own container images at `soulteary/otterio`
+> (Docker Hub) and `ghcr.io/soulteary/otterio` (GitHub Container Registry).
+> Other upstream links in this guide (`docs.min.io`, `dl.min.io`, etc.) still
+> refer to the **original upstream project**, not to OtterIO. Build OtterIO from
+> source (see [Install from Source](#install-from-source)) to use the
+> customizations above.
 
 # Docker Installation
 
@@ -55,12 +57,22 @@ require distributed deploying OtterIO with Erasure Coding. For extended developm
 with a *minimum* of 4 drives per OtterIO server. See [OtterIO Erasure Code Quickstart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide.html)
 for more complete documentation.
 
+OtterIO publishes its own container images to both Docker Hub and the GitHub Container Registry. Pull whichever registry is most convenient:
+
+```sh
+# Docker Hub
+docker pull soulteary/otterio:latest
+
+# GitHub Container Registry
+docker pull ghcr.io/soulteary/otterio:latest
+```
+
 ## Stable
 
 Run the following command to run the latest stable image of OtterIO on a Docker container using an ephemeral data volume:
 
 ```sh
-docker run -p 9000:9000 minio/minio server /data
+docker run -p 9000:9000 soulteary/otterio:latest server /data
 ```
 
 The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded
@@ -79,8 +91,8 @@ see https://docs.min.io/docs/ and click **MINIO SDKS** in the navigation to view
 
 Run the following command to run the bleeding-edge image of OtterIO on a Docker container using an ephemeral data volume:
 
-```
-docker run -p 9000:9000 minio/minio:edge server /data
+```sh
+docker run -p 9000:9000 soulteary/otterio:edge server /data
 ```
 
 The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded

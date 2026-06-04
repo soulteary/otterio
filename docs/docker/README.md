@@ -3,6 +3,19 @@
 ## Prerequisites
 Docker installed on your machine. Download the relevant installer from [here](https://www.docker.com/community-edition#/download).
 
+## Pull the OtterIO Image
+OtterIO publishes official container images to both Docker Hub and the GitHub Container Registry (GHCR). Pull whichever registry is most convenient:
+
+```sh
+# Docker Hub
+docker pull soulteary/otterio:latest
+
+# GitHub Container Registry (GHCR)
+docker pull ghcr.io/soulteary/otterio:latest
+```
+
+The examples below use `soulteary/otterio:latest`; you can substitute `ghcr.io/soulteary/otterio:latest` anywhere the image name appears.
+
 ## Run Standalone OtterIO on Docker.
 OtterIO needs a persistent volume to store configuration and application data. However, for testing purposes, you can launch OtterIO by simply passing a directory (`/data` in the example below). This directory gets created in the container filesystem at the time of container start. But all the data is lost after container exits.
 
@@ -10,7 +23,7 @@ OtterIO needs a persistent volume to store configuration and application data. H
 docker run -p 9000:9000 \
   -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
   -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  minio/minio server /data
+  soulteary/otterio:latest server /data
 ```
 
 To create a OtterIO container with persistent storage, you need to map local persistent directories from the host OS to virtual config `~/.otterio` and export `/data` directories. To do this, run the below commands
@@ -22,7 +35,7 @@ docker run -p 9000:9000 \
   -v /mnt/data:/data \
   -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
   -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  minio/minio server /data
+  soulteary/otterio:latest server /data
 ```
 
 #### Windows
@@ -32,7 +45,7 @@ docker run -p 9000:9000 \
   -v D:\data:/data \
   -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
   -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  minio/minio server /data
+  soulteary/otterio:latest server /data
 ```
 
 ## Run Distributed OtterIO on Docker
@@ -51,7 +64,7 @@ docker run -p 9000:9000 --name otterio1 \
   -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
   -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   -v /mnt/data:/data \
-  minio/minio server /data
+  soulteary/otterio:latest server /data
 ```
 
 #### Windows
@@ -60,7 +73,7 @@ docker run -p 9000:9000 --name otterio1 \
   -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
   -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   -v D:\data:/data \
-  minio/minio server /data
+  soulteary/otterio:latest server /data
 ```
 
 ### Run OtterIO Docker as a regular user
@@ -78,7 +91,7 @@ docker run -p 9000:9000 \
   -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
   -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
   -v ${HOME}/data:/data \
-  minio/minio server /data
+  soulteary/otterio:latest server /data
 ```
 
 #### Windows
@@ -93,7 +106,7 @@ docker run -p 9000:9000 \
   -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
   -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
   -v D:\data:/data \
-  minio/minio server /data
+  soulteary/otterio:latest server /data
 ```
 
 ### OtterIO Custom Access and Secret Keys using Docker secrets
@@ -106,7 +119,7 @@ echo "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" | docker secret create secret_ke
 
 Create a OtterIO service using `docker service` to read from Docker secrets.
 ```
-docker service create --name="otterio-service" --secret="access_key" --secret="secret_key" minio/minio server /data
+docker service create --name="otterio-service" --secret="access_key" --secret="secret_key" soulteary/otterio:latest server /data
 ```
 
 Read more about `docker service` [here](https://docs.docker.com/engine/swarm/how-swarm-mode-works/services/)
@@ -119,7 +132,7 @@ docker service create --name="otterio-service" \
   --secret="my_secret_key" \
   --env="OTTERIO_ROOT_USER_FILE=my_access_key" \
   --env="OTTERIO_ROOT_PASSWORD_FILE=my_secret_key" \
-  minio/minio server /data
+  soulteary/otterio:latest server /data
 ```
 `OTTERIO_ROOT_USER_FILE` and `OTTERIO_ROOT_PASSWORD_FILE` also support custom absolute paths, in case Docker secrets are mounted to custom locations or other tools are used to mount secrets into the container. For example, HashiCorp Vault injects secrets to `/vault/secrets`. With the custom names above, set the environment variables to
 ```
