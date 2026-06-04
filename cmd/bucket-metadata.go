@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/minio/minio-go/v7/pkg/tags"
+	"github.com/minio/sio"
 	"github.com/soulteary/otterio/cmd/crypto"
 	"github.com/soulteary/otterio/cmd/logger"
 	bucketsse "github.com/soulteary/otterio/pkg/bucket/encryption"
@@ -41,7 +42,6 @@ import (
 	"github.com/soulteary/otterio/pkg/fips"
 	"github.com/soulteary/otterio/pkg/kms"
 	"github.com/soulteary/otterio/pkg/madmin"
-	"github.com/minio/sio"
 )
 
 const (

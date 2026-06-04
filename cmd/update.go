@@ -35,11 +35,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/minio/selfupdate"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/env"
 	xnet "github.com/soulteary/otterio/pkg/net"
-	"github.com/minio/selfupdate"
 )
 
 const (

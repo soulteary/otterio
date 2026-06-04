@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 
 	"github.com/klauspost/compress/snappy"
-	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
 	"github.com/pierrec/lz4"
+	"github.com/soulteary/otterio/pkg/s3select/internal/parquet-go/gen-go/parquet"
 )
 
 // ToSliceValue converts values to a slice value.

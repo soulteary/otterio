@@ -158,11 +158,11 @@ func TestExtractMetadataHeaders(t *testing.T) {
 		// Validate that there are all headers extracted
 		{
 			header: http.Header{
-				"X-Amz-Meta-Appid":   []string{"amz-meta"},
+				"X-Amz-Meta-Appid":     []string{"amz-meta"},
 				"X-Otterio-Meta-Appid": []string{"otterio-meta"},
 			},
 			metadata: map[string]string{
-				"X-Amz-Meta-Appid":   "amz-meta",
+				"X-Amz-Meta-Appid":     "amz-meta",
 				"X-Otterio-Meta-Appid": "otterio-meta",
 			},
 			shouldFail: false,

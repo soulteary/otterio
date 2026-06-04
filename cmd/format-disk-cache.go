@@ -30,8 +30,8 @@ import (
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/minio/sio"
+	"github.com/soulteary/otterio/cmd/logger"
 )
 
 const (

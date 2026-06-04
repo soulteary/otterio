@@ -23,9 +23,9 @@ import (
 	"errors"
 	"io"
 
+	"github.com/minio/sio"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/kms"
-	"github.com/minio/sio"
 )
 
 // Context is a list of key-value pairs cryptographically

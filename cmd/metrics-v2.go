@@ -25,11 +25,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/procfs"
+	"github.com/soulteary/otterio/cmd/logger"
 )
 
 // MetricNamespace is top level grouping of metrics to create the metric name.
@@ -44,7 +44,7 @@ const (
 	healMetricNamespace      MetricNamespace = "otterio_heal"
 	interNodeMetricNamespace MetricNamespace = "otterio_inter_node"
 	nodeMetricNamespace      MetricNamespace = "otterio_node"
-	otterioMetricNamespace     MetricNamespace = "otterio"
+	otterioMetricNamespace   MetricNamespace = "otterio"
 	s3MetricNamespace        MetricNamespace = "otterio_s3"
 )
 

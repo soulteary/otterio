@@ -26,9 +26,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/soulteary/otterio/pkg/event"
 	xnet "github.com/soulteary/otterio/pkg/net"
-	"github.com/pkg/errors"
 
 	"github.com/olivere/elastic/v7"
 )

@@ -28,21 +28,21 @@ import (
 	"github.com/soulteary/otterio/pkg/disk"
 	"github.com/soulteary/otterio/pkg/net"
 
-	smart "github.com/soulteary/otterio/pkg/smart"
 	"github.com/shirou/gopsutil/v3/cpu"
 	diskhw "github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/process"
+	smart "github.com/soulteary/otterio/pkg/smart"
 )
 
 // HealthInfo - OtterIO cluster's health Info
 type HealthInfo struct {
-	TimeStamp time.Time       `json:"timestamp,omitempty"`
-	Error     string          `json:"error,omitempty"`
-	Perf      PerfInfo        `json:"perf,omitempty"`
-	Otterio     OtterioHealthInfo `json:"otterio,omitempty"`
-	Sys       SysHealthInfo   `json:"sys,omitempty"`
+	TimeStamp time.Time         `json:"timestamp,omitempty"`
+	Error     string            `json:"error,omitempty"`
+	Perf      PerfInfo          `json:"perf,omitempty"`
+	Otterio   OtterioHealthInfo `json:"otterio,omitempty"`
+	Sys       SysHealthInfo     `json:"sys,omitempty"`
 }
 
 // SysHealthInfo - Includes hardware and system information of the OtterIO cluster
@@ -188,34 +188,34 @@ type HealthDataType string
 
 // HealthDataTypes
 const (
-	HealthDataTypePerfDrive   HealthDataType = "perfdrive"
-	HealthDataTypePerfNet     HealthDataType = "perfnet"
+	HealthDataTypePerfDrive     HealthDataType = "perfdrive"
+	HealthDataTypePerfNet       HealthDataType = "perfnet"
 	HealthDataTypeOtterioInfo   HealthDataType = "otterioinfo"
 	HealthDataTypeOtterioConfig HealthDataType = "otterioconfig"
-	HealthDataTypeSysCPU      HealthDataType = "syscpu"
-	HealthDataTypeSysDiskHw   HealthDataType = "sysdiskhw"
-	HealthDataTypeSysDocker   HealthDataType = "sysdocker" // is this really needed?
-	HealthDataTypeSysOsInfo   HealthDataType = "sysosinfo"
-	HealthDataTypeSysLoad     HealthDataType = "sysload" // provides very little info. Making it TBD
-	HealthDataTypeSysMem      HealthDataType = "sysmem"
-	HealthDataTypeSysNet      HealthDataType = "sysnet"
-	HealthDataTypeSysProcess  HealthDataType = "sysprocess"
+	HealthDataTypeSysCPU        HealthDataType = "syscpu"
+	HealthDataTypeSysDiskHw     HealthDataType = "sysdiskhw"
+	HealthDataTypeSysDocker     HealthDataType = "sysdocker" // is this really needed?
+	HealthDataTypeSysOsInfo     HealthDataType = "sysosinfo"
+	HealthDataTypeSysLoad       HealthDataType = "sysload" // provides very little info. Making it TBD
+	HealthDataTypeSysMem        HealthDataType = "sysmem"
+	HealthDataTypeSysNet        HealthDataType = "sysnet"
+	HealthDataTypeSysProcess    HealthDataType = "sysprocess"
 )
 
 // HealthDataTypesMap - Map of Health datatypes
 var HealthDataTypesMap = map[string]HealthDataType{
-	"perfdrive":   HealthDataTypePerfDrive,
-	"perfnet":     HealthDataTypePerfNet,
+	"perfdrive":     HealthDataTypePerfDrive,
+	"perfnet":       HealthDataTypePerfNet,
 	"otterioinfo":   HealthDataTypeOtterioInfo,
 	"otterioconfig": HealthDataTypeOtterioConfig,
-	"syscpu":      HealthDataTypeSysCPU,
-	"sysdiskhw":   HealthDataTypeSysDiskHw,
-	"sysdocker":   HealthDataTypeSysDocker,
-	"sysosinfo":   HealthDataTypeSysOsInfo,
-	"sysload":     HealthDataTypeSysLoad,
-	"sysmem":      HealthDataTypeSysMem,
-	"sysnet":      HealthDataTypeSysNet,
-	"sysprocess":  HealthDataTypeSysProcess,
+	"syscpu":        HealthDataTypeSysCPU,
+	"sysdiskhw":     HealthDataTypeSysDiskHw,
+	"sysdocker":     HealthDataTypeSysDocker,
+	"sysosinfo":     HealthDataTypeSysOsInfo,
+	"sysload":       HealthDataTypeSysLoad,
+	"sysmem":        HealthDataTypeSysMem,
+	"sysnet":        HealthDataTypeSysNet,
+	"sysprocess":    HealthDataTypeSysProcess,
 }
 
 // HealthDataTypesList - List of Health datatypes

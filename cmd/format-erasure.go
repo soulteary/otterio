@@ -382,8 +382,8 @@ func saveFormatErasure(disk StorageAPI, format *formatErasureV3, heal bool) erro
 }
 
 var ignoredHiddenDirectories = map[string]struct{}{
-	otterioMetaBucket:             {}, // metabucket '.otterio.sys'
-	".otterio":                    {}, // users may choose to double down the backend as the config folder for certs
+	otterioMetaBucket:           {}, // metabucket '.otterio.sys'
+	".otterio":                  {}, // users may choose to double down the backend as the config folder for certs
 	".snapshot":                 {}, // .snapshot for ignoring NetApp based persistent volumes WAFL snapshot
 	"lost+found":                {}, // 'lost+found' directory default on ext4 filesystems
 	"$RECYCLE.BIN":              {}, // windows specific directory for each drive (hidden)

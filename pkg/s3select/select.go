@@ -30,12 +30,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/minio/simdjson-go"
 	"github.com/soulteary/otterio/pkg/s3select/csv"
 	"github.com/soulteary/otterio/pkg/s3select/json"
 	"github.com/soulteary/otterio/pkg/s3select/parquet"
 	"github.com/soulteary/otterio/pkg/s3select/simdj"
 	"github.com/soulteary/otterio/pkg/s3select/sql"
-	"github.com/minio/simdjson-go"
 )
 
 type recordReader interface {

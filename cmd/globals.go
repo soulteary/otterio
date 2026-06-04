@@ -63,14 +63,14 @@ const (
 	// http://docs.aws.amazon.com/AmazonS3/latest/dev/example-walkthroughs-managing-access-example4.html
 	globalOtterioDefaultOwnerID      = "02d6176db174dc93cb1b899f7c6078f08654445fe8cf1b6ce98d8855f66bdbf4"
 	globalOtterioDefaultStorageClass = "STANDARD"
-	globalWindowsOSName            = "windows"
-	globalMacOSName                = "darwin"
+	globalWindowsOSName              = "windows"
+	globalMacOSName                  = "darwin"
 	globalOtterioModeFS              = "mode-server-fs"
 	globalOtterioModeErasure         = "mode-server-xl"
 	globalOtterioModeDistErasure     = "mode-server-distributed-xl"
 	globalOtterioModeGatewayPrefix   = "mode-gateway-"
-	globalDirSuffix                = "__XLDIR__"
-	globalDirSuffixWithSlash       = globalDirSuffix + slashSeparator
+	globalDirSuffix                  = "__XLDIR__"
+	globalDirSuffixWithSlash         = globalDirSuffix + slashSeparator
 
 	// Add new global values here.
 )

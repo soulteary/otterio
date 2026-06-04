@@ -24,9 +24,9 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/soulteary/otterio/pkg/argon2"
 	"github.com/secure-io/sio-go"
 	"github.com/secure-io/sio-go/sioutil"
+	"github.com/soulteary/otterio/pkg/argon2"
 )
 
 var idKey func([]byte, []byte, []byte, []byte, uint32) []byte

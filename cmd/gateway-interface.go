@@ -24,8 +24,8 @@ import (
 // GatewayOtterioSysTmp prefix is used to save metadata sent by Initialize Multipart Upload API.
 const (
 	GatewayOtterioSysTmp = "otterio.sys.tmp/"
-	NASBackendGateway  = "nas"
-	S3BackendGateway   = "s3"
+	NASBackendGateway    = "nas"
+	S3BackendGateway     = "s3"
 )
 
 // Gateway represents a gateway backend.

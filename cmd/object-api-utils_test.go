@@ -469,8 +469,8 @@ func TestGetActualSize(t *testing.T) {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{"X-Otterio-Internal-compression": "klauspost/compress/s2",
 					"X-Otterio-Internal-actual-size": "100000001",
-					"content-type":                 "application/octet-stream",
-					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
+					"content-type":                   "application/octet-stream",
+					"etag":                           "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 				Parts: []ObjectPartInfo{
 					{
 						Size:       39235668,
@@ -488,8 +488,8 @@ func TestGetActualSize(t *testing.T) {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{"X-Otterio-Internal-compression": "klauspost/compress/s2",
 					"X-Otterio-Internal-actual-size": "841",
-					"content-type":                 "application/octet-stream",
-					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2"},
+					"content-type":                   "application/octet-stream",
+					"etag":                           "b3ff3ef3789147152fbfbc50efba4bfd-2"},
 				Parts: []ObjectPartInfo{},
 			},
 			result: 841,

@@ -24,8 +24,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/soulteary/otterio/cmd/logger"
 )
 
 // ConnStats - Network statistics

@@ -27,10 +27,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/soulteary/otterio/pkg/madmin"
-	"github.com/soulteary/otterio/pkg/smart"
 	diskhw "github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
+	"github.com/soulteary/otterio/pkg/madmin"
+	"github.com/soulteary/otterio/pkg/smart"
 )
 
 func getLocalOsInfo(ctx context.Context, r *http.Request) madmin.ServerOsInfo {

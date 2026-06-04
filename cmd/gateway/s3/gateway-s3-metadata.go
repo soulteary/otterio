@@ -37,10 +37,10 @@ var (
 
 // A gwMetaV1 represents `gw.json` metadata header.
 type gwMetaV1 struct {
-	Version string         `json:"version"` // Version of the current `gw.json`.
-	Format  string         `json:"format"`  // Format of the current `gw.json`.
+	Version string           `json:"version"` // Version of the current `gw.json`.
+	Format  string           `json:"format"`  // Format of the current `gw.json`.
 	Stat    otterio.StatInfo `json:"stat"`    // Stat of the current object `gw.json`.
-	ETag    string         `json:"etag"`    // ETag of the current object
+	ETag    string           `json:"etag"`    // ETag of the current object
 
 	// Metadata map for current object `gw.json`.
 	Meta map[string]string `json:"meta,omitempty"`

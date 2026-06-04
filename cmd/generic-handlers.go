@@ -127,7 +127,7 @@ func containsReservedMetadata(header http.Header) bool {
 const (
 	otterioReservedBucket     = "otterio"
 	otterioReservedBucketPath = SlashSeparator + otterioReservedBucket
-	loginPathPrefix         = SlashSeparator + "login"
+	loginPathPrefix           = SlashSeparator + "login"
 )
 
 func setRedirectHandler(h http.Handler) http.Handler {

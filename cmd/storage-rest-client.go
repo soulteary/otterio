@@ -31,12 +31,12 @@ import (
 	"sync"
 	"time"
 
+	xbufio "github.com/philhofer/fwd"
 	"github.com/soulteary/otterio/cmd/http"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/cmd/rest"
 	xnet "github.com/soulteary/otterio/pkg/net"
-	xbufio "github.com/philhofer/fwd"
 	"github.com/tinylib/msgp/msgp"
 )
 

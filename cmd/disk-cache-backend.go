@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/djherbis/atime"
+	"github.com/minio/sio"
 	"github.com/soulteary/otterio/cmd/config/cache"
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"
@@ -41,7 +42,6 @@ import (
 	"github.com/soulteary/otterio/pkg/disk"
 	"github.com/soulteary/otterio/pkg/fips"
 	"github.com/soulteary/otterio/pkg/kms"
-	"github.com/minio/sio"
 )
 
 const (

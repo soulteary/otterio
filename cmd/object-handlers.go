@@ -39,6 +39,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"github.com/minio/minio-go/v7/pkg/tags"
+	"github.com/minio/sio"
 	"github.com/soulteary/otterio/cmd/config/dns"
 	"github.com/soulteary/otterio/cmd/config/storageclass"
 	"github.com/soulteary/otterio/cmd/crypto"
@@ -57,7 +58,6 @@ import (
 	"github.com/soulteary/otterio/pkg/ioutil"
 	xnet "github.com/soulteary/otterio/pkg/net"
 	"github.com/soulteary/otterio/pkg/s3select"
-	"github.com/minio/sio"
 )
 
 // supportedHeadGetReqParams - supported request parameters for GET and HEAD presigned request.

@@ -23,10 +23,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/soulteary/otterio/cmd/logger"
-	"github.com/soulteary/otterio/pkg/madmin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/madmin"
 )
 
 var (
@@ -59,7 +59,7 @@ const (
 	cacheNamespace       = "cache"
 	s3Namespace          = "s3"
 	bucketNamespace      = "bucket"
-	otterioNamespace       = "otterio"
+	otterioNamespace     = "otterio"
 	diskNamespace        = "disk"
 	interNodeNamespace   = "internode"
 )

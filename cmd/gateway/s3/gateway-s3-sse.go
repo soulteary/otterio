@@ -39,7 +39,7 @@ const (
 	// name of temporary per part metadata file
 	gwpartMetaJSON string = "part.meta"
 	// custom multipart files are stored under the defaultOtterioGWPrefix
-	defaultOtterioGWPrefix     = ".otterio"
+	defaultOtterioGWPrefix   = ".otterio"
 	defaultGWContentFileName = "data"
 )
 

@@ -25,11 +25,11 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/soulteary/otterio/pkg/disk"
-	"github.com/soulteary/otterio/pkg/madmin"
 	cpuhw "github.com/shirou/gopsutil/v3/cpu"
 	memhw "github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/process"
+	"github.com/soulteary/otterio/pkg/disk"
+	"github.com/soulteary/otterio/pkg/madmin"
 )
 
 func getLocalCPUInfo(ctx context.Context, r *http.Request) madmin.ServerCPUInfo {

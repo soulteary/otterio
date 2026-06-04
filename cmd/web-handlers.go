@@ -95,7 +95,7 @@ type ServerInfoRep struct {
 	OtterioRuntime    string
 	OtterioGlobalInfo map[string]interface{}
 	OtterioUserInfo   map[string]interface{}
-	UIVersion       string `json:"uiVersion"`
+	UIVersion         string `json:"uiVersion"`
 }
 
 // ServerInfo - get server info.
@@ -1775,7 +1775,7 @@ type GetBucketPolicyArgs struct {
 
 // GetBucketPolicyRep - get bucket policy reply.
 type GetBucketPolicyRep struct {
-	UIVersion string                     `json:"uiVersion"`
+	UIVersion string                       `json:"uiVersion"`
 	Policy    otteriogopolicy.BucketPolicy `json:"policy"`
 }
 
@@ -1866,8 +1866,8 @@ type ListAllBucketPoliciesArgs struct {
 
 // BucketAccessPolicy - Collection of canned bucket policy at a given prefix.
 type BucketAccessPolicy struct {
-	Bucket string                     `json:"bucket"`
-	Prefix string                     `json:"prefix"`
+	Bucket string                       `json:"bucket"`
+	Prefix string                       `json:"prefix"`
 	Policy otteriogopolicy.BucketPolicy `json:"policy"`
 }
 

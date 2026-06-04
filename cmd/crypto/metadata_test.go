@@ -27,10 +27,10 @@ var isMultipartTests = []struct {
 	Metadata  map[string]string
 	Multipart bool
 }{
-	{Multipart: true, Metadata: map[string]string{MetaMultipart: ""}},                          // 0
+	{Multipart: true, Metadata: map[string]string{MetaMultipart: ""}},                            // 0
 	{Multipart: true, Metadata: map[string]string{"X-Otterio-Internal-Encrypted-Multipart": ""}}, // 1
-	{Multipart: true, Metadata: map[string]string{MetaMultipart: "some-value"}},                // 2
-	{Multipart: false, Metadata: map[string]string{"": ""}},                                    // 3
+	{Multipart: true, Metadata: map[string]string{MetaMultipart: "some-value"}},                  // 2
+	{Multipart: false, Metadata: map[string]string{"": ""}},                                      // 3
 	{Multipart: false, Metadata: map[string]string{"X-Otterio-Internal-EncryptedMultipart": ""}}, // 4
 }
 
@@ -46,14 +46,14 @@ var isEncryptedTests = []struct {
 	Metadata  map[string]string
 	Encrypted bool
 }{
-	{Encrypted: true, Metadata: map[string]string{MetaMultipart: ""}},                              // 0
-	{Encrypted: true, Metadata: map[string]string{MetaIV: ""}},                                     // 1
-	{Encrypted: true, Metadata: map[string]string{MetaAlgorithm: ""}},                              // 2
-	{Encrypted: true, Metadata: map[string]string{MetaSealedKeySSEC: ""}},                          // 3
-	{Encrypted: true, Metadata: map[string]string{MetaSealedKeyS3: ""}},                            // 4
-	{Encrypted: true, Metadata: map[string]string{MetaKeyID: ""}},                                  // 5
-	{Encrypted: true, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                      // 6
-	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
+	{Encrypted: true, Metadata: map[string]string{MetaMultipart: ""}},                                // 0
+	{Encrypted: true, Metadata: map[string]string{MetaIV: ""}},                                       // 1
+	{Encrypted: true, Metadata: map[string]string{MetaAlgorithm: ""}},                                // 2
+	{Encrypted: true, Metadata: map[string]string{MetaSealedKeySSEC: ""}},                            // 3
+	{Encrypted: true, Metadata: map[string]string{MetaSealedKeyS3: ""}},                              // 4
+	{Encrypted: true, Metadata: map[string]string{MetaKeyID: ""}},                                    // 5
+	{Encrypted: true, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                        // 6
+	{Encrypted: false, Metadata: map[string]string{"": ""}},                                          // 7
 	{Encrypted: false, Metadata: map[string]string{"X-Otterio-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
@@ -69,14 +69,14 @@ var s3IsEncryptedTests = []struct {
 	Metadata  map[string]string
 	Encrypted bool
 }{
-	{Encrypted: false, Metadata: map[string]string{MetaMultipart: ""}},                             // 0
-	{Encrypted: false, Metadata: map[string]string{MetaIV: ""}},                                    // 1
-	{Encrypted: false, Metadata: map[string]string{MetaAlgorithm: ""}},                             // 2
-	{Encrypted: false, Metadata: map[string]string{MetaSealedKeySSEC: ""}},                         // 3
-	{Encrypted: true, Metadata: map[string]string{MetaSealedKeyS3: ""}},                            // 4
-	{Encrypted: false, Metadata: map[string]string{MetaKeyID: ""}},                                 // 5
-	{Encrypted: false, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                     // 6
-	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
+	{Encrypted: false, Metadata: map[string]string{MetaMultipart: ""}},                               // 0
+	{Encrypted: false, Metadata: map[string]string{MetaIV: ""}},                                      // 1
+	{Encrypted: false, Metadata: map[string]string{MetaAlgorithm: ""}},                               // 2
+	{Encrypted: false, Metadata: map[string]string{MetaSealedKeySSEC: ""}},                           // 3
+	{Encrypted: true, Metadata: map[string]string{MetaSealedKeyS3: ""}},                              // 4
+	{Encrypted: false, Metadata: map[string]string{MetaKeyID: ""}},                                   // 5
+	{Encrypted: false, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                       // 6
+	{Encrypted: false, Metadata: map[string]string{"": ""}},                                          // 7
 	{Encrypted: false, Metadata: map[string]string{"X-Otterio-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
@@ -92,14 +92,14 @@ var ssecIsEncryptedTests = []struct {
 	Metadata  map[string]string
 	Encrypted bool
 }{
-	{Encrypted: false, Metadata: map[string]string{MetaMultipart: ""}},                             // 0
-	{Encrypted: false, Metadata: map[string]string{MetaIV: ""}},                                    // 1
-	{Encrypted: false, Metadata: map[string]string{MetaAlgorithm: ""}},                             // 2
-	{Encrypted: true, Metadata: map[string]string{MetaSealedKeySSEC: ""}},                          // 3
-	{Encrypted: false, Metadata: map[string]string{MetaSealedKeyS3: ""}},                           // 4
-	{Encrypted: false, Metadata: map[string]string{MetaKeyID: ""}},                                 // 5
-	{Encrypted: false, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                     // 6
-	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
+	{Encrypted: false, Metadata: map[string]string{MetaMultipart: ""}},                               // 0
+	{Encrypted: false, Metadata: map[string]string{MetaIV: ""}},                                      // 1
+	{Encrypted: false, Metadata: map[string]string{MetaAlgorithm: ""}},                               // 2
+	{Encrypted: true, Metadata: map[string]string{MetaSealedKeySSEC: ""}},                            // 3
+	{Encrypted: false, Metadata: map[string]string{MetaSealedKeyS3: ""}},                             // 4
+	{Encrypted: false, Metadata: map[string]string{MetaKeyID: ""}},                                   // 5
+	{Encrypted: false, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                       // 6
+	{Encrypted: false, Metadata: map[string]string{"": ""}},                                          // 7
 	{Encrypted: false, Metadata: map[string]string{"X-Otterio-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
@@ -423,13 +423,13 @@ var removeInternalEntriesTests = []struct {
 	},
 	{ // 1
 		Metadata: map[string]string{
-			MetaMultipart:        "",
-			MetaIV:               "",
-			"X-Amz-Meta-A":       "X",
+			MetaMultipart:          "",
+			MetaIV:                 "",
+			"X-Amz-Meta-A":         "X",
 			"X-Otterio-Internal-B": "Y",
 		},
 		Expected: map[string]string{
-			"X-Amz-Meta-A":       "X",
+			"X-Amz-Meta-A":         "X",
 			"X-Otterio-Internal-B": "Y",
 		},
 	},

@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/soulteary/otterio/pkg/kms"
 	"github.com/secure-io/sio-go"
 	"github.com/secure-io/sio-go/sioutil"
+	"github.com/soulteary/otterio/pkg/kms"
 )
 
 // Encrypt encrypts the plaintext with a key managed by KMS.
