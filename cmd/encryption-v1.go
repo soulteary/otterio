@@ -188,6 +188,39 @@ func newEncryptMetadata(key []byte, bucket, object string, metadata map[string]s
 	return objectKey, nil
 }
 
+// newEncryptMetadataKMS generates a fresh object encryption key for an
+// SSE-KMS PUT and persists the sealed-key + client-supplied KMS context
+// into the object's metadata map.
+//
+// SECURITY: This function MUST only be called after enforceSSEKMSRequest
+// has returned ErrNone for the same (kmsKeyID, kmsCtx). The merge here
+// is non-conflict by construction (the gate has already rejected any
+// reserved-key override), so the only error paths are KMS transport
+// errors. The persisted MetaContext contains ONLY the client-supplied
+// part (see crypto.S3KMS.CreateMetadata), the server-bound bucket key
+// is reconstructed deterministically by UnsealObjectKey on every read.
+func newEncryptMetadataKMS(bucket, object string, metadata map[string]string, kmsKeyID string, kmsCtx crypto.Context) (crypto.ObjectKey, error) {
+	if GlobalKMS == nil {
+		return crypto.ObjectKey{}, errKMSNotConfigured
+	}
+	bound, err := crypto.MergeBindingContext(bucket, object, kmsCtx)
+	if err != nil {
+		// This branch is unreachable when the request boundary went
+		// through enforceSSEKMSRequest first, but keep the defensive
+		// check so a future refactor that calls this helper directly
+		// cannot smuggle a bucket-binding override into the AAD.
+		return crypto.ObjectKey{}, err
+	}
+	dek, err := GlobalKMS.GenerateKey(kmsKeyID, bound)
+	if err != nil {
+		return crypto.ObjectKey{}, err
+	}
+	objectKey := crypto.GenerateKey(dek.Plaintext, rand.Reader)
+	sealedKey := objectKey.Seal(dek.Plaintext, crypto.GenerateIV(rand.Reader), crypto.S3KMS.String(), bucket, object)
+	crypto.S3KMS.CreateMetadata(metadata, dek.KeyID, dek.Ciphertext, sealedKey, kmsCtx)
+	return objectKey, nil
+}
+
 func newEncryptReader(content io.Reader, key []byte, bucket, object string, metadata map[string]string, sseS3 bool) (io.Reader, crypto.ObjectKey, error) {
 	objectEncryptionKey, err := newEncryptMetadata(key, bucket, object, metadata, sseS3)
 	if err != nil {
@@ -202,9 +235,41 @@ func newEncryptReader(content io.Reader, key []byte, bucket, object string, meta
 	return reader, objectEncryptionKey, nil
 }
 
+// newEncryptReaderKMS is the SSE-KMS variant of newEncryptReader, used
+// by CopyObject's target-side encrypt path. The (kmsKeyID, kmsCtx)
+// pair MUST have already been validated by enforceSSEKMSRequest at the
+// request boundary.
+func newEncryptReaderKMS(content io.Reader, bucket, object string, metadata map[string]string, kmsKeyID string, kmsCtx crypto.Context) (io.Reader, crypto.ObjectKey, error) {
+	objectEncryptionKey, err := newEncryptMetadataKMS(bucket, object, metadata, kmsKeyID, kmsCtx)
+	if err != nil {
+		return nil, crypto.ObjectKey{}, err
+	}
+	reader, err := sio.EncryptReader(content, sio.Config{Key: objectEncryptionKey[:], MinVersion: sio.Version20, CipherSuites: fips.CipherSuitesDARE()})
+	if err != nil {
+		return nil, crypto.ObjectKey{}, crypto.ErrInvalidCustomerKey
+	}
+	return reader, objectEncryptionKey, nil
+}
+
 // set new encryption metadata from http request headers for SSE-C and generated key from KMS in the case of
-// SSE-S3
+// SSE-S3 / SSE-KMS.
+//
+// SECURITY (SSE-KMS): When the request carries SSE-KMS headers the
+// caller MUST have already passed enforceSSEKMSRequest so that the
+// supplied keyID / clientCtx are validated against the bucket-binding
+// reserved key BEFORE any KMS or object-layer effect. The keyID and
+// clientCtx are re-parsed here from r.Header for the SSE-KMS branch,
+// which is safe because ParseHTTP is deterministic and the same headers
+// are unchanged between the gate and this call site.
 func setEncryptionMetadata(r *http.Request, bucket, object string, metadata map[string]string) (err error) {
+	if crypto.S3KMS.IsRequested(r.Header) {
+		keyID, kmsCtx, perr := crypto.S3KMS.ParseHTTP(r.Header)
+		if perr != nil {
+			return perr
+		}
+		_, err = newEncryptMetadataKMS(bucket, object, metadata, keyID, kmsCtx)
+		return
+	}
 	var (
 		key []byte
 	)
@@ -221,7 +286,18 @@ func setEncryptionMetadata(r *http.Request, bucket, object string, metadata map[
 // EncryptRequest takes the client provided content and encrypts the data
 // with the client provided key. It also marks the object as client-side-encrypted
 // and sets the correct headers.
+//
+// SECURITY (SSE-KMS): SSE-KMS requests MUST go through
+// EncryptRequestWithKMS rather than this function, because the request
+// boundary needs to call enforceSSEKMSRequest BEFORE any KMS or
+// object-layer effect to reject reserved-key overrides without
+// triggering the KMS. Calling EncryptRequest with an SSE-KMS request
+// returns crypto.ErrIncompatibleEncryptionMethod as a defence-in-depth
+// signal so a future caller cannot accidentally bypass the gate.
 func EncryptRequest(content io.Reader, r *http.Request, bucket, object string, metadata map[string]string) (io.Reader, crypto.ObjectKey, error) {
+	if crypto.S3KMS.IsRequested(r.Header) {
+		return nil, crypto.ObjectKey{}, crypto.ErrIncompatibleEncryptionMethod
+	}
 	if crypto.S3.IsRequested(r.Header) && crypto.SSEC.IsRequested(r.Header) {
 		return nil, crypto.ObjectKey{}, crypto.ErrIncompatibleEncryptionMethod
 	}
@@ -240,6 +316,33 @@ func EncryptRequest(content io.Reader, r *http.Request, bucket, object string, m
 		}
 	}
 	return newEncryptReader(content, key, bucket, object, metadata, crypto.S3.IsRequested(r.Header))
+}
+
+// EncryptRequestWithKMS is the SSE-KMS counterpart of EncryptRequest.
+// It is the encrypt-side glue between an SSE-KMS request that has
+// passed enforceSSEKMSRequest and the object-layer write.
+//
+// SECURITY: This function assumes (kmsKeyID, kmsCtx) have already been
+// validated by enforceSSEKMSRequest at the request boundary. It still
+// re-runs the merge inside newEncryptMetadataKMS so that a future
+// caller that forgets the gate cannot bypass the reserved-key check;
+// in normal flow the second merge is a no-op.
+func EncryptRequestWithKMS(content io.Reader, r *http.Request, bucket, object string, metadata map[string]string, kmsKeyID string, kmsCtx crypto.Context) (io.Reader, crypto.ObjectKey, error) {
+	if crypto.SSEC.IsRequested(r.Header) || crypto.S3.IsRequested(r.Header) {
+		return nil, crypto.ObjectKey{}, crypto.ErrIncompatibleEncryptionMethod
+	}
+	if r.ContentLength > encryptBufferThreshold {
+		content = bufio.NewReaderSize(content, encryptBufferSize)
+	}
+	objectEncryptionKey, err := newEncryptMetadataKMS(bucket, object, metadata, kmsKeyID, kmsCtx)
+	if err != nil {
+		return nil, crypto.ObjectKey{}, err
+	}
+	reader, err := sio.EncryptReader(content, sio.Config{Key: objectEncryptionKey[:], MinVersion: sio.Version20, CipherSuites: fips.CipherSuitesDARE()})
+	if err != nil {
+		return nil, crypto.ObjectKey{}, crypto.ErrInvalidCustomerKey
+	}
+	return reader, objectEncryptionKey, nil
 }
 
 func decryptObjectInfo(key []byte, bucket, object string, metadata map[string]string) ([]byte, error) {

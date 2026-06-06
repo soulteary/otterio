@@ -791,11 +791,6 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	if crypto.S3KMS.IsRequested(r.Header) { // SSE-KMS is not supported
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
-		return
-	}
-
 	if _, ok := crypto.IsRequested(r.Header); !objectAPI.IsEncryptionSupported() && ok {
 		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
 		return
@@ -1010,7 +1005,23 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 					return
 				}
 			}
-			reader, objectEncryptionKey, err = newEncryptReader(hashReader, key, bucket, object, metadata, crypto.S3.IsRequested(formValues))
+			if crypto.S3KMS.IsRequested(formValues) {
+				// SECURITY: validate SSE-KMS form fields BEFORE any
+				// KMS or object-layer side effect. We synthesize an
+				// http.Request whose Header is the form fields (the
+				// only place SSE-KMS knobs can arrive in a POST
+				// policy upload) so enforceSSEKMSRequest can reuse
+				// the same code path as the header-driven handlers.
+				kmsReq := &http.Request{Header: http.Header(formValues)}
+				kmsKeyID, kmsCtx, kmsErr := enforceSSEKMSRequest(kmsReq, bucket, object)
+				if kmsErr != ErrNone {
+					writeErrorResponse(ctx, w, errorCodes.ToAPIErr(kmsErr), r.URL, guessIsBrowserReq(r))
+					return
+				}
+				reader, objectEncryptionKey, err = newEncryptReaderKMS(hashReader, bucket, object, metadata, kmsKeyID, kmsCtx)
+			} else {
+				reader, objectEncryptionKey, err = newEncryptReader(hashReader, key, bucket, object, metadata, crypto.S3.IsRequested(formValues))
+			}
 			if err != nil {
 				writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 				return

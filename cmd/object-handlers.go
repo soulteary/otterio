@@ -895,11 +895,6 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if crypto.S3KMS.IsRequested(r.Header) { // SSE-KMS is not supported
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
-		return
-	}
-
 	if _, ok := crypto.IsRequested(r.Header); ok {
 		if globalIsGateway {
 			if crypto.SSEC.IsRequested(r.Header) && !objectAPI.IsEncryptionSupported() {
@@ -1141,12 +1136,30 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 		var oldKey, newKey []byte
 		var objEncKey crypto.ObjectKey
 		sseCopyS3 := crypto.S3.IsEncrypted(srcInfo.UserDefined)
+		sseCopyKMS := crypto.S3KMS.IsEncrypted(srcInfo.UserDefined)
 		sseCopyC := crypto.SSEC.IsEncrypted(srcInfo.UserDefined) && crypto.SSECopy.IsRequested(r.Header)
 		sseC := crypto.SSEC.IsRequested(r.Header)
 		sseS3 := crypto.S3.IsRequested(r.Header)
+		sseKMS := crypto.S3KMS.IsRequested(r.Header)
 
-		isSourceEncrypted := sseCopyC || sseCopyS3
-		isTargetEncrypted := sseC || sseS3
+		isSourceEncrypted := sseCopyC || sseCopyS3 || sseCopyKMS
+		isTargetEncrypted := sseC || sseS3 || sseKMS
+
+		// SECURITY: validate SSE-KMS target headers BEFORE any KMS or
+		// object-layer side effect; on a reserved-key override the
+		// gate returns AccessDenied without invoking the KMS.
+		var (
+			kmsKeyID string
+			kmsCtx   crypto.Context
+		)
+		if sseKMS {
+			var kmsErr APIErrorCode
+			kmsKeyID, kmsCtx, kmsErr = enforceSSEKMSRequest(r, dstBucket, dstObject)
+			if kmsErr != ErrNone {
+				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(kmsErr), r.URL, guessIsBrowserReq(r))
+				return
+			}
+		}
 
 		if sseC {
 			newKey, err = ParseSSECustomerRequest(r)
@@ -1212,7 +1225,11 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 
 			if isTargetEncrypted {
 				var encReader io.Reader
-				encReader, objEncKey, err = newEncryptReader(srcInfo.Reader, newKey, dstBucket, dstObject, encMetadata, sseS3)
+				if sseKMS {
+					encReader, objEncKey, err = newEncryptReaderKMS(srcInfo.Reader, dstBucket, dstObject, encMetadata, kmsKeyID, kmsCtx)
+				} else {
+					encReader, objEncKey, err = newEncryptReader(srcInfo.Reader, newKey, dstBucket, dstObject, encMetadata, sseS3)
+				}
 				if err != nil {
 					writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 					return
@@ -1424,11 +1441,6 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 	objectAPI := api.ObjectAPI()
 	if objectAPI == nil {
 		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrServerNotInitialized), r.URL, guessIsBrowserReq(r))
-		return
-	}
-
-	if crypto.S3KMS.IsRequested(r.Header) { // SSE-KMS is not supported
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
 		return
 	}
 
@@ -1650,7 +1662,21 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 				return
 			}
 
-			reader, objectEncryptionKey, err = EncryptRequest(hashReader, r, bucket, object, metadata)
+			// SECURITY: validate SSE-KMS headers BEFORE any KMS or
+			// object-layer side effect; on a reserved-key override
+			// (or malformed ctx, or KMS-not-configured) the gate
+			// returns the right APIErrorCode without touching KMS.
+			kmsKeyID, kmsCtx, kmsErr := enforceSSEKMSRequest(r, bucket, object)
+			if kmsErr != ErrNone {
+				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(kmsErr), r.URL, guessIsBrowserReq(r))
+				return
+			}
+
+			if crypto.S3KMS.IsRequested(r.Header) {
+				reader, objectEncryptionKey, err = EncryptRequestWithKMS(hashReader, r, bucket, object, metadata, kmsKeyID, kmsCtx)
+			} else {
+				reader, objectEncryptionKey, err = EncryptRequest(hashReader, r, bucket, object, metadata)
+			}
 			if err != nil {
 				writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 				return
@@ -1699,6 +1725,12 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 			if len(objInfo.ETag) >= 32 && strings.Count(objInfo.ETag, "-") != 1 {
 				objInfo.ETag = objInfo.ETag[len(objInfo.ETag)-32:]
 			}
+		case crypto.S3KMS:
+			w.Header().Set(xhttp.AmzServerSideEncryption, xhttp.AmzEncryptionKMS)
+			if keyID, ok := objInfo.UserDefined[crypto.MetaKeyID]; ok && keyID != "" {
+				w.Header().Set(xhttp.AmzServerSideEncryptionKmsID, keyID)
+			}
+			objInfo.ETag, _ = DecryptETag(objectEncryptionKey, ObjectInfo{ETag: objInfo.ETag})
 		}
 	case objInfo.IsCompressed():
 		if !strings.HasSuffix(objInfo.ETag, "-1") {
@@ -1735,11 +1767,6 @@ func (api objectAPIHandlers) PutObjectExtractHandler(w http.ResponseWriter, r *h
 	objectAPI := api.ObjectAPI()
 	if objectAPI == nil {
 		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrServerNotInitialized), r.URL, guessIsBrowserReq(r))
-		return
-	}
-
-	if crypto.S3KMS.IsRequested(r.Header) { // SSE-KMS is not supported
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
 		return
 	}
 
@@ -1958,7 +1985,17 @@ func (api objectAPIHandlers) PutObjectExtractHandler(w http.ResponseWriter, r *h
 					return
 				}
 
-				reader, objectEncryptionKey, err = EncryptRequest(hashReader, r, bucket, object, metadata)
+				kmsKeyID, kmsCtx, kmsErr := enforceSSEKMSRequest(r, bucket, object)
+				if kmsErr != ErrNone {
+					writeErrorResponse(ctx, w, errorCodes.ToAPIErr(kmsErr), r.URL, guessIsBrowserReq(r))
+					return
+				}
+
+				if crypto.S3KMS.IsRequested(r.Header) {
+					reader, objectEncryptionKey, err = EncryptRequestWithKMS(hashReader, r, bucket, object, metadata, kmsKeyID, kmsCtx)
+				} else {
+					reader, objectEncryptionKey, err = EncryptRequest(hashReader, r, bucket, object, metadata)
+				}
 				if err != nil {
 					writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 					return
@@ -2026,11 +2063,6 @@ func (api objectAPIHandlers) NewMultipartUploadHandler(w http.ResponseWriter, r 
 		return
 	}
 
-	if crypto.S3KMS.IsRequested(r.Header) { // SSE-KMS is not supported
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
-		return
-	}
-
 	if _, ok := crypto.IsRequested(r.Header); ok {
 		if globalIsGateway {
 			if crypto.SSEC.IsRequested(r.Header) && !objectAPI.IsEncryptionSupported() {
@@ -2076,6 +2108,14 @@ func (api objectAPIHandlers) NewMultipartUploadHandler(w http.ResponseWriter, r 
 
 	if objectAPI.IsEncryptionSupported() {
 		if _, ok := crypto.IsRequested(r.Header); ok {
+			// SECURITY: validate SSE-KMS headers BEFORE calling
+			// setEncryptionMetadata so that a reserved-key override
+			// is rejected at the request boundary without invoking
+			// the KMS or persisting any partial encMetadata.
+			if _, _, kmsErr := enforceSSEKMSRequest(r, bucket, object); kmsErr != ErrNone {
+				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(kmsErr), r.URL, guessIsBrowserReq(r))
+				return
+			}
 			if err = setEncryptionMetadata(r, bucket, object, encMetadata); err != nil {
 				writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 				return
@@ -2159,11 +2199,6 @@ func (api objectAPIHandlers) CopyObjectPartHandler(w http.ResponseWriter, r *htt
 	objectAPI := api.ObjectAPI()
 	if objectAPI == nil {
 		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrServerNotInitialized), r.URL, guessIsBrowserReq(r))
-		return
-	}
-
-	if crypto.S3KMS.IsRequested(r.Header) { // SSE-KMS is not supported
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
 		return
 	}
 
@@ -2486,11 +2521,6 @@ func (api objectAPIHandlers) PutObjectPartHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	if crypto.S3KMS.IsRequested(r.Header) { // SSE-KMS is not supported
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
-		return
-	}
-
 	if _, ok := crypto.IsRequested(r.Header); ok {
 		if globalIsGateway {
 			if crypto.SSEC.IsRequested(r.Header) && !objectAPI.IsEncryptionSupported() {
@@ -2737,6 +2767,12 @@ func (api objectAPIHandlers) PutObjectPartHandler(w http.ResponseWriter, r *http
 			if len(etag) >= 32 && strings.Count(etag, "-") != 1 {
 				etag = etag[len(etag)-32:]
 			}
+		case crypto.S3KMS:
+			w.Header().Set(xhttp.AmzServerSideEncryption, xhttp.AmzEncryptionKMS)
+			if keyID, ok := mi.UserDefined[crypto.MetaKeyID]; ok && keyID != "" {
+				w.Header().Set(xhttp.AmzServerSideEncryptionKmsID, keyID)
+			}
+			etag = tryDecryptETag(objectEncryptionKey[:], etag, false)
 		}
 	}
 

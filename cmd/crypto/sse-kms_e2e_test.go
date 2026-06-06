@@ -197,3 +197,83 @@ func TestSSEKMSEndToEndTamperedClientCtxFails(t *testing.T) {
 		t.Fatalf("UnsealObjectKey accepted tampered client ctx; want auth failure")
 	}
 }
+
+// TestSSEKMSEndToEndPutThenGetSameObject is the dedicated PUT-then-GET
+// round-trip pinning test for the Bug B follow-up wiring: it walks the
+// full Seal -> CreateMetadata -> ParseMetadata -> UnsealObjectKey
+// sequence against a real AEAD KMS and asserts byte-for-byte equality
+// of the recovered object encryption key (OEK).
+//
+// The other tests in this file mostly assert on the ObjectKey wrapper;
+// here we assert on the raw 32-byte key material, because that is the
+// invariant the multipart part-key derivation in
+// cmd/encryption-v1.go (HMAC(OEK, partID)) relies on. A regression
+// that flipped any byte of the OEK would silently corrupt every part
+// of every multipart upload, so the explicit byte equality is the
+// correct shape of the assertion.
+func TestSSEKMSEndToEndPutThenGetSameObject(t *testing.T) {
+	k := realKMS(t)
+	const bucket, object = "alpha", "x/y/z"
+
+	mdPut, oekPut := sealE2E(t, k, bucket, object, nil)
+
+	oekGet, err := S3KMS.UnsealObjectKey(k, mdPut, bucket, object)
+	if err != nil {
+		t.Fatalf("UnsealObjectKey: %v", err)
+	}
+	if !reflect.DeepEqual(oekGet[:], oekPut[:]) {
+		t.Fatalf("OEK byte mismatch:\n PUT %x\n GET %x", oekPut[:], oekGet[:])
+	}
+}
+
+// TestSSEKMSEndToEndPutWithClientCtxRoundTrip covers the wired-PUT
+// counterpart of TestSSEKMSEndToEndClientCtxRoundTrip: it pins that
+// the persisted MetaContext after a PUT (CreateMetadata) survives a
+// GET (ParseMetadata) at the byte level for non-trivial client ctx,
+// and that the OEK recovered on the GET side matches the OEK that
+// would have been used to encrypt the body on the PUT side.
+//
+// This test is deliberately distinct from
+// TestSSEKMSEndToEndClientCtxRoundTrip because it asserts on the raw
+// OEK bytes (the surface used by the part-key derivation) and on the
+// MetaContext's exact serialization, not just a reflect-equality of
+// the parsed ctx struct.
+func TestSSEKMSEndToEndPutWithClientCtxRoundTrip(t *testing.T) {
+	k := realKMS(t)
+	const bucket, object = "alpha", "x"
+	clientCtx := Context{"app": "billing", "tenant": "acme"}
+
+	mdPut, oekPut := sealE2E(t, k, bucket, object, clientCtx)
+
+	// MetaContext on the wire MUST exactly equal the base64 of the
+	// JSON serialization of the client ctx. Pinning the byte shape
+	// here keeps the contract observable to anyone reading the
+	// metadata blob (e.g. an auditor or backup tool) and protects
+	// against an accidental switch to a different encoding.
+	wantBytes, err := clientCtx.MarshalText()
+	if err != nil {
+		t.Fatalf("clientCtx.MarshalText: %v", err)
+	}
+	gotEncoded, ok := mdPut[MetaContext]
+	if !ok {
+		t.Fatalf("PUT metadata is missing %s", MetaContext)
+	}
+	gotBytes, err := base64.StdEncoding.DecodeString(gotEncoded)
+	if err != nil {
+		t.Fatalf("MetaContext is not base64: %v", err)
+	}
+	if !reflect.DeepEqual(gotBytes, wantBytes) {
+		t.Fatalf("persisted MetaContext bytes:\n got  %s\n want %s", gotBytes, wantBytes)
+	}
+
+	// And the GET path must recover the OEK byte-for-byte despite
+	// the client ctx being persisted under MetaContext rather than
+	// replayed by the runtime.
+	oekGet, err := S3KMS.UnsealObjectKey(k, mdPut, bucket, object)
+	if err != nil {
+		t.Fatalf("UnsealObjectKey: %v", err)
+	}
+	if !reflect.DeepEqual(oekGet[:], oekPut[:]) {
+		t.Fatalf("OEK byte mismatch:\n PUT %x\n GET %x", oekPut[:], oekGet[:])
+	}
+}

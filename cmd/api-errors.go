@@ -376,6 +376,14 @@ const (
 	// code lets audit logs distinguish "header forgery rejected" from a
 	// vanilla AccessDenied.
 	ErrAccessDeniedReplicationHeader
+	// ErrKMSContextBindingConflict is returned when a SSE-KMS request supplies
+	// an x-amz-server-side-encryption-context that attempts to override a
+	// server-bound reserved key (currently "bucket"). The S3 wire code is
+	// the generic "AccessDenied" so the attacker cannot fingerprint which
+	// key was reserved; the internal code lets audit logs distinguish the
+	// hardened-rejection path from a vanilla AccessDenied. The KMS is
+	// guaranteed not to be called when this error is returned.
+	ErrKMSContextBindingConflict
 )
 
 type errorCodeMap map[APIErrorCode]APIError
@@ -1090,6 +1098,11 @@ var errorCodes = errorCodeMap{
 		Code:           "InvalidArgument",
 		Description:    "Server side encryption specified but KMS authorization failed",
 		HTTPStatusCode: http.StatusBadRequest,
+	},
+	ErrKMSContextBindingConflict: {
+		Code:           "AccessDenied",
+		Description:    "The supplied KMS encryption context conflicts with the server-bound reserved key",
+		HTTPStatusCode: http.StatusForbidden,
 	},
 	ErrNoAccessKey: {
 		Code:           "AccessDenied",
@@ -1858,6 +1871,8 @@ func toAPIErrorCode(ctx context.Context, err error) (apiErr APIErrorCode) {
 		apiErr = ErrKMSNotConfigured
 	case crypto.ErrKMSAuthLogin:
 		apiErr = ErrKMSAuthFailure
+	case crypto.ErrKMSContextBindingConflict:
+		apiErr = ErrKMSContextBindingConflict
 	case context.Canceled, context.DeadlineExceeded:
 		apiErr = ErrOperationTimedOut
 	case errDiskNotFound:

@@ -91,6 +91,13 @@ var (
 	// a generic crypto/integrity failure without leaking which key the
 	// attacker tried to override.
 	errKMSContextBindingConflict = Errorf("The persisted KMS context attempts to override a server-bound reserved key")
+
+	// ErrKMSContextBindingConflict is the exported sentinel for
+	// errKMSContextBindingConflict, used by callers outside the crypto
+	// package that need to translate it into an HTTP-level error code.
+	// It points to the same value so existing errors.Is checks against
+	// the unexported sentinel keep working.
+	ErrKMSContextBindingConflict = errKMSContextBindingConflict
 )
 
 var (

@@ -168,6 +168,18 @@ func mergeBindingContext(bucket, object string, clientCtx Context) (Context, err
 	return bound, nil
 }
 
+// MergeBindingContext is the exported wrapper around mergeBindingContext.
+// It is the entry point for cmd-package PUT-handler glue (e.g.
+// enforceSSEKMSRequest) that needs to validate a client-supplied SSE-KMS
+// context against the server-bound bucket-binding key BEFORE calling
+// into the KMS. On a reserved-key conflict it returns
+// ErrKMSContextBindingConflict (the exported alias of the unexported
+// sentinel) so callers can translate the failure into an HTTP-level
+// AccessDenied without revealing which key was reserved.
+func MergeBindingContext(bucket, object string, clientCtx Context) (Context, error) {
+	return mergeBindingContext(bucket, object, clientCtx)
+}
+
 // CreateMetadata encodes the sealed object key into the metadata and
 // returns the modified metadata. If the keyID and the kmsKey is not
 // empty it encodes both into the metadata as well. When clientCtx is
