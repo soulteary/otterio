@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/VividCortex/ewma v1.2.0
 	github.com/alecthomas/participle v0.7.1
-	github.com/apache/thrift v0.23.0
+	github.com/apache/thrift v0.23.1-0.20260429145742-d2acd3c49e58
 	github.com/bcicen/jstream v1.0.1
 	github.com/beevik/ntp v1.5.0
 	github.com/bits-and-blooms/bloom/v3 v3.7.1
