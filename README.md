@@ -14,137 +14,51 @@ English · [简体中文](./README_zh_CN.md)
 
 </div>
 
-OtterIO is a High Performance Object Storage. It is API compatible with the Amazon S3 cloud storage service. Use OtterIO to build high performance infrastructure for machine learning, analytics and application data workloads.
+OtterIO is a high-performance, S3-compatible object storage server. It is suitable for building infrastructure for machine learning, analytics, backup, and general application data workloads.
 
-This README provides quickstart instructions on running OtterIO on baremetal hardware, including Docker-based installations.
+This README covers running OtterIO on bare metal, Docker, and from source. For deeper topics (erasure coding, distributed mode, KMS, replication, etc.) see the [`docs/`](./docs) folder.
 
-> **⚠️ OtterIO is an independent, community-maintained fork of the upstream Apache-licensed MinIO codebase project.**
->
-> This project is **NOT** affiliated with, endorsed by, or sponsored by MinIO, Inc.
-> "MinIO" is a trademark of MinIO, Inc., used here solely to identify the upstream
-> project from which this fork is derived. No trademark rights are granted by the
-> Apache License 2.0 (see Section 6 of the license).
->
-> OtterIO is based on the **last Apache License 2.0 release of MinIO**, prior to
-> OtterIO's relicensing to the GNU AGPLv3, and remains distributed under the
-> [Apache License, Version 2.0](./LICENSE). The original copyright notices of
-> MinIO, Inc. and all third-party subcomponents are retained — see [`NOTICE`](./NOTICE).
->
-> Project home: https://github.com/soulteary/otterio
+> [!IMPORTANT]
+> OtterIO is an independent, community-maintained fork of the upstream Apache-licensed MinIO codebase. It is **not** affiliated with, endorsed by, or sponsored by MinIO, Inc. See [Trademark & Upstream Notice](#trademark--upstream-notice) and the [Security Advisory](#security-advisory) before deploying.
 
-> **🔐 Security Advisory — please read before deploying.**
->
-> Because OtterIO is forked from the **last Apache 2.0 release of MinIO
-> (≈ `RELEASE.2021-04-22T15-44-28Z`)**, every CVE / GHSA published against
-> upstream `minio/minio` after that date must be evaluated and back-ported
-> separately. OtterIO does **not** automatically inherit those fixes.
->
-> **Backlog status (as of 2026-06): 14 closed, 2 not-applicable, 0 open.**
-> Every advisory currently triaged against the post-2021-04 baseline has
-> been resolved on `main` — see
-> [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)
-> for the per-item table with the OtterIO codepath, the upstream
-> reference, and the regression tests pinning each fix. New upstream
-> advisories will be added with status `Pending` and tracked from there.
->
-> **Operators upgrading from a previous OtterIO build that used LDAP**
-> should consult [`docs/security/ldap-dn-normalization-migration.md`](./docs/security/ldap-dn-normalization-migration.md)
-> before rolling out: the new release canonicalises every LDAP DN before
-> it touches the IAM policy map, which is a one-shot breaking change for
-> deployments that happened to rely on case-only DN differences.
->
-> **Before adopting OtterIO**, please evaluate fitness against your own
-> deployment context — workload profile, capacity / throughput targets,
-> compliance and data-residency requirements, supported-version policy,
-> and your organisation's change-management expectations. As with any
-> infrastructure component, we recommend a staged rollout (lab → staging
-> → production) and validating the relevant codepaths against your own
-> regression suite. See [`SECURITY.md`](./SECURITY.md) for the disclosure
-> policy and the supported-versions matrix.
+---
 
-## Security Hardening Highlights
+## What is OtterIO
 
-Relative to the 2021-04-22 Apache-licensed MinIO baseline OtterIO has
-back-ported and (where applicable) hardened the following upstream
-advisories — full per-item context, codepaths, and regression tests live
-in [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md):
+OtterIO is a customized fork of the **last Apache License 2.0 release of MinIO** (≈ `RELEASE.2021-04-22T15-44-28Z`). It differs from upstream in the following ways:
 
-- **SSE metadata injection** (GHSA-3rh2-v3gr-35p9 class) — reserved-prefix
-  metadata is rejected at both the router edge and `extractMetadata`.
-- **Precondition GET / HEAD metadata disclosure**
-  (GHSA-95fr-cm4m-q5p9 / CVE-2024-36107) — `s3:ExistingObjectTag/*` and
-  `s3:RequestObjectTag/*` are now first-class condition keys, and the
-  precondition path re-runs auth before writing `ETag` / `Last-Modified`
-  so a tag-gated deny no longer leaks object state.
-- **SSE-KMS context binding** (multiple post-2022 CVEs) — bucket / object
-  AAD is reconstructed from the runtime `(bucket, object)` on every seal
-  and unseal, hostile or tampered `MetaContext` blobs are rejected with a
-  dedicated 403 sentinel before the KMS is ever called, and the seven
-  legacy `ErrNotImplemented` PUT-handler stubs have been replaced with a
-  single `enforceSSEKMSRequest` security gate covering single-PUT,
-  multipart, copy and post-policy paths.
-- **Service-account privilege escalation** — `GHSA-jjjj-jwhf-8rgr` (own-
-  account create-SA bypass), the RELEASE.2025-10-15 sub-policy escalation,
-  and `GHSA-xx8w-mq23-29g4 / CVE-2024-24747` (admin:UpdateServiceAccount)
-  are all closed; sub-policies must be a subset of the caller's capability.
-- **`AddUser` PolicyName privilege escalation** (CVE-2021-43858) —
-  defence-in-depth at both the handler (HTTP 400) and IAM-layer
-  (silent strip).
-- **LDAP DN normalisation family** (2022–2024 advisories) — RFC 4514 +
-  RFC 4518 canonicalisation at every DN egress and at the IAM boundary,
-  with a one-shot persisted-data migration; see the migration note
-  linked above.
-- **Bucket / IAM policy parsing** — `Principal` / `Resource` / `Action`
-  unmarshal panics fixed, attacker-controlled input no longer reflected
-  into error messages, fuzz corpus added.
-- **SigV4 signed-headers and chunked-upload hardening** — empty
-  `X-Amz-Content-Sha256` is treated as "not provided" instead of coercing
-  the canonicaliser, `SignedHeaders` is case-folded, and aws-chunked
-  uploads must sign `x-amz-decoded-content-length`.
-- **Replication-header IAM gate** — fork-private `X-Otterio-Source-*`
-  headers now require the `s3:ReplicateObject` action via
-  `enforceSourceHeaderIAM`, closing a forge path that could rewrite
-  object mtime / ETag or force delete-markers under ordinary
-  `s3:PutObject` / `s3:DeleteObject` permissions.
-- **CVE-2023-28432 bootstrap info disclosure** — `VerifyHandler` is now
-  gated on the same inter-node JWT validator used by peer-rest /
-  storage-rest / lock-rest; only `HealthHandler` remains anonymous.
-- **Multi-value `Host` header smuggle (fork-introduced concern)** —
-  audited and pinned: both fasthttp and net/http collapse or reject
-  duplicate Host headers before any handler runs, and SigV4 reads only
-  the scalar `r.Host`, so the two-header smuggle is not constructible.
+- **HTTP layer** — request router built on [`gofiber/fiber/v3`](https://github.com/gofiber/fiber) instead of `gorilla/mux`.
+- **Bucket notification targets** — only `elasticsearch`, `mysql`, `postgresql`, `redis`, and `webhook` are supported. The message-queue targets (Kafka, NATS, NATS Streaming, NSQ, AMQP, MQTT) have been removed.
+- **Gateways** — only `nas` and `s3` remain. The `azure`, `gcs`, and `hdfs` gateways have been removed.
+- **Toolchain** — requires Go `1.26` or newer (see [`go.mod`](./go.mod)).
+- **Container images** — published at `soulteary/otterio` (Docker Hub) and `ghcr.io/soulteary/otterio` (GitHub Container Registry).
 
-Two further upstream advisories (CVE-2021-41137 regular-user policy
-bypass and GHSA-cwq8-g58r-32hg `ImportIAM` privilege escalation) are
-**not applicable** to the 2021-04 baseline — see the backlog for the
-audit trail and the negative-pinning regression tests.
+OtterIO continues to be distributed under the [Apache License, Version 2.0](./LICENSE). All original copyright notices are retained — see [`NOTICE`](./NOTICE).
 
-## About OtterIO
+---
 
-OtterIO is a customized fork of MinIO and differs from upstream in the following ways:
+## Quick Start
 
-- **HTTP layer**: the request router is built on [`gofiber/fiber/v3`](https://github.com/gofiber/fiber) instead of `gorilla/mux`.
-- **Bucket notification targets**: only `elasticsearch`, `mysql`, `postgresql`, `redis`, and `webhook` are supported. The message-queue targets (Kafka, NATS, NATS Streaming, NSQ, AMQP, MQTT) have been removed.
-- **Gateways**: only the `nas` and `s3` gateways remain. The `azure`, `gcs`, and `hdfs` gateways have been removed.
-- **Toolchain**: requires Go `1.26` or newer (see `go.mod`).
+Run a single-node OtterIO instance with Docker:
 
-> NOTE: OtterIO publishes its own container images at `soulteary/otterio`
-> (Docker Hub) and `ghcr.io/soulteary/otterio` (GitHub Container Registry).
-> Other upstream links in this guide (`docs.min.io`, `dl.min.io`, etc.) still
-> refer to the **original upstream project**, not to OtterIO. Build OtterIO from
-> source (see [Install from Source](#install-from-source)) to use the
-> customizations above.
+```sh
+docker run -p 9000:9000 -p 9001:9001 \
+  -v /mnt/data:/data \
+  soulteary/otterio:latest server /data --console-address ":9001"
+```
 
-# Docker Installation
+Default root credentials are `otterioadmin:otterioadmin`. Once running, see [Verify](#verify) to connect via the web console or `mc`.
 
-Use the following commands to run a standalone OtterIO server on a Docker container.
+> [!NOTE]
+> Standalone OtterIO servers are best suited for development and evaluation. Production deployments should run **distributed mode with Erasure Coding enabled** — at least **4 drives per server**. See [`docs/erasure/README.md`](./docs/erasure/README.md) and [`docs/distributed/README.md`](./docs/distributed/README.md).
 
-Standalone OtterIO servers are best suited for early development and evaluation. Certain features such as versioning, object locking, and bucket replication
-require distributed deploying OtterIO with Erasure Coding. For extended development and production, deploy OtterIO with Erasure Coding enabled - specifically,
-with a *minimum* of 4 drives per OtterIO server. See [OtterIO Erasure Code Quickstart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide.html)
-for more complete documentation.
+---
 
-OtterIO publishes its own container images to both Docker Hub and the GitHub Container Registry. Pull whichever registry is most convenient:
+## Installation
+
+### Docker
+
+OtterIO publishes container images to both Docker Hub and the GitHub Container Registry:
 
 ```sh
 # Docker Hub
@@ -154,176 +68,84 @@ docker pull soulteary/otterio:latest
 docker pull ghcr.io/soulteary/otterio:latest
 ```
 
-## Stable
+| Tag      | Description                                              |
+| -------- | -------------------------------------------------------- |
+| `latest` | Latest stable release.                                   |
+| `edge`   | Bleeding-edge build from `main` — for testing only.      |
 
-Run the following command to run the latest stable image of OtterIO on a Docker container using an ephemeral data volume:
+Run a standalone server with an ephemeral volume:
 
 ```sh
 docker run -p 9000:9000 soulteary/otterio:latest server /data
 ```
 
-The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded
-web-based object browser built into OtterIO Server. Point a web browser running on the host machine to http://127.0.0.1:9000 and log in with the
-root credentials. You can use the Browser to create buckets, upload objects, and browse the contents of the OtterIO server.
-
-You can also connect using any S3-compatible tool, such as the OtterIO Client `mc` commandline tool. See
-[Test using OtterIO Client `mc`](#test-using-otterio-client-mc) for more information on using the `mc` commandline tool. For application developers,
-see https://docs.min.io/docs/ and click **MINIO SDKS** in the navigation to view OtterIO SDKs for supported languages.
-
-
-> NOTE: To deploy OtterIO on Docker with persistent storage, you must map local persistent directories from the host OS to the container using the
-  `docker -v` option. For example, `-v /mnt/data:/data` maps the host OS drive at `/mnt/data` to `/data` on the Docker container.
-
-## Edge
-
-Run the following command to run the bleeding-edge image of OtterIO on a Docker container using an ephemeral data volume:
+For persistent storage, map a host directory to `/data`:
 
 ```sh
-docker run -p 9000:9000 soulteary/otterio:edge server /data
+docker run -p 9000:9000 -v /mnt/data:/data soulteary/otterio:latest server /data
 ```
 
-The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded
-web-based object browser built into OtterIO Server. Point a web browser running on the host machine to http://127.0.0.1:9000 and log in with the
-root credentials. You can use the Browser to create buckets, upload objects, and browse the contents of the OtterIO server.
+### macOS
 
-You can also connect using any S3-compatible tool, such as the OtterIO Client `mc` commandline tool. See
-[Test using OtterIO Client `mc`](#test-using-otterio-client-mc) for more information on using the `mc` commandline tool. For application developers,
-see https://docs.min.io/docs/ and click **MINIO SDKS** in the navigation to view OtterIO SDKs for supported languages.
-
-
-> NOTE: To deploy OtterIO on Docker with persistent storage, you must map local persistent directories from the host OS to the container using the
-  `docker -v` option. For example, `-v /mnt/data:/data` maps the host OS drive at `/mnt/data` to `/data` on the Docker container.
-
-# macOS
-
-Use the following commands to run a standalone OtterIO server on macOS.
-
-Standalone OtterIO servers are best suited for early development and evaluation. Certain features such as versioning, object locking, and bucket replication
-require distributed deploying OtterIO with Erasure Coding. For extended development and production, deploy OtterIO with Erasure Coding enabled - specifically,
-with a *minimum* of 4 drives per OtterIO server. See [OtterIO Erasure Code Quickstart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide.html)
-for more complete documentation.
-
-## Homebrew (recommended)
-
-Run the following command to install the latest stable OtterIO package using [Homebrew](https://brew.sh/). Replace ``/data`` with the path to the drive or directory in which you want OtterIO to store data.
+#### Homebrew (recommended)
 
 ```sh
 brew install otterio/stable/otterio
 otterio server /data
 ```
 
-> NOTE: If you previously installed otterio using `brew install otterio` then it is recommended that you reinstall otterio from `otterio/stable/otterio` official repo instead.
+If you previously installed OtterIO from a different tap, reinstall from the official tap:
 
 ```sh
 brew uninstall otterio
 brew install otterio/stable/otterio
 ```
 
-The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded
-web-based object browser built into OtterIO Server. Point a web browser running on the host machine to http://127.0.0.1:9000 and log in with the
-root credentials. You can use the Browser to create buckets, upload objects, and browse the contents of the OtterIO server.
+#### Binary
 
-You can also connect using any S3-compatible tool, such as the OtterIO Client `mc` commandline tool. See
-[Test using OtterIO Client `mc`](#test-using-otterio-client-mc) for more information on using the `mc` commandline tool. For application developers,
-see https://docs.min.io/docs/ and click **MINIO SDKS** in the navigation to view OtterIO SDKs for supported languages.
-
-## Binary Download
-
-Use the following command to download and run a standalone OtterIO server on macOS. Replace ``/data`` with the path to the drive or directory in which you want OtterIO to store data.
+Pre-built macOS binaries are published on [GitHub Releases](https://github.com/soulteary/otterio/releases). Download the appropriate archive, then:
 
 ```sh
-wget https://dl.min.io/server/minio/release/darwin-amd64/minio
 chmod +x otterio
 ./otterio server /data
 ```
 
-The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded
-web-based object browser built into OtterIO Server. Point a web browser running on the host machine to http://127.0.0.1:9000 and log in with the
-root credentials. You can use the Browser to create buckets, upload objects, and browse the contents of the OtterIO server.
+### Linux
 
-You can also connect using any S3-compatible tool, such as the OtterIO Client `mc` commandline tool. See
-[Test using OtterIO Client `mc`](#test-using-otterio-client-mc) for more information on using the `mc` commandline tool. For application developers,
-see https://docs.min.io/docs/ and click **MINIO SDKS** in the navigation to view OtterIO SDKs for supported languages.
-
-
-# GNU/Linux
-
-Use the following command to run a standalone OtterIO server on Linux hosts running 64-bit Intel/AMD architectures. Replace ``/data`` with the path to the drive or directory in which you want OtterIO to store data.
+Pre-built Linux binaries are published on [GitHub Releases](https://github.com/soulteary/otterio/releases). Download the asset that matches your architecture and run it as `otterio`:
 
 ```sh
-wget https://dl.min.io/server/minio/release/linux-amd64/minio
 chmod +x otterio
 ./otterio server /data
 ```
 
-Replace ``/data`` with the path to the drive or directory in which you want OtterIO to store data.
+The release pipeline ([`.goreleaser.yml`](./.goreleaser.yml)) currently produces Linux binaries for the following architectures:
 
-The following table lists supported architectures. Replace the `wget` URL with the architecture for your Linux host.
+| Architecture                | `goarch`   |
+| --------------------------- | ---------- |
+| 64-bit Intel/AMD            | `amd64`    |
+| 64-bit ARM                  | `arm64`    |
+| 32-bit ARMv7                | `arm`      |
+| 64-bit PowerPC LE           | `ppc64le`  |
+| IBM Z-Series                | `s390x`    |
 
-| Architecture                   | URL                                                        |
-| --------                       | ------                                                     |
-| 64-bit Intel/AMD               | https://dl.min.io/server/minio/release/linux-amd64/minio   |
-| 64-bit ARM                     | https://dl.min.io/server/minio/release/linux-arm64/minio   |
-| 64-bit PowerPC LE (ppc64le)    | https://dl.min.io/server/minio/release/linux-ppc64le/minio |
-| IBM Z-Series (S390X)           | https://dl.min.io/server/minio/release/linux-s390x/minio   |
+`.deb` and `.rpm` packages are also produced for the supported architectures.
 
-The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded
-web-based object browser built into OtterIO Server. Point a web browser running on the host machine to http://127.0.0.1:9000 and log in with the
-root credentials. You can use the Browser to create buckets, upload objects, and browse the contents of the OtterIO server.
+### Windows
 
-You can also connect using any S3-compatible tool, such as the OtterIO Client `mc` commandline tool. See
-[Test using OtterIO Client `mc`](#test-using-otterio-client-mc) for more information on using the `mc` commandline tool. For application developers,
-see https://docs.min.io/docs/ and click **MINIO SDKS** in the navigation to view OtterIO SDKs for supported languages.
+Pre-built Windows binaries (`amd64`) are published on [GitHub Releases](https://github.com/soulteary/otterio/releases). After downloading `otterio.exe`, run it from the directory where it lives, or add that directory to the system `PATH`:
 
-
-> NOTE: Standalone OtterIO servers are best suited for early development and evaluation. Certain features such as versioning, object locking, and bucket replication
-require distributed deploying OtterIO with Erasure Coding. For extended development and production, deploy OtterIO with Erasure Coding enabled - specifically,
-with a *minimum* of 4 drives per OtterIO server. See [OtterIO Erasure Code Quickstart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide.html)
-for more complete documentation.
-
-# Microsoft Windows
-
-To run OtterIO on 64-bit Windows hosts, download the OtterIO executable from the following URL:
-
-```sh
-https://dl.min.io/server/minio/release/windows-amd64/minio.exe
-```
-
-Use the following command to run a standalone OtterIO server on the Windows host. Replace ``D:\`` with the path to the drive or directory in which you want OtterIO to store data. You must change the terminal or powershell directory to the location of the ``otterio.exe`` executable, *or* add the path to that directory to the system ``$PATH``:
-
-```sh
+```powershell
 otterio.exe server D:\
 ```
 
-The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded
-web-based object browser built into OtterIO Server. Point a web browser running on the host machine to http://127.0.0.1:9000 and log in with the
-root credentials. You can use the Browser to create buckets, upload objects, and browse the contents of the OtterIO server.
+### FreeBSD
 
-You can also connect using any S3-compatible tool, such as the OtterIO Client `mc` commandline tool. See
-[Test using OtterIO Client `mc`](#test-using-otterio-client-mc) for more information on using the `mc` commandline tool. For application developers,
-see https://docs.min.io/docs/ and click **MINIO SDKS** in the navigation to view OtterIO SDKs for supported languages.
+OtterIO does not currently provide an official FreeBSD package. Build from source on FreeBSD using the [Build from Source](#build-from-source) instructions below.
 
-> NOTE: Standalone OtterIO servers are best suited for early development and evaluation. Certain features such as versioning, object locking, and bucket replication
-require distributed deploying OtterIO with Erasure Coding. For extended development and production, deploy OtterIO with Erasure Coding enabled - specifically,
-with a *minimum* of 4 drives per OtterIO server. See [OtterIO Erasure Code Quickstart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide.html)
-for more complete documentation.
+### Build from Source
 
-# FreeBSD
-
-OtterIO does not provide an official FreeBSD binary. However, FreeBSD maintains an [upstream release](https://www.freshports.org/www/otterio) using [pkg](https://github.com/freebsd/pkg):
-
-```sh
-pkg install otterio
-sysrc otterio_enable=yes
-sysrc otterio_disks=/home/user/Photos
-service otterio start
-```
-
-# Install from Source
-
-Use the following commands to compile and run a standalone OtterIO server from source. Source installation is only intended for developers and advanced users. If you do not have a working Golang environment, please follow [How to install Golang](https://golang.org/doc/install). OtterIO requires **Go 1.26 or newer** (see `go.mod`).
-
-To build OtterIO (with the Fiber-based router and other customizations), clone and build it directly:
+Source builds are intended for developers and advanced users. Make sure you have a working Go toolchain (Go 1.26 or newer — see [How to install Go](https://go.dev/doc/install)).
 
 ```sh
 git clone https://github.com/soulteary/otterio.git
@@ -332,27 +154,16 @@ make build
 ./otterio server /data
 ```
 
-The OtterIO deployment starts using default root credentials `otterioadmin:otterioadmin`. You can test the deployment using the OtterIO Browser, an embedded
-web-based object browser built into OtterIO Server. Point a web browser running on the host machine to http://127.0.0.1:9000 and log in with the
-root credentials. You can use the Browser to create buckets, upload objects, and browse the contents of the OtterIO server.
+> [!WARNING]
+> We strongly recommend **against** running compiled-from-source binaries in production. Use a tagged release for production deployments.
 
-You can also connect using any S3-compatible tool, such as the OtterIO Client `mc` commandline tool. See
-[Test using OtterIO Client `mc`](#test-using-otterio-client-mc) for more information on using the `mc` commandline tool. For application developers,
-see https://docs.min.io/docs/ and click **MINIO SDKS** in the navigation to view OtterIO SDKs for supported languages.
+---
 
+## Configuration
 
-> NOTE: Standalone OtterIO servers are best suited for early development and evaluation. Certain features such as versioning, object locking, and bucket replication
-require distributed deploying OtterIO with Erasure Coding. For extended development and production, deploy OtterIO with Erasure Coding enabled - specifically,
-with a *minimum* of 4 drives per OtterIO server. See [OtterIO Erasure Code Quickstart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide.html)
-for more complete documentation.
+### Run S3 and Web Console on separate ports
 
-OtterIO strongly recommends *against* using compiled-from-source OtterIO servers for production environments.
-
-# Deployment Recommendations
-
-## Run S3 and Web Console on Separate Ports
-
-By default the web console and the S3 API share the listener bound to `--address`. Since the recent split-listener change, OtterIO can serve the web UI and the admin API on a dedicated port so reverse proxies, firewalls, and network policies can govern S3 traffic and console traffic independently.
+By default the web console and the S3 API share the listener bound to `--address`. OtterIO can serve the web UI and admin API on a dedicated port so that reverse proxies, firewalls, and network policies can govern S3 traffic and console traffic independently.
 
 Enable the dedicated console listener via the `--console-address` flag or the `OTTERIO_BROWSER_ADDRESS` environment variable:
 
@@ -360,7 +171,7 @@ Enable the dedicated console listener via the `--console-address` flag or the `O
 # CLI flag
 otterio server --address ":9000" --console-address ":9001" /data
 
-# environment variable (equivalent)
+# Environment variable (equivalent)
 export OTTERIO_BROWSER_ADDRESS=":9001"
 otterio server --address ":9000" /data
 ```
@@ -372,9 +183,10 @@ When the dedicated console listener is enabled:
 - The console port must differ from the S3 port; otherwise startup fails fast.
 - `Ctrl+C` / `SIGTERM` shuts down both listeners gracefully.
 
-> Note: the admin API (used by `mc admin ...`) is served from the console port in this mode. Configure your `mc` alias to point at the console URL when issuing admin commands. Regular S3 operations (`mc cp`, `mc ls`, etc.) continue to use the S3 port.
+> [!NOTE]
+> The admin API (used by `mc admin ...`) is served from the console port in this mode. Configure your `mc` alias to point at the console URL when issuing admin commands. Regular S3 operations (`mc cp`, `mc ls`, etc.) continue to use the S3 port.
 
-If `--console-address` is not provided, both surfaces continue to share a single port (the original behaviour).
+If `--console-address` is not provided, both surfaces share a single port (the original behaviour).
 
 ### Dedicated TLS certificates for the console listener
 
@@ -396,89 +208,171 @@ The directory pointed to by `--console-certs-dir` must contain `public.crt` and 
 - The S3 listener always uses `--certs-dir`; only the console listener honours `--console-certs-dir`.
 - Both keypairs are watched and hot-reloaded by the same certificate manager used for `--certs-dir`.
 
-## Allow port access for Firewalls
+### Firewall
 
-By default OtterIO uses the port 9000 to listen for incoming connections. If your platform blocks the port by default, you may need to enable access to the port.
+By default OtterIO listens on port `9000` for S3 traffic (and `9001` if the console listener is split out). Some platforms block these ports until you explicitly open them.
 
-### ufw
-
-For hosts with ufw enabled (Debian based distros), you can use `ufw` command to allow traffic to specific ports. Use below command to allow access to port 9000
+<details>
+<summary><strong>ufw</strong> (Debian / Ubuntu)</summary>
 
 ```sh
 ufw allow 9000
-```
 
-Below command enables all incoming traffic to ports ranging from 9000 to 9010.
-
-```sh
+# Range
 ufw allow 9000:9010/tcp
 ```
 
-### firewall-cmd
+</details>
 
-For hosts with firewall-cmd enabled (CentOS), you can use `firewall-cmd` command to allow traffic to specific ports. Use below commands to allow access to port 9000
+<details>
+<summary><strong>firewall-cmd</strong> (CentOS / RHEL)</summary>
 
 ```sh
 firewall-cmd --get-active-zones
-```
-
-This command gets the active zone(s). Now, apply port rules to the relevant zones returned above. For example if the zone is `public`, use
-
-```sh
 firewall-cmd --zone=public --add-port=9000/tcp --permanent
-```
-
-Note that `permanent` makes sure the rules are persistent across firewall start, restart or reload. Finally reload the firewall for changes to take effect.
-
-```sh
 firewall-cmd --reload
 ```
 
-### iptables
+`--permanent` makes the rule persist across reboots and reloads.
 
-For hosts with iptables enabled (RHEL, CentOS, etc), you can use `iptables` command to enable all traffic coming to specific ports. Use below command to allow
-access to port 9000
+</details>
+
+<details>
+<summary><strong>iptables</strong> (RHEL, CentOS, etc.)</summary>
 
 ```sh
 iptables -A INPUT -p tcp --dport 9000 -j ACCEPT
 service iptables restart
-```
 
-Below command enables all incoming traffic to ports ranging from 9000 to 9010.
-
-```sh
+# Range
 iptables -A INPUT -p tcp --dport 9000:9010 -j ACCEPT
 service iptables restart
 ```
 
-## Pre-existing data
-When deployed on a single drive, OtterIO server lets clients access any pre-existing data in the data directory. For example, if OtterIO is started with the command  `otterio server /mnt/data`, any pre-existing data in the `/mnt/data` directory would be accessible to the clients.
+</details>
 
-The above statement is also valid for all gateway backends.
+### Pre-existing data
 
-# Test OtterIO Connectivity
+When deployed on a single drive, OtterIO server lets clients access any pre-existing data in the data directory. For example, if OtterIO is started with `otterio server /mnt/data`, any pre-existing data in `/mnt/data` is accessible to clients. The same applies to all gateway backends.
 
-## Test using OtterIO Browser
-OtterIO Server comes with an embedded web based object browser. Point your web browser to http://127.0.0.1:9000 to ensure your server has started successfully.
+---
 
-![Screenshot](https://github.com/minio/minio/blob/master/docs/screenshots/minio-browser.png?raw=true)
+## Verify
 
-## Test using OtterIO Client `mc`
-`mc` provides a modern alternative to UNIX commands like ls, cat, cp, mirror, diff etc. It supports filesystems and Amazon S3 compatible cloud storage services. Follow the OtterIO Client [Quickstart Guide](https://docs.min.io/docs/minio-client-quickstart-guide) for further instructions.
+Once OtterIO is running, the deployment uses default root credentials `otterioadmin:otterioadmin` (override via `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` environment variables in production).
 
-# Explore Further
-- [OtterIO Erasure Code QuickStart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide)
-- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+### Web console
 
-# Contribute to OtterIO
-Contributions to OtterIO are welcome via its repository at https://github.com/soulteary/otterio.
-For the upstream project's conventions, see the original OtterIO [Contributor's Guide](https://github.com/minio/minio/blob/master/CONTRIBUTING.md).
+Point a browser at <http://127.0.0.1:9000> (or the console port if you split listeners). Log in with the root credentials to create buckets, upload objects, and browse contents.
 
-# License
+### `mc` client
+
+`mc` is a modern command-line client that speaks S3 and local filesystem URIs (similar to `ls`, `cp`, `mirror`, `diff`, etc.). Configure an alias against your OtterIO endpoint:
+
+```sh
+mc alias set local http://127.0.0.1:9000 otterioadmin otterioadmin
+mc mb local/test-bucket
+mc cp ./somefile local/test-bucket/
+mc ls local/test-bucket/
+```
+
+OtterIO is wire-compatible with the AWS S3 API, so `aws-cli`, `s3cmd`, and the various AWS SDKs all work out of the box — point them at your OtterIO endpoint with the root credentials (or an IAM-issued access key).
+
+---
+
+## Further Reading
+
+### Project documentation (this repository)
+
+- [Erasure Coding](./docs/erasure/README.md)
+- [Distributed mode](./docs/distributed/README.md)
+- [Multi-user / IAM](./docs/multi-user/README.md)
+- [STS — temporary credentials](./docs/sts/README.md)
+- [TLS](./docs/tls/README.md)
+- [KMS](./docs/kms/README.md)
+- [Bucket notifications](./docs/bucket/notifications/README.md)
+- [Bucket replication](./docs/bucket/replication/README.md)
+- [Bucket lifecycle / retention / versioning / quota](./docs/bucket)
+- [Metrics & Prometheus](./docs/metrics/README.md)
+- [Logging](./docs/logging/README.md)
+- [Docker](./docs/docker/README.md) · [Orchestration](./docs/orchestration/README.md)
+- [Security advisories backlog](./docs/security/upstream-cve-backlog.md)
+- [LDAP DN normalisation migration](./docs/security/ldap-dn-normalization-migration.md)
+- [Limits](./docs/otterio-limits.md)
+
+### Upstream references (third-party)
+
+The links below point to the **original upstream MinIO** project's documentation. They remain useful as background reading on S3-compatible workflows, but they describe upstream MinIO behaviour and are **not** maintained by OtterIO:
+
+- [Erasure Code Quickstart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide) (upstream)
+- [`mc` Client Quickstart](https://docs.min.io/docs/minio-client-quickstart-guide) (upstream)
+- [`aws-cli` with MinIO](https://docs.min.io/docs/aws-cli-with-minio) (upstream)
+- [`s3cmd` with MinIO](https://docs.min.io/docs/s3cmd-with-minio) (upstream)
+- [Go SDK Quickstart](https://docs.min.io/docs/golang-client-quickstart-guide) (upstream)
+
+---
+
+## Contributing
+
+Contributions are welcome via the project repository at <https://github.com/soulteary/otterio>. For coding conventions inherited from the upstream baseline, see the original [Contributor's Guide](https://github.com/minio/minio/blob/master/CONTRIBUTING.md).
+
+---
+
+## Security Advisory
+
+<details>
+<summary><strong>Click to expand — please read before deploying.</strong></summary>
+
+Because OtterIO is forked from the **last Apache 2.0 release of MinIO (≈ `RELEASE.2021-04-22T15-44-28Z`)**, every CVE / GHSA published against upstream `minio/minio` after that date must be evaluated and back-ported separately. OtterIO does **not** automatically inherit those fixes.
+
+**Backlog status (as of 2026-06): 14 closed, 2 not-applicable, 0 open.** Every advisory currently triaged against the post-2021-04 baseline has been resolved on `main` — see [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md) for the per-item table with the OtterIO codepath, the upstream reference, and the regression tests pinning each fix. New upstream advisories will be added with status `Pending` and tracked from there.
+
+**Operators upgrading from a previous OtterIO build that used LDAP** should consult [`docs/security/ldap-dn-normalization-migration.md`](./docs/security/ldap-dn-normalization-migration.md) before rolling out: the new release canonicalises every LDAP DN before it touches the IAM policy map, which is a one-shot breaking change for deployments that happened to rely on case-only DN differences.
+
+**Before adopting OtterIO**, please evaluate fitness against your own deployment context — workload profile, capacity / throughput targets, compliance and data-residency requirements, supported-version policy, and your organisation's change-management expectations. As with any infrastructure component, we recommend a staged rollout (lab → staging → production) and validating the relevant codepaths against your own regression suite. See [`SECURITY.md`](./SECURITY.md) for the disclosure policy and the supported-versions matrix.
+
+### Hardening highlights
+
+Relative to the 2021-04-22 Apache-licensed MinIO baseline OtterIO has back-ported and (where applicable) hardened the following upstream advisories — full per-item context, codepaths, and regression tests live in [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md):
+
+- **SSE metadata injection** (GHSA-3rh2-v3gr-35p9 class) — reserved-prefix metadata is rejected at both the router edge and `extractMetadata`.
+- **Precondition GET / HEAD metadata disclosure** (GHSA-95fr-cm4m-q5p9 / CVE-2024-36107) — `s3:ExistingObjectTag/*` and `s3:RequestObjectTag/*` are now first-class condition keys, and the precondition path re-runs auth before writing `ETag` / `Last-Modified` so a tag-gated deny no longer leaks object state.
+- **SSE-KMS context binding** (multiple post-2022 CVEs) — bucket / object AAD is reconstructed from the runtime `(bucket, object)` on every seal and unseal, hostile or tampered `MetaContext` blobs are rejected with a dedicated 403 sentinel before the KMS is ever called, and the seven legacy `ErrNotImplemented` PUT-handler stubs have been replaced with a single `enforceSSEKMSRequest` security gate covering single-PUT, multipart, copy and post-policy paths.
+- **Service-account privilege escalation** — `GHSA-jjjj-jwhf-8rgr` (own-account create-SA bypass), the RELEASE.2025-10-15 sub-policy escalation, and `GHSA-xx8w-mq23-29g4 / CVE-2024-24747` (admin:UpdateServiceAccount) are all closed; sub-policies must be a subset of the caller's capability.
+- **`AddUser` PolicyName privilege escalation** (CVE-2021-43858) — defence-in-depth at both the handler (HTTP 400) and IAM-layer (silent strip).
+- **LDAP DN normalisation family** (2022–2024 advisories) — RFC 4514 + RFC 4518 canonicalisation at every DN egress and at the IAM boundary, with a one-shot persisted-data migration; see the migration note linked above.
+- **Bucket / IAM policy parsing** — `Principal` / `Resource` / `Action` unmarshal panics fixed, attacker-controlled input no longer reflected into error messages, fuzz corpus added.
+- **SigV4 signed-headers and chunked-upload hardening** — empty `X-Amz-Content-Sha256` is treated as "not provided" instead of coercing the canonicaliser, `SignedHeaders` is case-folded, and aws-chunked uploads must sign `x-amz-decoded-content-length`.
+- **Replication-header IAM gate** — fork-private `X-Otterio-Source-*` headers now require the `s3:ReplicateObject` action via `enforceSourceHeaderIAM`, closing a forge path that could rewrite object mtime / ETag or force delete-markers under ordinary `s3:PutObject` / `s3:DeleteObject` permissions.
+- **CVE-2023-28432 bootstrap info disclosure** — `VerifyHandler` is now gated on the same inter-node JWT validator used by peer-rest / storage-rest / lock-rest; only `HealthHandler` remains anonymous.
+- **Multi-value `Host` header smuggle (fork-introduced concern)** — audited and pinned: both fasthttp and net/http collapse or reject duplicate Host headers before any handler runs, and SigV4 reads only the scalar `r.Host`, so the two-header smuggle is not constructible.
+
+Two further upstream advisories (CVE-2021-41137 regular-user policy bypass and GHSA-cwq8-g58r-32hg `ImportIAM` privilege escalation) are **not applicable** to the 2021-04 baseline — see the backlog for the audit trail and the negative-pinning regression tests.
+
+</details>
+
+---
+
+## Trademark & Upstream Notice
+
+<details>
+<summary><strong>Click to expand</strong></summary>
+
+OtterIO is an independent, community-maintained fork of the upstream Apache-licensed MinIO codebase. This project is **not** affiliated with, endorsed by, or sponsored by MinIO, Inc.
+
+"MinIO" is a trademark of MinIO, Inc., used here solely to identify the upstream project from which this fork is derived. No trademark rights are granted by the Apache License 2.0 (see Section 6 of the license).
+
+OtterIO is based on the **last Apache License 2.0 release of MinIO**, prior to MinIO's relicensing to the GNU AGPLv3, and remains distributed under the [Apache License, Version 2.0](./LICENSE). The original copyright notices of MinIO, Inc. and all third-party subcomponents are retained — see [`NOTICE`](./NOTICE).
+
+OtterIO publishes its own container images at `soulteary/otterio` (Docker Hub) and `ghcr.io/soulteary/otterio` (GitHub Container Registry). Other links in this guide pointing to `docs.min.io`, `dl.min.io`, etc. still refer to the **original upstream project**, not to OtterIO. Build OtterIO from source (see [Build from Source](#build-from-source)) to use the OtterIO customizations.
+
+Project home: <https://github.com/soulteary/otterio>
+
+</details>
+
+---
+
+## License
 
 <div align="center">
 
@@ -486,8 +380,6 @@ For the upstream project's conventions, see the original OtterIO [Contributor's 
 
 </div>
 
-OtterIO is governed by the Apache License, Version 2.0, found at [LICENSE](./LICENSE).
-Attribution and third-party notices are listed in [NOTICE](./NOTICE).
+OtterIO is governed by the Apache License, Version 2.0, found at [LICENSE](./LICENSE). Attribution and third-party notices are listed in [NOTICE](./NOTICE).
 
-"MinIO" is a trademark of MinIO, Inc. OtterIO is not affiliated with, endorsed by,
-or sponsored by MinIO, Inc.
+"MinIO" is a trademark of MinIO, Inc. OtterIO is not affiliated with, endorsed by, or sponsored by MinIO, Inc.

@@ -29,12 +29,65 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/valyala/fasthttp"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/handlers"
 )
+
+// fiberRequestCtx wraps a *fasthttp.RequestCtx so that derived contexts
+// (e.g. context.WithTimeout) can safely outlive the request handler.
+//
+// Background: fasthttp.RequestCtx is recycled via sync.Pool and re-initialized
+// for the next request via (*RequestCtx).Init/Init2 (which writes ctx.s).
+// (*RequestCtx).Done() reads ctx.s, so any goroutine still holding a reference
+// to a recycled ctx and calling Done() after Init runs races on ctx.s.
+//
+// In particular, context.WithTimeout(parent, ...) (used by lsync.LRWMutex)
+// spawns a propagateCancel goroutine that calls parent.Done() and selects on
+// it. If the request handler returns and the ctx is recycled before that
+// goroutine wakes up (or before it has even called parent.Done()), the read
+// races with the next request's Init.
+//
+// We avoid the race by snapshotting ctx.s.done into a local channel exactly
+// once, while the request is still active and exclusively owned by this
+// goroutine. Subsequent Done() calls return the cached channel without ever
+// touching ctx.s, so propagateCancel goroutines that outlive the request
+// observe a stable, race-free view.
+//
+// Value() still delegates to the *fasthttp.RequestCtx for request-scoped
+// values; callers that read values from a recycled ctx is a separate pre-
+// existing concern (already mitigated upstream by strings.Clone, etc.).
+type fiberRequestCtx struct {
+	reqCtx *fasthttp.RequestCtx
+	// done is a snapshot of reqCtx.Done() captured at construction time.
+	// fasthttp closes this channel only on Server.Shutdown, so legacy
+	// handlers that loop on r.Context().Done() still unblock on graceful
+	// shutdown. A per-request client disconnect is not signalled here
+	// (matching the prior behavior of using *fasthttp.RequestCtx directly).
+	done <-chan struct{}
+}
+
+func newFiberRequestCtx(reqCtx *fasthttp.RequestCtx) *fiberRequestCtx {
+	// Capture Done() once, in the request goroutine, while reqCtx.s is
+	// stable. After this point we never call reqCtx.Done() again.
+	return &fiberRequestCtx{reqCtx: reqCtx, done: reqCtx.Done()}
+}
+
+func (c *fiberRequestCtx) Deadline() (time.Time, bool) { return time.Time{}, false }
+func (c *fiberRequestCtx) Done() <-chan struct{}       { return c.done }
+func (c *fiberRequestCtx) Err() error {
+	select {
+	case <-c.done:
+		return context.Canceled
+	default:
+		return nil
+	}
+}
+func (c *fiberRequestCtx) Value(key any) any { return c.reqCtx.Value(key) }
 
 // OtterioHandler is the standard Fiber handler signature for OtterIO APIs.
 type OtterioHandler = fiber.Handler
@@ -560,8 +613,14 @@ func fiberRequest(c fiber.Ctx) (*http.Request, error) {
 	// Note: unlike net/http, fasthttp does not cancel RequestCtx.Done() on a
 	// per-request client disconnect (it only fires on server shutdown), so that
 	// specific net/http behavior is not fully reproduced here.
+	//
+	// We wrap *fasthttp.RequestCtx in fiberRequestCtx to snapshot Done() at
+	// request time. This prevents data races between fasthttp's RequestCtx
+	// pool re-initializing ctx.s (via Init/Init2) and lingering goroutines
+	// (e.g. those spawned by context.WithTimeout's propagateCancel) calling
+	// (*RequestCtx).Done() after the request has completed.
 	if reqCtx := c.RequestCtx(); reqCtx != nil {
-		r = r.WithContext(reqCtx)
+		r = r.WithContext(newFiberRequestCtx(reqCtx))
 	}
 
 	// Request-scoped Content-Length override used by the httptest bridge

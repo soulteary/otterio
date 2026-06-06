@@ -14,111 +14,49 @@
 
 </div>
 
-OtterIO 是一个基于 Apache License v2.0 开源协议的高性能对象存储服务。它兼容亚马逊 S3 云存储服务接口，非常适合于存储大容量非结构化的数据，例如图片、视频、日志文件、备份数据和容器/虚拟机镜像等，而一个对象文件可以是任意大小，从几 KB 到最大 5T 不等。
+OtterIO 是一个高性能、S3 兼容的对象存储服务，适合用于机器学习、数据分析、备份归档及通用应用数据等场景。
 
-OtterIO 是一个非常轻量的服务，可以很简单地和其他应用结合，类似 NodeJS、Redis 或者 MySQL。
+本文档涵盖在裸金属、Docker 与源码方式下运行 OtterIO 的指引。更深入的主题（纠删码、分布式部署、KMS、复制等）请参见 [`docs/`](./docs)。
+
+> [!IMPORTANT]
+> OtterIO 是一个独立的、由社区维护的 MinIO 分支。本项目**未**获得 MinIO, Inc. 的关联、认可或赞助。部署前请阅读[商标与上游声明](#商标与上游声明)与[安全公告](#安全公告)。
+
+---
 
 ## 关于 OtterIO
 
-OtterIO 是 MinIO 最后一个 Apache 协议版本的定制 fork，与上游存在以下差异：
+OtterIO 是 MinIO **最后一个 Apache License 2.0 版本**（约 `RELEASE.2021-04-22T15-44-28Z`）的定制 fork，与上游主要存在以下差异：
 
-- **HTTP 层**：请求路由基于 [`gofiber/fiber/v3`](https://github.com/gofiber/fiber) 实现，已不再使用 `gorilla/mux`。
-- **桶通知目标（Bucket Notification）**：仅保留 `elasticsearch`、`mysql`、`postgresql`、`redis`、`webhook`，已移除消息队列类目标（Kafka、NATS、NATS Streaming、NSQ、AMQP、MQTT）。
-- **网关（Gateway）**：仅保留 `nas` 与 `s3`，已移除 `azure`、`gcs`、`hdfs` 网关。
-- **构建工具链**：要求 Go `1.26` 及以上版本（详见 `go.mod`）。
+- **HTTP 层** —— 请求路由基于 [`gofiber/fiber/v3`](https://github.com/gofiber/fiber)，不再使用 `gorilla/mux`。
+- **桶通知目标** —— 仅保留 `elasticsearch`、`mysql`、`postgresql`、`redis`、`webhook`，已移除消息队列类目标（Kafka、NATS、NATS Streaming、NSQ、AMQP、MQTT）。
+- **网关** —— 仅保留 `nas` 与 `s3`，已移除 `azure`、`gcs`、`hdfs`。
+- **构建工具链** —— 要求 Go `1.26` 及以上版本（详见 [`go.mod`](./go.mod)）。
+- **容器镜像** —— 发布在 `soulteary/otterio`（Docker Hub）和 `ghcr.io/soulteary/otterio`（GitHub 容器镜像仓库）。
 
-> **⚠️ OtterIO 是一个独立的、由社区维护的上游 MinIO Apache 协议版本的项目分支。**
->
-> 本项目**未**获得 MinIO, Inc. 的关联、认可或赞助。"MinIO" 是 MinIO, Inc. 的商标，
-> 这里仅用于标识本分支所派生的上游项目。Apache License 2.0 不授予任何商标权
-> （详见许可证第 6 节）。
->
-> OtterIO 基于 MinIO **在改用 GNU AGPLv3 之前的最后一个 Apache License 2.0 版本**，
-> 并继续以 [Apache License, Version 2.0](./LICENSE) 进行分发。MinIO, Inc. 及所有第三方
-> 子组件的原始版权声明均予以保留 —— 详见 [`NOTICE`](./NOTICE)。
->
-> 项目主页：https://github.com/soulteary/otterio
+OtterIO 继续以 [Apache License, Version 2.0](./LICENSE) 分发，所有原始版权声明予以保留 —— 详见 [`NOTICE`](./NOTICE)。
 
-> **🔐 安全公告 — 部署前请务必阅读。**
->
-> 由于 OtterIO 派生自 **MinIO 最后一个 Apache 2.0 版本（约 `RELEASE.2021-04-22T15-44-28Z`）**，
-> 上游 `minio/minio` 在该版本之后发布的 CVE / GHSA **不会**自动被本项目继承，需要逐条
-> 评估并回填。
->
-> **当前积压清单状态（2026-06）：14 项已修复、2 项不适用、0 项待处理。**
-> 针对 2021-04 基线已纳入跟踪的全部上游公告均已在 `main` 关闭，详细
-> 表格、对应 OtterIO 代码路径、上游引用与回归测试请见
-> [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)。
-> 上游若有新公告，会以 `Pending` 状态滚动加入。
->
-> **从早期版本升级且使用 LDAP 的运维人员**请先阅读
-> [`docs/security/ldap-dn-normalization-migration.md`](./docs/security/ldap-dn-normalization-migration.md)
-> 再上线：本次发布会在 LDAP DN 进入 IAM 策略表前先做规范化处理，这对于历史
-> 上依赖 DN 大小写差异区分多份映射的部署是一次性的破坏性变更。
->
-> **在采用 OtterIO 之前**，请结合自身部署场景做严谨的适用性评估：
-> 业务负载特征、容量与吞吐目标、合规与数据驻留要求、受支持版本策略，
-> 以及组织内部的变更管理规范。与任何基础设施组件一样，建议遵循
-> 实验室 → 预发 → 生产的分阶段灰度路径，并在贵方自有的回归测试集中
-> 验证相关代码路径。漏洞披露流程与受支持版本矩阵请参考
-> [`SECURITY.md`](./SECURITY.md)。
+---
 
-## 安全加固亮点
+## 快速开始
 
-相对于 2021-04-22 的 Apache 协议 MinIO 基线，OtterIO 已经回填并（在
-有必要时进一步加固）下列上游公告，每一项的代码路径、上游引用与回归
-测试都列在
-[`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)：
+使用 Docker 启动单节点 OtterIO：
 
-- **SSE 元数据注入**（GHSA-3rh2-v3gr-35p9 等价类）—— 路由入口与
-  `extractMetadata` 双层拒绝预留前缀的元数据。
-- **Precondition GET / HEAD 元数据泄露**（GHSA-95fr-cm4m-q5p9 /
-  CVE-2024-36107）—— 引入了一等公民的 `s3:ExistingObjectTag/*` /
-  `s3:RequestObjectTag/*` 条件键，并在写出 `ETag` / `Last-Modified` 之前
-  重新执行鉴权，按 tag 拒绝时不会再泄露对象状态。
-- **SSE-KMS 上下文绑定**（2022 年后多个 CVE）—— 桶 / 对象 AAD 在每次
-  封装与解封都从运行时 `(bucket, object)` 重建；恶意或被篡改的
-  `MetaContext` 会以独立的 403 sentinel 在调用 KMS 之前被拒绝；历史
-  上七处返回 `ErrNotImplemented` 的 PUT 处理桩已经替换为单一的
-  `enforceSSEKMSRequest` 安全网关，覆盖单 PUT、分片上传、Copy、
-  Post-Policy 路径。
-- **Service Account 权限提升** —— GHSA-jjjj-jwhf-8rgr（自账户绕过创建
-  SA）、RELEASE.2025-10-15 sub-policy 越权、GHSA-xx8w-mq23-29g4 /
-  CVE-2024-24747（admin:UpdateServiceAccount）均已关闭，并强制 sub-policy
-  必须是调用者能力的子集。
-- **`AddUser` PolicyName 提权**（CVE-2021-43858）—— 在 handler 层（HTTP
-  400）与 IAM 层（静默剥离）双重防御。
-- **LDAP DN 规范化族**（2022–2024 公告）—— 所有 DN 出口与 IAM 边界都做
-  RFC 4514 + RFC 4518 规范化，并附带一次性的持久数据迁移，详见上面的
-  迁移说明。
-- **桶 / IAM 策略反序列化** —— 修复了 `Principal` / `Resource` /
-  `Action` 反序列化时的 panic，错误信息不再回显攻击者输入，并补充了
-  fuzz 语料。
-- **SigV4 签名头与 chunked 上传硬化** —— 空的 `X-Amz-Content-Sha256`
-  现在被视为“未提供”，不再让规范化器误判；`SignedHeaders` 统一小写；
-  aws-chunked 上传必须签 `x-amz-decoded-content-length`。
-- **复制头 IAM 网关** —— 分叉私有的 `X-Otterio-Source-*` 头通过
-  `enforceSourceHeaderIAM` 强制走 `s3:ReplicateObject` 鉴权，关闭了
-  使用普通 `s3:PutObject` / `s3:DeleteObject` 权限即可改写对象 mtime /
-  ETag、强制写入 delete-marker 的伪造路径。
-- **CVE-2023-28432 bootstrap 信息泄露** —— `VerifyHandler` 现在与
-  peer-rest / storage-rest / lock-rest 共用同一套节点间 JWT 校验，仅
-  `HealthHandler` 保留匿名访问。
-- **多值 `Host` 头走私（分叉自身引入的关注点）** —— 已审计并钉死：
-  fasthttp 与 net/http 都会在任何 handler 运行之前折叠或拒绝重复
-  Host 头，且 SigV4 仅读取标量 `r.Host`，因此双 Host 头走私在本分叉中
-  无法构造。
+```sh
+docker run -p 9000:9000 -p 9001:9001 \
+  -v /mnt/data:/data \
+  soulteary/otterio:latest server /data --console-address ":9001"
+```
 
-另外两条上游公告（CVE-2021-41137 普通用户策略绕过、GHSA-cwq8-g58r-32hg
-`ImportIAM` 提权）经审计**不适用**于 2021-04 基线 —— 审计依据与负向
-钉死的回归测试参见上述 backlog。
+默认 root 凭据为 `otterioadmin:otterioadmin`。启动成功后，请参见[验证部署](#验证部署)章节通过 Web 控制台或 `mc` 客户端连接。
 
-> 提示：OtterIO 提供了自己的容器镜像，分别发布在 `soulteary/otterio`（Docker Hub）
-> 和 `ghcr.io/soulteary/otterio`（GitHub 容器镜像仓库）。本指南中出现的其他上游链接
-> （`docs.min.io`、`dl.min.io` 等）仍指向**原始上游项目**，而非 OtterIO。要使用上述
-> 定制能力，请从源码构建 OtterIO（见[使用源码安装](#使用源码安装)）。
+> [!NOTE]
+> 单节点 OtterIO 仅适合开发与评估场景。生产部署应使用**启用纠删码的分布式模式**，每节点至少 **4 块磁盘**。详见 [`docs/erasure/README.md`](./docs/erasure/README.md) 与 [`docs/distributed/README.md`](./docs/distributed/README.md)。
 
-## Docker 容器
+---
+
+## 安装方式
+
+### Docker
 
 OtterIO 同时发布在 Docker Hub 与 GitHub 容器镜像仓库，按需任选其一拉取：
 
@@ -130,93 +68,84 @@ docker pull soulteary/otterio:latest
 docker pull ghcr.io/soulteary/otterio:latest
 ```
 
-### 稳定版
+| 标签     | 说明                                              |
+| -------- | ------------------------------------------------- |
+| `latest` | 最新稳定版。                                      |
+| `edge`   | 来自 `main` 分支的尝鲜构建，仅供测试使用。        |
+
+使用临时数据卷启动单节点服务：
+
 ```sh
-docker run -p 9000:9000 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  soulteary/otterio:latest server /data
+docker run -p 9000:9000 soulteary/otterio:latest server /data
 ```
 
-### 尝鲜版
+挂载宿主机目录以使用持久化存储：
+
 ```sh
-docker run -p 9000:9000 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  soulteary/otterio:edge server /data
+docker run -p 9000:9000 -v /mnt/data:/data soulteary/otterio:latest server /data
 ```
 
-> 提示：除非你通过`-it`(TTY交互)参数启动容器，否则Docker将不会显示默认的密钥。一般情况下，并不推荐使用容器的默认密钥，更多Docker部署信息请访问 [这里](https://docs.min.io/docs/minio-docker-quickstart-guide)
+### macOS
 
-## macOS
-### Homebrew（推荐）
-使用 [Homebrew](http://brew.sh/)安装otterio
+#### Homebrew（推荐）
 
 ```sh
 brew install otterio/stable/otterio
 otterio server /data
 ```
 
-> 提示：如果你之前使用 `brew install otterio`安装过otterio, 可以用 `otterio/stable/otterio` 官方镜像进行重装. 由于golang 1.8的bug,homebrew版本不太稳定。
+如果你之前是从其他 tap 安装的 otterio，建议先卸载再从官方 tap 安装：
+
 ```sh
 brew uninstall otterio
 brew install otterio/stable/otterio
 ```
 
-### 下载二进制文件
-| 操作系统    | CPU架构      | 地址                                                        |
-| ----------  | --------     | ------                                                      |
-| Apple macOS | 64-bit Intel | https://dl.min.io/server/minio/release/darwin-amd64/minio |
-```sh
-chmod 755 otterio
-./otterio server /data
-```
+#### 二进制下载
 
-## GNU/Linux
-### 下载二进制文件
-| 操作系统   | CPU架构      | 地址                                                       |
-| ---------- | --------     | ------                                                     |
-| GNU/Linux  | 64-bit Intel | https://dl.min.io/server/minio/release/linux-amd64/minio |
+预编译的 macOS 二进制发布在 [GitHub Releases](https://github.com/soulteary/otterio/releases)。下载对应架构的产物后：
+
 ```sh
-wget https://dl.min.io/server/minio/release/linux-amd64/minio
 chmod +x otterio
 ./otterio server /data
 ```
 
-| 操作系统    | CPU架构      | 地址                                                        |
-| ---------- | --------     | ------                                                     |
-| GNU/Linux  | ppc64le      | https://dl.min.io/server/minio/release/linux-ppc64le/minio |
+### Linux
+
+预编译的 Linux 二进制发布在 [GitHub Releases](https://github.com/soulteary/otterio/releases)。请下载与目标主机架构匹配的产物，并以 `otterio` 名称运行：
+
 ```sh
-wget https://dl.min.io/server/minio/release/linux-ppc64le/minio
 chmod +x otterio
 ./otterio server /data
 ```
 
-## 微软Windows系统
-### 下载二进制文件
-| 操作系统        | CPU架构  | 地址                                                             |
-| ----------      | -------- | ------                                                           |
-| 微软Windows系统 | 64位     | https://dl.min.io/server/minio/release/windows-amd64/minio.exe |
-```sh
-otterio.exe server D:\Photos
+构建流水线 ([`.goreleaser.yml`](./.goreleaser.yml)) 当前为 Linux 提供如下架构的产物：
+
+| 架构                   | `goarch`   |
+| ---------------------- | ---------- |
+| 64 位 Intel/AMD        | `amd64`    |
+| 64 位 ARM              | `arm64`    |
+| 32 位 ARMv7            | `arm`      |
+| 64 位 PowerPC LE       | `ppc64le`  |
+| IBM Z 系列             | `s390x`    |
+
+并同时提供对应架构的 `.deb` 与 `.rpm` 软件包。
+
+### Windows
+
+预编译的 Windows 二进制（`amd64`）发布在 [GitHub Releases](https://github.com/soulteary/otterio/releases)。下载 `otterio.exe` 后，在其所在目录运行，或将该目录加入系统 `PATH`：
+
+```powershell
+otterio.exe server D:\
 ```
 
-## FreeBSD
-### Port
-使用 [pkg](https://github.com/freebsd/pkg)进行安装，OtterIO官方并没有提供FreeBSD二进制文件， 它由FreeBSD上游维护，点击 [这里](https://www.freshports.org/www/otterio)查看。
+### FreeBSD
 
-```sh
-pkg install otterio
-sysrc otterio_enable=yes
-sysrc otterio_disks=/home/user/Photos
-service otterio start
-```
+OtterIO 当前没有官方发布的 FreeBSD 软件包。请按下文[源码构建](#源码构建)章节在 FreeBSD 上自行构建。
 
-## 使用源码安装
+### 源码构建
 
-采用源码安装仅供开发人员和高级用户使用。如果你还没有 Golang 环境，请参考 [How to install Golang](https://golang.org/doc/install)。OtterIO 要求 **Go 1.26 及以上版本**（详见 `go.mod`）。
-
-要构建 OtterIO（包含基于 Fiber 的路由及其他定制），请直接克隆并构建：
+源码安装仅供开发者与高级用户使用。请确认本机已具备可用的 Go 工具链（Go 1.26 及以上 —— 参见 [Go 安装文档](https://go.dev/doc/install)）。
 
 ```sh
 git clone https://github.com/soulteary/otterio.git
@@ -225,29 +154,39 @@ make build
 ./otterio server /data
 ```
 
-## 独立监听 Web 控制台与 S3 端口
+> [!WARNING]
+> 强烈**不建议**在生产环境运行从源码自行构建的二进制。生产部署请使用打过 tag 的发行版本。
 
-默认情况下，Web 控制台与 S3 API 监听同一个端口（由 `--address` 指定）。从最近一个版本开始，OtterIO 支持把 Web UI 与 Admin API 拆分到独立的端口，方便在反向代理、防火墙或网络策略层面分别控制 S3 流量与控制台流量。
+---
+
+## 部署配置
+
+### 拆分 S3 与 Web 控制台端口
+
+默认情况下，Web 控制台与 S3 API 监听同一个端口（由 `--address` 指定）。OtterIO 支持把 Web UI 与 Admin API 拆分到独立的端口，方便在反向代理、防火墙或网络策略层面分别管控 S3 流量与控制台流量。
 
 通过 `--console-address` 命令行参数或 `OTTERIO_BROWSER_ADDRESS` 环境变量启用：
 
 ```sh
-# 命令行参数
 otterio server --address ":9000" --console-address ":9001" /data
+```
 
-# 环境变量（等效写法）
+或使用环境变量（等效写法）：
+
+```sh
 export OTTERIO_BROWSER_ADDRESS=":9001"
 otterio server --address ":9000" /data
 ```
 
-启用后：
+启用拆分模式后：
 
 - `:9000` 仅承载 S3 API、STS、HealthCheck、Metrics；浏览器请求不会再被重定向到 Web UI。
 - `:9001` 承载 Web 控制台（`/otterio/`）以及 Admin API（`/otterio/admin/v3/*`）。
 - 两个端口不能相同，否则启动会直接失败。
 - `Ctrl+C` / `SIGTERM` 会同时优雅关停两个监听器。
 
-> 注意：开启拆分模式后，Admin API（即 `mc admin ...` 使用的接口）位于控制台端口。使用 `mc admin` 系列命令时，需要把 mc alias 指向控制台 URL；普通 S3 操作（`mc cp`、`mc ls` 等）仍然走 S3 端口。
+> [!NOTE]
+> 开启拆分模式后，Admin API（即 `mc admin ...` 使用的接口）位于控制台端口。使用 `mc admin` 系列命令时，需要把 mc alias 指向控制台 URL；普通 S3 操作（`mc cp`、`mc ls` 等）仍然走 S3 端口。
 
 如未指定 `--console-address`，则保持原行为，二者共用同一个端口。
 
@@ -271,83 +210,169 @@ otterio server \
 - S3 监听器始终使用 `--certs-dir`，只有控制台监听器会读取 `--console-certs-dir`。
 - 两套证书都由同一个证书管理器监视并热加载。
 
-## 为防火墙设置允许访问的端口
+### 防火墙
 
-默认情况下，OtterIO 使用端口9000来侦听传入的连接。如果你的平台默认阻止了该端口，则需要启用对该端口的访问。
+OtterIO 默认监听端口 `9000`（拆分控制台后还会监听 `9001`）。某些系统会默认阻止这些端口，需要手动放行。
 
-### ufw
-
-对于启用了ufw的主机（基于Debian的发行版）, 你可以通过`ufw`命令允许指定端口上的所有流量连接. 通过如下命令允许访问端口9000
+<details>
+<summary><strong>ufw</strong>（Debian / Ubuntu）</summary>
 
 ```sh
 ufw allow 9000
-```
 
-如下命令允许端口9000-9010上的所有传入流量。
-
-```sh
+# 端口范围
 ufw allow 9000:9010/tcp
 ```
 
-### firewall-cmd
+</details>
 
-对于启用了firewall-cmd的主机（CentOS）, 你可以通过`firewall-cmd`命令允许指定端口上的所有流量连接。 通过如下命令允许访问端口9000
+<details>
+<summary><strong>firewall-cmd</strong>（CentOS / RHEL）</summary>
 
 ```sh
 firewall-cmd --get-active-zones
-```
-
-这个命令获取当前正在使用的区域。 现在，就可以为以上返回的区域应用端口规则了。 假如返回的区域是 `public`, 使用如下命令
-
-```sh
 firewall-cmd --zone=public --add-port=9000/tcp --permanent
-```
-
-这里的`permanent`参数表示持久化存储规则，可用于防火墙启动、重启和重新加载。 最后，需要防火墙重新加载，让我们刚刚的修改生效。
-
-```sh
 firewall-cmd --reload
 ```
 
-### iptables
+`--permanent` 表示规则在重启与重新加载后依然生效。
 
-对于启用了iptables的主机（RHEL, CentOS, etc）, 你可以通过`iptables`命令允许指定端口上的所有流量连接。 通过如下命令允许访问端口9000
+</details>
+
+<details>
+<summary><strong>iptables</strong>（RHEL、CentOS 等）</summary>
 
 ```sh
 iptables -A INPUT -p tcp --dport 9000 -j ACCEPT
 service iptables restart
-```
 
-如下命令允许端口9000-9010上的所有传入流量。
-
-```sh
+# 端口范围
 iptables -A INPUT -p tcp --dport 9000:9010 -j ACCEPT
 service iptables restart
 ```
 
-## 使用OtterIO浏览器进行验证
-OtterIO Server带有一个嵌入的Web对象浏览器，安装后使用浏览器访问[http://127.0.0.1:9000](http://127.0.0.1:9000)，如果可以访问，则表示otterio已经安装成功。
+</details>
 
-![Screenshot](https://github.com/minio/minio/blob/master/docs/screenshots/minio-browser.png?raw=true)
+### 已存在数据
 
-## 使用OtterIO客户端 `mc`进行验证
-`mc` 提供了一些UNIX常用命令的替代品，像ls, cat, cp, mirror, diff这些。 它支持文件系统和亚马逊S3云存储服务。 更多信息请参考 [mc快速入门](https://docs.min.io/docs/minio-client-quickstart-guide) 。
+在单块磁盘上部署 OtterIO 时，OtterIO Server 允许客户端访问数据目录下已经存在的内容。例如以 `otterio server /mnt/data` 启动后，`/mnt/data` 目录中已有的所有数据都可被客户端读取。该规则对所有网关后端同样成立。
 
-## 已经存在的数据
-当在单块磁盘上部署OtterIO server,OtterIO server允许客户端访问数据目录下已经存在的数据。比如，如果OtterIO使用`otterio server /mnt/data`启动，那么所有已经在`/mnt/data`目录下的数据都可以被客户端访问到。
+---
 
-上述描述对所有网关后端同样有效。
+## 验证部署
+
+OtterIO 启动后默认 root 凭据为 `otterioadmin:otterioadmin`（生产环境请务必通过 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` 环境变量覆盖默认值）。
+
+### Web 控制台
+
+在浏览器中访问 <http://127.0.0.1:9000>（如已拆分控制台监听，则使用控制台端口），用 root 凭据登录后即可创建桶、上传对象、浏览内容。
+
+### `mc` 客户端
+
+`mc` 是一个支持 S3 与本地文件系统 URI 的现代命令行客户端（功能类似 `ls`、`cp`、`mirror`、`diff` 等）。配置一个指向你 OtterIO 实例的别名：
+
+```sh
+mc alias set local http://127.0.0.1:9000 otterioadmin otterioadmin
+mc mb local/test-bucket
+mc cp ./somefile local/test-bucket/
+mc ls local/test-bucket/
+```
+
+OtterIO 与 AWS S3 API 协议兼容，因此 `aws-cli`、`s3cmd` 以及各语言的 AWS SDK 均可直接使用 —— 把它们指向 OtterIO 端点并使用 root 凭据（或通过 IAM 签发的 access key）即可。
+
+---
 
 ## 了解更多
-- [OtterIO纠删码入门](https://docs.min.io/docs/minio-erasure-code-quickstart-guide)
-- [`mc`快速入门](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [使用 `aws-cli`](https://docs.min.io/docs/aws-cli-with-minio)
-- [使用 `s3cmd`](https://docs.min.io/docs/s3cmd-with-minio)
-- [使用 `otterio-go` SDK](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [OtterIO文档](https://docs.min.io)
+
+### 项目自带文档（本仓库）
+
+- [纠删码](./docs/erasure/README.md)
+- [分布式部署](./docs/distributed/README.md)
+- [多用户 / IAM](./docs/multi-user/README.md)
+- [STS 临时凭据](./docs/sts/README.md)
+- [TLS](./docs/tls/README.md)
+- [KMS](./docs/kms/README.md)
+- [桶通知](./docs/bucket/notifications/README.md)
+- [桶复制](./docs/bucket/replication/README.md)
+- [桶生命周期 / 保留 / 版本控制 / 配额](./docs/bucket)
+- [指标与 Prometheus](./docs/metrics/README.md)
+- [日志](./docs/logging/README.md)
+- [Docker](./docs/docker/README.md) · [编排](./docs/orchestration/README.md)
+- [安全公告积压清单](./docs/security/upstream-cve-backlog.md)
+- [LDAP DN 规范化迁移](./docs/security/ldap-dn-normalization-migration.md)
+- [服务限制](./docs/zh_CN/otterio-limits.md)
+
+### 上游参考资料（第三方）
+
+下列链接指向**原始上游 MinIO 项目**的文档，可作为 S3 兼容工作流的背景资料阅读，但描述的是上游 MinIO 行为，**不**由 OtterIO 维护：
+
+- [纠删码快速入门](https://docs.min.io/docs/minio-erasure-code-quickstart-guide)（上游）
+- [`mc` 客户端快速入门](https://docs.min.io/docs/minio-client-quickstart-guide)（上游）
+- [使用 `aws-cli`](https://docs.min.io/docs/aws-cli-with-minio)（上游）
+- [使用 `s3cmd`](https://docs.min.io/docs/s3cmd-with-minio)（上游）
+- [Go SDK 快速入门](https://docs.min.io/docs/golang-client-quickstart-guide)（上游）
+
+---
 
 ## 如何参与到 OtterIO 项目
-欢迎通过仓库 https://github.com/soulteary/otterio 参与贡献。上游项目的约定请参考原始 OtterIO [贡献者指南](https://github.com/minio/minio/blob/master/CONTRIBUTING.md)。
+
+欢迎通过仓库 <https://github.com/soulteary/otterio> 参与贡献。继承自上游基线的编码规范请参考原始 [Contributor's Guide](https://github.com/minio/minio/blob/master/CONTRIBUTING.md)。
+
+---
+
+## 安全公告
+
+<details>
+<summary><strong>点击展开 —— 部署前请务必阅读。</strong></summary>
+
+由于 OtterIO 派生自 **MinIO 最后一个 Apache 2.0 版本（约 `RELEASE.2021-04-22T15-44-28Z`）**，上游 `minio/minio` 在该版本之后发布的 CVE / GHSA **不会**自动被本项目继承，需要逐条评估并回填。
+
+**当前积压清单状态（2026-06）：14 项已修复、2 项不适用、0 项待处理。** 针对 2021-04 基线已纳入跟踪的全部上游公告均已在 `main` 关闭，详细表格、对应 OtterIO 代码路径、上游引用与回归测试请见 [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)。上游若有新公告，会以 `Pending` 状态滚动加入。
+
+**从早期版本升级且使用 LDAP 的运维人员**请先阅读 [`docs/security/ldap-dn-normalization-migration.md`](./docs/security/ldap-dn-normalization-migration.md) 再上线：本次发布会在 LDAP DN 进入 IAM 策略表前先做规范化处理，这对于历史上依赖 DN 大小写差异区分多份映射的部署是一次性的破坏性变更。
+
+**在采用 OtterIO 之前**，请结合自身部署场景做严谨的适用性评估：业务负载特征、容量与吞吐目标、合规与数据驻留要求、受支持版本策略，以及组织内部的变更管理规范。与任何基础设施组件一样，建议遵循实验室 → 预发 → 生产的分阶段灰度路径，并在贵方自有的回归测试集中验证相关代码路径。漏洞披露流程与受支持版本矩阵请参考 [`SECURITY.md`](./SECURITY.md)。
+
+### 安全加固亮点
+
+相对于 2021-04-22 的 Apache 协议 MinIO 基线，OtterIO 已经回填并（在有必要时进一步加固）下列上游公告，每一项的代码路径、上游引用与回归测试都列在 [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)：
+
+- **SSE 元数据注入**（GHSA-3rh2-v3gr-35p9 等价类）—— 路由入口与 `extractMetadata` 双层拒绝预留前缀的元数据。
+- **Precondition GET / HEAD 元数据泄露**（GHSA-95fr-cm4m-q5p9 / CVE-2024-36107）—— 引入了一等公民的 `s3:ExistingObjectTag/*` / `s3:RequestObjectTag/*` 条件键，并在写出 `ETag` / `Last-Modified` 之前重新执行鉴权，按 tag 拒绝时不会再泄露对象状态。
+- **SSE-KMS 上下文绑定**（2022 年后多个 CVE）—— 桶 / 对象 AAD 在每次封装与解封都从运行时 `(bucket, object)` 重建；恶意或被篡改的 `MetaContext` 会以独立的 403 sentinel 在调用 KMS 之前被拒绝；历史上七处返回 `ErrNotImplemented` 的 PUT 处理桩已经替换为单一的 `enforceSSEKMSRequest` 安全网关，覆盖单 PUT、分片上传、Copy、Post-Policy 路径。
+- **Service Account 权限提升** —— GHSA-jjjj-jwhf-8rgr（自账户绕过创建 SA）、RELEASE.2025-10-15 sub-policy 越权、GHSA-xx8w-mq23-29g4 / CVE-2024-24747（admin:UpdateServiceAccount）均已关闭，并强制 sub-policy 必须是调用者能力的子集。
+- **`AddUser` PolicyName 提权**（CVE-2021-43858）—— 在 handler 层（HTTP 400）与 IAM 层（静默剥离）双重防御。
+- **LDAP DN 规范化族**（2022–2024 公告）—— 所有 DN 出口与 IAM 边界都做 RFC 4514 + RFC 4518 规范化，并附带一次性的持久数据迁移，详见上面的迁移说明。
+- **桶 / IAM 策略反序列化** —— 修复了 `Principal` / `Resource` / `Action` 反序列化时的 panic，错误信息不再回显攻击者输入，并补充了 fuzz 语料。
+- **SigV4 签名头与 chunked 上传硬化** —— 空的 `X-Amz-Content-Sha256` 现在被视为"未提供"，不再让规范化器误判；`SignedHeaders` 统一小写；aws-chunked 上传必须签 `x-amz-decoded-content-length`。
+- **复制头 IAM 网关** —— 分叉私有的 `X-Otterio-Source-*` 头通过 `enforceSourceHeaderIAM` 强制走 `s3:ReplicateObject` 鉴权，关闭了使用普通 `s3:PutObject` / `s3:DeleteObject` 权限即可改写对象 mtime / ETag、强制写入 delete-marker 的伪造路径。
+- **CVE-2023-28432 bootstrap 信息泄露** —— `VerifyHandler` 现在与 peer-rest / storage-rest / lock-rest 共用同一套节点间 JWT 校验，仅 `HealthHandler` 保留匿名访问。
+- **多值 `Host` 头走私（分叉自身引入的关注点）** —— 已审计并钉死：fasthttp 与 net/http 都会在任何 handler 运行之前折叠或拒绝重复 Host 头，且 SigV4 仅读取标量 `r.Host`，因此双 Host 头走私在本分叉中无法构造。
+
+另外两条上游公告（CVE-2021-41137 普通用户策略绕过、GHSA-cwq8-g58r-32hg `ImportIAM` 提权）经审计**不适用**于 2021-04 基线 —— 审计依据与负向钉死的回归测试参见上述 backlog。
+
+</details>
+
+---
+
+## 商标与上游声明
+
+<details>
+<summary><strong>点击展开</strong></summary>
+
+OtterIO 是一个独立的、由社区维护的上游 MinIO Apache 协议版本的项目分支。本项目**未**获得 MinIO, Inc. 的关联、认可或赞助。
+
+"MinIO" 是 MinIO, Inc. 的商标，这里仅用于标识本分支所派生的上游项目。Apache License 2.0 不授予任何商标权（详见许可证第 6 节）。
+
+OtterIO 基于 MinIO **在改用 GNU AGPLv3 之前的最后一个 Apache License 2.0 版本**，并继续以 [Apache License, Version 2.0](./LICENSE) 进行分发。MinIO, Inc. 及所有第三方子组件的原始版权声明均予以保留 —— 详见 [`NOTICE`](./NOTICE)。
+
+OtterIO 提供了自己的容器镜像，分别发布在 `soulteary/otterio`（Docker Hub）和 `ghcr.io/soulteary/otterio`（GitHub 容器镜像仓库）。本指南中出现的其他链接（`docs.min.io`、`dl.min.io` 等）仍指向**原始上游项目**，而非 OtterIO。要使用 OtterIO 的定制能力，请从源码构建（见[源码构建](#源码构建)）。
+
+项目主页：<https://github.com/soulteary/otterio>
+
+</details>
+
+---
 
 ## 授权许可
 

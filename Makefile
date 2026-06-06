@@ -8,6 +8,14 @@ GOOS := $(shell go env GOOS)
 VERSION ?= $(shell git describe --tags)
 TAG ?= "soulteary/otterio:$(VERSION)"
 
+# Versions of code generation / lint tools.
+# IMPORTANT: keep MSGP_VERSION in sync with the github.com/tinylib/msgp version
+# pinned in go.mod, otherwise `make check-gen` will regenerate the *_gen.go
+# files in a slightly different style and CI will fail with
+# "Non-committed changes in auto-generated code is detected".
+MSGP_VERSION ?= v1.6.4
+STRINGER_VERSION ?= v0.45.0
+
 all: build
 
 checks:
@@ -17,8 +25,8 @@ checks:
 getdeps:
 	@mkdir -p ${GOPATH}/bin
 	@which golangci-lint 1>/dev/null || (echo "Installing golangci-lint" && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest)
-	@which msgp 1>/dev/null || (echo "Installing msgp" && go install github.com/tinylib/msgp@v1.1.3)
-	@which stringer 1>/dev/null || (echo "Installing stringer" && go install golang.org/x/tools/cmd/stringer@v0.45.0)
+	@echo "Installing msgp@$(MSGP_VERSION)" && go install github.com/tinylib/msgp@$(MSGP_VERSION)
+	@echo "Installing stringer@$(STRINGER_VERSION)" && go install golang.org/x/tools/cmd/stringer@$(STRINGER_VERSION)
 
 crosscompile:
 	@(env bash $(PWD)/buildscripts/cross-compile.sh)
