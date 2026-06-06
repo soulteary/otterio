@@ -53,6 +53,18 @@ var ServerFlags = []cli.Flag{
 		Value: ":" + GlobalOtterioDefaultPort,
 		Usage: "bind to a specific ADDRESS:PORT, ADDRESS can be an IP or hostname",
 	},
+	cli.StringFlag{
+		Name:   "console-address",
+		Value:  "",
+		Usage:  "bind the web console + admin API to a separate ADDRESS:PORT (default: same as --address)",
+		EnvVar: "OTTERIO_BROWSER_ADDRESS",
+	},
+	cli.StringFlag{
+		Name:   "console-certs-dir",
+		Value:  "",
+		Usage:  "path to a separate certs directory for the console listener (requires --console-address)",
+		EnvVar: "OTTERIO_BROWSER_CERTS_DIR",
+	},
 }
 
 var serverCmd = cli.Command{
@@ -95,6 +107,14 @@ EXAMPLES:
      {{.Prompt}} {{.EnvVarSetCommand}} OTTERIO_ROOT_PASSWORD{{.AssignmentOperator}}otteriostorage
      {{.Prompt}} {{.HelpName}} http://node{1...16}.example.com/mnt/export{1...32} \
             http://node{17...64}.example.com/mnt/export{1...64}
+
+  5. Start otterio server with the web console listening on a separate port.
+     {{.Prompt}} {{.HelpName}} --address ":9000" --console-address ":9001" /home/shared
+
+  6. Same as above, with a dedicated TLS keypair for the console listener.
+     {{.Prompt}} {{.HelpName}} --address ":9000" --console-address ":9001" \
+            --certs-dir /etc/otterio/certs/s3 \
+            --console-certs-dir /etc/otterio/certs/console /home/shared
 `,
 }
 
@@ -125,6 +145,9 @@ func serverHandleCmdArgs(ctx *cli.Context) {
 	// Check and load TLS certificates.
 	globalPublicCerts, globalTLSCerts, globalIsTLS, err = getTLSConfig()
 	logger.FatalIf(err, "Unable to load the TLS configuration")
+
+	// Optionally load a dedicated TLS keypair for the console listener.
+	logger.FatalIf(loadConsoleTLSConfig(), "Unable to load the console TLS configuration")
 
 	// Check and load Root CAs.
 	globalRootCAs, err = certs.GetRootCAs(globalCertsCADir.Get())
@@ -175,6 +198,21 @@ func serverHandleCmdArgs(ctx *cli.Context) {
 	// (non-)otterio process is listening on IPv4 of given port.
 	// To avoid this error situation we check for port availability.
 	logger.FatalIf(checkPortAvailability(globalOtterioHost, globalOtterioPort), "Unable to start the server")
+
+	if consoleAddr := strings.TrimSpace(globalCLIContext.ConsoleAddr); consoleAddr != "" {
+		logger.FatalIf(CheckLocalServerAddr(consoleAddr), "Unable to validate --console-address")
+
+		globalOtterioConsoleAddr = consoleAddr
+		globalOtterioConsoleHost, globalOtterioConsolePort = mustSplitHostPort(globalOtterioConsoleAddr)
+
+		if globalOtterioConsolePort == globalOtterioPort {
+			logger.Fatal(errors.New("--console-address must use a port different from --address"),
+				"Unable to start the server with the same port for S3 and console")
+		}
+
+		logger.FatalIf(checkPortAvailability(globalOtterioConsoleHost, globalOtterioConsolePort),
+			"Unable to start the console listener")
+	}
 
 	globalIsErasure = (setupType == ErasureSetupType)
 	globalIsDistErasure = (setupType == DistErasureSetupType)
@@ -470,7 +508,7 @@ func serverMain(ctx *cli.Context) {
 	setMaxResources()
 
 	// Configure server.
-	app, err := configureServerHandler(globalEndpoints)
+	s3App, consoleApp, err := configureServerHandlers(globalEndpoints)
 	if err != nil {
 		logger.Fatal(config.ErrUnexpectedError(err), "Unable to configure one of server's RPC services")
 	}
@@ -480,7 +518,7 @@ func serverMain(ctx *cli.Context) {
 		getCert = globalTLSCerts.GetCertificate
 	}
 
-	httpServer := xhttp.NewServer([]string{globalOtterioAddr}, app, getCert)
+	httpServer := xhttp.NewServer([]string{globalOtterioAddr}, s3App, getCert)
 	httpServer.BaseContext = func(listener net.Listener) context.Context {
 		return GlobalContext
 	}
@@ -489,6 +527,34 @@ func serverMain(ctx *cli.Context) {
 	}()
 
 	setHTTPServer(httpServer)
+
+	if consoleApp != nil {
+		consoleScheme := getURLScheme(globalIsTLS)
+		consoleGetCert := getCert
+		if globalConsoleTLSCerts != nil {
+			consoleGetCert = globalConsoleTLSCerts.GetCertificate
+			consoleScheme = getURLScheme(true)
+		}
+		globalOtterioConsoleEndpoint = fmt.Sprintf("%s://%s",
+			consoleScheme,
+			net.JoinHostPort(func() string {
+				if globalOtterioConsoleHost == "" {
+					return sortIPs(localIP4.ToSlice())[0]
+				}
+				return globalOtterioConsoleHost
+			}(), globalOtterioConsolePort),
+		)
+
+		consoleServer := xhttp.NewServer([]string{globalOtterioConsoleAddr}, consoleApp, consoleGetCert)
+		consoleServer.BaseContext = func(listener net.Listener) context.Context {
+			return GlobalContext
+		}
+		go func() {
+			globalHTTPServerErrorCh <- consoleServer.Start()
+		}()
+
+		setConsoleHTTPServer(consoleServer)
+	}
 
 	if globalIsDistErasure && globalEndpoints.FirstLocal() {
 		for {

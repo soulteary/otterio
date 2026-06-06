@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -183,6 +184,9 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	globalPublicCerts, globalTLSCerts, globalIsTLS, err = getTLSConfig()
 	logger.FatalIf(err, "Invalid TLS certificate file")
 
+	// Optionally load a dedicated TLS keypair for the console listener.
+	logger.FatalIf(loadConsoleTLSConfig(), "Unable to load the console TLS configuration")
+
 	// Check and load Root CAs.
 	globalRootCAs, err = certs.GetRootCAs(globalCertsCADir.Get())
 	logger.FatalIf(err, "Failed to read root CAs (%v)", err)
@@ -206,6 +210,21 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	// (non-)otterio process is listening on IPv4 of given port.
 	// To avoid this error situation we check for port availability.
 	logger.FatalIf(checkPortAvailability(globalOtterioHost, globalOtterioPort), "Unable to start the gateway")
+
+	if consoleAddr := strings.TrimSpace(globalCLIContext.ConsoleAddr); consoleAddr != "" {
+		logger.FatalIf(CheckLocalServerAddr(consoleAddr), "Unable to validate --console-address")
+
+		globalOtterioConsoleAddr = consoleAddr
+		globalOtterioConsoleHost, globalOtterioConsolePort = mustSplitHostPort(globalOtterioConsoleAddr)
+
+		if globalOtterioConsolePort == globalOtterioPort {
+			logger.Fatal(errors.New("--console-address must use a port different from --address"),
+				"Unable to start the gateway with the same port for S3 and console")
+		}
+
+		logger.FatalIf(checkPortAvailability(globalOtterioConsoleHost, globalOtterioConsolePort),
+			"Unable to start the console listener")
+	}
 
 	globalOtterioEndpoint = func() string {
 		host := globalOtterioHost
@@ -243,7 +262,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	globalServerConfigMu.Unlock()
 
 	// Initialize Fiber HTTP handler.
-	app, err := configureGatewayHandler(enableConfigOps, enableIAMOps, globalEtcdClient != nil)
+	s3App, consoleApp, err := configureGatewayHandlers(enableConfigOps, enableIAMOps, globalEtcdClient != nil)
 	if err != nil {
 		logger.Fatal(config.ErrUnexpectedError(err), "Unable to configure gateway HTTP handler")
 	}
@@ -253,7 +272,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 		getCert = globalTLSCerts.GetCertificate
 	}
 
-	httpServer := xhttp.NewServer([]string{globalCLIContext.Addr}, app, getCert)
+	httpServer := xhttp.NewServer([]string{globalCLIContext.Addr}, s3App, getCert)
 	httpServer.BaseContext = func(listener net.Listener) context.Context {
 		return GlobalContext
 	}
@@ -261,15 +280,41 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 		globalHTTPServerErrorCh <- httpServer.Start()
 	}()
 
-	globalObjLayerMutex.Lock()
-	globalHTTPServer = httpServer
-	globalObjLayerMutex.Unlock()
+	setHTTPServer(httpServer)
+
+	if consoleApp != nil {
+		consoleScheme := getURLScheme(globalIsTLS)
+		consoleGetCert := getCert
+		if globalConsoleTLSCerts != nil {
+			consoleGetCert = globalConsoleTLSCerts.GetCertificate
+			consoleScheme = getURLScheme(true)
+		}
+		globalOtterioConsoleEndpoint = fmt.Sprintf("%s://%s",
+			consoleScheme,
+			net.JoinHostPort(func() string {
+				if globalOtterioConsoleHost == "" {
+					return sortIPs(localIP4.ToSlice())[0]
+				}
+				return globalOtterioConsoleHost
+			}(), globalOtterioConsolePort),
+		)
+
+		consoleServer := xhttp.NewServer([]string{globalOtterioConsoleAddr}, consoleApp, consoleGetCert)
+		consoleServer.BaseContext = func(listener net.Listener) context.Context {
+			return GlobalContext
+		}
+		go func() {
+			globalHTTPServerErrorCh <- consoleServer.Start()
+		}()
+
+		setConsoleHTTPServer(consoleServer)
+	}
 
 	signal.Notify(globalOSSignalCh, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
 	newObject, err := gw.NewGatewayLayer(globalActiveCred)
 	if err != nil {
-		globalHTTPServer.Shutdown()
+		shutdownAllHTTPServers()
 		logger.FatalIf(err, "Unable to initialize gateway backend")
 	}
 	newObject = NewGatewayLayerWithLocker(newObject)

@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"net/http"
+	"reflect"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -140,6 +141,38 @@ var globalFiberHandlers = []fiber.Handler{
 	setRedirectHandlerFiber,
 }
 
+// s3OnlyFiberHandlers returns the middleware chain used by the S3 listener
+// when --console-address is set. It strips setBrowserRedirectHandlerFiber so
+// browsers hitting the S3 port no longer get redirected to the web UI - they
+// receive standard S3 error responses instead.
+func s3OnlyFiberHandlers() []fiber.Handler {
+	out := make([]fiber.Handler, 0, len(globalFiberHandlers))
+	for _, h := range globalFiberHandlers {
+		// Skip handlers that only make sense when the web console is mounted
+		// on the same listener.
+		if isWebOnlyHandler(h) {
+			continue
+		}
+		out = append(out, h)
+	}
+	return out
+}
+
+// isWebOnlyHandler reports whether a middleware should be omitted from the
+// dedicated S3 listener. We compare by function pointer because
+// fiber.Handler is a non-comparable closure type for inline funcs but the
+// names below are package-level functions, which are comparable.
+func isWebOnlyHandler(h fiber.Handler) bool {
+	return fmtHandlerPointer(h) == fmtHandlerPointer(setBrowserRedirectHandlerFiber)
+}
+
+// fmtHandlerPointer returns a stable identifier for a fiber.Handler so we
+// can compare against package-level handler functions without importing
+// reflect at the call sites.
+func fmtHandlerPointer(h fiber.Handler) uintptr {
+	return reflect.ValueOf(h).Pointer()
+}
+
 func newFiberApp() *fiber.App {
 	app := fiber.New(fiber.Config{
 		BodyLimit:    int(requestMaxBodySize),
@@ -184,6 +217,51 @@ func configureServerHandler(endpointServerPools EndpointServerPools) (*fiber.App
 	return app, nil
 }
 
+// configureServerHandlers builds two separate Fiber apps: one for S3 traffic
+// and one for the web console + admin API. It is used when the operator opts
+// into a dedicated console listener via --console-address. consoleApp is nil
+// in single-port mode and the caller should fall back to configureServerHandler.
+func configureServerHandlers(endpointServerPools EndpointServerPools) (s3App, consoleApp *fiber.App, err error) {
+	if globalOtterioConsoleAddr == "" {
+		s3App, err = configureServerHandler(endpointServerPools)
+		return s3App, nil, err
+	}
+
+	s3App = newFiberApp()
+	s3App.Use(criticalErrorHandlerFiber)
+	s3App.Use(corsMiddlewareFiber())
+	for _, h := range s3OnlyFiberHandlers() {
+		s3App.Use(h)
+	}
+
+	if globalIsDistErasure {
+		registerDistErasureRoutersFiber(s3App, endpointServerPools)
+	}
+
+	registerHealthCheckRouterFiber(s3App)
+	registerMetricsRouterFiber(s3App)
+	registerSTSRouterFiber(s3App)
+	registerAPIRouterFiber(s3App)
+
+	consoleApp = newFiberApp()
+	consoleApp.Use(criticalErrorHandlerFiber)
+	consoleApp.Use(corsMiddlewareFiber())
+	for _, h := range globalFiberHandlers {
+		consoleApp.Use(h)
+	}
+
+	registerAdminRouterFiber(consoleApp, true, true)
+	registerHealthCheckRouterFiber(consoleApp)
+
+	if globalBrowserEnabled {
+		if werr := registerWebRouterFiber(consoleApp); werr != nil {
+			return nil, nil, werr
+		}
+	}
+
+	return s3App, consoleApp, nil
+}
+
 // configureGatewayHandler registers gateway-specific routers on a Fiber app.
 func configureGatewayHandler(enableConfigOps, enableIAMOps, enableSTS bool) (*fiber.App, error) {
 	app := newFiberApp()
@@ -211,4 +289,47 @@ func configureGatewayHandler(enableConfigOps, enableIAMOps, enableSTS bool) (*fi
 
 	registerAPIRouterFiber(app)
 	return app, nil
+}
+
+// configureGatewayHandlers builds two Fiber apps for gateway mode mirroring
+// configureServerHandlers. consoleApp is nil when the operator did not set
+// --console-address.
+func configureGatewayHandlers(enableConfigOps, enableIAMOps, enableSTS bool) (s3App, consoleApp *fiber.App, err error) {
+	if globalOtterioConsoleAddr == "" {
+		s3App, err = configureGatewayHandler(enableConfigOps, enableIAMOps, enableSTS)
+		return s3App, nil, err
+	}
+
+	s3App = newFiberApp()
+	s3App.Use(criticalErrorHandlerFiber)
+	s3App.Use(corsMiddlewareFiber())
+	for _, h := range s3OnlyFiberHandlers() {
+		s3App.Use(h)
+	}
+
+	if enableSTS {
+		registerSTSRouterFiber(s3App)
+	}
+
+	registerHealthCheckRouterFiber(s3App)
+	registerMetricsRouterFiber(s3App)
+	registerAPIRouterFiber(s3App)
+
+	consoleApp = newFiberApp()
+	consoleApp.Use(criticalErrorHandlerFiber)
+	consoleApp.Use(corsMiddlewareFiber())
+	for _, h := range globalFiberHandlers {
+		consoleApp.Use(h)
+	}
+
+	registerAdminRouterFiber(consoleApp, enableConfigOps, enableIAMOps)
+	registerHealthCheckRouterFiber(consoleApp)
+
+	if globalBrowserEnabled {
+		if werr := registerWebRouterFiber(consoleApp); werr != nil {
+			return nil, nil, werr
+		}
+	}
+
+	return s3App, consoleApp, nil
 }

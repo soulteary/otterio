@@ -151,6 +151,52 @@ make build
 ./otterio server /data
 ```
 
+## 独立监听 Web 控制台与 S3 端口
+
+默认情况下，Web 控制台与 S3 API 监听同一个端口（由 `--address` 指定）。从最近一个版本开始，OtterIO 支持把 Web UI 与 Admin API 拆分到独立的端口，方便在反向代理、防火墙或网络策略层面分别控制 S3 流量与控制台流量。
+
+通过 `--console-address` 命令行参数或 `OTTERIO_BROWSER_ADDRESS` 环境变量启用：
+
+```sh
+# 命令行参数
+otterio server --address ":9000" --console-address ":9001" /data
+
+# 环境变量（等效写法）
+export OTTERIO_BROWSER_ADDRESS=":9001"
+otterio server --address ":9000" /data
+```
+
+启用后：
+
+- `:9000` 仅承载 S3 API、STS、HealthCheck、Metrics；浏览器请求不会再被重定向到 Web UI。
+- `:9001` 承载 Web 控制台（`/otterio/`）以及 Admin API（`/otterio/admin/v3/*`）。
+- 两个端口不能相同，否则启动会直接失败。
+- `Ctrl+C` / `SIGTERM` 会同时优雅关停两个监听器。
+
+> 注意：开启拆分模式后，Admin API（即 `mc admin ...` 使用的接口）位于控制台端口。使用 `mc admin` 系列命令时，需要把 mc alias 指向控制台 URL；普通 S3 操作（`mc cp`、`mc ls` 等）仍然走 S3 端口。
+
+如未指定 `--console-address`，则保持原行为，二者共用同一个端口。
+
+### 控制台监听器使用独立 TLS 证书
+
+在拆分监听器的基础上，还可以通过 `--console-certs-dir`（或环境变量 `OTTERIO_BROWSER_CERTS_DIR`）让控制台使用独立的 TLS 证书，这样 S3 API 与 Web 控制台可以分别使用不同的证书（例如 `:9000` 用内部 CA 签发的证书，`:9001` 用公网证书）：
+
+```sh
+otterio server \
+  --address ":9000" \
+  --console-address ":9001" \
+  --certs-dir /etc/otterio/certs/s3 \
+  --console-certs-dir /etc/otterio/certs/console \
+  /data
+```
+
+`--console-certs-dir` 指向的目录必须包含 `public.crt` 与 `private.key`，目录结构与 `--certs-dir` 相同。注意：
+
+- `--console-certs-dir` 必须在已设置 `--console-address` 的情况下使用，否则启动会直接失败。
+- 未指定 `--console-certs-dir` 时，控制台监听器复用 `--certs-dir` 加载的证书（与旧行为一致）。
+- S3 监听器始终使用 `--certs-dir`，只有控制台监听器会读取 `--console-certs-dir`。
+- 两套证书都由同一个证书管理器监视并热加载。
+
 ## 为防火墙设置允许访问的端口
 
 默认情况下，OtterIO 使用端口9000来侦听传入的连接。如果你的平台默认阻止了该端口，则需要启用对该端口的访问。

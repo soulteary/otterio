@@ -18,6 +18,7 @@
 package cmd
 
 import (
+	"errors"
 	"net/http"
 
 	xhttp "github.com/soulteary/otterio/cmd/http"
@@ -33,6 +34,43 @@ func setHTTPServer(h *xhttp.Server) {
 	globalObjLayerMutex.Lock()
 	globalHTTPServer = h
 	globalObjLayerMutex.Unlock()
+}
+
+// setConsoleHTTPServer registers the dedicated console listener (only used
+// when --console-address is set). Stored alongside the S3 listener so signal
+// handlers can shut both down together.
+func setConsoleHTTPServer(h *xhttp.Server) {
+	globalObjLayerMutex.Lock()
+	globalConsoleHTTPServer = h
+	globalObjLayerMutex.Unlock()
+}
+
+// newConsoleHTTPServerFn returns the console listener (or nil when not split).
+func newConsoleHTTPServerFn() *xhttp.Server {
+	globalObjLayerMutex.RLock()
+	defer globalObjLayerMutex.RUnlock()
+	return globalConsoleHTTPServer
+}
+
+// shutdownAllHTTPServers calls Shutdown on the S3 listener and (when set) the
+// console listener. Errors from either are joined; nil is returned when no
+// listener is registered.
+func shutdownAllHTTPServers() error {
+	var errs []error
+	if s := newHTTPServerFn(); s != nil {
+		if err := s.Shutdown(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if s := newConsoleHTTPServerFn(); s != nil {
+		if err := s.Shutdown(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return errors.Join(errs...)
 }
 
 func newObjectLayerFn() ObjectLayer {

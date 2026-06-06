@@ -263,6 +263,52 @@ OtterIO strongly recommends *against* using compiled-from-source OtterIO servers
 
 # Deployment Recommendations
 
+## Run S3 and Web Console on Separate Ports
+
+By default the web console and the S3 API share the listener bound to `--address`. Since the recent split-listener change, OtterIO can serve the web UI and the admin API on a dedicated port so reverse proxies, firewalls, and network policies can govern S3 traffic and console traffic independently.
+
+Enable the dedicated console listener via the `--console-address` flag or the `OTTERIO_BROWSER_ADDRESS` environment variable:
+
+```sh
+# CLI flag
+otterio server --address ":9000" --console-address ":9001" /data
+
+# environment variable (equivalent)
+export OTTERIO_BROWSER_ADDRESS=":9001"
+otterio server --address ":9000" /data
+```
+
+When the dedicated console listener is enabled:
+
+- `:9000` only serves the S3 API, STS, health, and metrics. Browser requests are no longer redirected to the web UI.
+- `:9001` serves the web console (`/otterio/`) and the admin API (`/otterio/admin/v3/*`).
+- The console port must differ from the S3 port; otherwise startup fails fast.
+- `Ctrl+C` / `SIGTERM` shuts down both listeners gracefully.
+
+> Note: the admin API (used by `mc admin ...`) is served from the console port in this mode. Configure your `mc` alias to point at the console URL when issuing admin commands. Regular S3 operations (`mc cp`, `mc ls`, etc.) continue to use the S3 port.
+
+If `--console-address` is not provided, both surfaces continue to share a single port (the original behaviour).
+
+### Dedicated TLS certificates for the console listener
+
+When you split listeners, you can also point the console at its own TLS keypair so the S3 API and the web console can use different certificates (e.g. an internal CA-signed cert for `:9000` and a public cert for `:9001`). Use `--console-certs-dir` or `OTTERIO_BROWSER_CERTS_DIR`:
+
+```sh
+otterio server \
+  --address ":9000" \
+  --console-address ":9001" \
+  --certs-dir /etc/otterio/certs/s3 \
+  --console-certs-dir /etc/otterio/certs/console \
+  /data
+```
+
+The directory pointed to by `--console-certs-dir` must contain `public.crt` and `private.key`, the same layout used by `--certs-dir`. Notes:
+
+- `--console-certs-dir` requires `--console-address`; otherwise startup fails fast.
+- If `--console-certs-dir` is not set, the console listener reuses the certificates loaded from `--certs-dir` (the legacy behaviour).
+- The S3 listener always uses `--certs-dir`; only the console listener honours `--console-certs-dir`.
+- Both keypairs are watched and hot-reloaded by the same certificate manager used for `--certs-dir`.
+
 ## Allow port access for Firewalls
 
 By default OtterIO uses the port 9000 to listen for incoming connections. If your platform blocks the port by default, you may need to enable access to the port.

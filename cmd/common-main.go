@@ -223,6 +223,18 @@ func handleCommonCmdArgs(ctx *cli.Context) {
 		globalCLIContext.Addr = ctx.String("address")
 	}
 
+	// Fetch optional console-address option (server command only).
+	globalCLIContext.ConsoleAddr = ctx.GlobalString("console-address")
+	if globalCLIContext.ConsoleAddr == "" {
+		globalCLIContext.ConsoleAddr = ctx.String("console-address")
+	}
+
+	// Fetch optional console-certs-dir option (server command only).
+	globalCLIContext.ConsoleCertsDir = ctx.GlobalString("console-certs-dir")
+	if globalCLIContext.ConsoleCertsDir == "" {
+		globalCLIContext.ConsoleCertsDir = ctx.String("console-certs-dir")
+	}
+
 	// Check "no-compat" flag from command line argument.
 	globalCLIContext.StrictS3Compat = true
 	if ctx.IsSet("no-compat") || ctx.GlobalIsSet("no-compat") {
@@ -244,6 +256,15 @@ func handleCommonCmdArgs(ctx *cli.Context) {
 	globalCertsCADir = &ConfigDir{path: filepath.Join(globalCertsDir.Get(), certsCADir)}
 
 	logger.FatalIf(mkdirAllIgnorePerm(globalCertsCADir.Get()), "Unable to create certs CA directory at %s", globalCertsCADir.Get())
+
+	// If --console-certs-dir is provided, validate and stash it. The actual TLS
+	// material is loaded later inside loadConsoleTLSConfig once we know whether
+	// --console-address was supplied.
+	if dir := strings.TrimSpace(globalCLIContext.ConsoleCertsDir); dir != "" {
+		abs, err := filepath.Abs(dir)
+		logger.FatalIf(err, "Unable to resolve --console-certs-dir %q", dir)
+		globalConsoleCertsDir = &ConfigDir{path: abs}
+	}
 }
 
 func handleCommonEnvVars() {
@@ -443,6 +464,64 @@ func getTLSConfig() (x509Certs []*x509.Certificate, manager *certs.Manager, secu
 	}
 	secureConn = true
 	return x509Certs, manager, secureConn, nil
+}
+
+// loadConsoleTLSConfig optionally loads a dedicated TLS keypair for the console
+// listener from globalConsoleCertsDir. When the directory is unset or does not
+// contain a public.crt + private.key pair, the console listener falls back to
+// the shared globalTLSCerts. When the directory is provided but the files are
+// missing or invalid, this function returns an error so startup fails fast.
+func loadConsoleTLSConfig() error {
+	if globalConsoleCertsDir == nil {
+		return nil
+	}
+	if globalCLIContext.ConsoleAddr == "" {
+		return errors.New("--console-certs-dir requires --console-address to be set")
+	}
+
+	dir := globalConsoleCertsDir.Get()
+	certFile := filepath.Join(dir, publicCertFile)
+	keyFile := filepath.Join(dir, privateKeyFile)
+	if !isFile(certFile) || !isFile(keyFile) {
+		return fmt.Errorf("console certs directory %q must contain %s and %s",
+			dir, publicCertFile, privateKeyFile)
+	}
+
+	// If the user pointed --console-certs-dir at the same directory as
+	// --certs-dir, fall back to sharing globalTLSCerts. Spinning up a second
+	// certs.Manager on the same files would create a redundant fsnotify watcher
+	// and serve the exact same certificate as the S3 listener.
+	if mainDir := globalCertsDir.Get(); mainDir != "" {
+		mainAbs, mErr := filepath.Abs(mainDir)
+		consoleAbs, cErr := filepath.Abs(dir)
+		if mErr == nil && cErr == nil && mainAbs == consoleAbs {
+			logger.Info("--console-certs-dir matches --certs-dir, console listener will reuse the S3 TLS keypair")
+			return nil
+		}
+	}
+
+	x509Certs, err := config.ParsePublicCertFile(certFile)
+	if err != nil {
+		return fmt.Errorf("unable to parse console %s: %w", publicCertFile, err)
+	}
+
+	manager, err := certs.NewManager(GlobalContext, certFile, keyFile, config.LoadX509KeyPair)
+	if err != nil {
+		return fmt.Errorf("unable to load console TLS keypair: %w", err)
+	}
+
+	globalConsolePublicCerts = x509Certs
+	globalConsoleTLSCerts = manager
+	globalConsoleIsTLS = true
+
+	// Trust the console's own certs for any internal HTTPS clients that may
+	// reach the console endpoint (e.g. for self-checks).
+	if globalRootCAs != nil {
+		for _, c := range x509Certs {
+			globalRootCAs.AddCert(c)
+		}
+	}
+	return nil
 }
 
 // contextCanceled returns whether a context is canceled.

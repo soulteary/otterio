@@ -47,6 +47,9 @@ func printGatewayStartupMessage(apiEndPoints []string, backendType string) {
 		if globalIsTLS {
 			printCertificateMsg(globalPublicCerts)
 		}
+		if globalConsoleIsTLS && len(globalConsolePublicCerts) > 0 {
+			printConsoleCertificateMsg(globalConsolePublicCerts)
+		}
 	}
 }
 
@@ -67,6 +70,11 @@ func printGatewayCommonMsg(apiEndpoints []string) {
 
 	if globalBrowserEnabled {
 		logStartupMessage(color.Blue("\nBrowser Access:"))
-		logStartupMessage(fmt.Sprintf(getFormatStr(len(apiEndpointStr), 3), apiEndpointStr))
+		if globalOtterioConsoleEndpoint != "" {
+			consoleURL := globalOtterioConsoleEndpoint + otterioReservedBucketPath + "/"
+			logStartupMessage(fmt.Sprintf(getFormatStr(len(consoleURL), 3), consoleURL))
+		} else {
+			logStartupMessage(fmt.Sprintf(getFormatStr(len(apiEndpointStr), 3), apiEndpointStr))
+		}
 	}
 }

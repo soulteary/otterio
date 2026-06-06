@@ -110,10 +110,12 @@ const (
 )
 
 var globalCLIContext = struct {
-	JSON, Quiet    bool
-	Anonymous      bool
-	Addr           string
-	StrictS3Compat bool
+	JSON, Quiet     bool
+	Anonymous       bool
+	Addr            string
+	ConsoleAddr     string
+	ConsoleCertsDir string
+	StrictS3Compat  bool
 }{}
 
 var (
@@ -147,6 +149,16 @@ var (
 	// Holds the possible host endpoint.
 	globalOtterioEndpoint = ""
 
+	// Optional dedicated console listener address (in `host:port` format).
+	// Empty means the console is served on the same listener as S3.
+	globalOtterioConsoleAddr = ""
+	// Holds the host part of --console-address (when set).
+	globalOtterioConsoleHost = ""
+	// Holds the port part of --console-address (when set).
+	globalOtterioConsolePort = ""
+	// Pre-rendered endpoint for the console listener (when split).
+	globalOtterioConsoleEndpoint = ""
+
 	// globalConfigSys server config system.
 	globalConfigSys *ConfigSys
 
@@ -179,7 +191,15 @@ var (
 
 	globalTLSCerts *certs.Manager
 
+	// Optional dedicated TLS material for the console listener.
+	// When nil, the console listener falls back to globalTLSCerts (shared with S3).
+	globalConsoleTLSCerts    *certs.Manager
+	globalConsolePublicCerts []*x509.Certificate
+	// Indicates whether the dedicated console listener has its own TLS keypair.
+	globalConsoleIsTLS bool
+
 	globalHTTPServer        *xhttp.Server
+	globalConsoleHTTPServer *xhttp.Server
 	globalHTTPServerErrorCh = make(chan error)
 	globalOSSignalCh        = make(chan os.Signal, 1)
 

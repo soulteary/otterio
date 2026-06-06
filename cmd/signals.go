@@ -44,7 +44,7 @@ func handleSignals() {
 	}
 
 	stopProcess := func() bool {
-		var err, oerr error
+		var oerr error
 
 		// send signal to various go-routines that they need to quit.
 		cancelGlobalContext()
@@ -53,11 +53,11 @@ func handleSignals() {
 			globalNotificationSys.RemoveAllRemoteTargets()
 		}
 
-		if httpServer := newHTTPServerFn(); httpServer != nil {
-			err = httpServer.Shutdown()
-			if !errors.Is(err, http.ErrServerClosed) {
-				logger.LogIf(context.Background(), err)
-			}
+		shutdownErr := shutdownAllHTTPServers()
+		if shutdownErr != nil && !errors.Is(shutdownErr, http.ErrServerClosed) {
+			logger.LogIf(context.Background(), shutdownErr)
+		} else {
+			shutdownErr = nil
 		}
 
 		if objAPI := newObjectLayerFn(); objAPI != nil {
@@ -65,7 +65,7 @@ func handleSignals() {
 			logger.LogIf(context.Background(), oerr)
 		}
 
-		return (err == nil && oerr == nil)
+		return (shutdownErr == nil && oerr == nil)
 	}
 
 	for {

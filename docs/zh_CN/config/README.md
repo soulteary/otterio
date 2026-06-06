@@ -285,6 +285,40 @@ export OTTERIO_BROWSER=off
 otterio server /data
 ```
 
+### 独立的 Web 控制台监听端口
+
+默认情况下，Web 控制台与 S3 API 共用 ``--address`` 指定的监听器。如果希望将 Web UI 与 Admin API 单独绑定到另一个端口，可以通过 ``--console-address`` 命令行参数或 ``OTTERIO_BROWSER_ADDRESS`` 环境变量启用。开启该模式后，S3 监听端口将不再把浏览器请求重定向到 Web UI——浏览器访问 S3 端口会按常规 S3 接口返回错误响应。
+
+控制台端口必须与 S3 端口不同，否则服务启动会直接失败。
+
+示例:
+
+```sh
+# 命令行参数
+otterio server --address ":9000" --console-address ":9001" /data
+
+# 环境变量（等效写法）
+export OTTERIO_BROWSER_ADDRESS=":9001"
+otterio server --address ":9000" /data
+```
+
+### 控制台监听器使用独立 TLS 证书目录
+
+启用 ``--console-address`` 后，可以通过 ``--console-certs-dir``（或环境变量 ``OTTERIO_BROWSER_CERTS_DIR``）让控制台监听器使用独立的 TLS 证书。该目录需要包含 ``public.crt`` 与 ``private.key``，目录结构与 ``--certs-dir`` 相同；未指定时控制台监听器复用 ``--certs-dir`` 加载的证书。
+
+示例:
+
+```sh
+otterio server \
+  --address ":9000" \
+  --console-address ":9001" \
+  --certs-dir /etc/otterio/certs/s3 \
+  --console-certs-dir /etc/otterio/certs/console \
+  /data
+```
+
+``--console-certs-dir`` 需要在 ``--console-address`` 已设置时使用，否则启动直接失败。
+
 ### 域名
 
 默认情况下，OtterIO支持格式为 http://mydomain.com/bucket/object 的路径类型请求。

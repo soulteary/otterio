@@ -330,6 +330,40 @@ export OTTERIO_BROWSER=off
 otterio server /data
 ```
 
+### Browser Address (separate console listener)
+
+By default the web console and S3 API share the listener bound to `--address`. To serve the web UI and the admin API on a dedicated port, pass `--console-address` to `server`/`gateway`, or set the `OTTERIO_BROWSER_ADDRESS` environment variable. The S3 listener stops redirecting browser requests to the web UI in this mode; clients hitting the S3 port with a browser receive standard S3 error responses.
+
+The console port must be different from the S3 port, otherwise the server refuses to start.
+
+Example:
+
+```sh
+# CLI flag
+otterio server --address ":9000" --console-address ":9001" /data
+
+# environment variable (equivalent)
+export OTTERIO_BROWSER_ADDRESS=":9001"
+otterio server --address ":9000" /data
+```
+
+### Browser Certs Dir (separate TLS for the console listener)
+
+When using `--console-address`, you can also point the console listener at its own TLS keypair via `--console-certs-dir` (or the `OTTERIO_BROWSER_CERTS_DIR` environment variable). The directory must contain `public.crt` and `private.key`, mirroring the layout of `--certs-dir`. Without this flag, the console listener reuses the certificates loaded from `--certs-dir`.
+
+Example:
+
+```sh
+otterio server \
+  --address ":9000" \
+  --console-address ":9001" \
+  --certs-dir /etc/otterio/certs/s3 \
+  --console-certs-dir /etc/otterio/certs/console \
+  /data
+```
+
+`--console-certs-dir` requires `--console-address`; otherwise startup fails fast.
+
 ### Domain
 
 By default, OtterIO supports path-style requests that are of the format http://mydomain.com/bucket/object. `OTTERIO_DOMAIN` environment variable is used to enable virtual-host-style requests. If the request `Host` header matches with `(.+).mydomain.com` then the matched pattern `$1` is used as bucket and the path is used as object. More information on path-style and virtual-host-style [here](http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAPI.html)

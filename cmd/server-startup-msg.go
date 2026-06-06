@@ -89,6 +89,9 @@ func printStartupMessage(apiEndpoints []string, err error) {
 		if globalIsTLS {
 			printCertificateMsg(globalPublicCerts)
 		}
+		if globalConsoleIsTLS && len(globalConsolePublicCerts) > 0 {
+			printConsoleCertificateMsg(globalConsolePublicCerts)
+		}
 	}
 }
 
@@ -148,7 +151,15 @@ func printServerCommonMsg(apiEndpoints []string) {
 
 	if globalBrowserEnabled {
 		logStartupMessage(color.Blue("\nBrowser Access:"))
-		logStartupMessage(fmt.Sprintf(getFormatStr(len(apiEndpointStr), 3), apiEndpointStr))
+		if globalOtterioConsoleEndpoint != "" {
+			// Console runs on a dedicated listener; show that endpoint
+			// instead of the S3 endpoints. Append the reserved bucket path
+			// so users can copy/paste straight into a browser.
+			consoleURL := globalOtterioConsoleEndpoint + otterioReservedBucketPath + "/"
+			logStartupMessage(fmt.Sprintf(getFormatStr(len(consoleURL), 3), consoleURL))
+		} else {
+			logStartupMessage(fmt.Sprintf(getFormatStr(len(apiEndpointStr), 3), apiEndpointStr))
+		}
 	}
 }
 
@@ -240,6 +251,19 @@ func printCacheStorageInfo(storageInfo CacheStorageInfo) {
 
 // Prints the certificate expiry message.
 func printCertificateMsg(certs []*x509.Certificate) {
+	for _, cert := range certs {
+		logStartupMessage(config.CertificateText(cert))
+	}
+}
+
+// printConsoleCertificateMsg renders the dedicated console listener's
+// certificate(s) under a clear heading so operators can tell them apart from
+// the S3 listener's certificate chain.
+func printConsoleCertificateMsg(certs []*x509.Certificate) {
+	if len(certs) == 0 {
+		return
+	}
+	logStartupMessage(color.Blue("%s", "Console TLS certificates:"))
 	for _, cert := range certs {
 		logStartupMessage(config.CertificateText(cert))
 	}

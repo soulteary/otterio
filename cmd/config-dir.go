@@ -74,6 +74,10 @@ var (
 	globalCertsDir = defaultCertsDir
 	// Points to relative path to certs directory and is <value-of-certs-dir>/CAs
 	globalCertsCADir = defaultCertsCADir
+
+	// Optional dedicated certs directory for the console listener; when nil
+	// the console listener shares globalCertsDir with the S3 listener.
+	globalConsoleCertsDir *ConfigDir
 )
 
 // Get - returns current directory.
