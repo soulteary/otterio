@@ -1,0 +1,146 @@
+name: Docker (edge)
+
+# Build a multi-arch development image on every push to main.
+#
+# Tagging strategy:
+#   - :edge                always points to latest main
+#   - :sha-<short_sha>     immutable tag for traceability
+#
+# Pushed to:
+#   - ghcr.io/<owner>/otterio   (always; uses GITHUB_TOKEN)
+#   - docker.io/<user>/otterio  (only if DOCKERHUB_USERNAME / DOCKERHUB_TOKEN
+#                                secrets are configured)
+#
+# This is intentionally separate from release.yml: release.yml is tag-driven
+# and produces immutable versioned images, while this workflow is branch-driven
+# and produces a moving "edge" tag for testers.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: docker-edge-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GO_VERSION: '1.26.x'
+  IMAGE_NAME: otterio
+
+jobs:
+  binaries:
+    name: Build linux binaries
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.meta.outputs.short_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gen-ldflags.go reads git history to derive commit/version info.
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Resolve metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          short_sha="$(git rev-parse --short HEAD)"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "short SHA: ${short_sha}"
+
+      - name: Cross compile linux binaries
+        env:
+          CGO_ENABLED: '0'
+          GO111MODULE: 'on'
+        run: |
+          set -euo pipefail
+          LDFLAGS="$(go run buildscripts/gen-ldflags.go)"
+          mkdir -p dist
+          for arch in amd64 arm64 ppc64le s390x; do
+            out="dist/otterio-linux-${arch}"
+            echo "==> Building ${out}"
+            GOOS=linux GOARCH="${arch}" go build \
+              -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o "${out}" .
+          done
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: edge-binaries
+          path: dist/
+          retention-days: 3
+
+  docker:
+    name: Build and push edge image
+    runs-on: ubuntu-latest
+    needs: binaries
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: edge-binaries
+          path: dist
+
+      - name: Make Linux binaries executable
+        run: chmod +x dist/otterio-linux-*
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: tags
+        env:
+          SHORT_SHA: ${{ needs.binaries.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          GHCR_REPO="ghcr.io/${OWNER}/${IMAGE_NAME}"
+          TAGS="${GHCR_REPO}:edge,${GHCR_REPO}:sha-${SHORT_SHA}"
+          if [ -n "${DOCKERHUB_USERNAME}" ]; then
+            DH_REPO="${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
+            TAGS="${TAGS},${DH_REPO}:edge,${DH_REPO}:sha-${SHORT_SHA}"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "Image tags: ${TAGS}"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ci
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          push: true
+          build-args: |
+            RELEASE=edge-${{ needs.binaries.outputs.short_sha }}
+          tags: ${{ steps.tags.outputs.tags }}
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,26 +1,46 @@
 name: Go
 
+# Run unit tests, race detector, cross-compile and a few integration-style
+# verifications on every PR and on every push to main.
+#
+# This workflow is intentionally heavy: it mirrors the local `make` targets
+# so that what passes here is what we ship.
+
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
-    - master
+      - main
+  workflow_dispatch:
+
+# Cancel in-progress runs on the same ref to save CI minutes.
+concurrency:
+  group: go-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Test on Go ${{ matrix.go-version }} and ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         go-version: [1.26.x]
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+          cache: true
+
       - name: Build on ${{ matrix.os }}
         if: matrix.os == 'windows-latest'
         shell: bash
@@ -33,6 +53,7 @@ jobs:
           # "DEVELOPMENT.GOGET" default, matching the Makefile/Docker builds.
           go build --ldflags="$(go run buildscripts/gen-ldflags.go)" -o otterio.exe
           go test -v --timeout 50m ./...
+
       - name: Build on ${{ matrix.os }}
         if: matrix.os == 'ubuntu-latest'
         env:
