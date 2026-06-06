@@ -32,10 +32,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/valyala/fasthttp"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/handlers"
+	"github.com/valyala/fasthttp"
 )
 
 // fiberRequestCtx wraps a *fasthttp.RequestCtx so that derived contexts
@@ -66,7 +66,7 @@ type fiberRequestCtx struct {
 	// done is a snapshot of reqCtx.Done() captured at construction time.
 	// fasthttp closes this channel only on Server.Shutdown, so legacy
 	// handlers that loop on r.Context().Done() still unblock on graceful
-	// shutdown. A per-request client disconnect is not signalled here
+	// shutdown. A per-request client disconnect is not signaled here
 	// (matching the prior behavior of using *fasthttp.RequestCtx directly).
 	done <-chan struct{}
 }
