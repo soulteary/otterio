@@ -55,7 +55,7 @@ func main() {
 |:------------------------|:--------------------------------------|:--------------------------------------------------|:--------------------------------|
 | [`TopLocks`](#TopLocks) | [`AddUser`](#AddUser)                 | [`StartProfiling`](#StartProfiling)               | [`GetKeyStatus`](#GetKeyStatus) |
 |                         | [`SetUserPolicy`](#SetUserPolicy)     | [`DownloadProfilingData`](#DownloadProfilingData) |                                 |
-|                         | [`ListUsers`](#ListUsers)             | [`ServerUpdate`](#ServerUpdate)                   |                                 |
+|                         | [`ListUsers`](#ListUsers)             |                                                   |                                 |
 |                         | [`AddCannedPolicy`](#AddCannedPolicy) |                                                   |                                 |
 
 ## 1. Constructor
@@ -476,24 +476,6 @@ __Example__
 ```
 
 ## 9. Misc operations
-
-<a name="ServerUpdate"></a>
-### ServerUpdate(ctx context.Context, updateURL string) (ServerUpdateStatus, error)
-Sends a update command to OtterIO server, to update OtterIO server to latest release. In distributed setup it updates all servers atomically.
-
- __Example__
-
-```go
-   // Updates all servers and restarts all the servers in the cluster.
-   // optionally takes an updateURL, which is used to update the binary.
-   us, err := madmClnt.ServerUpdate(context.Background(), updateURL)
-   if err != nil {
-       log.Fatalln(err)
-   }
-   if us.CurrentVersion != us.UpdatedVersion {
-       log.Printf("Updated server version from %s to %s successfully", us.CurrentVersion, us.UpdatedVersion)
-   }
-```
 
 <a name="StartProfiling"></a>
 ### StartProfiling(ctx context.Context, profiler string) error

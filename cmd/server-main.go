@@ -494,11 +494,6 @@ func serverMain(ctx *cli.Context) {
 		}
 	}
 
-	if !globalCLIContext.Quiet && !globalInplaceUpdateDisabled {
-		// Check for new updates from dl.min.io.
-		checkUpdate(getOtterioMode())
-	}
-
 	if !globalActiveCred.IsValid() && globalIsDistErasure {
 		logger.Fatal(config.ErrEnvCredentialsMissingDistributed(nil),
 			"Unable to initialize the server in distributed mode")

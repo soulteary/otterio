@@ -38,7 +38,6 @@ require (
 	github.com/minio/cli v1.24.2
 	github.com/minio/highwayhash v1.0.4
 	github.com/minio/minio-go/v7 v7.2.0
-	github.com/minio/selfupdate v0.6.0
 	github.com/minio/sha256-simd v1.0.1
 	github.com/minio/simdjson-go v0.4.5
 	github.com/minio/sio v0.5.1
@@ -70,7 +69,6 @@ require (
 )
 
 require (
-	aead.dev/minisign v0.3.0 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect

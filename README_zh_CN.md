@@ -264,25 +264,6 @@ OtterIO Server带有一个嵌入的Web对象浏览器，安装后使用浏览器
 
 上述描述对所有网关后端同样有效。
 
-## 升级 OtterIO
-OtterIO 服务端支持滚动升级, 也就是说你可以一次更新分布式集群中的一个OtterIO实例。 这样可以在不停机的情况下进行升级。可以通过将二进制文件替换为最新版本并以滚动方式重新启动所有服务器来手动完成升级。但是, 我们建议所有用户从客户端使用 [`mc admin update`](https://docs.min.io/docs/minio-admin-complete-guide.html#update) 命令升级。 这将同时更新集群中的所有节点并重新启动它们, 如下命令所示:
-
-```
-mc admin update <otterio alias, e.g., myotterio>
-```
-
-> 注意: 有些发行版可能不允许滚动升级，这通常在发行说明中提到，所以建议在升级之前阅读发行说明。在这种情况下，建议使用`mc admin update`升级机制来一次升级所有服务器。
-
-### OtterIO升级时要记住的重要事项
-
-- `mc admin update` 命令仅当运行OtterIO的用户对二进制文件所在的父目录具有写权限时才工作, 比如当前二进制文件位于`/usr/local/bin/otterio`, 你需要具备`/usr/local/bin`目录的写权限.
-- `mc admin update` 命令同时更新并重新启动所有服务器，应用程序将在升级后重试并继续各自的操作。
-- `mc admin update` 命令在 kubernetes/container 环境下是不能用的, 容器环境提供了它自己的更新机制来更新。
-- 对于联盟部署模式，应分别针对每个群集运行`mc admin update`。 在成功更新所有群集之前，不要将`mc`更新为任何新版本。
-- 如果将`kes`用作OtterIO的KMS，只需替换二进制文件并重新启动`kes`，可以在 [这里](https://github.com/minio/kes/wiki) 找到有关`kes`的更多信息。
-- 如果将Vault作为OtterIO的KMS，请确保已遵循如下Vault升级过程的概述：https://www.vaultproject.io/docs/upgrading/index.html
-- 如果将OtterIO与etcd配合使用, 请确保已遵循如下etcd升级过程的概述: https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrading-etcd.md
-
 ## 了解更多
 - [OtterIO纠删码入门](https://docs.min.io/docs/minio-erasure-code-quickstart-guide)
 - [`mc`快速入门](https://docs.min.io/docs/minio-client-quickstart-guide)

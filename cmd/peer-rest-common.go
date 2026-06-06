@@ -37,7 +37,6 @@ const (
 	peerRESTMethodDeleteBucketMetadata   = "/deletebucketmetadata"
 	peerRESTMethodLoadBucketMetadata     = "/loadbucketmetadata"
 	peerRESTMethodGetBucketStats         = "/getbucketstats"
-	peerRESTMethodServerUpdate           = "/serverupdate"
 	peerRESTMethodSignalService          = "/signalservice"
 	peerRESTMethodBackgroundHealStatus   = "/backgroundhealstatus"
 	peerRESTMethodGetLocks               = "/getlocks"

@@ -29,8 +29,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -64,135 +62,6 @@ const (
 	mgmtForceStart  = "forceStart"
 	mgmtForceStop   = "forceStop"
 )
-
-func updateServer(u *url.URL, sha256Sum []byte, lrTime time.Time, releaseInfo string, mode string) (us madmin.ServerUpdateStatus, err error) {
-	if err = doUpdate(u, lrTime, sha256Sum, releaseInfo, mode); err != nil {
-		return us, err
-	}
-
-	us.CurrentVersion = Version
-	us.UpdatedVersion = lrTime.Format(otterioReleaseTagTimeLayout)
-	return us, nil
-}
-
-// ServerUpdateHandler - POST /otterio/admin/v3/update?updateURL={updateURL}
-// ----------
-// updates all otterio servers and restarts them gracefully.
-func (a adminAPIHandlers) ServerUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := newContext(r, w, "ServerUpdate")
-
-	defer logger.AuditLog(ctx, w, r, mustGetClaimsFromToken(r))
-
-	objectAPI, _ := validateAdminReq(ctx, w, r, iampolicy.ServerUpdateAdminAction)
-	if objectAPI == nil {
-		return
-	}
-
-	if globalInplaceUpdateDisabled {
-		// if OTTERIO_UPDATE=off - inplace update is disabled, mostly in containers.
-		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrMethodNotAllowed), r.URL)
-		return
-	}
-
-	updateURL := urlVar(r, "updateURL")
-	mode := getOtterioMode()
-	if updateURL == "" {
-		updateURL = otterioReleaseInfoURL()
-		if runtime.GOOS == globalWindowsOSName {
-			updateURL = otterioReleaseWindowsInfoURL()
-		}
-		// This fork does not operate a release server. Without an explicit
-		// updateURL and without OTTERIO_UPDATE_RELEASE_URL configured, refuse to
-		// fall back to the upstream download server (which would replace this
-		// fork's binary with the upstream binary).
-		if updateURL == "" {
-			writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, AdminError{
-				Code:       AdminUpdateUnexpectedFailure,
-				Message:    "no update source configured: set OTTERIO_UPDATE_RELEASE_URL or pass an explicit updateURL to `mc admin update`",
-				StatusCode: http.StatusBadRequest,
-			}), r.URL)
-			return
-		}
-	}
-
-	u, err := url.Parse(updateURL)
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	content, err := downloadReleaseURL(u, updateTimeout, mode)
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	sha256Sum, lrTime, releaseInfo, err := parseReleaseData(content)
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	u.Path = path.Dir(u.Path) + SlashSeparator + releaseInfo
-	crTime, err := GetCurrentReleaseTime()
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	if lrTime.Sub(crTime) <= 0 {
-		updateStatus := madmin.ServerUpdateStatus{
-			CurrentVersion: Version,
-			UpdatedVersion: Version,
-		}
-
-		// Marshal API response
-		jsonBytes, err := json.Marshal(updateStatus)
-		if err != nil {
-			writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-			return
-		}
-
-		writeSuccessResponseJSON(w, jsonBytes)
-		return
-	}
-
-	for _, nerr := range globalNotificationSys.ServerUpdate(ctx, u, sha256Sum, lrTime, releaseInfo) {
-		if nerr.Err != nil {
-			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
-			logger.LogIf(ctx, nerr.Err)
-			err = fmt.Errorf("Server update failed, please do not restart the servers yet: failed with %w", nerr.Err)
-			writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-			return
-		}
-	}
-
-	updateStatus, err := updateServer(u, sha256Sum, lrTime, releaseInfo, mode)
-	if err != nil {
-		err = fmt.Errorf("Server update failed, please do not restart the servers yet: failed with %w", err)
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	// Marshal API response
-	jsonBytes, err := json.Marshal(updateStatus)
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
-	}
-
-	writeSuccessResponseJSON(w, jsonBytes)
-
-	// Notify all other OtterIO peers signal service.
-	for _, nerr := range globalNotificationSys.SignalService(serviceRestart) {
-		if nerr.Err != nil {
-			logger.GetReqInfo(ctx).SetTags("peerAddress", nerr.Host.String())
-			logger.LogIf(ctx, nerr.Err)
-		}
-	}
-
-	globalServiceSignalCh <- serviceRestart
-}
 
 // ServiceHandler - POST /otterio/admin/v3/service?action={action}
 // ----------
@@ -947,13 +816,6 @@ type AdminError struct {
 func (ae AdminError) Error() string {
 	return ae.Message
 }
-
-// Admin API errors
-const (
-	AdminUpdateUnexpectedFailure = "XOtterioAdminUpdateUnexpectedFailure"
-	AdminUpdateURLNotReachable   = "XOtterioAdminUpdateURLNotReachable"
-	AdminUpdateApplyFailure      = "XOtterioAdminUpdateApplyFailure"
-)
 
 // toAdminAPIErrCode - converts errErasureWriteQuorum error to admin API
 // specific error.

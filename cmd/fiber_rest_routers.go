@@ -138,7 +138,6 @@ func registerPeerRESTHandlersFiber(app *fiber.App) {
 	registerInternalPOST(app, base+peerRESTMethodLoadBucketMetadata, internalHdr(server.LoadBucketMetadataHandler), queryRules(peerRESTBucket))
 	registerInternalPOST(app, base+peerRESTMethodGetBucketStats, internalHdr(server.GetBucketStatsHandler), queryRules(peerRESTBucket))
 	registerInternalPOST(app, base+peerRESTMethodSignalService, internalHdr(server.SignalServiceHandler), queryRules(peerRESTSignal))
-	registerInternalPOST(app, base+peerRESTMethodServerUpdate, internalHdr(server.ServerUpdateHandler), nil)
 	registerInternalPOST(app, base+peerRESTMethodDeletePolicy, internalAll(server.DeletePolicyHandler), queryRules(peerRESTPolicy))
 	registerInternalPOST(app, base+peerRESTMethodLoadPolicy, internalAll(server.LoadPolicyHandler), queryRules(peerRESTPolicy))
 	registerInternalPOST(app, base+peerRESTMethodLoadPolicyMapping, internalAll(server.LoadPolicyMappingHandler), queryRules(peerRESTUserOrGroup))

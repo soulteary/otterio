@@ -739,31 +739,6 @@ func (s *peerRESTServer) GetLocalDiskIDs(w http.ResponseWriter, r *http.Request)
 	w.(http.Flusher).Flush()
 }
 
-// ServerUpdateHandler - updates the current server.
-func (s *peerRESTServer) ServerUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	if !s.IsValid(w, r) {
-		s.writeErrorResponse(w, errors.New("Invalid request"))
-		return
-	}
-
-	if r.ContentLength < 0 {
-		s.writeErrorResponse(w, errInvalidArgument)
-		return
-	}
-
-	var info serverUpdateInfo
-	err := gob.NewDecoder(r.Body).Decode(&info)
-	if err != nil {
-		s.writeErrorResponse(w, err)
-		return
-	}
-
-	if _, err = updateServer(info.URL, info.Sha256Sum, info.Time, info.ReleaseInfo, getOtterioMode()); err != nil {
-		s.writeErrorResponse(w, err)
-		return
-	}
-}
-
 var errUnsupportedSignal = fmt.Errorf("unsupported signal: only restart and stop signals are supported")
 
 // SignalServiceHandler - signal service handler.

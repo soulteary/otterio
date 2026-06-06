@@ -54,8 +54,6 @@ const (
 	// BandwidthMonitorAction - allow monitoring bandwidth usage
 	BandwidthMonitorAction = "admin:BandwidthMonitor"
 
-	// ServerUpdateAdminAction - allow OtterIO binary update
-	ServerUpdateAdminAction = "admin:ServerUpdate"
 	// ServiceRestartAdminAction - allow restart of OtterIO service.
 	ServiceRestartAdminAction = "admin:ServiceRestart"
 	// ServiceStopAdminAction - allow stopping OtterIO service.
@@ -147,7 +145,6 @@ var supportedAdminActions = map[AdminAction]struct{}{
 	ServerInfoAdminAction:           {},
 	HealthInfoAdminAction:           {},
 	BandwidthMonitorAction:          {},
-	ServerUpdateAdminAction:         {},
 	ServiceRestartAdminAction:       {},
 	ServiceStopAdminAction:          {},
 	ConfigUpdateAdminAction:         {},
@@ -199,7 +196,6 @@ var adminActionConditionKeyMap = map[Action]condition.KeySet{
 	TraceAdminAction:                condition.NewKeySet(condition.AllSupportedAdminKeys...),
 	ConsoleLogAdminAction:           condition.NewKeySet(condition.AllSupportedAdminKeys...),
 	KMSKeyStatusAdminAction:         condition.NewKeySet(condition.AllSupportedAdminKeys...),
-	ServerUpdateAdminAction:         condition.NewKeySet(condition.AllSupportedAdminKeys...),
 	ServiceRestartAdminAction:       condition.NewKeySet(condition.AllSupportedAdminKeys...),
 	ServiceStopAdminAction:          condition.NewKeySet(condition.AllSupportedAdminKeys...),
 	ConfigUpdateAdminAction:         condition.NewKeySet(condition.AllSupportedAdminKeys...),

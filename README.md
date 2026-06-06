@@ -379,25 +379,6 @@ OtterIO Server comes with an embedded web based object browser. Point your web b
 ## Test using OtterIO Client `mc`
 `mc` provides a modern alternative to UNIX commands like ls, cat, cp, mirror, diff etc. It supports filesystems and Amazon S3 compatible cloud storage services. Follow the OtterIO Client [Quickstart Guide](https://docs.min.io/docs/minio-client-quickstart-guide) for further instructions.
 
-# Upgrading OtterIO
-OtterIO server supports rolling upgrades, i.e. you can update one OtterIO instance at a time in a distributed cluster. This allows upgrades with no downtime. Upgrades can be done manually by replacing the binary with the latest release and restarting all servers in a rolling fashion. However, we recommend all our users to use [`mc admin update`](https://docs.min.io/docs/minio-admin-complete-guide.html#update) from the client. This will update all the nodes in the cluster simultaneously and restart them, as shown in the following command from the OtterIO client (mc):
-
-```
-mc admin update <otterio alias, e.g., myotterio>
-```
-
-> NOTE: some releases might not allow rolling upgrades, this is always called out in the release notes and it is generally advised to read release notes before upgrading. In such a situation `mc admin update` is the recommended upgrading mechanism to upgrade all servers at once.
-
-## Important things to remember during OtterIO upgrades
-
-- `mc admin update` will only work if the user running OtterIO has write access to the parent directory where the binary is located, for example if the current binary is at `/usr/local/bin/otterio`, you would need write access to `/usr/local/bin`.
-- `mc admin update` updates and restarts all servers simultaneously, applications would retry and continue their respective operations upon upgrade.
-- `mc admin update` is disabled in kubernetes/container environments, container environments provide their own mechanisms to rollout of updates.
-- In the case of federated setups `mc admin update` should be run against each cluster individually. Avoid updating `mc` to any new releases until all clusters have been successfully updated.
-- If using `kes` as KMS with OtterIO, just replace the binary and restart `kes` more information about `kes` can be found [here](https://github.com/minio/kes/wiki)
-- If using Vault as KMS with OtterIO, ensure you have followed the Vault upgrade procedure outlined here: https://www.vaultproject.io/docs/upgrading/index.html
-- If using etcd with OtterIO for the federation, ensure you have followed the etcd upgrade procedure outlined here: https://github.com/etcd-io/etcd/blob/master/Documentation/upgrades/upgrading-etcd.md
-
 # Explore Further
 - [OtterIO Erasure Code QuickStart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide)
 - [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)

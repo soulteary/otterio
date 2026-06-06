@@ -25,10 +25,8 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -108,51 +106,6 @@ func verifyObjectLayerFeatures(name string, objAPI ObjectLayer) {
 			"Compression support is requested but '%s' does not support compression", name)
 	}
 	globalCompressConfigMu.Unlock()
-}
-
-// Check for updates and print a notification message
-func checkUpdate(mode string) {
-	updateURL := otterioReleaseInfoURL()
-	if runtime.GOOS == globalWindowsOSName {
-		updateURL = otterioReleaseWindowsInfoURL()
-	}
-
-	// This fork does not operate a release server. When no release URL is
-	// configured (OTTERIO_UPDATE_RELEASE_URL), skip the update check entirely so
-	// the server never phones home to the upstream download server.
-	if updateURL == "" {
-		return
-	}
-
-	u, err := url.Parse(updateURL)
-	if err != nil {
-		return
-	}
-
-	// Its OK to ignore any errors during doUpdate() here.
-	crTime, err := GetCurrentReleaseTime()
-	if err != nil {
-		return
-	}
-
-	_, lrTime, err := getLatestReleaseTime(u, 2*time.Second, mode)
-	if err != nil {
-		return
-	}
-
-	var older time.Duration
-	var downloadURL string
-	if lrTime.After(crTime) {
-		older = lrTime.Sub(crTime)
-		downloadURL = getDownloadURL(releaseTimeToReleaseTag(lrTime))
-	}
-
-	updateMsg := prepareUpdateMessage(downloadURL, older)
-	if updateMsg == "" {
-		return
-	}
-
-	logStartupMessage(prepareUpdateMessage("Run `mc admin update`", lrTime.Sub(crTime)))
 }
 
 func newConfigDirFromCtx(ctx *cli.Context, option string, getDefaultDir func() string) (*ConfigDir, bool) {
@@ -332,11 +285,6 @@ func handleCommonEnvVars() {
 		}
 		updateDomainIPs(domainIPs)
 	}
-
-	// In place update is true by default if the OTTERIO_UPDATE is not set
-	// or is not set to 'off', if OTTERIO_UPDATE is set to 'off' then
-	// in-place update is off.
-	globalInplaceUpdateDisabled = strings.EqualFold(env.Get(config.EnvUpdate, config.EnableOn), config.EnableOff)
 
 	if env.IsSet(config.EnvAccessKey) || env.IsSet(config.EnvSecretKey) {
 		cred, err := auth.CreateCredentials(env.Get(config.EnvAccessKey, ""), env.Get(config.EnvSecretKey, ""))

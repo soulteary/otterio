@@ -38,9 +38,6 @@ func registerAdminRouterFiber(app *fiber.App, enableConfigOps, enableIAMOps bool
 		registerAdminRoute(app, verPrefix+"/service", []routeRule{
 			adminRule(http.MethodPost, adminAPI.ServiceHandler, false, map[string]string{"action": ".*"}),
 		})
-		registerAdminRoute(app, verPrefix+"/update", []routeRule{
-			adminRule(http.MethodPost, adminAPI.ServerUpdateHandler, false, map[string]string{"updateURL": ".*"}),
-		})
 		registerAdminRoute(app, verPrefix+"/info", []routeRule{
 			adminRule(http.MethodGet, adminAPI.ServerInfoHandler, false, nil),
 		})

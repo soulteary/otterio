@@ -377,10 +377,6 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 
 	// Prints the formatted startup message once object layer is initialized.
 	if !globalCLIContext.Quiet {
-		mode := globalOtterioModeGatewayPrefix + gatewayName
-		// Check update mode.
-		checkUpdate(mode)
-
 		// Print a warning message if gateway is not ready for production before the startup banner.
 		if !gw.Production() {
 			logStartupMessage(color.Yellow("               *** Warning: Not Ready for Production ***"))

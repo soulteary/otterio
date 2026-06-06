@@ -39,8 +39,6 @@ const (
 	EnvArgs            = "OTTERIO_ARGS"
 	EnvDNSWebhook      = "OTTERIO_DNS_WEBHOOK_ENDPOINT"
 
-	EnvUpdate = "OTTERIO_UPDATE"
-
 	EnvEndpoints = "OTTERIO_ENDPOINTS" // legacy
 	EnvWorm      = "OTTERIO_WORM"      // legacy
 	EnvRegion    = "OTTERIO_REGION"    // legacy

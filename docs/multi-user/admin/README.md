@@ -83,7 +83,6 @@ mc admin policy set myotterio-admin1 user1policy user=user1
 
 #### Service management permissions
 - admin:ServerInfo
-- admin:ServerUpdate
 - admin:StorageInfo
 - admin:DataUsageInfo
 - admin:TopLocks
