@@ -146,10 +146,10 @@ func getNvmeInfo(d *NVMeDevice) (*NvmeInfo, error) {
 	return nvmeInfo, nil
 }
 
-func getScsiInfo(d *scsi.SCSIDevice) (*ScsiInfo, error) {
+func getScsiInfo(_ *scsi.SCSIDevice) (*ScsiInfo, error) {
 	return &ScsiInfo{}, nil
 }
 
-func getAtaInfo(d *scsi.SATDevice) (*AtaInfo, error) {
+func getAtaInfo(_ *scsi.SATDevice) (*AtaInfo, error) {
 	return &AtaInfo{}, nil
 }

@@ -21,8 +21,9 @@ const _format_name = "UnknownGzipZstdLZ4S2BZ2"
 var _format_index = [...]uint8{0, 7, 11, 15, 18, 20, 23}
 
 func (i format) String() string {
-	if i < 0 || i >= format(len(_format_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_format_index)-1 {
 		return "format(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _format_name[_format_index[i]:_format_index[i+1]]
+	return _format_name[_format_index[idx]:_format_index[idx+1]]
 }

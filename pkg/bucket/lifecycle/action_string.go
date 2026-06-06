@@ -22,8 +22,9 @@ const _Action_name = "NoneActionDeleteActionDeleteVersionActionTransitionActionT
 var _Action_index = [...]uint8{0, 10, 22, 41, 57, 80, 100, 127}
 
 func (i Action) String() string {
-	if i < 0 || i >= Action(len(_Action_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_Action_index)-1 {
 		return "Action(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _Action_name[_Action_index[i]:_Action_index[i+1]]
+	return _Action_name[_Action_index[idx]:_Action_index[idx+1]]
 }

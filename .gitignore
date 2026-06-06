@@ -25,4 +25,4 @@ config.json
 browser/dev/*
 browser/package-lock.json
 data/*
-
+.gocache/*

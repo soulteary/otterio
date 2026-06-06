@@ -70,7 +70,7 @@ func NewInternodeDialContext(dialTimeout time.Duration) DialContext {
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		dialer := &net.Dialer{
 			Timeout: dialTimeout,
-			Control: func(network, address string, c syscall.RawConn) error {
+			Control: func(_, _ string, c syscall.RawConn) error {
 				return setInternalTCPParameters(c)
 			},
 		}
@@ -83,7 +83,7 @@ func NewCustomDialContext(dialTimeout time.Duration) DialContext {
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		dialer := &net.Dialer{
 			Timeout: dialTimeout,
-			Control: func(network, address string, c syscall.RawConn) error {
+			Control: func(_, _ string, c syscall.RawConn) error {
 				return c.Control(func(fdPtr uintptr) {
 					// got socket file descriptor to set parameters.
 					fd := int(fdPtr)

@@ -40,8 +40,9 @@ const _storageMetric_name = "MakeVolBulkMakeVolListVolsStatVolDeleteVolWalkDirLi
 var _storageMetric_index = [...]uint8{0, 11, 18, 26, 33, 42, 49, 56, 64, 74, 84, 98, 108, 118, 128, 137, 143, 157, 167, 175, 188, 201, 215, 226, 233, 237}
 
 func (i storageMetric) String() string {
-	if i >= storageMetric(len(_storageMetric_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_storageMetric_index)-1 {
 		return "storageMetric(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _storageMetric_name[_storageMetric_index[i]:_storageMetric_index[i+1]]
+	return _storageMetric_name[_storageMetric_index[idx]:_storageMetric_index[idx+1]]
 }

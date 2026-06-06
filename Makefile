@@ -18,7 +18,7 @@ getdeps:
 	@mkdir -p ${GOPATH}/bin
 	@which golangci-lint 1>/dev/null || (echo "Installing golangci-lint" && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest)
 	@which msgp 1>/dev/null || (echo "Installing msgp" && go install github.com/tinylib/msgp@v1.1.3)
-	@which stringer 1>/dev/null || (echo "Installing stringer" && go install golang.org/x/tools/cmd/stringer@latest)
+	@which stringer 1>/dev/null || (echo "Installing stringer" && go install golang.org/x/tools/cmd/stringer@v0.45.0)
 
 crosscompile:
 	@(env bash $(PWD)/buildscripts/cross-compile.sh)
