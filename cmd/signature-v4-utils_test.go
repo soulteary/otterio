@@ -36,8 +36,14 @@ func TestSkipContentSha256Cksum(t *testing.T) {
 		expectedResult bool
 	}{
 		// Test case - 1.
-		// Test case with "X-Amz-Content-Sha256" header set, but to empty value but we can't skip.
-		{"X-Amz-Content-Sha256", "", "", "", false},
+		// "X-Amz-Content-Sha256" header is present but its value is the
+		// empty string. The legacy implementation interpreted this as
+		// "header was provided, value isn't UNSIGNED-PAYLOAD" and refused
+		// to skip, which forced the canonicaliser to compare against an
+		// attacker-supplied empty hash. After the upstream-cve-backlog row
+		// 51 hardening an empty header is treated as "not provided" and
+		// behaves identically to an absent header (skip).
+		{"X-Amz-Content-Sha256", "", "", "", true},
 
 		// Test case - 2.
 		// Test case with "X-Amz-Content-Sha256" not set so we can skip.
