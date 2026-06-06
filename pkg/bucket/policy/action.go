@@ -309,23 +309,35 @@ func parseAction(s string) (Action, error) {
 	return action, Errorf("unsupported action '%v'", s)
 }
 
+// objectTagConditionKeys lists tag-aware condition prefix keys recognised by
+// per-object actions. Listing the bare prefix (e.g. "s3:ExistingObjectTag/")
+// is enough because KeySet.Difference treats prefix-form concrete keys
+// (e.g. "s3:ExistingObjectTag/dept") as covered by the registered prefix.
+var objectTagConditionKeys = []condition.Key{
+	condition.S3ExistingObjectTag,
+	condition.S3RequestObjectTag,
+}
+
 // actionConditionKeyMap - holds mapping of supported condition key for an action.
 var actionConditionKeyMap = map[Action]condition.KeySet{
 	AbortMultipartUploadAction: condition.NewKeySet(condition.CommonKeys...),
 
 	CreateBucketAction: condition.NewKeySet(condition.CommonKeys...),
 
-	DeleteObjectAction: condition.NewKeySet(condition.CommonKeys...),
+	DeleteObjectAction: condition.NewKeySet(
+		append(append([]condition.Key{},
+			objectTagConditionKeys...,
+		), condition.CommonKeys...)...),
 
 	GetBucketLocationAction: condition.NewKeySet(condition.CommonKeys...),
 
 	GetBucketPolicyStatusAction: condition.NewKeySet(condition.CommonKeys...),
 
 	GetObjectAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3XAmzServerSideEncryption,
 			condition.S3XAmzServerSideEncryptionCustomerAlgorithm,
-		}, condition.CommonKeys...)...),
+		}, objectTagConditionKeys...), condition.CommonKeys...)...),
 
 	HeadBucketAction: condition.NewKeySet(condition.CommonKeys...),
 
@@ -354,7 +366,7 @@ var actionConditionKeyMap = map[Action]condition.KeySet{
 	ListMultipartUploadPartsAction: condition.NewKeySet(condition.CommonKeys...),
 
 	PutObjectAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3XAmzCopySource,
 			condition.S3XAmzServerSideEncryption,
 			condition.S3XAmzServerSideEncryptionCustomerAlgorithm,
@@ -363,7 +375,7 @@ var actionConditionKeyMap = map[Action]condition.KeySet{
 			condition.S3ObjectLockRetainUntilDate,
 			condition.S3ObjectLockMode,
 			condition.S3ObjectLockLegalHold,
-		}, condition.CommonKeys...)...),
+		}, objectTagConditionKeys...), condition.CommonKeys...)...),
 
 	// https://docs.aws.amazon.com/AmazonS3/latest/dev/list_amazons3.html
 	// LockLegalHold is not supported with PutObjectRetentionAction
@@ -394,15 +406,27 @@ var actionConditionKeyMap = map[Action]condition.KeySet{
 	PutBucketObjectLockConfigurationAction: condition.NewKeySet(condition.CommonKeys...),
 	GetBucketTaggingAction:                 condition.NewKeySet(condition.CommonKeys...),
 	PutBucketTaggingAction:                 condition.NewKeySet(condition.CommonKeys...),
-	PutObjectTaggingAction:                 condition.NewKeySet(condition.CommonKeys...),
-	GetObjectTaggingAction:                 condition.NewKeySet(condition.CommonKeys...),
-	DeleteObjectTaggingAction:              condition.NewKeySet(condition.CommonKeys...),
+	PutObjectTaggingAction: condition.NewKeySet(
+		append(append([]condition.Key{},
+			objectTagConditionKeys...,
+		), condition.CommonKeys...)...),
+	GetObjectTaggingAction: condition.NewKeySet(
+		append(append([]condition.Key{},
+			objectTagConditionKeys...,
+		), condition.CommonKeys...)...),
+	DeleteObjectTaggingAction: condition.NewKeySet(
+		append(append([]condition.Key{},
+			objectTagConditionKeys...,
+		), condition.CommonKeys...)...),
 
-	PutObjectVersionTaggingAction: condition.NewKeySet(condition.CommonKeys...),
+	PutObjectVersionTaggingAction: condition.NewKeySet(
+		append(append([]condition.Key{},
+			objectTagConditionKeys...,
+		), condition.CommonKeys...)...),
 	GetObjectVersionAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3VersionID,
-		}, condition.CommonKeys...)...),
+		}, objectTagConditionKeys...), condition.CommonKeys...)...),
 	GetObjectVersionTaggingAction: condition.NewKeySet(
 		append([]condition.Key{
 			condition.S3VersionID,

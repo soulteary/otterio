@@ -305,16 +305,24 @@ func (a actionConditionKeyMap) Lookup(action Action) condition.KeySet {
 	return ckeysMerged
 }
 
+// iamObjectTagConditionKeys lists tag-aware condition prefix keys recognised
+// by per-object actions in IAM policies. See pkg/bucket/policy/action.go for
+// the equivalent in bucket policies.
+var iamObjectTagConditionKeys = []condition.Key{
+	condition.S3ExistingObjectTag,
+	condition.S3RequestObjectTag,
+}
+
 // iamActionConditionKeyMap - holds mapping of supported condition key for an action.
 var iamActionConditionKeyMap = actionConditionKeyMap{
 	AllActions: condition.NewKeySet(condition.AllSupportedKeys...),
 
 	GetObjectAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3XAmzServerSideEncryption,
 			condition.S3XAmzServerSideEncryptionCustomerAlgorithm,
 			condition.S3VersionID,
-		}, condition.CommonKeys...)...),
+		}, iamObjectTagConditionKeys...), condition.CommonKeys...)...),
 
 	ListBucketAction: condition.NewKeySet(
 		append([]condition.Key{
@@ -331,12 +339,12 @@ var iamActionConditionKeyMap = actionConditionKeyMap{
 		}, condition.CommonKeys...)...),
 
 	DeleteObjectAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3VersionID,
-		}, condition.CommonKeys...)...),
+		}, iamObjectTagConditionKeys...), condition.CommonKeys...)...),
 
 	PutObjectAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3XAmzCopySource,
 			condition.S3XAmzServerSideEncryption,
 			condition.S3XAmzServerSideEncryptionCustomerAlgorithm,
@@ -346,7 +354,7 @@ var iamActionConditionKeyMap = actionConditionKeyMap{
 			condition.S3ObjectLockRetainUntilDate,
 			condition.S3ObjectLockMode,
 			condition.S3ObjectLockLegalHold,
-		}, condition.CommonKeys...)...),
+		}, iamObjectTagConditionKeys...), condition.CommonKeys...)...),
 
 	// https://docs.aws.amazon.com/AmazonS3/latest/dev/list_amazons3.html
 	// LockLegalHold is not supported with PutObjectRetentionAction
@@ -387,26 +395,26 @@ var iamActionConditionKeyMap = actionConditionKeyMap{
 		}, condition.CommonKeys...)...),
 
 	PutObjectTaggingAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3VersionID,
-		}, condition.CommonKeys...)...),
+		}, iamObjectTagConditionKeys...), condition.CommonKeys...)...),
 	GetObjectTaggingAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3VersionID,
-		}, condition.CommonKeys...)...),
+		}, iamObjectTagConditionKeys...), condition.CommonKeys...)...),
 	DeleteObjectTaggingAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3VersionID,
-		}, condition.CommonKeys...)...),
+		}, iamObjectTagConditionKeys...), condition.CommonKeys...)...),
 
 	PutObjectVersionTaggingAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3VersionID,
-		}, condition.CommonKeys...)...),
+		}, iamObjectTagConditionKeys...), condition.CommonKeys...)...),
 	GetObjectVersionAction: condition.NewKeySet(
-		append([]condition.Key{
+		append(append([]condition.Key{
 			condition.S3VersionID,
-		}, condition.CommonKeys...)...),
+		}, iamObjectTagConditionKeys...), condition.CommonKeys...)...),
 	GetObjectVersionTaggingAction: condition.NewKeySet(
 		append([]condition.Key{
 			condition.S3VersionID,

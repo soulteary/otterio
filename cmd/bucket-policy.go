@@ -26,9 +26,11 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	otteriogopolicy "github.com/minio/minio-go/v7/pkg/policy"
+	"github.com/minio/minio-go/v7/pkg/tags"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/bucket/policy"
+	"github.com/soulteary/otterio/pkg/bucket/policy/condition"
 	"github.com/soulteary/otterio/pkg/handlers"
 )
 
@@ -175,6 +177,27 @@ func getConditionValues(r *http.Request, lc string, username string, claims map[
 				args["user"] = []string{vStr}
 			} else {
 				args[k] = []string{vStr}
+			}
+		}
+	}
+
+	// Per-tag condition values for s3:ExistingObjectTag/<key> and
+	// s3:RequestObjectTag/<key>. The X-Amz-Tagging header is the single
+	// source: per AWS semantics the handler injects the existing object's
+	// tags into this header after ObjectInfo is loaded (see GetObject /
+	// HeadObject CheckPrecondFn) so policies that gate on per-object tags
+	// can be evaluated *before* checkPreconditions runs and leaks any
+	// metadata. For PutObject / PutObjectTagging the header is set by the
+	// caller and represents request tags.
+	if rawTags := r.Header.Get(xhttp.AmzObjectTagging); rawTags != "" {
+		if parsed, err := tags.ParseObjectTags(rawTags); err == nil {
+			// Strip the "s3:" prefix because stringEqualsFunc.evaluate
+			// looks up values by Key.Name(), which itself drops "s3:".
+			existingPrefix := condition.S3ExistingObjectTag.Name()
+			requestPrefix := condition.S3RequestObjectTag.Name()
+			for k, v := range parsed.ToMap() {
+				args[existingPrefix+k] = []string{v}
+				args[requestPrefix+k] = []string{v}
 			}
 		}
 	}

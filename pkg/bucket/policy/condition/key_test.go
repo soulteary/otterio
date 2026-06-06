@@ -212,3 +212,105 @@ func TestKeySetToSlice(t *testing.T) {
 		}
 	}
 }
+
+// TestExistingObjectTagConditionParsedAndMatches pins the behaviour of the
+// per-tag prefix condition keys ("s3:ExistingObjectTag/<k>",
+// "s3:RequestObjectTag/<k>"). It covers:
+//
+//   - JSON unmarshal accepts "s3:ExistingObjectTag/dept" but rejects the bare
+//     "s3:ExistingObjectTag/" prefix.
+//   - IsValid mirrors the unmarshal path.
+//   - StringEquals condition over a per-tag key returns true when the request
+//     supplies a matching value under "ExistingObjectTag/<k>" and false
+//     otherwise. The lookup key is intentionally the s3:-stripped form,
+//     because Key.Name() trims the "s3:" prefix and stringEqualsFunc.evaluate
+//     uses Name() (see stringequalsfunc.go).
+//   - Difference treats a concrete prefix-form key as covered by the bare
+//     prefix in the allowed-key set, so action-allowed maps can register
+//     "s3:ExistingObjectTag/" once and admit any tag-key family member.
+func TestExistingObjectTagConditionParsedAndMatches(t *testing.T) {
+	t.Run("IsValid prefix forms", func(t *testing.T) {
+		validCases := []Key{
+			Key("s3:ExistingObjectTag/dept"),
+			Key("s3:ExistingObjectTag/customer-id"),
+			Key("s3:RequestObjectTag/dept"),
+		}
+		for _, k := range validCases {
+			if !k.IsValid() {
+				t.Errorf("expected %q to be valid", k)
+			}
+		}
+
+		invalidCases := []Key{
+			S3ExistingObjectTag, // bare prefix
+			S3RequestObjectTag,  // bare prefix
+			Key("s3:ExistingObjectTag"),
+			Key("s3:RequestObjectTagdept"),
+		}
+		for _, k := range invalidCases {
+			if k.IsValid() {
+				t.Errorf("expected %q to be invalid", k)
+			}
+		}
+	})
+
+	t.Run("Unmarshal accepts concrete and rejects bare prefix", func(t *testing.T) {
+		var k Key
+		if err := json.Unmarshal([]byte(`"s3:ExistingObjectTag/dept"`), &k); err != nil {
+			t.Fatalf("unexpected error parsing concrete key: %v", err)
+		}
+		if k != Key("s3:ExistingObjectTag/dept") {
+			t.Fatalf("unexpected key: %v", k)
+		}
+
+		var k2 Key
+		if err := json.Unmarshal([]byte(`"s3:ExistingObjectTag/"`), &k2); err == nil {
+			t.Fatalf("expected error for bare prefix key, got %v", k2)
+		}
+	})
+
+	t.Run("StringEquals matches request value via stripped lookup name", func(t *testing.T) {
+		k := Key("s3:ExistingObjectTag/dept")
+		fn, err := NewStringEqualsFunc(k, "finance")
+		if err != nil {
+			t.Fatalf("NewStringEqualsFunc: %v", err)
+		}
+
+		// stringEqualsFunc.evaluate uses Key.Name(), which strips "s3:".
+		matchValues := map[string][]string{
+			"ExistingObjectTag/dept": {"finance"},
+		}
+		if !fn.(*stringEqualsFunc).evaluate(matchValues) {
+			t.Fatalf("expected match for %v with values %v", k, matchValues)
+		}
+
+		nonMatchValues := map[string][]string{
+			"ExistingObjectTag/dept": {"engineering"},
+		}
+		if fn.(*stringEqualsFunc).evaluate(nonMatchValues) {
+			t.Fatalf("expected mismatch for %v with values %v", k, nonMatchValues)
+		}
+
+		emptyValues := map[string][]string{}
+		if fn.(*stringEqualsFunc).evaluate(emptyValues) {
+			t.Fatalf("expected mismatch for %v with empty values", k)
+		}
+	})
+
+	t.Run("Difference treats prefix as covering concrete key", func(t *testing.T) {
+		policyKey := Key("s3:ExistingObjectTag/dept")
+		statementKeys := NewKeySet(policyKey)
+		actionAllowed := NewKeySet(S3ExistingObjectTag, AWSReferer)
+
+		diff := statementKeys.Difference(actionAllowed)
+		if !diff.IsEmpty() {
+			t.Fatalf("expected concrete tag key to be covered by bare prefix, got diff=%v", diff)
+		}
+
+		// Sanity: an unrelated key should still surface in the diff.
+		unrelated := NewKeySet(policyKey, Key("s3:UnknownThing"))
+		if d := unrelated.Difference(actionAllowed); d.IsEmpty() {
+			t.Fatalf("expected unrelated key to remain in diff")
+		}
+	})
+}

@@ -117,9 +117,33 @@ const (
 
 	// S3AuthType - optionally use this condition key to restrict incoming requests to use a specific authentication method.
 	S3AuthType = "s3:authType"
+
+	// S3ExistingObjectTag - prefix key (the full key has the form
+	// "s3:ExistingObjectTag/<tag-key>") that resolves to the value of the
+	// matching object tag carried by the *existing* object on the server
+	// side. Used by GetObject / HeadObject / DeleteObject / PutObjectTagging
+	// authorization to bind permission to per-object metadata. Mirrors AWS
+	// IAM semantics; values are populated by the request handler after the
+	// ObjectInfo has been loaded (see cmd/object-handlers.go and
+	// cmd/bucket-policy.go getConditionValues).
+	S3ExistingObjectTag Key = "s3:ExistingObjectTag/"
+
+	// S3RequestObjectTag - prefix key (the full key has the form
+	// "s3:RequestObjectTag/<tag-key>") that resolves to the value of the
+	// matching object tag carried in the *incoming* request (typically the
+	// X-Amz-Tagging header on a PutObject / CopyObject / PutObjectTagging
+	// call). Mirrors AWS IAM semantics.
+	S3RequestObjectTag Key = "s3:RequestObjectTag/"
 )
 
 // AllSupportedKeys - is list of all all supported keys.
+//
+// NOTE: S3ExistingObjectTag and S3RequestObjectTag appear here as their bare
+// prefix form (ending in "/"). They are the prototypes for an unbounded family
+// of per-tag-key conditions ("s3:ExistingObjectTag/dept", etc.). Validation of
+// concrete prefix-form keys is handled by Key.IsValid below; listing the bare
+// prefixes here lets callers (e.g. cmd/iam policy AllActions) treat them as
+// recognised condition-key categories.
 var AllSupportedKeys = append([]Key{
 	S3SignatureVersion,
 	S3AuthType,
@@ -138,6 +162,8 @@ var AllSupportedKeys = append([]Key{
 	S3ObjectLockMode,
 	S3ObjectLockLegalHold,
 	S3ObjectLockRetainUntilDate,
+	S3ExistingObjectTag,
+	S3RequestObjectTag,
 	AWSReferer,
 	AWSSourceIP,
 	AWSUserAgent,
@@ -183,13 +209,39 @@ func substFuncFromValues(values map[string][]string) func(string) string {
 
 // IsValid - checks if key is valid or not.
 func (key Key) IsValid() bool {
+	// Bare prefix forms ("s3:ExistingObjectTag/" with no tag-key) are
+	// catalogue entries listed in AllSupportedKeys for introspection - they
+	// are *not* valid concrete condition keys on their own.
+	for _, prefix := range tagConditionKeyPrefixes {
+		if key == prefix {
+			return false
+		}
+	}
+
 	for _, supKey := range AllSupportedKeys {
 		if supKey == key {
 			return true
 		}
 	}
 
+	// Prefix-form keys: "s3:ExistingObjectTag/<tag-key>" and
+	// "s3:RequestObjectTag/<tag-key>". The trailing tag-key must be non-empty
+	// so that policies like {"s3:ExistingObjectTag/dept": "finance"} parse
+	// while a bare prefix without a tag-key does not.
+	for _, prefix := range tagConditionKeyPrefixes {
+		if strings.HasPrefix(string(key), string(prefix)) && len(key) > len(prefix) {
+			return true
+		}
+	}
+
 	return false
+}
+
+// tagConditionKeyPrefixes lists the per-tag prefix-form condition keys. Kept
+// in one place so IsValid, action-allowed checks and tests stay in lock-step.
+var tagConditionKeyPrefixes = []Key{
+	S3ExistingObjectTag,
+	S3RequestObjectTag,
 }
 
 // MarshalJSON - encodes Key to JSON data.
@@ -267,16 +319,41 @@ func (set KeySet) Merge(mset KeySet) {
 //	keySet1 := ["one", "two", "three"]
 //	keySet2 := ["two", "four", "three"]
 //	keySet1.Difference(keySet2) == ["one"]
+//
+// As a special case, prefix-form keys (e.g. "s3:ExistingObjectTag/dept")
+// are considered "covered" by the bare prefix (e.g. "s3:ExistingObjectTag/")
+// in sset. This lets the per-action allowed-key list register the prefix
+// once and have arbitrary "<prefix><tag-key>" instances match.
 func (set KeySet) Difference(sset KeySet) KeySet {
 	nset := make(KeySet)
 
 	for k := range set {
-		if _, ok := sset[k]; !ok {
-			nset.Add(k)
+		if _, ok := sset[k]; ok {
+			continue
 		}
+		if k.coveredByPrefixIn(sset) {
+			continue
+		}
+		nset.Add(k)
 	}
 
 	return nset
+}
+
+// coveredByPrefixIn - returns true if key has one of the registered tag
+// condition prefixes (e.g. "s3:ExistingObjectTag/") and that bare prefix is
+// present in sset. Allows action-allowed key sets to whitelist an entire
+// prefix family with one entry.
+func (key Key) coveredByPrefixIn(sset KeySet) bool {
+	for _, prefix := range tagConditionKeyPrefixes {
+		if !strings.HasPrefix(string(key), string(prefix)) || len(key) <= len(prefix) {
+			continue
+		}
+		if _, ok := sset[prefix]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // IsEmpty - returns whether key set is empty or not.
