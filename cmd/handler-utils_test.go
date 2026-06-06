@@ -233,3 +233,103 @@ func TestGetResource(t *testing.T) {
 		}
 	}
 }
+
+// TestExtractMetadataReservedPrefixStripped is the regression test for
+// GHSA-3rh2-v3gr-35p9 (SSE metadata injection). Even when the reserved-header
+// middleware is bypassed (e.g. because a future router forgets to mount it),
+// extractMetadataFromMime must drop any user-supplied key whose canonical or
+// "X-Amz-Meta-" wrapped form falls inside the OtterIO/MinIO internal
+// namespace, so a malicious client cannot taint freshly uploaded objects with
+// fake SSE bookkeeping that would render them unreadable.
+func TestExtractMetadataReservedPrefixStripped(t *testing.T) {
+	testCases := []struct {
+		name             string
+		header           http.Header
+		keysShouldStay   []string
+		keysShouldVanish []string
+	}{
+		{
+			name: "wrapped-otterio-internal-iv",
+			header: http.Header{
+				"X-Amz-Meta-X-Otterio-Internal-Server-Side-Encryption-Iv": []string{"AAAA"},
+				"X-Amz-Meta-Appid": []string{"app"},
+			},
+			keysShouldStay:   []string{"X-Amz-Meta-Appid"},
+			keysShouldVanish: []string{"X-Amz-Meta-X-Otterio-Internal-Server-Side-Encryption-Iv"},
+		},
+		{
+			name: "wrapped-otterio-internal-sealed-key-lowercase",
+			header: http.Header{
+				"x-amz-meta-x-otterio-internal-server-side-encryption-sealed-key": []string{"BBBB"},
+			},
+			keysShouldVanish: []string{"x-amz-meta-x-otterio-internal-server-side-encryption-sealed-key"},
+		},
+		{
+			name: "wrapped-minio-internal-legacy",
+			header: http.Header{
+				"X-Amz-Meta-X-Minio-Internal-Server-Side-Encryption-Iv": []string{"CCCC"},
+			},
+			keysShouldVanish: []string{"X-Amz-Meta-X-Minio-Internal-Server-Side-Encryption-Iv"},
+		},
+		{
+			name: "bare-otterio-internal-via-extractor",
+			header: http.Header{
+				"X-Otterio-Internal-Server-Side-Encryption-Iv": []string{"DDDD"},
+				"X-Amz-Meta-Appid": []string{"app"},
+			},
+			keysShouldStay:   []string{"X-Amz-Meta-Appid"},
+			keysShouldVanish: []string{"X-Otterio-Internal-Server-Side-Encryption-Iv"},
+		},
+		{
+			name: "benign-meta-with-internal-substring",
+			header: http.Header{
+				"X-Amz-Meta-Internal-Note": []string{"ok"},
+			},
+			keysShouldStay: []string{"X-Amz-Meta-Internal-Note"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			metadata := make(map[string]string)
+			if err := extractMetadataFromMime(context.Background(), textproto.MIMEHeader(tc.header), metadata); err != nil {
+				t.Fatalf("extractMetadataFromMime returned unexpected error: %v", err)
+			}
+			for _, k := range tc.keysShouldVanish {
+				if _, ok := metadata[k]; ok {
+					t.Fatalf("reserved key %q must not survive extraction, got metadata=%v", k, metadata)
+				}
+			}
+			for _, k := range tc.keysShouldStay {
+				if _, ok := metadata[k]; !ok {
+					t.Fatalf("benign key %q was unexpectedly stripped, got metadata=%v", k, metadata)
+				}
+			}
+		})
+	}
+}
+
+// TestHasReservedMetadataPrefix exercises the shared prefix predicate used by
+// both the router-edge middleware and the metadata extractor. Keep this test
+// in sync with reservedMetadataPrefixesLower.
+func TestHasReservedMetadataPrefix(t *testing.T) {
+	cases := []struct {
+		key      string
+		reserved bool
+	}{
+		{"X-Otterio-Internal-Server-Side-Encryption-Iv", true},
+		{"x-otterio-internal-foo", true},
+		{"X-Amz-Meta-X-Otterio-Internal-Server-Side-Encryption-Iv", true},
+		{"X-Minio-Internal-Server-Side-Encryption-Iv", true},
+		{"X-Amz-Meta-X-Minio-Internal-Server-Side-Encryption-Iv", true},
+		{"X-Amz-Meta-Appid", false},
+		{"X-Otterio-Meta-Appid", false},
+		{"X-Amz-Meta-Internal", false},
+		{"Content-Type", false},
+	}
+	for _, c := range cases {
+		if got := hasReservedMetadataPrefix(c.key); got != c.reserved {
+			t.Errorf("hasReservedMetadataPrefix(%q) = %v, want %v", c.key, got, c.reserved)
+		}
+	}
+}

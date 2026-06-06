@@ -193,6 +193,17 @@ func extractMetadataFromMime(ctx context.Context, v textproto.MIMEHeader, m map[
 			}
 		}
 	}
+
+	// Defence-in-depth for GHSA-3rh2-v3gr-35p9 (SSE metadata injection):
+	// even if the request slipped past filterReservedMetadata (e.g. via a
+	// future router that forgets to mount the middleware), drop any key
+	// whose canonical or "X-Amz-Meta-" wrapped form falls inside the
+	// internal reserved namespace before it ever reaches the object layer.
+	for k := range m {
+		if hasReservedMetadataPrefix(k) {
+			delete(m, k)
+		}
+	}
 	return nil
 }
 

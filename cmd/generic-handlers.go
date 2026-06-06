@@ -97,7 +97,36 @@ func isHTTPHeaderSizeTooLarge(header http.Header) bool {
 const (
 	ReservedMetadataPrefix      = "X-Otterio-Internal-"
 	ReservedMetadataPrefixLower = "x-otterio-internal-"
+
+	// LegacyReservedMetadataPrefixLower covers metadata persisted by upstream
+	// MinIO releases prior to the OtterIO fork. Objects written by such peers
+	// may still be replicated/restored into an OtterIO deployment, so the
+	// internal codepath must keep recognising them, but clients must never be
+	// allowed to inject them.
+	LegacyReservedMetadataPrefixLower = "x-minio-internal-"
+
+	// userMetaWrappedReservedPrefix and userMetaWrappedLegacyReservedPrefix
+	// catch the case where a malicious client wraps an internal key inside a
+	// regular S3 user-metadata header (e.g. "X-Amz-Meta-X-Otterio-Internal-...").
+	// Without filtering these the SSE metadata-injection issue tracked as
+	// GHSA-3rh2-v3gr-35p9 (upstream MinIO) is reachable: an authenticated user
+	// can taint a freshly-uploaded object so that crypto.IsEncrypted reports
+	// true while no real key was ever sealed, rendering the object permanently
+	// unreadable.
+	userMetaWrappedReservedPrefix       = "x-amz-meta-x-otterio-internal-"
+	userMetaWrappedLegacyReservedPrefix = "x-amz-meta-x-minio-internal-"
 )
+
+// reservedMetadataPrefixesLower lists every header-name prefix (lower-cased)
+// that is reserved for OtterIO internal bookkeeping. Any client request whose
+// canonical or wrapped form starts with one of these prefixes must be rejected
+// at the edge.
+var reservedMetadataPrefixesLower = []string{
+	ReservedMetadataPrefixLower,
+	LegacyReservedMetadataPrefixLower,
+	userMetaWrappedReservedPrefix,
+	userMetaWrappedLegacyReservedPrefix,
+}
 
 // ServeHTTP fails if the request contains at least one reserved header which
 // would be treated as metadata.
@@ -111,12 +140,26 @@ func filterReservedMetadata(h http.Handler) http.Handler {
 	})
 }
 
+// hasReservedMetadataPrefix reports whether key (case-insensitive) starts with
+// any prefix that OtterIO reserves for its own internal metadata bookkeeping,
+// including the "X-Amz-Meta-" wrapped forms used by the GHSA-3rh2-v3gr-35p9
+// SSE metadata-injection attack.
+func hasReservedMetadataPrefix(key string) bool {
+	lk := strings.ToLower(key)
+	for _, p := range reservedMetadataPrefixesLower {
+		if strings.HasPrefix(lk, p) {
+			return true
+		}
+	}
+	return false
+}
+
 // containsReservedMetadata returns true if the http.Header contains
 // keys which are treated as metadata but are reserved for internal use
 // and must not set by clients
 func containsReservedMetadata(header http.Header) bool {
 	for key := range header {
-		if strings.HasPrefix(strings.ToLower(key), ReservedMetadataPrefixLower) {
+		if hasReservedMetadataPrefix(key) {
 			return true
 		}
 	}

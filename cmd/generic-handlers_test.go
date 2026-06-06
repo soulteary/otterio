@@ -197,6 +197,31 @@ var containsReservedMetadataTests = []struct {
 		header:     http.Header{ReservedMetadataPrefix + "Key": []string{"value"}},
 		shouldFail: true,
 	},
+	// GHSA-3rh2-v3gr-35p9: an authenticated client must not be allowed to
+	// smuggle internal SSE metadata in via the "X-Amz-Meta-" wrapper.
+	{
+		header:     http.Header{"X-Amz-Meta-X-Otterio-Internal-Server-Side-Encryption-Iv": []string{"junk"}},
+		shouldFail: true,
+	},
+	{
+		header:     http.Header{"x-amz-meta-x-otterio-internal-server-side-encryption-iv": []string{"junk"}},
+		shouldFail: true,
+	},
+	// Legacy MinIO-prefixed internal metadata must also be rejected from
+	// untrusted clients - both bare and wrapped forms.
+	{
+		header:     http.Header{"X-Minio-Internal-Server-Side-Encryption-Iv": []string{"junk"}},
+		shouldFail: true,
+	},
+	{
+		header:     http.Header{"X-Amz-Meta-X-Minio-Internal-Server-Side-Encryption-Iv": []string{"junk"}},
+		shouldFail: true,
+	},
+	// Plain user metadata that merely *mentions* "internal" elsewhere must
+	// still be accepted - we only reject the reserved prefixes.
+	{
+		header: http.Header{"X-Amz-Meta-Internal": []string{"ok"}},
+	},
 }
 
 func TestContainsReservedMetadata(t *testing.T) {

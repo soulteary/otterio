@@ -901,8 +901,16 @@ func sealETagFn(key crypto.ObjectKey) SealMD5CurrFn {
 	return fn
 }
 
-// CleanOtterioInternalMetadataKeys removes X-Amz-Meta- prefix from otterio internal
-// encryption metadata that was sent by otterio gateway
+// CleanOtterioInternalMetadataKeys strips the "X-Amz-Meta-" wrapper from
+// otterio internal encryption metadata that legitimate peers (e.g. the s3
+// gateway) may have stored in user-metadata form when persisting an upstream
+// object. It is intended ONLY for outbound paths that read already-trusted
+// metadata back from the object layer (ListObjectsV2 user-metadata, gateway
+// metadata replay) - never as an input filter.
+//
+// Untrusted client headers must be rejected by filterReservedMetadata /
+// containsReservedMetadata at the router edge and by extractMetadataFromMime
+// before they reach the object layer; see GHSA-3rh2-v3gr-35p9.
 func CleanOtterioInternalMetadataKeys(metadata map[string]string) map[string]string {
 	var newMeta = make(map[string]string, len(metadata))
 	for k, v := range metadata {

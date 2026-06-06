@@ -32,6 +32,24 @@ This README provides quickstart instructions on running OtterIO on baremetal har
 >
 > Project home: https://github.com/soulteary/otterio
 
+> **🔐 Security Advisory — please read before deploying.**
+>
+> Because OtterIO is forked from the **last Apache 2.0 release of MinIO
+> (≈ `RELEASE.2021-04-22T15-44-28Z`)**, every CVE / GHSA published against
+> upstream `minio/minio` after that date must be evaluated and back-ported
+> separately. OtterIO does **not** automatically inherit those fixes.
+>
+> The OtterIO maintainers actively triage these issues — see
+> [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)
+> for the rolling backlog and the items that have already been closed
+> (notably the SSE metadata-injection class equivalent to GHSA-3rh2-v3gr-35p9
+> and the service-account sub-policy escalation introduced upstream in
+> RELEASE.2025-10-15) — but several historical advisories remain open.
+>
+> **OtterIO is not yet recommended for production deployments handling
+> untrusted users or untrusted networks.** See [`SECURITY.md`](./SECURITY.md)
+> for the disclosure policy and the supported-versions matrix.
+
 ## About OtterIO
 
 OtterIO is a customized fork of MinIO and differs from upstream in the following ways:

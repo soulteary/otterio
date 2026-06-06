@@ -33,6 +33,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/auth"
+	"github.com/soulteary/otterio/pkg/bucket/policy"
 	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 	"github.com/soulteary/otterio/pkg/madmin"
 )
@@ -1050,6 +1051,77 @@ func (sys *IAMSys) SetUserStatus(accessKey string, status madmin.AccountStatus) 
 	}
 
 	sys.iamUsersMap[accessKey] = uinfo.Credentials
+	return nil
+}
+
+// validateSubPolicyEscalation enforces that every Allow rule in subPolicy is
+// itself permitted by the caller's effective policies. This is the upstream
+// fix for the service-account sub-policy privilege-escalation issue tracked
+// in MinIO RELEASE.2025-10-15: without this check a credential that is itself
+// scoped down (e.g. an STS or service-account session) could mint a new
+// service account whose sub-policy grants strictly more capabilities than the
+// caller currently has, escalating to the parent's full privileges.
+//
+// The check expands each Allow statement into its (action, resource) tuples
+// and asks IAMSys.IsAllowed - which already correctly walks Deny statements,
+// caller-side session policies and group/user policy bindings - whether the
+// caller has that exact (action, resource) tuple. Conditions on the caller
+// side are honoured via callerArgs.Conditions; conditions on the sub-policy
+// side are intentionally ignored because they only narrow the SA further.
+//
+// Only Allow statements are inspected: a sub-policy that only adds Deny rules
+// can never widen the caller's privileges and is harmless. Statements with
+// admin actions are checked with an empty bucket/object (admin actions ignore
+// resource matching), all other actions are checked against every concrete
+// or wildcard resource declared in the statement.
+func (sys *IAMSys) validateSubPolicyEscalation(callerArgs iampolicy.Args, subPolicy *iampolicy.Policy) error {
+	return validateSubPolicyEscalationWith(callerArgs, subPolicy, sys.IsAllowed)
+}
+
+// validateSubPolicyEscalationWith is the testable core of
+// validateSubPolicyEscalation: it accepts the IsAllowed predicate as a
+// dependency so unit tests can drive it without standing up a real IAMSys.
+func validateSubPolicyEscalationWith(callerArgs iampolicy.Args, subPolicy *iampolicy.Policy, isAllowed func(iampolicy.Args) bool) error {
+	if subPolicy == nil {
+		return nil
+	}
+	for _, st := range subPolicy.Statements {
+		if st.Effect != policy.Allow {
+			continue
+		}
+		if len(st.Resources) == 0 {
+			// Admin statements: resource match is short-circuited
+			// inside Statement.IsAllowed, so a single resource-less
+			// probe per admin action is sufficient.
+			for action := range st.Actions {
+				probe := callerArgs
+				probe.Action = action
+				probe.BucketName = ""
+				probe.ObjectName = ""
+				probe.DenyOnly = false
+				if !isAllowed(probe) {
+					return fmt.Errorf("session policy grants %q which the caller is not allowed to delegate", action)
+				}
+			}
+			continue
+		}
+		for action := range st.Actions {
+			for r := range st.Resources {
+				probe := callerArgs
+				probe.Action = action
+				probe.BucketName = r.BucketName
+				if r.BucketName == "" || r.Pattern == r.BucketName {
+					probe.ObjectName = ""
+				} else {
+					probe.ObjectName = strings.TrimPrefix(r.Pattern, r.BucketName+"/")
+				}
+				probe.DenyOnly = false
+				if !isAllowed(probe) {
+					return fmt.Errorf("session policy grants %q on %q which the caller is not allowed to delegate", action, r.String())
+				}
+			}
+		}
+	}
 	return nil
 }
 

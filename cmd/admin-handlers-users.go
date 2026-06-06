@@ -524,6 +524,26 @@ func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// SECURITY (privilege escalation, MinIO RELEASE.2025-10-15): a sub-policy
+	// supplied at service-account creation must not grant any (action,
+	// resource) tuple the caller is not itself allowed to perform. Without
+	// this check a credential narrowed by a session policy could mint a new
+	// service account whose embedded policy elevates back to the parent's
+	// full privileges.
+	if createReq.Policy != nil {
+		callerArgs := iampolicy.Args{
+			AccountName:     cred.AccessKey,
+			ConditionValues: getConditionValues(r, "", cred.AccessKey, claims),
+			IsOwner:         owner,
+			Claims:          claims,
+		}
+		if err := globalIAMSys.validateSubPolicyEscalation(callerArgs, createReq.Policy); err != nil {
+			logger.LogIf(ctx, err)
+			writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrAccessDenied), r.URL)
+			return
+		}
+	}
+
 	if globalLDAPConfig.Enabled && targetUser != "" {
 		// If LDAP enabled, service accounts need
 		// to be created only for LDAP users.
@@ -649,6 +669,23 @@ func (a adminAPIHandlers) UpdateServiceAccount(w http.ResponseWriter, r *http.Re
 	if err = json.Unmarshal(reqBytes, &updateReq); err != nil {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErrWithErr(ErrAdminConfigBadJSON, err), r.URL)
 		return
+	}
+
+	// SECURITY (privilege escalation, MinIO RELEASE.2025-10-15): mirror the
+	// AddServiceAccount check - a sub-policy update must not raise the
+	// resulting credential above the caller's own effective permissions.
+	if updateReq.NewPolicy != nil {
+		callerArgs := iampolicy.Args{
+			AccountName:     cred.AccessKey,
+			ConditionValues: getConditionValues(r, "", cred.AccessKey, claims),
+			IsOwner:         owner,
+			Claims:          claims,
+		}
+		if err := globalIAMSys.validateSubPolicyEscalation(callerArgs, updateReq.NewPolicy); err != nil {
+			logger.LogIf(ctx, err)
+			writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrAccessDenied), r.URL)
+			return
+		}
 	}
 
 	opts := updateServiceAccountOpts{sessionPolicy: updateReq.NewPolicy, secretKey: updateReq.NewSecretKey, status: updateReq.NewStatus}
