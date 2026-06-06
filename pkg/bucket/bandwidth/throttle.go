@@ -88,7 +88,7 @@ func (t *throttle) GetLimitForBytes(want int64) int64 {
 }
 
 // SetBandwidth sets a new bandwidth limit in bytes per second.
-func (t *throttle) SetBandwidth(bandwidthBiPS int64, clusterBandwidth int64) {
+func (t *throttle) SetBandwidth(bandwidthBiPS int64, _ int64) {
 	bpi := int64(throttleInternal) * bandwidthBiPS / int64(time.Second)
 	atomic.StoreInt64(&t.bytesPerInterval, bpi)
 }

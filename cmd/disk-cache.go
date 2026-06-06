@@ -229,8 +229,8 @@ func (c *cacheObjects) GetObjectNInfo(ctx context.Context, bucket, object string
 	if cacheErr == nil {
 		cacheObjSize = cacheReader.ObjInfo.Size
 		if rs != nil {
-			if _, len, err := rs.GetOffsetLength(cacheObjSize); err == nil {
-				cacheObjSize = len
+			if _, length, err := rs.GetOffsetLength(cacheObjSize); err == nil {
+				cacheObjSize = length
 			}
 		}
 		cc = cacheControlOpts(cacheReader.ObjInfo)
@@ -239,8 +239,8 @@ func (c *cacheObjects) GetObjectNInfo(ctx context.Context, bucket, object string
 			// This is a cache hit, mark it so
 			bytesServed := cacheReader.ObjInfo.Size
 			if rs != nil {
-				if _, len, err := rs.GetOffsetLength(bytesServed); err == nil {
-					bytesServed = len
+				if _, length, err := rs.GetOffsetLength(bytesServed); err == nil {
+					bytesServed = length
 				}
 			}
 			c.cacheStats.incHit()

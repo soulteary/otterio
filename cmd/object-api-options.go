@@ -422,7 +422,7 @@ func copyDstOpts(ctx context.Context, r *http.Request, bucket, object string, me
 }
 
 // get ObjectOptions for Copy calls with encryption headers provided on the source side
-func copySrcOpts(ctx context.Context, r *http.Request, bucket, object string) (ObjectOptions, error) {
+func copySrcOpts(_ context.Context, r *http.Request, bucket, object string) (ObjectOptions, error) {
 	var (
 		ssec encrypt.ServerSide
 		opts ObjectOptions

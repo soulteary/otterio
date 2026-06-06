@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -35,7 +34,7 @@ func TestReadDirFail(t *testing.T) {
 	}
 
 	file := path.Join(os.TempDir(), "issue")
-	if err := ioutil.WriteFile(file, []byte(""), 0644); err != nil {
+	if err := os.WriteFile(file, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(file)
@@ -68,7 +67,7 @@ type result struct {
 
 func mustSetupDir(t *testing.T) string {
 	// Create unique test directory.
-	dir, err := ioutil.TempDir(globalTestTmpDir, "otterio-list-dir")
+	dir, err := os.MkdirTemp(globalTestTmpDir, "otterio-list-dir")
 	if err != nil {
 		t.Fatalf("Unable to setup directory, %s", err)
 	}
@@ -88,7 +87,7 @@ func setupTestReadDirFiles(t *testing.T) (testResults []result) {
 	entries := []string{}
 	for i := 0; i < 10; i++ {
 		name := fmt.Sprintf("file-%d", i)
-		if err := ioutil.WriteFile(filepath.Join(dir, name), []byte{}, os.ModePerm); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte{}, os.ModePerm); err != nil {
 			// For cleanup, its required to add these entries into test results.
 			testResults = append(testResults, result{dir, entries})
 			t.Fatalf("Unable to create file, %s", err)
@@ -113,7 +112,7 @@ func setupTestReadDirGeneric(t *testing.T) (testResults []result) {
 	entries := []string{"mydir/"}
 	for i := 0; i < 10; i++ {
 		name := fmt.Sprintf("file-%d", i)
-		if err := ioutil.WriteFile(filepath.Join(dir, "mydir", name), []byte{}, os.ModePerm); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, "mydir", name), []byte{}, os.ModePerm); err != nil {
 			// For cleanup, its required to add these entries into test results.
 			testResults = append(testResults, result{dir, entries})
 			t.Fatalf("Unable to write file, %s", err)
@@ -138,7 +137,7 @@ func setupTestReadDirSymlink(t *testing.T) (testResults []result) {
 	for i := 0; i < 10; i++ {
 		name1 := fmt.Sprintf("file-%d", i)
 		name2 := fmt.Sprintf("file-%d", i+10)
-		if err := ioutil.WriteFile(filepath.Join(dir, name1), []byte{}, os.ModePerm); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name1), []byte{}, os.ModePerm); err != nil {
 			// For cleanup, its required to add these entries into test results.
 			testResults = append(testResults, result{dir, entries})
 			t.Fatalf("Unable to create a file, %s", err)
@@ -243,7 +242,7 @@ func TestReadDirN(t *testing.T) {
 		dir := mustSetupDir(t)
 
 		for c := 1; c <= testCase.numFiles; c++ {
-			err := ioutil.WriteFile(filepath.Join(dir, fmt.Sprintf("%d", c)), []byte{}, os.ModePerm)
+			err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("%d", c)), []byte{}, os.ModePerm)
 			if err != nil {
 				os.RemoveAll(dir)
 				t.Fatalf("Unable to create a file, %s", err)

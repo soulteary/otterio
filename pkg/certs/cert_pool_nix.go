@@ -22,7 +22,6 @@ package certs
 
 import (
 	"crypto/x509"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,10 +34,10 @@ var certDirectories = []string{
 	"/var/run/secrets/kubernetes.io/serviceaccount",
 }
 
-// readUniqueDirectoryEntries is like ioutil.ReadDir but omits
+// readUniqueDirectoryEntries is like os.ReadDir but omits
 // symlinks that point within the directory.
-func readUniqueDirectoryEntries(dir string) ([]os.FileInfo, error) {
-	fis, err := ioutil.ReadDir(dir)
+func readUniqueDirectoryEntries(dir string) ([]os.DirEntry, error) {
+	fis, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +52,8 @@ func readUniqueDirectoryEntries(dir string) ([]os.FileInfo, error) {
 
 // isSameDirSymlink reports whether fi in dir is a symlink with a
 // target not containing a slash.
-func isSameDirSymlink(fi os.FileInfo, dir string) bool {
-	if fi.Mode()&os.ModeSymlink == 0 {
+func isSameDirSymlink(fi os.DirEntry, dir string) bool {
+	if fi.Type()&os.ModeSymlink == 0 {
 		return false
 	}
 	target, err := os.Readlink(filepath.Join(dir, fi.Name()))
@@ -76,7 +75,7 @@ func loadSystemRoots() (*x509.CertPool, error) {
 			return caPool, err
 		}
 		for _, fi := range fis {
-			data, err := ioutil.ReadFile(directory + "/" + fi.Name())
+			data, err := os.ReadFile(directory + "/" + fi.Name())
 			if err == nil {
 				caPool.AppendCertsFromPEM(data)
 			}

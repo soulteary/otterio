@@ -39,7 +39,7 @@ func TestNetHTTPRejectsMultipleHostHeaders(t *testing.T) {
 	// Hand-crafted HTTP/1.1 request with two Host header lines on the wire.
 	// We feed it through net/http's own request parser (the same code path
 	// that http.Server uses for incoming connections) so the result is the
-	// authoritative behaviour, not a behaviour we synthesised in a test
+	// authoritative behavior, not a behavior we synthesized in a test
 	// helper.
 	raw := "GET /bucket/key HTTP/1.1\r\n" +
 		"Host: legit.example\r\n" +

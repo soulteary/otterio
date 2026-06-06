@@ -62,14 +62,14 @@ func (c *OperatorDNS) addAuthHeader(r *http.Request) error {
 	return nil
 }
 
-func (c *OperatorDNS) endpoint(bucket string, delete bool) (string, error) {
+func (c *OperatorDNS) endpoint(bucket string, isDelete bool) (string, error) {
 	u, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return "", err
 	}
 	q := u.Query()
 	q.Add("bucket", bucket)
-	q.Add("delete", strconv.FormatBool(delete))
+	q.Add("delete", strconv.FormatBool(isDelete))
 	u.RawQuery = q.Encode()
 	return u.String(), nil
 }
@@ -145,7 +145,7 @@ func (c *OperatorDNS) Delete(bucket string) error {
 
 // DeleteRecord - Removes a specific DNS entry
 // No Op for Operator because operator deals on with bucket entries
-func (c *OperatorDNS) DeleteRecord(record SrvRecord) error {
+func (c *OperatorDNS) DeleteRecord(_ SrvRecord) error {
 	return ErrNotImplemented
 }
 
@@ -167,7 +167,7 @@ func (c *OperatorDNS) List() (srvRecords map[string][]SrvRecord, err error) {
 // This is a No Op for Operator because, there is no intent to enforce global
 // namespace at OtterIO level with this DNS entry. The global namespace in
 // enforced by the Kubernetes Operator
-func (c *OperatorDNS) Get(bucket string) (srvRecords []SrvRecord, err error) {
+func (c *OperatorDNS) Get(_ string) (srvRecords []SrvRecord, err error) {
 	return nil, ErrNotImplemented
 }
 

@@ -8,7 +8,7 @@ run:
 linters:
   default: none
   enable:
-    - gomodguard
+    - gomodguard_v2
     - govet
     - ineffassign
     - misspell
@@ -36,6 +36,8 @@ linters:
     paths:
       - pkg/rpc
       - pkg/argon2
+      - pkg/s3select/internal/parquet-go
+      - pkg/csvparser
 
 formatters:
   enable:

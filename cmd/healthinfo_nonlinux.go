@@ -29,7 +29,7 @@ import (
 	"github.com/soulteary/otterio/pkg/madmin"
 )
 
-func getLocalDiskHwInfo(ctx context.Context, r *http.Request) madmin.ServerDiskHwInfo {
+func getLocalDiskHwInfo(_ context.Context, r *http.Request) madmin.ServerDiskHwInfo {
 	addr := r.Host
 	if globalIsDistErasure {
 		addr = globalLocalNodeName
@@ -41,7 +41,7 @@ func getLocalDiskHwInfo(ctx context.Context, r *http.Request) madmin.ServerDiskH
 	}
 }
 
-func getLocalOsInfo(ctx context.Context, r *http.Request) madmin.ServerOsInfo {
+func getLocalOsInfo(_ context.Context, r *http.Request) madmin.ServerOsInfo {
 	addr := r.Host
 	if globalIsDistErasure {
 		addr = globalLocalNodeName

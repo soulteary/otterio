@@ -72,15 +72,15 @@ func TestSeedSignatureAcceptsDecodedLengthSigned(t *testing.T) {
 }
 
 // TestSeedSignatureMixedCaseDecodedLength pins down the interaction with the
-// new SignedHeaders-lowercase normalisation. A non-conforming client that
+// new SignedHeaders-lowercase normalization. A non-conforming client that
 // sends SignedHeaders=...;X-Amz-Decoded-Content-Length (mixed case) used to
 // slip past contains(_, "x-amz-decoded-content-length") and trigger
-// ErrUnsignedHeaders. After parseSignedHeader normalisation that branch is
+// ErrUnsignedHeaders. After parseSignedHeader normalization that branch is
 // reachable iff the header truly was signed.
 func TestSeedSignatureMixedCaseDecodedLength(t *testing.T) {
 	r := newStreamingSeedRequest(t, "Host;X-Amz-Content-Sha256;X-Amz-Date;X-Amz-Decoded-Content-Length")
 	_, _, _, _, errCode := calculateSeedSignature(r)
 	if errCode == ErrUnsignedHeaders {
-		t.Fatalf("mixed-case decoded-length must be matched after lowercase normalisation, got %v", errCode)
+		t.Fatalf("mixed-case decoded-length must be matched after lowercase normalization, got %v", errCode)
 	}
 }

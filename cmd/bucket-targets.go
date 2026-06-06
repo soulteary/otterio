@@ -73,7 +73,7 @@ func (sys *BucketTargetSys) ListTargets(ctx context.Context, bucket, arnType str
 }
 
 // ListBucketTargets - gets list of bucket targets for this bucket.
-func (sys *BucketTargetSys) ListBucketTargets(ctx context.Context, bucket string) (*madmin.BucketTargets, error) {
+func (sys *BucketTargetSys) ListBucketTargets(_ context.Context, bucket string) (*madmin.BucketTargets, error) {
 	sys.RLock()
 	defer sys.RUnlock()
 
@@ -228,14 +228,14 @@ func (sys *BucketTargetSys) RemoveTarget(ctx context.Context, bucket, arnStr str
 }
 
 // GetRemoteTargetClient returns otterio-go client for replication target instance
-func (sys *BucketTargetSys) GetRemoteTargetClient(ctx context.Context, arn string) *TargetClient {
+func (sys *BucketTargetSys) GetRemoteTargetClient(_ context.Context, arn string) *TargetClient {
 	sys.RLock()
 	defer sys.RUnlock()
 	return sys.arnRemotesMap[arn]
 }
 
 // GetRemoteTargetWithLabel returns bucket target given a target label
-func (sys *BucketTargetSys) GetRemoteTargetWithLabel(ctx context.Context, bucket, targetLabel string) *madmin.BucketTarget {
+func (sys *BucketTargetSys) GetRemoteTargetWithLabel(_ context.Context, bucket, targetLabel string) *madmin.BucketTarget {
 	sys.RLock()
 	defer sys.RUnlock()
 	for _, t := range sys.targetsMap[bucket] {
@@ -261,7 +261,7 @@ func (sys *BucketTargetSys) GetRemoteArnWithLabel(ctx context.Context, bucket, t
 }
 
 // GetRemoteLabelWithArn returns a bucket target's label given its ARN
-func (sys *BucketTargetSys) GetRemoteLabelWithArn(ctx context.Context, bucket, arnStr string) string {
+func (sys *BucketTargetSys) GetRemoteLabelWithArn(_ context.Context, bucket, arnStr string) string {
 	sys.RLock()
 	defer sys.RUnlock()
 	for _, t := range sys.targetsMap[bucket] {
@@ -328,7 +328,7 @@ func (sys *BucketTargetSys) UpdateAllTargets(bucket string, tgts *madmin.BucketT
 }
 
 // create otterio-go clients for buckets having remote targets
-func (sys *BucketTargetSys) load(ctx context.Context, buckets []BucketInfo, objAPI ObjectLayer) {
+func (sys *BucketTargetSys) load(ctx context.Context, buckets []BucketInfo, _ ObjectLayer) {
 	for _, bucket := range buckets {
 		cfg, err := globalBucketMetadataSys.GetBucketTargetsConfig(bucket.Name)
 		if err != nil {

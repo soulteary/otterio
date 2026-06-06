@@ -51,6 +51,7 @@ func valuesToInterfaces(values interface{}, valueType parquet.Type) (tableValues
 	return tableValues
 }
 
+//nolint:unused
 func interfacesToValues(values []interface{}, valueType parquet.Type) interface{} {
 	switch valueType {
 	case parquet.Type_BOOLEAN:

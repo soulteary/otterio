@@ -206,6 +206,8 @@ func (d *dataUsageCache) findChildrenCopy(h dataUsageHash) dataUsageHashMap {
 }
 
 // Returns nil if not found.
+//
+//nolint:unused
 func (d *dataUsageCache) subCache(path string) dataUsageCache {
 	dst := dataUsageCache{Info: dataUsageCacheInfo{
 		Name:        path,
@@ -227,6 +229,8 @@ func (d *dataUsageCache) deleteRecursive(h dataUsageHash) {
 }
 
 // replaceRootChild will replace the child of root in d with the root of 'other'.
+//
+//nolint:unused
 func (d *dataUsageCache) replaceRootChild(other dataUsageCache) {
 	otherRoot := other.root()
 	if otherRoot == nil {
@@ -457,6 +461,8 @@ func (d *dataUsageCache) bucketUsageInfo(bucket string) madmin.BucketUsageInfo {
 }
 
 // sizeRecursive returns the path as a flattened entry.
+//
+//nolint:unused
 func (d *dataUsageCache) sizeRecursive(path string) *dataUsageEntry {
 	root := d.find(path)
 	if root == nil || len(root.Children) == 0 {

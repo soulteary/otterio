@@ -232,7 +232,7 @@ func (fi FileInfo) ObjectToPartOffset(ctx context.Context, offset int64) (partIn
 	return 0, 0, InvalidRange{}
 }
 
-func findFileInfoInQuorum(ctx context.Context, metaArr []FileInfo, modTime time.Time, dataDir string, quorum int) (xmv FileInfo, e error) {
+func findFileInfoInQuorum(_ context.Context, metaArr []FileInfo, modTime time.Time, dataDir string, quorum int) (xmv FileInfo, e error) {
 	metaHashes := make([]string, len(metaArr))
 	h := sha256.New()
 	for i, meta := range metaArr {

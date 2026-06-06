@@ -21,9 +21,9 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"runtime/pprof"
 	"sync"
 	"sync/atomic"
@@ -138,7 +138,7 @@ func (srv *Server) Shutdown() error {
 	for {
 		select {
 		case <-shutdownTimer.C:
-			tmp, err := ioutil.TempFile("", "otterio-goroutines-*.txt")
+			tmp, err := os.CreateTemp("", "otterio-goroutines-*.txt")
 			if err == nil {
 				_ = pprof.Lookup("goroutine").WriteTo(tmp, 1)
 				tmp.Close()

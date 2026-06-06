@@ -734,7 +734,7 @@ func (er *erasureObjects) listPath(ctx context.Context, o listPathOptions) (entr
 				}
 				filterCh <- entry
 			},
-			partial: func(entries metaCacheEntries, nAgreed int, errs []error) {
+			partial: func(entries metaCacheEntries, _ int, _ []error) {
 				// Results Disagree :-(
 				entry, ok := entries.resolve(&resolver)
 				if ok {

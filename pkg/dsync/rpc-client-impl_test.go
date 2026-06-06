@@ -21,7 +21,7 @@ import (
 	"net/rpc"
 	"sync"
 
-	. "github.com/soulteary/otterio/pkg/dsync"
+	dsync "github.com/soulteary/otterio/pkg/dsync"
 )
 
 // ReconnectRPCClient is a wrapper type for rpc.Client which provides reconnect on first failure.
@@ -35,7 +35,7 @@ type ReconnectRPCClient struct {
 // newClient constructs a ReconnectRPCClient object with addr and endpoint initialized.
 // It _doesn't_ connect to the remote endpoint. See Call method to see when the
 // connect happens.
-func newClient(addr, endpoint string) NetLocker {
+func newClient(addr, endpoint string) dsync.NetLocker {
 	return &ReconnectRPCClient{
 		addr:     addr,
 		endpoint: endpoint,
@@ -94,32 +94,32 @@ func (rpcClient *ReconnectRPCClient) Call(serviceMethod string, args interface{}
 	return err
 }
 
-func (rpcClient *ReconnectRPCClient) RLock(ctx context.Context, args LockArgs) (status bool, err error) {
+func (rpcClient *ReconnectRPCClient) RLock(_ context.Context, args dsync.LockArgs) (status bool, err error) {
 	err = rpcClient.Call("Dsync.RLock", &args, &status)
 	return status, err
 }
 
-func (rpcClient *ReconnectRPCClient) Lock(ctx context.Context, args LockArgs) (status bool, err error) {
+func (rpcClient *ReconnectRPCClient) Lock(_ context.Context, args dsync.LockArgs) (status bool, err error) {
 	err = rpcClient.Call("Dsync.Lock", &args, &status)
 	return status, err
 }
 
-func (rpcClient *ReconnectRPCClient) RUnlock(args LockArgs) (status bool, err error) {
+func (rpcClient *ReconnectRPCClient) RUnlock(args dsync.LockArgs) (status bool, err error) {
 	err = rpcClient.Call("Dsync.RUnlock", &args, &status)
 	return status, err
 }
 
-func (rpcClient *ReconnectRPCClient) Unlock(args LockArgs) (status bool, err error) {
+func (rpcClient *ReconnectRPCClient) Unlock(args dsync.LockArgs) (status bool, err error) {
 	err = rpcClient.Call("Dsync.Unlock", &args, &status)
 	return status, err
 }
 
-func (rpcClient *ReconnectRPCClient) Refresh(ctx context.Context, args LockArgs) (refreshed bool, err error) {
+func (rpcClient *ReconnectRPCClient) Refresh(_ context.Context, args dsync.LockArgs) (refreshed bool, err error) {
 	err = rpcClient.Call("Dsync.Refresh", &args, &refreshed)
 	return refreshed, err
 }
 
-func (rpcClient *ReconnectRPCClient) ForceUnlock(ctx context.Context, args LockArgs) (reply bool, err error) {
+func (rpcClient *ReconnectRPCClient) ForceUnlock(_ context.Context, args dsync.LockArgs) (reply bool, err error) {
 	err = rpcClient.Call("Dsync.ForceUnlock", &args, &reply)
 	return reply, err
 }

@@ -490,6 +490,8 @@ func newHealSequence(ctx context.Context, bucket, objPrefix, clientAddr string,
 // This is used only in case of Background healing scenario, where
 // we use a single long running healSequence which reactively heals
 // objects passed to the SourceCh.
+//
+//nolint:unused
 func (h *healSequence) resetHealStatusCounters() {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()

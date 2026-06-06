@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 
 	"github.com/secure-io/sio-go"
 	"github.com/secure-io/sio-go/sioutil"
@@ -129,7 +128,7 @@ func DecryptData(password string, data io.Reader) ([]byte, error) {
 		return nil, err
 	}
 
-	enBytes, err := ioutil.ReadAll(stream.DecryptReader(data, nonce[:], nil))
+	enBytes, err := io.ReadAll(stream.DecryptReader(data, nonce[:], nil))
 	if err != nil {
 		if err == sio.NotAuthentic {
 			return enBytes, ErrMaliciousData

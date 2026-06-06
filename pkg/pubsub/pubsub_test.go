@@ -61,7 +61,7 @@ func TestPubSub(t *testing.T) {
 	ch1 := make(chan interface{}, 1)
 	doneCh1 := make(chan struct{})
 	defer close(doneCh1)
-	ps.Subscribe(ch1, doneCh1, func(entry interface{}) bool { return true })
+	ps.Subscribe(ch1, doneCh1, func(_ interface{}) bool { return true })
 	val := "hello"
 	ps.Publish(val)
 	msg := <-ch1
@@ -76,8 +76,8 @@ func TestMultiPubSub(t *testing.T) {
 	ch2 := make(chan interface{}, 1)
 	doneCh := make(chan struct{})
 	defer close(doneCh)
-	ps.Subscribe(ch1, doneCh, func(entry interface{}) bool { return true })
-	ps.Subscribe(ch2, doneCh, func(entry interface{}) bool { return true })
+	ps.Subscribe(ch1, doneCh, func(_ interface{}) bool { return true })
+	ps.Subscribe(ch2, doneCh, func(_ interface{}) bool { return true })
 	val := "hello"
 	ps.Publish(val)
 

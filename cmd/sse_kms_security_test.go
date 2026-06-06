@@ -34,7 +34,7 @@ import (
 //     elsewhere is a regression of Bug D's sealing-by-convention.
 //
 // SSE-KMS PUT wiring is intentionally out of scope here (tracked
-// separately as Bug B follow-up). Real AEAD round-trip behaviour is
+// separately as Bug B follow-up). Real AEAD round-trip behavior is
 // pinned in cmd/crypto/sse-kms_e2e_test.go.
 
 // TestObjectBindingContextStableInCmd is a sanity check that the

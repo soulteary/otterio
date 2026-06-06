@@ -23,7 +23,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"path"
 	"strconv"
@@ -237,7 +236,7 @@ func (client *storageRESTClient) SetDiskID(id string) {
 }
 
 // DiskInfo - fetch disk information for a remote disk.
-func (client *storageRESTClient) DiskInfo(ctx context.Context) (info DiskInfo, err error) {
+func (client *storageRESTClient) DiskInfo(_ context.Context) (info DiskInfo, err error) {
 	client.diskInfoCache.Once.Do(func() {
 		client.diskInfoCache.TTL = time.Second
 		client.diskInfoCache.Update = func() (interface{}, error) {
@@ -336,7 +335,7 @@ func (client *storageRESTClient) CreateFile(ctx context.Context, volume, path st
 	values.Set(storageRESTVolume, volume)
 	values.Set(storageRESTFilePath, path)
 	values.Set(storageRESTLength, strconv.Itoa(int(size)))
-	respBody, err := client.call(ctx, storageRESTMethodCreateFile, values, ioutil.NopCloser(reader), size)
+	respBody, err := client.call(ctx, storageRESTMethodCreateFile, values, io.NopCloser(reader), size)
 	if err != nil {
 		return err
 	}
@@ -492,7 +491,7 @@ func (client *storageRESTClient) ReadAll(ctx context.Context, volume string, pat
 		return nil, err
 	}
 	defer http.DrainBody(respBody)
-	return ioutil.ReadAll(respBody)
+	return io.ReadAll(respBody)
 }
 
 // ReadFileStream - returns a reader for the requested file.

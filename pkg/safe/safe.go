@@ -20,7 +20,6 @@ package safe
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -110,7 +109,7 @@ func (file *File) Abort() (err error) {
 // files can be cleaned up by identifying them using "$tmpfile" prefix
 // string.
 func CreateFile(name string) (*File, error) {
-	// ioutil.TempFile() fails if parent directory is missing.
+	// os.CreateTemp() fails if parent directory is missing.
 	// Create parent directory to avoid such error.
 	dname := filepath.Dir(name)
 	if err := os.MkdirAll(dname, 0700); err != nil {
@@ -118,7 +117,7 @@ func CreateFile(name string) (*File, error) {
 	}
 
 	fname := filepath.Base(name)
-	tmpfile, err := ioutil.TempFile(dname, "$tmpfile."+fname+".")
+	tmpfile, err := os.CreateTemp(dname, "$tmpfile."+fname+".")
 	if err != nil {
 		return nil, err
 	}

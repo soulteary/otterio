@@ -18,7 +18,6 @@ package certs
 
 import (
 	"crypto/x509"
-	"io/ioutil"
 	"os"
 	"path"
 )
@@ -34,7 +33,7 @@ func GetRootCAs(certsCAsDir string) (*x509.CertPool, error) {
 		rootCAs = x509.NewCertPool()
 	}
 
-	fis, err := ioutil.ReadDir(certsCAsDir)
+	fis, err := os.ReadDir(certsCAsDir)
 	if err != nil {
 		if os.IsNotExist(err) || os.IsPermission(err) {
 			// Return success if CA's directory is missing or permission denied.
@@ -45,7 +44,7 @@ func GetRootCAs(certsCAsDir string) (*x509.CertPool, error) {
 
 	// Load all custom CA files.
 	for _, fi := range fis {
-		caCert, err := ioutil.ReadFile(path.Join(certsCAsDir, fi.Name()))
+		caCert, err := os.ReadFile(path.Join(certsCAsDir, fi.Name()))
 		if err == nil {
 			rootCAs.AppendCertsFromPEM(caCert)
 		}

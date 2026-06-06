@@ -210,7 +210,7 @@ func validateTransitionDestination(ctx context.Context, bucket string, targetLab
 }
 
 // transitionSC returns storage class label for this bucket
-func transitionSC(ctx context.Context, bucket string) string {
+func transitionSC(_ context.Context, bucket string) string {
 	cfg, err := globalBucketMetadataSys.GetLifecycleConfig(bucket)
 	if err != nil {
 		return ""
@@ -607,7 +607,7 @@ func (r *RestoreObjectRequest) validate(ctx context.Context, objAPI ObjectLayer)
 }
 
 // set ObjectOptions for PUT call to restore temporary copy of transitioned data
-func putRestoreOpts(bucket, object string, rreq *RestoreObjectRequest, objInfo ObjectInfo) (putOpts ObjectOptions) {
+func putRestoreOpts(bucket string, _ string, rreq *RestoreObjectRequest, objInfo ObjectInfo) (putOpts ObjectOptions) {
 	meta := make(map[string]string)
 	sc := rreq.OutputLocation.S3.StorageClass
 	if sc == "" {

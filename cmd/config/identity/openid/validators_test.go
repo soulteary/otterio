@@ -26,7 +26,7 @@ import (
 
 type errorValidator struct{}
 
-func (e errorValidator) Validate(token, dsecs string) (map[string]interface{}, error) {
+func (e errorValidator) Validate(_, _ string) (map[string]interface{}, error) {
 	return nil, ErrTokenExpired
 }
 
@@ -35,7 +35,7 @@ func (e errorValidator) ID() ID {
 }
 
 func TestValidators(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("content-type", "application/json")
 		w.Write([]byte(`{
   "keys" : [ {

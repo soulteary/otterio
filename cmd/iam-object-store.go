@@ -40,7 +40,7 @@ import (
 )
 
 // envIAMLDAPDNMigration is the feature flag that gates the one-time
-// LDAP DN normalisation migration in loadMappedPolicies. Defaults to "on".
+// LDAP DN normalization migration in loadMappedPolicies. Defaults to "on".
 // Operators may set OTTERIO_IAM_LDAP_DN_MIGRATION=off to defer the migration
 // (e.g. for an audit dry-run) - while the flag is off the in-memory policy
 // map will be sharded across DN case variants exactly as on disk.
@@ -69,7 +69,7 @@ const envIAMLDAPDNMigration = "OTTERIO_IAM_LDAP_DN_MIGRATION"
 //
 // On parse-failure of the on-disk DN we log and skip; the caller has
 // already populated the in-memory map with the literal name as a fallback,
-// matching pre-normalisation behaviour for that one entry.
+// matching pre-normalization behavior for that one entry.
 func (iamOS *IAMObjectStore) migrateMappedPolicyToCanonical(ctx context.Context,
 	rawName string, userType IAMUserType, isGroup bool, m map[string]MappedPolicy) {
 
@@ -91,8 +91,8 @@ func (iamOS *IAMObjectStore) migrateMappedPolicyToCanonical(ctx context.Context,
 	rawPolicy, hasRaw := m[rawName]
 	canonicalPolicy, hasCanonical := m[canonical]
 
-	winner := rawPolicy
-	winnerName := rawName
+	var winner MappedPolicy
+	var winnerName string
 	loserName := ""
 	switch {
 	case hasCanonical && hasRaw && reflect.DeepEqual(rawPolicy, canonicalPolicy):
@@ -353,7 +353,7 @@ func (iamOS *IAMObjectStore) migrateBackendFormat(ctx context.Context) error {
 	return iamOS.migrateToV1(ctx)
 }
 
-func (iamOS *IAMObjectStore) saveIAMConfig(ctx context.Context, item interface{}, path string, opts ...options) error {
+func (iamOS *IAMObjectStore) saveIAMConfig(ctx context.Context, item interface{}, path string, _ ...options) error {
 	data, err := json.Marshal(item)
 	if err != nil {
 		return err
@@ -433,7 +433,7 @@ func (iamOS *IAMObjectStore) loadUser(ctx context.Context, user string, userType
 	if globalOldCred.IsValid() && u.Credentials.IsServiceAccount() {
 		if !globalOldCred.Equal(globalActiveCred) {
 			m := jwtgo.MapClaims{}
-			stsTokenCallback := func(t *jwtgo.Token) (interface{}, error) {
+			stsTokenCallback := func(_ *jwtgo.Token) (interface{}, error) {
 				return []byte(globalOldCred.SecretKey), nil
 			}
 			if _, err := jwtgo.ParseWithClaims(u.Credentials.SessionToken, m, stsTokenCallback); err == nil {
@@ -558,7 +558,7 @@ func (iamOS *IAMObjectStore) loadMappedPolicies(ctx context.Context, userType IA
 		rawNames = append(rawNames, userOrGroupName)
 	}
 
-	// SECURITY (LDAP DN normalisation): when the IAM layer is in LDAP mode
+	// SECURITY (LDAP DN normalization): when the IAM layer is in LDAP mode
 	// and the names we just loaded are LDAP DNs (regular user / group, but
 	// not service-account or STS), re-key them to their canonical NormalizeDN
 	// form. See migrateMappedPolicyToCanonical for the conflict policy.

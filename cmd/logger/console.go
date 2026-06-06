@@ -171,10 +171,10 @@ var startupMessage startUpMsg
 type startUpMsg struct {
 }
 
-func (s startUpMsg) json(msg string, args ...interface{}) {
+func (s startUpMsg) json(_ string, _ ...interface{}) {
 }
 
-func (s startUpMsg) quiet(msg string, args ...interface{}) {
+func (s startUpMsg) quiet(_ string, _ ...interface{}) {
 }
 
 func (s startUpMsg) pretty(msg string, args ...interface{}) {

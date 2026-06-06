@@ -30,9 +30,9 @@ import (
 )
 
 var (
-	defaultKeyFunc = func(claim *MapClaims) ([]byte, error) { return []byte("HelloSecret"), nil }
-	emptyKeyFunc   = func(claim *MapClaims) ([]byte, error) { return nil, nil }
-	errorKeyFunc   = func(claim *MapClaims) ([]byte, error) { return nil, fmt.Errorf("error loading key") }
+	defaultKeyFunc = func(_ *MapClaims) ([]byte, error) { return []byte("HelloSecret"), nil }
+	emptyKeyFunc   = func(_ *MapClaims) ([]byte, error) { return nil, nil }
+	errorKeyFunc   = func(_ *MapClaims) ([]byte, error) { return nil, fmt.Errorf("error loading key") }
 )
 
 var jwtTestData = []struct {

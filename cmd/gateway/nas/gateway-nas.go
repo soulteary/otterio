@@ -86,7 +86,7 @@ func (g *NAS) Name() string {
 }
 
 // NewGatewayLayer returns nas gatewaylayer.
-func (g *NAS) NewGatewayLayer(creds auth.Credentials) (otterio.ObjectLayer, error) {
+func (g *NAS) NewGatewayLayer(_ auth.Credentials) (otterio.ObjectLayer, error) {
 	var err error
 	newObject, err := otterio.NewFSObjectLayer(g.path)
 	if err != nil {

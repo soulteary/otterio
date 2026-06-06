@@ -21,6 +21,8 @@ import "net/http"
 
 // List of some generic handlers which are applied for all incoming requests.
 // These are adapted to Fiber via adaptor.HTTPMiddleware in globalFiberHandlers.
+//
+//nolint:unused
 var globalHandlers = []func(http.Handler) http.Handler{
 	filterReservedMetadata,
 	setSSETLSHandler,

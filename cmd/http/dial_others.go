@@ -29,8 +29,8 @@ import (
 
 // TODO: if possible implement for non-linux platforms, not a priority at the moment
 //
-//nolint:deadcode
-func setInternalTCPParameters(c syscall.RawConn) error {
+//nolint:unused
+func setInternalTCPParameters(_ syscall.RawConn) error {
 	return nil
 }
 

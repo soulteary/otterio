@@ -273,7 +273,7 @@ func ExtractClaims(token, secretKey string) (*jwt.MapClaims, error) {
 	}
 
 	claims := jwt.NewMapClaims()
-	stsTokenCallback := func(claims *jwt.MapClaims) ([]byte, error) {
+	stsTokenCallback := func(_ *jwt.MapClaims) ([]byte, error) {
 		return []byte(secretKey), nil
 	}
 

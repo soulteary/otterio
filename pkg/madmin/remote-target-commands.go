@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -186,7 +186,7 @@ func (adm *AdminClient) ListRemoteTargets(ctx context.Context, bucket, arnType s
 		return targets, httpRespToErrorResponse(resp)
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return targets, err
 	}
@@ -226,7 +226,7 @@ func (adm *AdminClient) SetRemoteTarget(ctx context.Context, bucket string, targ
 	if resp.StatusCode != http.StatusOK {
 		return "", httpRespToErrorResponse(resp)
 	}
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -271,7 +271,7 @@ func (adm *AdminClient) UpdateRemoteTarget(ctx context.Context, target *BucketTa
 	if resp.StatusCode != http.StatusOK {
 		return "", httpRespToErrorResponse(resp)
 	}
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

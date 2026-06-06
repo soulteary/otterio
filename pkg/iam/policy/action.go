@@ -305,7 +305,7 @@ func (a actionConditionKeyMap) Lookup(action Action) condition.KeySet {
 	return ckeysMerged
 }
 
-// iamObjectTagConditionKeys lists tag-aware condition prefix keys recognised
+// iamObjectTagConditionKeys lists tag-aware condition prefix keys recognized
 // by per-object actions in IAM policies. See pkg/bucket/policy/action.go for
 // the equivalent in bucket policies.
 var iamObjectTagConditionKeys = []condition.Key{

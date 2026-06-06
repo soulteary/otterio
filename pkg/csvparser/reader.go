@@ -349,69 +349,68 @@ parseField:
 				continue parseField
 			}
 			break parseField
-		} else {
-			// Quoted string field
-			line = line[r.cachedQuoteLen:]
-			for {
-				i := bytes.IndexAny(line, r.cachedQuotes)
-				if i >= 0 {
-					// Hit next quote or escape quote
-					r.recordBuffer = append(r.recordBuffer, line[:i]...)
+		}
+		// Quoted string field
+		line = line[r.cachedQuoteLen:]
+		for {
+			i := bytes.IndexAny(line, r.cachedQuotes)
+			if i >= 0 {
+				// Hit next quote or escape quote
+				r.recordBuffer = append(r.recordBuffer, line[:i]...)
 
-					escape := nextRune(line[i:]) == r.QuoteEscape
-					if escape {
-						line = line[i+r.cachedQuoteEscapeLen:]
-					} else {
-						line = line[i+r.cachedQuoteLen:]
-					}
-
-					switch rn := nextRune(line); {
-					case escape && r.QuoteEscape != r.Quote[0]:
-						r.recordBuffer = append(r.recordBuffer, encodeRune(rn)...)
-						line = line[utf8.RuneLen(rn):]
-					case rn == r.Quote[0]:
-						// `""` sequence (append quote).
-						r.recordBuffer = append(r.recordBuffer, r.cachedEncodedQuote...)
-						line = line[r.cachedQuoteLen:]
-					case rn == r.Comma:
-						// `",` sequence (end of field).
-						line = line[r.cachedCommaLen:]
-						r.fieldIndexes = append(r.fieldIndexes, len(r.recordBuffer))
-						continue parseField
-					case lengthNL(line) == len(line):
-						// `"\n` sequence (end of line).
-						r.fieldIndexes = append(r.fieldIndexes, len(r.recordBuffer))
-						break parseField
-					case r.LazyQuotes:
-						// `"` sequence (bare quote).
-						r.recordBuffer = append(r.recordBuffer, r.cachedEncodedQuote...)
-					default:
-						// `"*` sequence (invalid non-escaped quote).
-						col := utf8.RuneCount(fullLine[:len(fullLine)-len(line)-r.cachedQuoteLen])
-						err = &ParseError{StartLine: recLine, Line: r.numLine, Column: col, Err: ErrQuote}
-						break parseField
-					}
-				} else if len(line) > 0 {
-					// Hit end of line (copy all data so far).
-					r.recordBuffer = append(r.recordBuffer, line...)
-					if errRead != nil {
-						break parseField
-					}
-					line, errRead = r.readLine()
-					if errRead == io.EOF {
-						errRead = nil
-					}
-					fullLine = line
+				escape := nextRune(line[i:]) == r.QuoteEscape
+				if escape {
+					line = line[i+r.cachedQuoteEscapeLen:]
 				} else {
-					// Abrupt end of file (EOF or error).
-					if !r.LazyQuotes && errRead == nil {
-						col := utf8.RuneCount(fullLine)
-						err = &ParseError{StartLine: recLine, Line: r.numLine, Column: col, Err: ErrQuote}
-						break parseField
-					}
+					line = line[i+r.cachedQuoteLen:]
+				}
+
+				switch rn := nextRune(line); {
+				case escape && r.QuoteEscape != r.Quote[0]:
+					r.recordBuffer = append(r.recordBuffer, encodeRune(rn)...)
+					line = line[utf8.RuneLen(rn):]
+				case rn == r.Quote[0]:
+					// `""` sequence (append quote).
+					r.recordBuffer = append(r.recordBuffer, r.cachedEncodedQuote...)
+					line = line[r.cachedQuoteLen:]
+				case rn == r.Comma:
+					// `",` sequence (end of field).
+					line = line[r.cachedCommaLen:]
+					r.fieldIndexes = append(r.fieldIndexes, len(r.recordBuffer))
+					continue parseField
+				case lengthNL(line) == len(line):
+					// `"\n` sequence (end of line).
 					r.fieldIndexes = append(r.fieldIndexes, len(r.recordBuffer))
 					break parseField
+				case r.LazyQuotes:
+					// `"` sequence (bare quote).
+					r.recordBuffer = append(r.recordBuffer, r.cachedEncodedQuote...)
+				default:
+					// `"*` sequence (invalid non-escaped quote).
+					col := utf8.RuneCount(fullLine[:len(fullLine)-len(line)-r.cachedQuoteLen])
+					err = &ParseError{StartLine: recLine, Line: r.numLine, Column: col, Err: ErrQuote}
+					break parseField
 				}
+			} else if len(line) > 0 {
+				// Hit end of line (copy all data so far).
+				r.recordBuffer = append(r.recordBuffer, line...)
+				if errRead != nil {
+					break parseField
+				}
+				line, errRead = r.readLine()
+				if errRead == io.EOF {
+					errRead = nil
+				}
+				fullLine = line
+			} else {
+				// Abrupt end of file (EOF or error).
+				if !r.LazyQuotes && errRead == nil {
+					col := utf8.RuneCount(fullLine)
+					err = &ParseError{StartLine: recLine, Line: r.numLine, Column: col, Err: ErrQuote}
+					break parseField
+				}
+				r.fieldIndexes = append(r.fieldIndexes, len(r.recordBuffer))
+				break parseField
 			}
 		}
 	}

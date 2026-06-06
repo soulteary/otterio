@@ -90,7 +90,7 @@ func validateReplicationDestination(ctx context.Context, bucket string, rCfg *re
 	return false, BucketRemoteTargetNotFound{Bucket: bucket}
 }
 
-func mustReplicateWeb(ctx context.Context, r *http.Request, bucket, object string, meta map[string]string, replStatus string, permErr APIErrorCode) (replicate bool, sync bool) {
+func mustReplicateWeb(ctx context.Context, _ *http.Request, bucket, object string, meta map[string]string, replStatus string, permErr APIErrorCode) (replicate bool, sync bool) {
 	if permErr != ErrNone {
 		return
 	}
@@ -402,7 +402,7 @@ func (m caseInsensitiveMap) Lookup(key string) (string, bool) {
 	return "", false
 }
 
-func putReplicationOpts(ctx context.Context, dest replication.Destination, objInfo ObjectInfo) (putOpts otteriogo.PutObjectOptions, err error) {
+func putReplicationOpts(_ context.Context, dest replication.Destination, objInfo ObjectInfo) (putOpts otteriogo.PutObjectOptions, err error) {
 	meta := make(map[string]string)
 	for k, v := range objInfo.UserDefined {
 		if strings.HasPrefix(strings.ToLower(k), ReservedMetadataPrefixLower) {
@@ -1089,7 +1089,7 @@ func scheduleReplication(ctx context.Context, objInfo ObjectInfo, o ObjectLayer,
 	}
 }
 
-func scheduleReplicationDelete(ctx context.Context, dv DeletedObjectVersionInfo, o ObjectLayer, sync bool) {
+func scheduleReplicationDelete(_ context.Context, dv DeletedObjectVersionInfo, _ ObjectLayer, _ bool) {
 	globalReplicationPool.queueReplicaDeleteTask(GlobalContext, dv)
 	globalReplicationStats.Update(dv.Bucket, 0, replication.Pending, replication.StatusType(""), replication.DeleteReplicationType)
 }

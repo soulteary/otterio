@@ -94,7 +94,7 @@ func getServerSystemCfg() ServerSystemConfig {
 }
 
 // HealthHandler returns success if request is valid
-func (b *bootstrapRESTServer) HealthHandler(w http.ResponseWriter, r *http.Request) {}
+func (b *bootstrapRESTServer) HealthHandler(_ http.ResponseWriter, _ *http.Request) {}
 
 func (b *bootstrapRESTServer) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := newContext(r, w, "VerifyHandler")

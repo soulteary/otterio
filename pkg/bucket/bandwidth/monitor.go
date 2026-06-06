@@ -69,7 +69,7 @@ type SelectionFunction func(bucket string) bool
 // SelectBuckets will select all the buckets passed in.
 func SelectBuckets(buckets ...string) SelectionFunction {
 	if len(buckets) == 0 {
-		return func(bucket string) bool {
+		return func(_ string) bool {
 			return true
 		}
 	}
@@ -139,7 +139,7 @@ func (m *Monitor) updateMovingAvg() {
 }
 
 // track returns the measurement object for bucket and object
-func (m *Monitor) track(bucket string, object string) *bucketMeasurement {
+func (m *Monitor) track(bucket string, _ string) *bucketMeasurement {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	return m.getBucketMeasurement(bucket, time.Now())

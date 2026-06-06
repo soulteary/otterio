@@ -21,7 +21,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"strings"
 	"time"
@@ -130,7 +130,7 @@ func testDeleteObject() {
 		return
 	}
 
-	body, err := ioutil.ReadAll(result.Body)
+	body, err := io.ReadAll(result.Body)
 	if err != nil {
 		failureLog(function, args, startTime, "", fmt.Sprintf("GetObject expected to return data but failed with %v", err), err).Fatal()
 		return

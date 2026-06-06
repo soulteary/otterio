@@ -658,7 +658,7 @@ func NewGetObjectReader(rs *HTTPRangeSpec, oi ObjectInfo, opts ObjectOptions, cl
 				return nil, 0, 0, errInvalidRange
 			}
 		}
-		fn = func(inputReader io.Reader, h http.Header, pcfn CheckPreconditionFn, cFns ...func()) (r *GetObjectReader, err error) {
+		fn = func(inputReader io.Reader, h http.Header, _ CheckPreconditionFn, cFns ...func()) (r *GetObjectReader, err error) {
 			cFns = append(cleanUpFns, cFns...)
 			if opts.CheckPrecondFn != nil && opts.CheckPrecondFn(oi) {
 				// Call the cleanup funcs
@@ -739,7 +739,7 @@ func NewGetObjectReader(rs *HTTPRangeSpec, oi ObjectInfo, opts ObjectOptions, cl
 		// a reader that returns the desired range of
 		// encrypted bytes. The header parameter is used to
 		// provide encryption parameters.
-		fn = func(inputReader io.Reader, h http.Header, pcfn CheckPreconditionFn, cFns ...func()) (r *GetObjectReader, err error) {
+		fn = func(inputReader io.Reader, h http.Header, _ CheckPreconditionFn, cFns ...func()) (r *GetObjectReader, err error) {
 			copySource := h.Get(xhttp.AmzServerSideEncryptionCopyCustomerAlgorithm) != ""
 
 			cFns = append(cleanUpFns, cFns...)
@@ -783,7 +783,7 @@ func NewGetObjectReader(rs *HTTPRangeSpec, oi ObjectInfo, opts ObjectOptions, cl
 		if err != nil {
 			return nil, 0, 0, err
 		}
-		fn = func(inputReader io.Reader, _ http.Header, pcfn CheckPreconditionFn, cFns ...func()) (r *GetObjectReader, err error) {
+		fn = func(inputReader io.Reader, _ http.Header, _ CheckPreconditionFn, cFns ...func()) (r *GetObjectReader, err error) {
 			cFns = append(cleanUpFns, cFns...)
 			if opts.CheckPrecondFn != nil && opts.CheckPrecondFn(oi) {
 				// Call the cleanup funcs

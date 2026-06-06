@@ -246,11 +246,11 @@ func isETagEqual(left, right string) bool {
 // setPutObjHeaders sets all the necessary headers returned back
 // upon a success Put/Copy/CompleteMultipart/Delete requests
 // to activate delete only headers set delete as true
-func setPutObjHeaders(w http.ResponseWriter, objInfo ObjectInfo, delete bool) {
+func setPutObjHeaders(w http.ResponseWriter, objInfo ObjectInfo, isDelete bool) {
 	// We must not use the http.Header().Set method here because some (broken)
 	// clients expect the ETag header key to be literally "ETag" - not "Etag" (case-sensitive).
 	// Therefore, we have to set the ETag directly as map entry.
-	if objInfo.ETag != "" && !delete {
+	if objInfo.ETag != "" && !isDelete {
 		w.Header()[xhttp.ETag] = []string{`"` + objInfo.ETag + `"`}
 	}
 
@@ -258,13 +258,13 @@ func setPutObjHeaders(w http.ResponseWriter, objInfo ObjectInfo, delete bool) {
 	if objInfo.VersionID != "" {
 		w.Header()[xhttp.AmzVersionID] = []string{objInfo.VersionID}
 		// If version is a deleted marker, set this header as well
-		if objInfo.DeleteMarker && delete { // only returned during delete object
+		if objInfo.DeleteMarker && isDelete { // only returned during delete object
 			w.Header()[xhttp.AmzDeleteMarker] = []string{strconv.FormatBool(objInfo.DeleteMarker)}
 		}
 	}
 
 	if objInfo.Bucket != "" && objInfo.Name != "" {
-		if lc, err := globalLifecycleSys.Get(objInfo.Bucket); err == nil && !delete {
+		if lc, err := globalLifecycleSys.Get(objInfo.Bucket); err == nil && !isDelete {
 			ruleID, expiryTime := lc.PredictExpiryTime(lifecycle.ObjectOpts{
 				Name:         objInfo.Name,
 				UserTags:     objInfo.UserTags,

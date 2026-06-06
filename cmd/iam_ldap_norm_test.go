@@ -23,12 +23,12 @@ import (
 )
 
 // TestLDAPGroupDNCaseFoldHitsCanonicalMapping covers test-matrix row #10 -
-// the primary attack surface of the upstream LDAP DN-normalisation CVEs.
+// the primary attack surface of the upstream LDAP DN-normalization CVEs.
 //
 // Setup: an administrator stores a policy mapping under the lower-case
 // canonical group DN `cn=admins,ou=groups,dc=corp,dc=com`. At authn time
 // the directory returns the same group as `CN=Admins,OU=Groups,DC=Corp,DC=Com`.
-// Without normalisation the IAM map look-up misses; with NormalizeDN the
+// Without normalization the IAM map look-up misses; with NormalizeDN the
 // canonical form is recovered and the look-up succeeds. We assert this by
 // driving the canonicalisation directly (the same call that policyDBGet
 // performs at the IAMSys boundary).
@@ -205,7 +205,7 @@ func TestSTSHandlerCanonicalisesLDAPDNStatically(t *testing.T) {
 }
 
 // TestLDAPUsernameFormatsBindCanonicalises covers test-matrix row #14. In
-// username-format mode the bindDN is synthesised from the configured format
+// username-format mode the bindDN is synthesized from the configured format
 // string, which is operator-controlled and may carry whatever case /
 // whitespace was typed. The Config.usernameFormatsBind helper is the only
 // path that produces such DNs, and it must canonicalise before returning.
@@ -227,6 +227,6 @@ func TestLDAPUsernameFormatsBindCanonicalises(t *testing.T) {
 		t.Fatalf("normalize b: %v", err)
 	}
 	if a != b {
-		t.Fatalf("operator-typed username-format strings %q vs %q produce different canonical DNs %q vs %q (CVE LDAP DN normalisation regression)", bindFormatA, bindFormatB, a, b)
+		t.Fatalf("operator-typed username-format strings %q vs %q produce different canonical DNs %q vs %q (CVE LDAP DN normalization regression)", bindFormatA, bindFormatB, a, b)
 	}
 }

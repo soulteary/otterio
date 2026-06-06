@@ -206,7 +206,7 @@ func newS3(urlStr string, tripper http.RoundTripper) (*otteriogo.Core, error) {
 }
 
 // NewGatewayLayer returns s3 ObjectLayer.
-func (g *S3) NewGatewayLayer(creds auth.Credentials) (otterio.ObjectLayer, error) {
+func (g *S3) NewGatewayLayer(_ auth.Credentials) (otterio.ObjectLayer, error) {
 	metrics := otterio.NewMetrics()
 
 	t := &otterio.MetricsTransport{
@@ -265,13 +265,13 @@ type s3Objects struct {
 }
 
 // GetMetrics returns this gateway's metrics
-func (l *s3Objects) GetMetrics(ctx context.Context) (*otterio.BackendMetrics, error) {
+func (l *s3Objects) GetMetrics(_ context.Context) (*otterio.BackendMetrics, error) {
 	return l.Metrics, nil
 }
 
 // Shutdown saves any gateway metadata to disk
 // if necessary and reload upon next restart.
-func (l *s3Objects) Shutdown(ctx context.Context) error {
+func (l *s3Objects) Shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -361,7 +361,7 @@ func (l *s3Objects) ListBuckets(ctx context.Context) ([]otterio.BucketInfo, erro
 }
 
 // DeleteBucket deletes a bucket on S3
-func (l *s3Objects) DeleteBucket(ctx context.Context, bucket string, forceDelete bool) error {
+func (l *s3Objects) DeleteBucket(ctx context.Context, bucket string, _ bool) error {
 	err := l.Client.RemoveBucket(ctx, bucket)
 	if err != nil {
 		return otterio.ErrorRespToObjectError(err, bucket)
@@ -370,7 +370,7 @@ func (l *s3Objects) DeleteBucket(ctx context.Context, bucket string, forceDelete
 }
 
 // ListObjects lists all blobs in S3 bucket filtered by prefix
-func (l *s3Objects) ListObjects(ctx context.Context, bucket string, prefix string, marker string, delimiter string, maxKeys int) (loi otterio.ListObjectsInfo, e error) {
+func (l *s3Objects) ListObjects(_ context.Context, bucket string, prefix string, marker string, delimiter string, maxKeys int) (loi otterio.ListObjectsInfo, e error) {
 	result, err := l.Client.ListObjects(bucket, prefix, marker, delimiter, maxKeys)
 	if err != nil {
 		return loi, otterio.ErrorRespToObjectError(err, bucket)
@@ -380,7 +380,7 @@ func (l *s3Objects) ListObjects(ctx context.Context, bucket string, prefix strin
 }
 
 // ListObjectsV2 lists all blobs in S3 bucket filtered by prefix
-func (l *s3Objects) ListObjectsV2(ctx context.Context, bucket, prefix, continuationToken, delimiter string, maxKeys int, fetchOwner bool, startAfter string) (loi otterio.ListObjectsV2Info, e error) {
+func (l *s3Objects) ListObjectsV2(_ context.Context, bucket, prefix, continuationToken, delimiter string, maxKeys int, _ bool, startAfter string) (loi otterio.ListObjectsV2Info, e error) {
 	result, err := l.Client.ListObjectsV2(bucket, prefix, startAfter, continuationToken, delimiter, maxKeys)
 	if err != nil {
 		return loi, otterio.ErrorRespToObjectError(err, bucket)
@@ -390,7 +390,7 @@ func (l *s3Objects) ListObjectsV2(ctx context.Context, bucket, prefix, continuat
 }
 
 // GetObjectNInfo - returns object info and locked object ReadCloser
-func (l *s3Objects) GetObjectNInfo(ctx context.Context, bucket, object string, rs *otterio.HTTPRangeSpec, h http.Header, lockType otterio.LockType, opts otterio.ObjectOptions) (gr *otterio.GetObjectReader, err error) {
+func (l *s3Objects) GetObjectNInfo(ctx context.Context, bucket, object string, rs *otterio.HTTPRangeSpec, h http.Header, _ otterio.LockType, opts otterio.ObjectOptions) (gr *otterio.GetObjectReader, err error) {
 	var objInfo otterio.ObjectInfo
 	objInfo, err = l.GetObjectInfo(ctx, bucket, object, opts)
 	if err != nil {
@@ -524,7 +524,7 @@ func (l *s3Objects) CopyObject(ctx context.Context, srcBucket string, srcObject 
 }
 
 // DeleteObject deletes a blob in bucket
-func (l *s3Objects) DeleteObject(ctx context.Context, bucket string, object string, opts otterio.ObjectOptions) (otterio.ObjectInfo, error) {
+func (l *s3Objects) DeleteObject(ctx context.Context, bucket string, object string, _ otterio.ObjectOptions) (otterio.ObjectInfo, error) {
 	err := l.Client.RemoveObject(ctx, bucket, object, otteriogo.RemoveObjectOptions{})
 	if err != nil {
 		return otterio.ObjectInfo{}, otterio.ErrorRespToObjectError(err, bucket, object)
@@ -632,7 +632,7 @@ func (l *s3Objects) CopyObjectPart(ctx context.Context, srcBucket, srcObject, de
 }
 
 // GetMultipartInfo returns multipart info of the uploadId of the object
-func (l *s3Objects) GetMultipartInfo(ctx context.Context, bucket, object, uploadID string, opts otterio.ObjectOptions) (result otterio.MultipartInfo, err error) {
+func (l *s3Objects) GetMultipartInfo(_ context.Context, bucket, object, uploadID string, _ otterio.ObjectOptions) (result otterio.MultipartInfo, err error) {
 	result.Bucket = bucket
 	result.Object = object
 	result.UploadID = uploadID
@@ -640,7 +640,7 @@ func (l *s3Objects) GetMultipartInfo(ctx context.Context, bucket, object, upload
 }
 
 // ListObjectParts returns all object parts for specified object in specified bucket
-func (l *s3Objects) ListObjectParts(ctx context.Context, bucket string, object string, uploadID string, partNumberMarker int, maxParts int, opts otterio.ObjectOptions) (lpi otterio.ListPartsInfo, e error) {
+func (l *s3Objects) ListObjectParts(ctx context.Context, bucket string, object string, uploadID string, partNumberMarker int, maxParts int, _ otterio.ObjectOptions) (lpi otterio.ListPartsInfo, e error) {
 	result, err := l.Client.ListObjectParts(ctx, bucket, object, uploadID, partNumberMarker, maxParts)
 	if err != nil {
 		return lpi, err
@@ -668,7 +668,7 @@ func (l *s3Objects) ListObjectParts(ctx context.Context, bucket string, object s
 }
 
 // AbortMultipartUpload aborts a ongoing multipart upload
-func (l *s3Objects) AbortMultipartUpload(ctx context.Context, bucket string, object string, uploadID string, opts otterio.ObjectOptions) error {
+func (l *s3Objects) AbortMultipartUpload(ctx context.Context, bucket string, object string, uploadID string, _ otterio.ObjectOptions) error {
 	err := l.Client.AbortMultipartUpload(ctx, bucket, object, uploadID)
 	return otterio.ErrorRespToObjectError(err, bucket, object)
 }

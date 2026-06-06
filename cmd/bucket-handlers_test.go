@@ -19,7 +19,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/xml"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -829,7 +829,7 @@ func testAPIDeleteMultipleObjectsHandler(obj ObjectLayer, instanceType, bucketNa
 		}
 
 		// read the response body.
-		actualContent, err = ioutil.ReadAll(rec.Body)
+		actualContent, err = io.ReadAll(rec.Body)
 		if err != nil {
 			t.Fatalf("Test %d : OtterIO %s: Failed parsing response body: <ERROR> %v", i+1, instanceType, err)
 		}

@@ -275,6 +275,8 @@ type metaCacheEntriesSorted struct {
 }
 
 // writeTo will write all objects to the provided output.
+//
+//nolint:unused
 func (m metaCacheEntriesSorted) writeTo(writer io.Writer) error {
 	w := newMetacacheWriter(writer, 1<<20)
 	if err := w.write(m.o...); err != nil {
@@ -294,6 +296,8 @@ func (m metaCacheEntriesSorted) shallowClone() metaCacheEntriesSorted {
 
 // iterate the entries in order.
 // If the iterator function returns iterating stops.
+//
+//nolint:unused
 func (m *metaCacheEntriesSorted) iterate(fn func(entry metaCacheEntry) (cont bool)) {
 	if m == nil {
 		return
@@ -488,6 +492,8 @@ func (m *metaCacheEntriesSorted) merge(other metaCacheEntriesSorted, limit int) 
 }
 
 // filter allows selective filtering with the provided function.
+//
+//nolint:unused
 func (m *metaCacheEntriesSorted) filter(fn func(entry *metaCacheEntry) bool) {
 	dst := m.o[:0]
 	for _, o := range m.o {

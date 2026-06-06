@@ -217,19 +217,19 @@ func parsePostPolicyForm(r io.Reader) (PostPolicyForm, error) {
 					operator, matchType, value,
 				})
 			case policyCondContentLength:
-				min, err := toInteger(condt[1])
+				minVal, err := toInteger(condt[1])
 				if err != nil {
 					return parsedPolicy, err
 				}
 
-				max, err := toInteger(condt[2])
+				maxVal, err := toInteger(condt[2])
 				if err != nil {
 					return parsedPolicy, err
 				}
 
 				parsedPolicy.Conditions.ContentLengthRange = contentLengthRange{
-					Min:   min,
-					Max:   max,
+					Min:   minVal,
+					Max:   maxVal,
 					Valid: true,
 				}
 			default:

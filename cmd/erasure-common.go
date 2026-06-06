@@ -82,6 +82,8 @@ func (er erasureObjects) getOnlineDisks() (newDisks []StorageAPI) {
 // getLoadBalancedNDisks - fetches load balanced (sufficiently randomized) disk slice
 // with N disks online. If ndisks is zero or negative, then it will returns all disks,
 // same if ndisks is greater than the number of all disks.
+//
+//nolint:unused
 func (er erasureObjects) getLoadBalancedNDisks(ndisks int) (newDisks []StorageAPI) {
 	disks := er.getLoadBalancedDisks(ndisks != -1)
 	for _, disk := range disks {
@@ -141,15 +143,15 @@ func (er erasureObjects) getLoadBalancedDisks(optimized bool) []StorageAPI {
 	}
 	wg.Wait()
 
-	var max uint64
+	var mx uint64
 	for k := range newDisks {
-		if k > max {
-			max = k
+		if k > mx {
+			mx = k
 		}
 	}
 
 	// Return disks which have maximum disk usage common.
-	return newDisks[max]
+	return newDisks[mx]
 }
 
 // This function does the following check, suppose

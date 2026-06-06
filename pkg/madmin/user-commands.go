@@ -20,7 +20,7 @@ package madmin
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -68,7 +68,7 @@ func (adm *AdminClient) AccountInfo(ctx context.Context) (AccountInfo, error) {
 	// Unmarshal the server's json response
 	var accountInfo AccountInfo
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return AccountInfo{}, err
 	}
@@ -176,7 +176,7 @@ func (adm *AdminClient) GetUserInfo(ctx context.Context, name string) (u UserInf
 		return u, httpRespToErrorResponse(resp)
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return u, err
 	}

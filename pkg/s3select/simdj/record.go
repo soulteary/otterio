@@ -225,7 +225,7 @@ func (r *Record) Replace(k interface{}) error {
 }
 
 // NewRecord - creates new empty JSON record.
-func NewRecord(f sql.SelectObjectFormat, obj simdjson.Object) *Record {
+func NewRecord(_ sql.SelectObjectFormat, obj simdjson.Object) *Record {
 	return &Record{
 		object: obj,
 	}

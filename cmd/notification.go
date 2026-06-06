@@ -485,6 +485,8 @@ func (sys *NotificationSys) updateBloomFilter(ctx context.Context, current uint6
 }
 
 // collectBloomFilter will collect bloom filters from all servers from the specified cycle.
+//
+//nolint:unused
 func (sys *NotificationSys) collectBloomFilter(ctx context.Context, from uint64) (*bloomFilter, error) {
 	var req = bloomFilterRequest{
 		Current: 0,

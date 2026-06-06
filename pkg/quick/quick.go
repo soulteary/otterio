@@ -22,7 +22,6 @@ package quick
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"sync"
@@ -75,7 +74,7 @@ func (d config) Save(filename string) error {
 	}
 
 	// Backup if given file exists
-	oldData, err := ioutil.ReadFile(filename)
+	oldData, err := os.ReadFile(filename)
 	if err != nil {
 		// Ignore if file does not exist.
 		if !os.IsNotExist(err) {

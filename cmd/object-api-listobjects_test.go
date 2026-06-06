@@ -22,7 +22,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -1365,7 +1364,7 @@ func initFSObjectsB(disk string, t *testing.B) (obj ObjectLayer) {
 // BenchmarkListObjects - Run ListObject Repeatedly and benchmark.
 func BenchmarkListObjects(b *testing.B) {
 	// Make a temporary directory to use as the obj.
-	directory, err := ioutil.TempDir(globalTestTmpDir, "otterio-list-benchmark")
+	directory, err := os.MkdirTemp(globalTestTmpDir, "otterio-list-benchmark")
 	if err != nil {
 		b.Fatal(err)
 	}

@@ -83,7 +83,7 @@ func (er erasureObjects) NewNSLock(bucket string, objects ...string) RWLocker {
 }
 
 // Shutdown function for object storage interface.
-func (er erasureObjects) Shutdown(ctx context.Context) error {
+func (er erasureObjects) Shutdown(_ context.Context) error {
 	// Add any object layer shutdown activities here.
 	closeStorageDisks(er.getDisks())
 	return nil
@@ -241,14 +241,14 @@ func getStorageInfo(disks []StorageAPI, endpoints []string) (StorageInfo, []erro
 }
 
 // StorageInfo - returns underlying storage statistics.
-func (er erasureObjects) StorageInfo(ctx context.Context) (StorageInfo, []error) {
+func (er erasureObjects) StorageInfo(_ context.Context) (StorageInfo, []error) {
 	disks := er.getDisks()
 	endpoints := er.getEndpoints()
 	return getStorageInfo(disks, endpoints)
 }
 
 // LocalStorageInfo - returns underlying local storage statistics.
-func (er erasureObjects) LocalStorageInfo(ctx context.Context) (StorageInfo, []error) {
+func (er erasureObjects) LocalStorageInfo(_ context.Context) (StorageInfo, []error) {
 	disks := er.getLocalDisks()
 	endpoints := make([]string, len(disks))
 	for i, disk := range disks {
@@ -316,7 +316,7 @@ func (er erasureObjects) cleanupDeletedObjects(ctx context.Context) {
 			go func(disk StorageAPI) {
 				defer wg.Done()
 				diskPath := disk.Endpoint().Path
-				readDirFn(pathJoin(diskPath, otterioMetaTmpDeletedBucket), func(ddir string, typ os.FileMode) error {
+				readDirFn(pathJoin(diskPath, otterioMetaTmpDeletedBucket), func(ddir string, _ os.FileMode) error {
 					wait := er.deletedCleanupSleeper.Timer(ctx)
 					removeAll(pathJoin(diskPath, otterioMetaTmpDeletedBucket, ddir))
 					wait()

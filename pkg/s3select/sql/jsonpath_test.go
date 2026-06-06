@@ -19,7 +19,7 @@ package sql
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -47,7 +47,7 @@ func TestJsonpathEval(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatal(err)
 	}

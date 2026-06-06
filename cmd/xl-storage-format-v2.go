@@ -127,6 +127,7 @@ const (
 	lastVersionType    VersionType = 4
 )
 
+//nolint:unused
 func (e VersionType) valid() bool {
 	return e > invalidVersionType && e < lastVersionType
 }
@@ -570,11 +571,11 @@ func (x *xlMetaInlineData) remove(key string) bool {
 // xlMetaV2TrimData will trim any data from the metadata without unmarshalling it.
 // If any error occurs the unmodified data is returned.
 func xlMetaV2TrimData(buf []byte) []byte {
-	metaBuf, min, maj, err := checkXL2V1(buf)
+	metaBuf, mn, maj, err := checkXL2V1(buf)
 	if err != nil {
 		return buf
 	}
-	if maj == 1 && min < 1 {
+	if maj == 1 && mn < 1 {
 		// First version to carry data.
 		return buf
 	}
@@ -585,7 +586,7 @@ func xlMetaV2TrimData(buf []byte) []byte {
 		return buf
 	}
 	// Skip CRC
-	if maj > 1 || min >= 2 {
+	if maj > 1 || mn >= 2 {
 		_, metaBuf, err = msgp.ReadUint32Bytes(metaBuf)
 		logger.LogIf(GlobalContext, err)
 	}

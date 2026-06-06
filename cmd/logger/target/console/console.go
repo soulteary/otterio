@@ -47,7 +47,7 @@ func (c *Target) String() string {
 }
 
 // Send log message 'e' to console
-func (c *Target) Send(e interface{}, logKind string) error {
+func (c *Target) Send(e interface{}, _ string) error {
 	entry, ok := e.(log.Entry)
 	if !ok {
 		return fmt.Errorf("Uexpected log entry structure %#v", e)

@@ -200,6 +200,8 @@ func (st *HTTPStats) updateStatsFiber(api string, path string, statusCode int, l
 }
 
 // Update statistics from http request and response data
+//
+//nolint:unused
 func (st *HTTPStats) updateStats(api string, r *http.Request, w *logger.ResponseWriter) {
 	// A successful request has a 2xx response code
 	successReq := w.StatusCode >= 200 && w.StatusCode < 300

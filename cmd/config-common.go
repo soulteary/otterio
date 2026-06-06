@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/soulteary/otterio/pkg/hash"
@@ -41,7 +41,7 @@ func readConfig(ctx context.Context, objAPI ObjectLayer, configFile string) ([]b
 	}
 	defer r.Close()
 
-	buf, err := ioutil.ReadAll(r)
+	buf, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}

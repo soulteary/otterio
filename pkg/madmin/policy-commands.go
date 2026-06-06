@@ -20,7 +20,7 @@ package madmin
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -70,7 +70,7 @@ func (adm *AdminClient) ListCannedPolicies(ctx context.Context) (map[string]*iam
 		return nil, httpRespToErrorResponse(resp)
 	}
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

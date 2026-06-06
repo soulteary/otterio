@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"sort"
 
@@ -193,7 +192,7 @@ func (a adminAPIHandlers) UpdateGroupMembers(w http.ResponseWriter, r *http.Requ
 	}
 
 	defer r.Body.Close()
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrInvalidRequest), r.URL)
 		return
@@ -442,7 +441,7 @@ func (a adminAPIHandlers) AddUser(w http.ResponseWriter, r *http.Request) {
 	// closed this by ignoring madmin.UserInfo.PolicyName silently inside
 	// IAMSys.CreateUser (see cmd/iam.go: the "PolicyName field is
 	// intentionally ignored here" guard around the create-user path). We add
-	// the second layer of defence here at the handler boundary: any caller
+	// the second layer of defense here at the handler boundary: any caller
 	// that ships PolicyName on the wire is rejected with HTTP 400 and pointed
 	// at SetPolicyForUserOrGroup, which performs its own AttachPolicy
 	// authorisation check. This way a future regression that removes the
@@ -1070,7 +1069,7 @@ func (a adminAPIHandlers) AccountInfoHandler(w http.ResponseWriter, r *http.Requ
 		}
 		policies, err = globalIAMSys.PolicyDBGet(parentUser, false, cred.Groups...)
 	default:
-		err = errors.New("should not happen!")
+		err = errors.New("should not happen")
 	}
 	if err != nil {
 		logger.LogIf(ctx, err)

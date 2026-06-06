@@ -78,7 +78,7 @@ func (l *localLocker) canTakeLock(resources ...string) bool {
 	return noLkCnt == len(resources)
 }
 
-func (l *localLocker) Lock(ctx context.Context, args dsync.LockArgs) (reply bool, err error) {
+func (l *localLocker) Lock(_ context.Context, args dsync.LockArgs) (reply bool, err error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
@@ -149,7 +149,7 @@ func (l *localLocker) removeEntry(name string, args dsync.LockArgs, lri *[]lockR
 	return false
 }
 
-func (l *localLocker) RLock(ctx context.Context, args dsync.LockArgs) (reply bool, err error) {
+func (l *localLocker) RLock(_ context.Context, args dsync.LockArgs) (reply bool, err error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	resource := args.Resources[0]

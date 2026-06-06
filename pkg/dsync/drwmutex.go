@@ -258,7 +258,7 @@ func refresh(ctx context.Context, ds *Dsync, id, source string, quorum int, lock
 	for index, c := range restClnts {
 		wg.Add(1)
 		// Send refresh request to all nodes
-		go func(index int, c NetLocker) {
+		go func(_ int, c NetLocker) {
 			defer wg.Done()
 
 			if c == nil {
@@ -336,6 +336,8 @@ func refresh(ctx context.Context, ds *Dsync, id, source string, quorum int, lock
 	go func() {
 		wg.Wait()
 		close(ch)
+		// drain remaining values from ch so goroutines can exit
+		//revive:disable-next-line:empty-block
 		for range ch {
 		}
 	}()
@@ -600,7 +602,7 @@ func (dm *DRWMutex) RUnlock() {
 }
 
 // sendRelease sends a release message to a node that previously granted a lock
-func sendRelease(ds *Dsync, c NetLocker, owner string, uid string, isReadLock bool, names ...string) bool {
+func sendRelease(_ *Dsync, c NetLocker, owner string, uid string, isReadLock bool, names ...string) bool {
 	if c == nil {
 		log("Unable to call RUnlock failed with %s\n", errors.New("netLocker is offline"))
 		return false

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// Package crypto implements server-side encryption helpers.
+//
 // SECURITY (SSE-KMS context binding):
 //
 //   - UnsealObjectKey ALWAYS rebuilds the binding context as

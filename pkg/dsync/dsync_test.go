@@ -34,12 +34,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/soulteary/otterio/pkg/dsync"
-	. "github.com/soulteary/otterio/pkg/dsync"
 )
 
 const numberOfNodes = 5
 
-var ds *Dsync
+var ds *dsync.Dsync
 var rpcPaths []string // list of rpc paths where lock server is serving.
 
 var nodes = make([]string, numberOfNodes) // list of node IP addrs or hostname with ports.
@@ -82,13 +81,13 @@ func TestMain(m *testing.M) {
 	}
 
 	// Initialize net/rpc clients for dsync.
-	var clnts []NetLocker
+	var clnts []dsync.NetLocker
 	for i := 0; i < len(nodes); i++ {
 		clnts = append(clnts, newClient(nodes[i], rpcPaths[i]))
 	}
 
-	ds = &Dsync{
-		GetLockers: func() ([]NetLocker, string) { return clnts, uuid.New().String() },
+	ds = &dsync.Dsync{
+		GetLockers: func() ([]dsync.NetLocker, string) { return clnts, uuid.New().String() },
 	}
 
 	startRPCServers()
@@ -96,9 +95,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestSimpleLock(t *testing.T) {
+func TestSimpleLock(_ *testing.T) {
 
-	dm := NewDRWMutex(ds, "test")
+	dm := dsync.NewDRWMutex(ds, "test")
 
 	dm.Lock(id, source)
 
@@ -109,9 +108,9 @@ func TestSimpleLock(t *testing.T) {
 	dm.Unlock()
 }
 
-func TestSimpleLockUnlockMultipleTimes(t *testing.T) {
+func TestSimpleLockUnlockMultipleTimes(_ *testing.T) {
 
-	dm := NewDRWMutex(ds, "test")
+	dm := dsync.NewDRWMutex(ds, "test")
 
 	dm.Lock(id, source)
 	time.Sleep(time.Duration(10+(rand.Float32()*50)) * time.Millisecond)
@@ -135,10 +134,10 @@ func TestSimpleLockUnlockMultipleTimes(t *testing.T) {
 }
 
 // Test two locks for same resource, one succeeds, one fails (after timeout)
-func TestTwoSimultaneousLocksForSameResource(t *testing.T) {
+func TestTwoSimultaneousLocksForSameResource(_ *testing.T) {
 
-	dm1st := NewDRWMutex(ds, "aap")
-	dm2nd := NewDRWMutex(ds, "aap")
+	dm1st := dsync.NewDRWMutex(ds, "aap")
+	dm2nd := dsync.NewDRWMutex(ds, "aap")
 
 	dm1st.Lock(id, source)
 
@@ -163,11 +162,11 @@ func TestTwoSimultaneousLocksForSameResource(t *testing.T) {
 }
 
 // Test three locks for same resource, one succeeds, one fails (after timeout)
-func TestThreeSimultaneousLocksForSameResource(t *testing.T) {
+func TestThreeSimultaneousLocksForSameResource(_ *testing.T) {
 
-	dm1st := NewDRWMutex(ds, "aap")
-	dm2nd := NewDRWMutex(ds, "aap")
-	dm3rd := NewDRWMutex(ds, "aap")
+	dm1st := dsync.NewDRWMutex(ds, "aap")
+	dm2nd := dsync.NewDRWMutex(ds, "aap")
+	dm3rd := dsync.NewDRWMutex(ds, "aap")
 
 	dm1st.Lock(id, source)
 
@@ -219,10 +218,10 @@ func TestThreeSimultaneousLocksForSameResource(t *testing.T) {
 }
 
 // Test two locks for different resources, both succeed
-func TestTwoSimultaneousLocksForDifferentResources(t *testing.T) {
+func TestTwoSimultaneousLocksForDifferentResources(_ *testing.T) {
 
-	dm1 := NewDRWMutex(ds, "aap")
-	dm2 := NewDRWMutex(ds, "noot")
+	dm1 := dsync.NewDRWMutex(ds, "aap")
+	dm2 := dsync.NewDRWMutex(ds, "noot")
 
 	dm1.Lock(id, source)
 	dm2.Lock(id, source)
@@ -254,7 +253,7 @@ func TestFailedRefreshLock(t *testing.T) {
 		lockServers[i].setRefreshReply(false)
 	}
 
-	dm := NewDRWMutex(ds, "aap")
+	dm := dsync.NewDRWMutex(ds, "aap")
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
@@ -284,7 +283,7 @@ func TestFailedRefreshLock(t *testing.T) {
 }
 
 // Borrowed from mutex_test.go
-func HammerMutex(m *DRWMutex, loops int, cdone chan bool) {
+func HammerMutex(m *dsync.DRWMutex, loops int, cdone chan bool) {
 	for i := 0; i < loops; i++ {
 		m.Lock(id, source)
 		m.Unlock()
@@ -293,13 +292,13 @@ func HammerMutex(m *DRWMutex, loops int, cdone chan bool) {
 }
 
 // Borrowed from mutex_test.go
-func TestMutex(t *testing.T) {
+func TestMutex(_ *testing.T) {
 	loops := 200
 	if testing.Short() {
 		loops = 5
 	}
 	c := make(chan bool)
-	m := NewDRWMutex(ds, "test")
+	m := dsync.NewDRWMutex(ds, "test")
 	for i := 0; i < 10; i++ {
 		go HammerMutex(m, loops, c)
 	}
@@ -310,10 +309,10 @@ func TestMutex(t *testing.T) {
 
 func BenchmarkMutexUncontended(b *testing.B) {
 	type PaddedMutex struct {
-		*DRWMutex
+		*dsync.DRWMutex
 	}
 	b.RunParallel(func(pb *testing.PB) {
-		var mu = PaddedMutex{NewDRWMutex(ds, "")}
+		var mu = PaddedMutex{dsync.NewDRWMutex(ds, "")}
 		for pb.Next() {
 			mu.Lock(id, source)
 			mu.Unlock()
@@ -322,7 +321,7 @@ func BenchmarkMutexUncontended(b *testing.B) {
 }
 
 func benchmarkMutex(b *testing.B, slack, work bool) {
-	mu := NewDRWMutex(ds, "")
+	mu := dsync.NewDRWMutex(ds, "")
 	if slack {
 		b.SetParallelism(10)
 	}
@@ -365,7 +364,7 @@ func BenchmarkMutexNoSpin(b *testing.B) {
 	// These goroutines yield during local work, so that switching from
 	// a blocked goroutine to other goroutines is profitable.
 	// As a matter of fact, this benchmark still triggers some spinning in the mutex.
-	m := NewDRWMutex(ds, "")
+	m := dsync.NewDRWMutex(ds, "")
 	var acc0, acc1 uint64
 	b.SetParallelism(4)
 	b.RunParallel(func(pb *testing.PB) {
@@ -397,7 +396,7 @@ func BenchmarkMutexSpin(b *testing.B) {
 	// profitable. To achieve this we create a goroutine per-proc.
 	// These goroutines access considerable amount of local data so that
 	// unnecessary rescheduling is penalized by cache misses.
-	m := NewDRWMutex(ds, "")
+	m := dsync.NewDRWMutex(ds, "")
 	var acc0, acc1 uint64
 	b.RunParallel(func(pb *testing.PB) {
 		var data [16 << 10]uint64

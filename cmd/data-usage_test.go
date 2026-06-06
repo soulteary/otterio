@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -33,7 +32,7 @@ type usageTestFile struct {
 }
 
 func TestDataUsageUpdate(t *testing.T) {
-	base, err := ioutil.TempDir("", "TestDataUsageUpdate")
+	base, err := os.MkdirTemp("", "TestDataUsageUpdate")
 	if err != nil {
 		t.Skip(err)
 	}
@@ -329,7 +328,7 @@ func TestDataUsageUpdate(t *testing.T) {
 }
 
 func TestDataUsageUpdatePrefix(t *testing.T) {
-	base, err := ioutil.TempDir("", "TestDataUpdateUsagePrefix")
+	base, err := os.MkdirTemp("", "TestDataUpdateUsagePrefix")
 	if err != nil {
 		t.Skip(err)
 	}
@@ -613,7 +612,7 @@ func createUsageTestFiles(t *testing.T, base, bucket string, files []usageTestFi
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = ioutil.WriteFile(filepath.Join(base, bucket, f.name), make([]byte, f.size), os.ModePerm)
+		err = os.WriteFile(filepath.Join(base, bucket, f.name), make([]byte, f.size), os.ModePerm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -621,7 +620,7 @@ func createUsageTestFiles(t *testing.T, base, bucket string, files []usageTestFi
 }
 
 func TestDataUsageCacheSerialize(t *testing.T) {
-	base, err := ioutil.TempDir("", "TestDataUsageCacheSerialize")
+	base, err := os.MkdirTemp("", "TestDataUsageCacheSerialize")
 	if err != nil {
 		t.Skip(err)
 	}

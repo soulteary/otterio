@@ -8,16 +8,16 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-// Package ldap provides DN normalisation in addition to the legacy LDAP
+// Package ldap provides DN normalization in addition to the legacy LDAP
 // configuration helpers defined alongside this file.
 //
-// SECURITY (upstream-cve-backlog.md row "LDAP DN normalisation"): every DN
+// SECURITY (upstream-cve-backlog.md row "LDAP DN normalization"): every DN
 // that flows out of this package - whether it came from a Bind, a search,
 // or the static config - must travel through NormalizeDN before it is used
 // as a key into the IAM policy maps. The IAM map look-ups in cmd/iam.go are
 // case-sensitive string equality, while Active Directory and most other
 // production LDAP servers treat DNs as case-insensitive and tolerant of
-// whitespace / quoting differences. Without this normalisation, the same
+// whitespace / quoting differences. Without this normalization, the same
 // LDAP identity can be granted multiple disjoint policy mappings, and an
 // attacker who can influence the casing returned by the directory can pick
 // whichever mapping suits them.
@@ -29,14 +29,14 @@
 //     case-insensitive);
 //   - applies a conservative subset of the RFC 4518 string preparation
 //     algorithm to attribute values: lower-case, trim, and fold runs of
-//     ASCII whitespace into a single space (this matches AD's behaviour
+//     ASCII whitespace into a single space (this matches AD's behavior
 //     for the practical cases that drive the upstream CVEs and avoids
 //     pulling in the full Unicode case-fold + NFKC pipeline that golang.org/x/text
 //     would require);
 //   - sorts the attribute=value pairs inside a multi-valued RDN so that
 //     `cn=a+sn=b` and `sn=b+cn=a` produce the same canonical form.
 //
-// Operators upgrading from a pre-normalisation OtterIO build should consult
+// Operators upgrading from a pre-normalization OtterIO build should consult
 // docs/security/ldap-dn-normalization-migration.md before rolling out.
 package ldap
 

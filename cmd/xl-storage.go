@@ -25,7 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	pathutil "path"
@@ -366,7 +365,7 @@ func (s *xlStorage) SetDiskLoc(poolIdx, setIdx, diskIdx int) {
 func (s *xlStorage) Healing() *healingTracker {
 	healingFile := pathJoin(s.diskPath, otterioMetaBucket,
 		bucketMetaPrefix, healingTrackerFilename)
-	b, err := ioutil.ReadFile(healingFile)
+	b, err := os.ReadFile(healingFile)
 	if err != nil {
 		return nil
 	}
@@ -596,7 +595,7 @@ func (s *xlStorage) GetDiskID() (string, error) {
 }
 
 // Make a volume entry.
-func (s *xlStorage) SetDiskID(id string) {
+func (s *xlStorage) SetDiskID(_ string) {
 	// NO-OP for xlStorage as it is handled either by xlStorageDiskIDCheck{} for local disks or
 	// storage rest server for remote disks.
 }
@@ -613,7 +612,7 @@ func (s *xlStorage) MakeVolBulk(ctx context.Context, volumes ...string) error {
 }
 
 // Make a volume entry.
-func (s *xlStorage) MakeVol(ctx context.Context, volume string) error {
+func (s *xlStorage) MakeVol(_ context.Context, volume string) error {
 	if !isValidVolname(volume) {
 		return errInvalidArgument
 	}
@@ -669,7 +668,7 @@ func listVols(dirPath string) ([]VolInfo, error) {
 }
 
 // StatVol - get volume info.
-func (s *xlStorage) StatVol(ctx context.Context, volume string) (vol VolInfo, err error) {
+func (s *xlStorage) StatVol(_ context.Context, volume string) (vol VolInfo, err error) {
 	// Verify if volume is valid and it exists.
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
@@ -701,7 +700,7 @@ func (s *xlStorage) StatVol(ctx context.Context, volume string) (vol VolInfo, er
 }
 
 // DeleteVol - delete a volume.
-func (s *xlStorage) DeleteVol(ctx context.Context, volume string, forceDelete bool) (err error) {
+func (s *xlStorage) DeleteVol(_ context.Context, volume string, forceDelete bool) (err error) {
 	// Verify if volume is valid and it exists.
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
@@ -731,6 +730,7 @@ func (s *xlStorage) DeleteVol(ctx context.Context, volume string, forceDelete bo
 	return nil
 }
 
+//nolint:unused
 func (s *xlStorage) isLeaf(volume string, leafPath string) bool {
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
@@ -752,7 +752,7 @@ func (s *xlStorage) isLeaf(volume string, leafPath string) bool {
 
 // ListDir - return all the entries at the given directory path.
 // If an entry is a directory it will be returned with a trailing SlashSeparator.
-func (s *xlStorage) ListDir(ctx context.Context, volume, dirPath string, count int) (entries []string, err error) {
+func (s *xlStorage) ListDir(_ context.Context, volume, dirPath string, count int) (entries []string, err error) {
 	// Verify if volume is valid and it exists.
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
@@ -1141,7 +1141,7 @@ func (s *xlStorage) readAllData(volumeDir string, filePath string, requireDirect
 	}
 
 	defer r.Close()
-	buf, err = ioutil.ReadAll(r)
+	buf, err = io.ReadAll(r)
 	if err != nil {
 		err = osErrToFileErr(err)
 	}
@@ -1155,7 +1155,7 @@ func (s *xlStorage) readAllData(volumeDir string, filePath string, requireDirect
 // as an error to be reported.
 // This API is meant to be used on files which have small memory footprint, do
 // not use this on large files as it would cause server to crash.
-func (s *xlStorage) ReadAll(ctx context.Context, volume string, path string) (buf []byte, err error) {
+func (s *xlStorage) ReadAll(_ context.Context, volume string, path string) (buf []byte, err error) {
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return nil, err
@@ -1184,7 +1184,7 @@ func (s *xlStorage) ReadAll(ctx context.Context, volume string, path string) (bu
 //
 // Additionally ReadFile also starts reading from an offset. ReadFile
 // semantics are same as io.ReadFull.
-func (s *xlStorage) ReadFile(ctx context.Context, volume string, path string, offset int64, buffer []byte, verifier *BitrotVerifier) (int64, error) {
+func (s *xlStorage) ReadFile(_ context.Context, volume string, path string, offset int64, buffer []byte, verifier *BitrotVerifier) (int64, error) {
 	if offset < 0 {
 		return 0, errInvalidArgument
 	}
@@ -1373,7 +1373,7 @@ func (o *odirectReader) Close() error {
 }
 
 // ReadFileStream - Returns the read stream of the file.
-func (s *xlStorage) ReadFileStream(ctx context.Context, volume, path string, offset, length int64) (io.ReadCloser, error) {
+func (s *xlStorage) ReadFileStream(_ context.Context, volume, path string, offset, length int64) (io.ReadCloser, error) {
 	if offset < 0 {
 		return nil, errInvalidArgument
 	}
@@ -1484,7 +1484,7 @@ func (c closeWrapper) Close() error {
 }
 
 // CreateFile - creates the file.
-func (s *xlStorage) CreateFile(ctx context.Context, volume, path string, fileSize int64, r io.Reader) (err error) {
+func (s *xlStorage) CreateFile(_ context.Context, volume, path string, fileSize int64, r io.Reader) (err error) {
 	if fileSize < -1 {
 		return errInvalidArgument
 	}
@@ -1566,7 +1566,7 @@ func (s *xlStorage) CreateFile(ctx context.Context, volume, path string, fileSiz
 	return nil
 }
 
-func (s *xlStorage) WriteAll(ctx context.Context, volume string, path string, b []byte) (err error) {
+func (s *xlStorage) WriteAll(_ context.Context, volume string, path string, b []byte) (err error) {
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1597,7 +1597,7 @@ func (s *xlStorage) WriteAll(ctx context.Context, volume string, path string, b 
 
 // AppendFile - append a byte array at path, if file doesn't exist at
 // path this call explicitly creates it.
-func (s *xlStorage) AppendFile(ctx context.Context, volume string, path string, buf []byte) (err error) {
+func (s *xlStorage) AppendFile(_ context.Context, volume string, path string, buf []byte) (err error) {
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1642,7 +1642,7 @@ func (s *xlStorage) AppendFile(ctx context.Context, volume string, path string, 
 }
 
 // CheckParts check if path has necessary parts available.
-func (s *xlStorage) CheckParts(ctx context.Context, volume string, path string, fi FileInfo) error {
+func (s *xlStorage) CheckParts(_ context.Context, volume string, path string, fi FileInfo) error {
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1685,7 +1685,7 @@ func (s *xlStorage) CheckParts(ctx context.Context, volume string, path string, 
 // - "a/b/c/"
 // - "a/b/"
 // - "a/"
-func (s *xlStorage) CheckFile(ctx context.Context, volume string, path string) error {
+func (s *xlStorage) CheckFile(_ context.Context, volume string, path string) error {
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1792,7 +1792,7 @@ func (s *xlStorage) deleteFile(basePath, deletePath string, recursive bool) erro
 }
 
 // DeleteFile - delete a file at path.
-func (s *xlStorage) Delete(ctx context.Context, volume string, path string, recursive bool) (err error) {
+func (s *xlStorage) Delete(_ context.Context, volume string, path string, recursive bool) (err error) {
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -2070,7 +2070,7 @@ func (s *xlStorage) RenameData(ctx context.Context, srcVolume, srcPath string, f
 }
 
 // RenameFile - rename source path to destination path atomically.
-func (s *xlStorage) RenameFile(ctx context.Context, srcVolume, srcPath, dstVolume, dstPath string) (err error) {
+func (s *xlStorage) RenameFile(_ context.Context, srcVolume, srcPath, dstVolume, dstPath string) (err error) {
 	srcVolumeDir, err := s.getVolDir(srcVolume)
 	if err != nil {
 		return err
@@ -2166,7 +2166,7 @@ func (s *xlStorage) bitrotVerify(partPath string, partSize int64, algo BitrotAlg
 	return bitrotVerify(file, fi.Size(), partSize, algo, sum, shardSize)
 }
 
-func (s *xlStorage) VerifyFile(ctx context.Context, volume, path string, fi FileInfo) (err error) {
+func (s *xlStorage) VerifyFile(_ context.Context, volume, path string, fi FileInfo) (err error) {
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err

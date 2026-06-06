@@ -25,7 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os/user"
 	"strconv"
@@ -736,7 +735,7 @@ func waitForHTTPResponse(respBody io.Reader) (io.Reader, error) {
 		case 0:
 			return reader, nil
 		case 1:
-			errorText, err := ioutil.ReadAll(reader)
+			errorText, err := io.ReadAll(reader)
 			if err != nil {
 				return nil, err
 			}
@@ -751,16 +750,22 @@ func waitForHTTPResponse(respBody io.Reader) (io.Reader, error) {
 
 // drainCloser can be used for wrapping an http response.
 // It will drain the body before closing.
+//
+//nolint:unused
 type drainCloser struct {
 	rc io.ReadCloser
 }
 
 // Read forwards the read operation.
+//
+//nolint:unused
 func (f drainCloser) Read(p []byte) (n int, err error) {
 	return f.rc.Read(p)
 }
 
 // Close drains the body and closes the upstream.
+//
+//nolint:unused
 func (f drainCloser) Close() error {
 	xhttp.DrainBody(f.rc)
 	return nil
@@ -863,7 +868,7 @@ func waitForHTTPStream(respBody io.ReadCloser, w io.Writer) error {
 			}
 			return err
 		case 1:
-			errorText, err := ioutil.ReadAll(respBody)
+			errorText, err := io.ReadAll(respBody)
 			if err != nil {
 				return err
 			}

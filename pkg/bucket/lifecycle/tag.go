@@ -38,7 +38,7 @@ var (
 )
 
 // UnmarshalXML - decodes XML data.
-func (tag *Tag) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
+func (tag *Tag) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) (err error) {
 	var keyAlreadyParsed, valueAlreadyParsed bool
 	for {
 		// Read tokens from the XML document in a stream.

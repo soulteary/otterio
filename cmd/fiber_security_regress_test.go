@@ -88,7 +88,7 @@ func TestFiberRejectsWrappedReservedMetadata(t *testing.T) {
 // intended; collapsing "/admin/..//" to "/admin/" historically produced
 // signature-bypass and authorization-bypass classes of bugs in S3-compatible
 // servers. Future router changes that flip UnescapePath / strip-slashes
-// behaviour will surface here.
+// behavior will surface here.
 func TestFiberPathCanonicalizationStable(t *testing.T) {
 	app := newFiberApp()
 
@@ -228,9 +228,9 @@ func TestFiberStreamingSignedPayloadHeadersPreserved(t *testing.T) {
 }
 
 // TestFiberMultiValueHostHeaderSafe documents the Host-header multi-value
-// behaviour observed under fasthttp (the engine that powers Fiber). HTTP/1.1
+// behavior observed under fasthttp (the engine that powers Fiber). HTTP/1.1
 // forbids more than one Host header but nothing prevents a malicious client
-// from sending several on the wire. We pin the observed engine behaviour so
+// from sending several on the wire. We pin the observed engine behavior so
 // any future engine swap (or a fasthttp upgrade that flips the policy) fails
 // loudly here: the SigV4 canonicaliser in OtterIO has to agree with the
 // engine on *which* Host value is hashed, otherwise a smuggled second Host

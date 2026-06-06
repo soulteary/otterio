@@ -130,7 +130,7 @@ func TestNewEndpoints(t *testing.T) {
 
 func TestCreateEndpoints(t *testing.T) {
 	// Filter ipList by IPs those do not start with '127.'.
-	nonLoopBackIPs := localIP4.FuncMatch(func(ip string, matchString string) bool {
+	nonLoopBackIPs := localIP4.FuncMatch(func(ip string, _ string) bool {
 		return !net.ParseIP(ip).IsLoopback()
 	}, "")
 	if len(nonLoopBackIPs) == 0 {

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	. "github.com/soulteary/otterio/pkg/dsync"
+	dsync "github.com/soulteary/otterio/pkg/dsync"
 )
 
 const WriteLock = -1
@@ -41,7 +41,7 @@ func (l *lockServer) setRefreshReply(refreshed bool) {
 	l.lockNotFound = !refreshed
 }
 
-func (l *lockServer) Lock(args *LockArgs, reply *bool) error {
+func (l *lockServer) Lock(args *dsync.LockArgs, reply *bool) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	if _, *reply = l.lockMap[args.Resources[0]]; !*reply {
@@ -51,7 +51,7 @@ func (l *lockServer) Lock(args *LockArgs, reply *bool) error {
 	return nil
 }
 
-func (l *lockServer) Unlock(args *LockArgs, reply *bool) error {
+func (l *lockServer) Unlock(args *dsync.LockArgs, reply *bool) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	var locksHeld int64
@@ -67,7 +67,7 @@ func (l *lockServer) Unlock(args *LockArgs, reply *bool) error {
 
 const ReadLock = 1
 
-func (l *lockServer) RLock(args *LockArgs, reply *bool) error {
+func (l *lockServer) RLock(args *dsync.LockArgs, reply *bool) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	var locksHeld int64
@@ -82,7 +82,7 @@ func (l *lockServer) RLock(args *LockArgs, reply *bool) error {
 	return nil
 }
 
-func (l *lockServer) RUnlock(args *LockArgs, reply *bool) error {
+func (l *lockServer) RUnlock(args *dsync.LockArgs, reply *bool) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	var locksHeld int64
@@ -100,14 +100,14 @@ func (l *lockServer) RUnlock(args *LockArgs, reply *bool) error {
 	return nil
 }
 
-func (l *lockServer) Refresh(args *LockArgs, reply *bool) error {
+func (l *lockServer) Refresh(_ *dsync.LockArgs, reply *bool) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	*reply = !l.lockNotFound
 	return nil
 }
 
-func (l *lockServer) ForceUnlock(args *LockArgs, reply *bool) error {
+func (l *lockServer) ForceUnlock(args *dsync.LockArgs, reply *bool) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	if len(args.UID) != 0 {

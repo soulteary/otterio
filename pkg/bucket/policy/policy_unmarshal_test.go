@@ -17,7 +17,7 @@ import (
 )
 
 // TestBucketPolicyUnmarshalDoesNotPanic mirrors the IAM-side panic harness in
-// pkg/iam/policy. It pushes an explicit catalogue of malformed JSON inputs
+// pkg/iam/policy. It pushes an explicit catalog of malformed JSON inputs
 // through json.Unmarshal of bucket-scoped Principal / Resource / Action
 // containers and asserts that none of them produce a panic. Combined with
 // FuzzBucketPolicyUnmarshal below this gives us both deterministic regression

@@ -26,7 +26,7 @@ import (
 	"github.com/soulteary/otterio/cmd/config"
 	"github.com/soulteary/otterio/pkg/env"
 	xnet "github.com/soulteary/otterio/pkg/net"
-	"go.etcd.io/etcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/namespace"
 	"go.uber.org/zap"
 )
@@ -166,7 +166,7 @@ func LookupConfig(kvs config.KVS, rootCAs *x509.CertPool) (Config, error) {
 		etcdClientCertFile := env.Get(EnvEtcdClientCert, kvs.Get(ClientCert))
 		etcdClientCertKey := env.Get(EnvEtcdClientCertKey, kvs.Get(ClientCertKey))
 		if etcdClientCertFile != "" && etcdClientCertKey != "" {
-			cfg.TLS.GetClientCertificate = func(unused *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			cfg.TLS.GetClientCertificate = func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
 				cert, err := tls.LoadX509KeyPair(etcdClientCertFile, etcdClientCertKey)
 				return &cert, err
 			}

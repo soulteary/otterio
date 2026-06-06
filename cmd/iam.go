@@ -135,7 +135,7 @@ func getPolicyDocPath(name string) string {
 // getMappedPolicyPath returns the persistent storage key for a user/group
 // policy mapping.
 //
-// SECURITY (LDAP DN normalisation): when this path encodes an LDAP DN
+// SECURITY (LDAP DN normalization): when this path encodes an LDAP DN
 // (i.e. the IAMSys is configured with usersSysType == LDAPUsersSysType),
 // callers MUST pass `name` already canonicalised via ldap.NormalizeDN.
 // Otherwise the same logical identity can be persisted to multiple files
@@ -300,7 +300,7 @@ type IAMStorageAPI interface {
 // storage, it is removed from in-memory maps as well - this
 // simplifies the implementation for group removal. This is called
 // only via IAM notifications.
-func (sys *IAMSys) LoadGroup(objAPI ObjectLayer, group string) error {
+func (sys *IAMSys) LoadGroup(_ ObjectLayer, group string) error {
 	if !sys.Initialized() {
 		return errServerNotInitialized
 	}
@@ -341,7 +341,7 @@ func (sys *IAMSys) LoadGroup(objAPI ObjectLayer, group string) error {
 }
 
 // LoadPolicy - reloads a specific canned policy from backend disks or etcd.
-func (sys *IAMSys) LoadPolicy(objAPI ObjectLayer, policyName string) error {
+func (sys *IAMSys) LoadPolicy(_ ObjectLayer, policyName string) error {
 	if !sys.Initialized() {
 		return errServerNotInitialized
 	}
@@ -359,7 +359,7 @@ func (sys *IAMSys) LoadPolicy(objAPI ObjectLayer, policyName string) error {
 
 // LoadPolicyMapping - loads the mapped policy for a user or group
 // from storage into server memory.
-func (sys *IAMSys) LoadPolicyMapping(objAPI ObjectLayer, userOrGroup string, isGroup bool) error {
+func (sys *IAMSys) LoadPolicyMapping(_ ObjectLayer, userOrGroup string, isGroup bool) error {
 	if !sys.Initialized() {
 		return errServerNotInitialized
 	}
@@ -385,7 +385,7 @@ func (sys *IAMSys) LoadPolicyMapping(objAPI ObjectLayer, userOrGroup string, isG
 }
 
 // LoadUser - reloads a specific user from backend disks or etcd.
-func (sys *IAMSys) LoadUser(objAPI ObjectLayer, accessKey string, userType IAMUserType) error {
+func (sys *IAMSys) LoadUser(_ ObjectLayer, accessKey string, userType IAMUserType) error {
 	if !sys.Initialized() {
 		return errServerNotInitialized
 	}
@@ -1079,7 +1079,7 @@ func (sys *IAMSys) SetUserStatus(accessKey string, status madmin.AccountStatus) 
 // and asks IAMSys.IsAllowed - which already correctly walks Deny statements,
 // caller-side session policies and group/user policy bindings - whether the
 // caller has that exact (action, resource) tuple. Conditions on the caller
-// side are honoured via callerArgs.Conditions; conditions on the sub-policy
+// side are honored via callerArgs.Conditions; conditions on the sub-policy
 // side are intentionally ignored because they only narrow the SA further.
 //
 // Only Allow statements are inspected: a sub-policy that only adds Deny rules
@@ -1145,7 +1145,7 @@ type newServiceAccountOpts struct {
 }
 
 // NewServiceAccount - create a new service account
-func (sys *IAMSys) NewServiceAccount(ctx context.Context, parentUser string, groups []string, opts newServiceAccountOpts) (auth.Credentials, error) {
+func (sys *IAMSys) NewServiceAccount(_ context.Context, parentUser string, groups []string, opts newServiceAccountOpts) (auth.Credentials, error) {
 	if !sys.Initialized() {
 		return auth.Credentials{}, errServerNotInitialized
 	}
@@ -1244,7 +1244,7 @@ type updateServiceAccountOpts struct {
 }
 
 // UpdateServiceAccount - edit a service account
-func (sys *IAMSys) UpdateServiceAccount(ctx context.Context, accessKey string, opts updateServiceAccountOpts) error {
+func (sys *IAMSys) UpdateServiceAccount(_ context.Context, accessKey string, opts updateServiceAccountOpts) error {
 	if !sys.Initialized() {
 		return errServerNotInitialized
 	}
@@ -1299,7 +1299,7 @@ func (sys *IAMSys) UpdateServiceAccount(ctx context.Context, accessKey string, o
 }
 
 // ListServiceAccounts - lists all services accounts associated to a specific user
-func (sys *IAMSys) ListServiceAccounts(ctx context.Context, accessKey string) ([]auth.Credentials, error) {
+func (sys *IAMSys) ListServiceAccounts(_ context.Context, accessKey string) ([]auth.Credentials, error) {
 	if !sys.Initialized() {
 		return nil, errServerNotInitialized
 	}
@@ -1323,7 +1323,7 @@ func (sys *IAMSys) ListServiceAccounts(ctx context.Context, accessKey string) ([
 }
 
 // GetServiceAccount - gets information about a service account
-func (sys *IAMSys) GetServiceAccount(ctx context.Context, accessKey string) (auth.Credentials, *iampolicy.Policy, error) {
+func (sys *IAMSys) GetServiceAccount(_ context.Context, accessKey string) (auth.Credentials, *iampolicy.Policy, error) {
 	if !sys.Initialized() {
 		return auth.Credentials{}, nil, errServerNotInitialized
 	}
@@ -1362,7 +1362,7 @@ func (sys *IAMSys) GetServiceAccount(ctx context.Context, accessKey string) (aut
 }
 
 // DeleteServiceAccount - delete a service account
-func (sys *IAMSys) DeleteServiceAccount(ctx context.Context, accessKey string) error {
+func (sys *IAMSys) DeleteServiceAccount(_ context.Context, accessKey string) error {
 	if !sys.Initialized() {
 		return errServerNotInitialized
 	}
@@ -1808,7 +1808,7 @@ func (sys *IAMSys) PolicyDBSet(name, policy string, isGroup bool) error {
 // policyDBSet - sets a policy for user in the policy db. Assumes that caller
 // has sys.Lock(). If policy == "", then policy mapping is removed.
 //
-// SECURITY (LDAP DN normalisation): when usersSysType is LDAPUsersSysType the
+// SECURITY (LDAP DN normalization): when usersSysType is LDAPUsersSysType the
 // `name` argument is an LDAP distinguished name returned by an upstream Bind
 // or LookupUserDN call. Those helpers already canonicalise via
 // ldap.NormalizeDN, but we re-normalise here as an invariant check so that a
@@ -1885,7 +1885,7 @@ func (sys *IAMSys) policyDBSet(name, policyName string, userType IAMUserType, is
 // PolicyDBGet - gets policy set on a user or group. If a list of groups is
 // given, policies associated with them are included as well.
 //
-// SECURITY (LDAP DN normalisation): see policyDBSet for the rationale; the
+// SECURITY (LDAP DN normalization): see policyDBSet for the rationale; the
 // same canonicalisation is applied to `name` and `groups` here so look-ups
 // always see the same key that policyDBSet wrote.
 func (sys *IAMSys) PolicyDBGet(name string, isGroup bool, groups ...string) ([]string, error) {

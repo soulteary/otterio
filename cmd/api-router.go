@@ -106,6 +106,8 @@ type objectAPIHandlers struct {
 // getHost tries its best to return the request host.
 // According to section 14.23 of RFC 2616 the Host header
 // can include the port number if the default value of 80 is not used.
+//
+//nolint:unused
 func getHost(r *http.Request) string {
 	if r.URL.IsAbs() {
 		return r.URL.Host
@@ -113,6 +115,7 @@ func getHost(r *http.Request) string {
 	return r.Host
 }
 
+//nolint:unused
 func notImplementedHandler(w http.ResponseWriter, r *http.Request) {
 	writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL, guessIsBrowserReq(r))
 }

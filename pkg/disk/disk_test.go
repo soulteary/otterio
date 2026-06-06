@@ -21,7 +21,6 @@
 package disk_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -29,7 +28,7 @@ import (
 )
 
 func TestFree(t *testing.T) {
-	path, err := ioutil.TempDir(os.TempDir(), "otterio-")
+	path, err := os.MkdirTemp(os.TempDir(), "otterio-")
 	defer os.RemoveAll(path)
 	if err != nil {
 		t.Fatal(err)

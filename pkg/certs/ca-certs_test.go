@@ -17,20 +17,19 @@
 package certs
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestGetRootCAs(t *testing.T) {
-	emptydir, err := ioutil.TempDir("", "test-get-root-cas")
+	emptydir, err := os.MkdirTemp("", "test-get-root-cas")
 	if err != nil {
 		t.Fatalf("Unable create temp directory. %v", emptydir)
 	}
 	defer os.RemoveAll(emptydir)
 
-	dir1, err := ioutil.TempDir("", "test-get-root-cas")
+	dir1, err := os.MkdirTemp("", "test-get-root-cas")
 	if err != nil {
 		t.Fatalf("Unable create temp directory. %v", dir1)
 	}
@@ -39,12 +38,12 @@ func TestGetRootCAs(t *testing.T) {
 		t.Fatalf("Unable create empty dir. %v", err)
 	}
 
-	dir2, err := ioutil.TempDir("", "test-get-root-cas")
+	dir2, err := os.MkdirTemp("", "test-get-root-cas")
 	if err != nil {
 		t.Fatalf("Unable create temp directory. %v", dir2)
 	}
 	defer os.RemoveAll(dir2)
-	if err = ioutil.WriteFile(filepath.Join(dir2, "empty-file"), []byte{}, 0644); err != nil {
+	if err = os.WriteFile(filepath.Join(dir2, "empty-file"), []byte{}, 0644); err != nil {
 		t.Fatalf("Unable create test file. %v", err)
 	}
 

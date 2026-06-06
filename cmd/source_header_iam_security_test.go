@@ -85,7 +85,7 @@ func TestHasAnyOtterIOSourceHeader(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "MTime present but empty value still trips (defence against suppression of audit signal via empty value)",
+			name: "MTime present but empty value still trips (defense against suppression of audit signal via empty value)",
 			hdr:  http.Header{xhttp.OtterIOSourceMTime: []string{""}},
 			want: true,
 		},

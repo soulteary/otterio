@@ -31,7 +31,7 @@ var (
 	testDefaultLookupTimeout = 1 * time.Second
 )
 
-func logOnce(ctx context.Context, err error, id interface{}, errKind ...interface{}) {
+func logOnce(_ context.Context, _ error, _ interface{}, _ ...interface{}) {
 	// no-op
 }
 
@@ -56,10 +56,10 @@ func TestDialContextWithDNSCache(t *testing.T) {
 		dialF DialContext
 	}{
 		{
-			permF: func(n int) []int {
+			permF: func(_ int) []int {
 				return []int{0}
 			},
-			dialF: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			dialF: func(_ context.Context, _, addr string) (net.Conn, error) {
 				if got, want := addr, net.JoinHostPort("127.0.0.1", "443"); got != want {
 					t.Fatalf("got addr %q, want %q", got, want)
 				}
@@ -67,10 +67,10 @@ func TestDialContextWithDNSCache(t *testing.T) {
 			},
 		},
 		{
-			permF: func(n int) []int {
+			permF: func(_ int) []int {
 				return []int{1}
 			},
-			dialF: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			dialF: func(_ context.Context, _, addr string) (net.Conn, error) {
 				if got, want := addr, net.JoinHostPort("127.0.0.2", "443"); got != want {
 					t.Fatalf("got addr %q, want %q", got, want)
 				}
@@ -78,10 +78,10 @@ func TestDialContextWithDNSCache(t *testing.T) {
 			},
 		},
 		{
-			permF: func(n int) []int {
+			permF: func(_ int) []int {
 				return []int{2}
 			},
-			dialF: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			dialF: func(_ context.Context, _, addr string) (net.Conn, error) {
 				if got, want := addr, net.JoinHostPort("127.0.0.3", "443"); got != want {
 					t.Fatalf("got addr %q, want %q", got, want)
 				}
@@ -123,7 +123,7 @@ func TestDialContextWithDNSCacheRand(t *testing.T) {
 	}
 
 	count := make(map[string]int)
-	dialF := func(ctx context.Context, network, addr string) (net.Conn, error) {
+	dialF := func(_ context.Context, _, addr string) (net.Conn, error) {
 		count[addr]++
 		return nil, nil
 	}
@@ -158,7 +158,7 @@ func TestDialContextWithDNSCacheScenario2(t *testing.T) {
 		res.lookupHostFn = originalFunc
 	}()
 
-	res.lookupHostFn = func(ctx context.Context, host string) ([]string, error) {
+	res.lookupHostFn = func(_ context.Context, _ string) ([]string, error) {
 		return nil, fmt.Errorf("err")
 	}
 
@@ -180,7 +180,7 @@ func TestDialContextWithDNSCacheScenario3(t *testing.T) {
 	}
 
 	origFunc := randPerm
-	randPerm = func(n int) []int {
+	randPerm = func(_ int) []int {
 		return []int{0, 1, 2}
 	}
 	defer func() {
@@ -188,7 +188,7 @@ func TestDialContextWithDNSCacheScenario3(t *testing.T) {
 	}()
 
 	want := errors.New("error1")
-	dialF := func(ctx context.Context, network, addr string) (net.Conn, error) {
+	dialF := func(_ context.Context, _, addr string) (net.Conn, error) {
 		if addr == net.JoinHostPort("1.1.1.1", "443") {
 			return nil, want // first error should be returned
 		}

@@ -48,7 +48,7 @@ type Record struct {
 }
 
 // Get - gets the value for a column name.
-func (r *Record) Get(name string) (*sql.Value, error) {
+func (r *Record) Get(_ string) (*sql.Value, error) {
 	// Get is implemented directly in the sql package.
 	return nil, errors.New("not implemented here")
 }

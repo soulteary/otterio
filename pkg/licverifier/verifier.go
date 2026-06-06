@@ -104,7 +104,7 @@ func toLicenseInfo(claims jwt.MapClaims) (LicenseInfo, error) {
 
 // Verify verifies the license key and validates the claims present in it.
 func (lv *LicenseVerifier) Verify(license string) (LicenseInfo, error) {
-	token, err := jwt.ParseWithClaims(license, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(license, &jwt.MapClaims{}, func(_ *jwt.Token) (interface{}, error) {
 		return lv.ecPubKey, nil
 	})
 	if err != nil {

@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/csv"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -71,7 +70,7 @@ func (w *nullResponseWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (w *nullResponseWriter) WriteHeader(statusCode int) {
+func (w *nullResponseWriter) WriteHeader(_ int) {
 }
 
 func (w *nullResponseWriter) Flush() {
@@ -112,8 +111,8 @@ func benchmarkSelect(b *testing.B, count int, query string) {
 				b.Fatal(err)
 			}
 
-			if err = s3Select.Open(func(offset, length int64) (io.ReadCloser, error) {
-				return ioutil.NopCloser(bytes.NewReader(csvData)), nil
+			if err = s3Select.Open(func(_, _ int64) (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewReader(csvData)), nil
 			}); err != nil {
 				b.Fatal(err)
 			}

@@ -70,9 +70,8 @@ func (r *Reader) Read(dst sql.Record) (sql.Record, error) {
 func (r *Reader) Close() error {
 	// Close the input.
 	err := r.readCloser.Close()
+	//revive:disable-next-line:empty-block // drain values so we don't leak a goroutine.
 	for range r.valueCh {
-		// Drain values so we don't leak a goroutine.
-		// Since we have closed the input, it should fail rather quickly.
 	}
 	return err
 }

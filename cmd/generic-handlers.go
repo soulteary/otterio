@@ -43,6 +43,7 @@ const requestFormDataSize = 64 * humanize.MiByte
 // where, 16GiB is the maximum allowed object size for object upload.
 const requestMaxBodySize = globalMaxObjectSize + requestFormDataSize
 
+//nolint:unused
 func setRequestSizeLimitHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Restricting read data to a given maximum length
@@ -60,6 +61,8 @@ const (
 
 // ServeHTTP restricts the size of the http header to 8 KB and the size
 // of the user-defined metadata to 2 KB.
+//
+//nolint:unused
 func setRequestHeaderSizeLimitHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isHTTPHeaderSizeTooLarge(r.Header) {
@@ -101,7 +104,7 @@ const (
 	// LegacyReservedMetadataPrefixLower covers metadata persisted by upstream
 	// MinIO releases prior to the OtterIO fork. Objects written by such peers
 	// may still be replicated/restored into an OtterIO deployment, so the
-	// internal codepath must keep recognising them, but clients must never be
+	// internal codepath must keep recognizing them, but clients must never be
 	// allowed to inject them.
 	LegacyReservedMetadataPrefixLower = "x-minio-internal-"
 
@@ -130,6 +133,8 @@ var reservedMetadataPrefixesLower = []string{
 
 // ServeHTTP fails if the request contains at least one reserved header which
 // would be treated as metadata.
+//
+//nolint:unused
 func filterReservedMetadata(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if containsReservedMetadata(r.Header) {
@@ -173,6 +178,7 @@ const (
 	loginPathPrefix           = SlashSeparator + "login"
 )
 
+//nolint:unused
 func setRedirectHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !shouldProxy() || guessIsRPCReq(r) || guessIsBrowserReq(r) ||
@@ -191,6 +197,7 @@ func setRedirectHandler(h http.Handler) http.Handler {
 	})
 }
 
+//nolint:unused
 func setBrowserRedirectHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Re-direction is handled specifically for browser requests.
@@ -288,6 +295,8 @@ func guessIsRPCReq(req *http.Request) bool {
 }
 
 // Adds Cache-Control header
+//
+//nolint:unused
 func setBrowserCacheControlHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if globalBrowserEnabled && r.Method == http.MethodGet && guessIsBrowserReq(r) {
@@ -325,6 +334,8 @@ func guessIsLoginSTSReq(req *http.Request) bool {
 }
 
 // Adds verification for incoming paths.
+//
+//nolint:unused
 func setReservedBucketHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// For all other requests reject access to reserved buckets
@@ -378,6 +389,8 @@ func parseAmzDateHeader(req *http.Request) (time.Time, APIErrorCode) {
 }
 
 // setTimeValidityHandler to validate parsable time over http header
+//
+//nolint:unused
 func setTimeValidityHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		aType := getRequestAuthType(r)
@@ -406,6 +419,8 @@ func setTimeValidityHandler(h http.Handler) http.Handler {
 }
 
 // setHttpStatsHandler sets a http Stats handler to gather HTTP statistics
+//
+//nolint:unused
 func setHTTPStatsHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Meters s3 connection stats.
@@ -460,6 +475,8 @@ func hasMultipleAuth(r *http.Request) bool {
 
 // requestValidityHandler validates all the incoming paths for
 // any malicious requests.
+//
+//nolint:unused
 func setRequestValidityHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check for bad components in URL path.
@@ -490,6 +507,8 @@ func setRequestValidityHandler(h http.Handler) http.Handler {
 // setBucketForwardingHandler middleware forwards the path style requests
 // on a bucket to the right bucket location, bucket to IP configuration
 // is obtained from centralized etcd configuration service.
+//
+//nolint:unused
 func setBucketForwardingHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if globalDNSConfig == nil || len(globalDomainNames) == 0 || !globalBucketFederation ||
@@ -608,6 +627,8 @@ func setBucketForwardingHandler(h http.Handler) http.Handler {
 // the client. So, logger and Error response XML were not using this
 // value. This is set here so that this header can be logged as
 // part of the log entry, Error response XML and auditing.
+//
+//nolint:unused
 func addCustomHeaders(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set custom headers such as x-amz-request-id for each request.
@@ -616,6 +637,7 @@ func addCustomHeaders(h http.Handler) http.Handler {
 	})
 }
 
+//nolint:unused
 func addSecurityHeaders(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header := w.Header()
@@ -629,8 +651,11 @@ func addSecurityHeaders(h http.Handler) http.Handler {
 // `panic(logger.ErrCritical)` as done by `logger.CriticalIf`.
 //
 // It should be always the first / highest HTTP handler.
+//
+//nolint:unused
 type criticalErrorHandler struct{ handler http.Handler }
 
+//nolint:unused
 func (h criticalErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err == logger.ErrCritical { // handle

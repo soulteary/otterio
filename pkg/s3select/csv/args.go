@@ -56,7 +56,7 @@ func (args *ReaderArgs) IsEmpty() bool {
 }
 
 // UnmarshalXML - decodes XML data.
-func (args *ReaderArgs) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
+func (args *ReaderArgs) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) (err error) {
 	args.FileHeaderInfo = none
 	args.RecordDelimiter = defaultRecordDelimiter
 	args.FieldDelimiter = defaultFieldDelimiter
@@ -140,7 +140,7 @@ func (args *WriterArgs) IsEmpty() bool {
 }
 
 // UnmarshalXML - decodes XML data.
-func (args *WriterArgs) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (args *WriterArgs) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) error {
 
 	args.QuoteFields = asneeded
 	args.RecordDelimiter = defaultRecordDelimiter

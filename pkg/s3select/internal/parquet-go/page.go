@@ -362,6 +362,8 @@ func (page *page) decode(dictPage *page) {
 }
 
 // Get RepetitionLevels and Definitions from RawData
+//
+//nolint:unused
 func (page *page) getRLDLFromRawData(columnNameIndexMap map[string]int, schemaElements []*parquet.SchemaElement) (numValues int64, numRows int64, err error) {
 	bytesReader := bytes.NewReader(page.RawData)
 
@@ -494,6 +496,7 @@ func (page *page) getRLDLFromRawData(columnNameIndexMap map[string]int, schemaEl
 	return 0, 0, fmt.Errorf("Unsupported page type %v", pageType)
 }
 
+//nolint:unused
 func (page *page) getValueFromRawData(columnNameIndexMap map[string]int, schemaElements []*parquet.SchemaElement) (err error) {
 	pageType := page.Header.GetType()
 	switch pageType {
@@ -559,6 +562,7 @@ func (page *page) getValueFromRawData(columnNameIndexMap map[string]int, schemaE
 	return fmt.Errorf("unsupported page type %v", pageType)
 }
 
+//nolint:unused
 func (page *page) toDataPage(compressType parquet.CompressionCodec) []byte {
 	values := []interface{}{}
 	for i := range page.DataTable.DefinitionLevels {
@@ -645,6 +649,7 @@ func (page *page) toDataPage(compressType parquet.CompressionCodec) []byte {
 	return page.RawData
 }
 
+//nolint:unused
 func (page *page) toDataPageV2(compressType parquet.CompressionCodec) []byte {
 	values := []interface{}{}
 	for i := range page.DataTable.DefinitionLevels {
@@ -738,6 +743,7 @@ func (page *page) toDataPageV2(compressType parquet.CompressionCodec) []byte {
 	return page.RawData
 }
 
+//nolint:unused
 func (page *page) toDictPage(compressType parquet.CompressionCodec, dataType parquet.Type) []byte {
 	valuesBytes := valuesToBytes(page.DataTable.Values, dataType)
 	compressedData, err := compressionCodec(compressType).compress(valuesBytes)
@@ -764,6 +770,7 @@ func (page *page) toDictPage(compressType parquet.CompressionCodec, dataType par
 	return page.RawData
 }
 
+//nolint:unused
 func (page *page) toDictDataPage(compressType parquet.CompressionCodec, bitWidth int32) []byte {
 	valuesBytes := append([]byte{byte(bitWidth)}, valuesToRLEBytes(page.DataTable.Values, bitWidth, parquet.Type_INT32)...)
 

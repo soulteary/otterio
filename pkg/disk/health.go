@@ -48,7 +48,7 @@ type Throughput struct {
 }
 
 // GetHealthInfo about the drive
-func GetHealthInfo(ctx context.Context, drive, fsPath string) (Latency, Throughput, error) {
+func GetHealthInfo(ctx context.Context, _, fsPath string) (Latency, Throughput, error) {
 
 	// Create a file with O_DIRECT flag, choose default umask and also make sure
 	// we are exclusively writing to a new file using O_EXCL.

@@ -24,7 +24,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"sort"
@@ -51,6 +50,7 @@ const (
 )
 
 var (
+	//nolint:unused
 	objectUpdatedCh      chan<- string
 	intDataUpdateTracker *dataUpdateTracker
 )
@@ -299,7 +299,7 @@ func (d *dataUpdateTracker) startSaver(ctx context.Context, interval time.Durati
 		}
 		for _, drive := range drives {
 			cacheFormatPath := pathJoin(drive, dataUpdateTrackerFilename)
-			err := ioutil.WriteFile(cacheFormatPath, buf.Bytes(), os.ModePerm)
+			err := os.WriteFile(cacheFormatPath, buf.Bytes(), os.ModePerm)
 			if err != nil {
 				if osIsNotExist(err) {
 					continue
@@ -477,7 +477,7 @@ func (d *dataUpdateTracker) deserialize(src io.Reader, newerThan time.Time) erro
 
 // start a collector that picks up entries from objectUpdatedCh
 // and adds them  to the current bloom filter.
-func (d *dataUpdateTracker) startCollector(ctx context.Context) {
+func (d *dataUpdateTracker) startCollector(_ context.Context) {
 	for in := range d.input {
 		bucket, _ := path2BucketObjectWithBasePath("", in)
 		if bucket == "" {

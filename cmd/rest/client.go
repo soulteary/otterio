@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -163,7 +162,7 @@ func (c *Client) Call(ctx context.Context, method string, values url.Values, bod
 		}
 		defer xhttp.DrainBody(resp.Body)
 		// Limit the ReadAll(), just in case, because of a bug, the server responds with large data.
-		b, err := ioutil.ReadAll(io.LimitReader(resp.Body, c.MaxErrResponseSize))
+		b, err := io.ReadAll(io.LimitReader(resp.Body, c.MaxErrResponseSize))
 		if err != nil {
 			if c.HealthCheckFn != nil && xnet.IsNetworkOrHostDown(err, c.ExpectTimeouts) {
 				if c.MarkOffline() {

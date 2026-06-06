@@ -129,7 +129,7 @@ func getBackgroundHealStatus(ctx context.Context, o ObjectLayer) (madmin.BgHealS
 
 }
 
-func mustGetHealSequence(ctx context.Context) *healSequence {
+func mustGetHealSequence(_ context.Context) *healSequence {
 	// Get background heal sequence to send elements to heal
 	for {
 		globalHealStateLK.RLock()
@@ -262,7 +262,7 @@ func (er *erasureObjects) healErasureSet(ctx context.Context, buckets []BucketIn
 			minDisks:       1,
 			reportNotFound: false,
 			agreed:         healEntry,
-			partial: func(entries metaCacheEntries, nAgreed int, errs []error) {
+			partial: func(entries metaCacheEntries, _ int, _ []error) {
 				entry, ok := entries.resolve(&resolver)
 				if ok {
 					healEntry(*entry)

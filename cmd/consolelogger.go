@@ -43,7 +43,7 @@ type HTTPConsoleLoggerSys struct {
 
 // NewConsoleLogger - creates new HTTPConsoleLoggerSys with all nodes subscribed to
 // the console logging pub sub system
-func NewConsoleLogger(ctx context.Context) *HTTPConsoleLoggerSys {
+func NewConsoleLogger(_ context.Context) *HTTPConsoleLoggerSys {
 	ps := pubsub.New()
 	return &HTTPConsoleLoggerSys{
 		pubsub:  ps,
@@ -53,7 +53,7 @@ func NewConsoleLogger(ctx context.Context) *HTTPConsoleLoggerSys {
 }
 
 // SetNodeName - sets the node name if any after distributed setup has initialized
-func (sys *HTTPConsoleLoggerSys) SetNodeName(nodeName string) {
+func (sys *HTTPConsoleLoggerSys) SetNodeName(_ string) {
 	if !globalIsDistErasure {
 		sys.nodeName = ""
 		return
@@ -152,7 +152,7 @@ func (sys *HTTPConsoleLoggerSys) Content() (logs []log.Entry) {
 
 // Send log message 'e' to console and publish to console
 // log pubsub system
-func (sys *HTTPConsoleLoggerSys) Send(e interface{}, logKind string) error {
+func (sys *HTTPConsoleLoggerSys) Send(e interface{}, _ string) error {
 	var lg log.Info
 	switch e := e.(type) {
 	case log.Entry:

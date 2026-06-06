@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	pathutil "path"
 	"sort"
@@ -240,7 +240,7 @@ func (fs *FSObjects) NewMultipartUpload(ctx context.Context, bucket, object stri
 		return "", err
 	}
 
-	if err = ioutil.WriteFile(pathJoin(uploadIDDir, fs.metaJSONFile), fsMetaBytes, 0644); err != nil {
+	if err = os.WriteFile(pathJoin(uploadIDDir, fs.metaJSONFile), fsMetaBytes, 0644); err != nil {
 		logger.LogIf(ctx, err)
 		return "", err
 	}
@@ -252,7 +252,7 @@ func (fs *FSObjects) NewMultipartUpload(ctx context.Context, bucket, object stri
 // object. Internally incoming data is written to '.otterio.sys/tmp' location
 // and safely renamed to '.otterio.sys/multipart' for reach parts.
 func (fs *FSObjects) CopyObjectPart(ctx context.Context, srcBucket, srcObject, dstBucket, dstObject, uploadID string, partID int,
-	startOffset int64, length int64, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (pi PartInfo, e error) {
+	_ int64, _ int64, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (pi PartInfo, e error) {
 
 	if srcOpts.VersionID != "" && srcOpts.VersionID != nullVersionID {
 		return pi, VersionNotFound{
@@ -366,7 +366,7 @@ func (fs *FSObjects) PutObjectPart(ctx context.Context, bucket, object, uploadID
 // by callers to verify object states
 // - encrypted
 // - compressed
-func (fs *FSObjects) GetMultipartInfo(ctx context.Context, bucket, object, uploadID string, opts ObjectOptions) (MultipartInfo, error) {
+func (fs *FSObjects) GetMultipartInfo(ctx context.Context, bucket, object, uploadID string, _ ObjectOptions) (MultipartInfo, error) {
 	minfo := MultipartInfo{
 		Bucket:   bucket,
 		Object:   object,
@@ -413,7 +413,7 @@ func (fs *FSObjects) GetMultipartInfo(ctx context.Context, bucket, object, uploa
 // Implements S3 compatible ListObjectParts API. The resulting
 // ListPartsInfo structure is unmarshalled directly into XML and
 // replied back to the client.
-func (fs *FSObjects) ListObjectParts(ctx context.Context, bucket, object, uploadID string, partNumberMarker, maxParts int, opts ObjectOptions) (result ListPartsInfo, e error) {
+func (fs *FSObjects) ListObjectParts(ctx context.Context, bucket, object, uploadID string, partNumberMarker, maxParts int, _ ObjectOptions) (result ListPartsInfo, e error) {
 	if err := checkListPartsArgs(ctx, bucket, object, fs); err != nil {
 		return result, toObjectErr(err)
 	}
@@ -520,7 +520,7 @@ func (fs *FSObjects) ListObjectParts(ctx context.Context, bucket, object, upload
 	}
 	defer rc.Close()
 
-	fsMetaBytes, err := ioutil.ReadAll(rc)
+	fsMetaBytes, err := io.ReadAll(rc)
 	if err != nil {
 		return result, toObjectErr(err, bucket, object)
 	}
@@ -541,7 +541,7 @@ func (fs *FSObjects) ListObjectParts(ctx context.Context, bucket, object, upload
 // md5sums of all the parts.
 //
 // Implements S3 compatible Complete multipart API.
-func (fs *FSObjects) CompleteMultipartUpload(ctx context.Context, bucket string, object string, uploadID string, parts []CompletePart, opts ObjectOptions) (oi ObjectInfo, e error) {
+func (fs *FSObjects) CompleteMultipartUpload(ctx context.Context, bucket string, object string, uploadID string, parts []CompletePart, _ ObjectOptions) (oi ObjectInfo, e error) {
 
 	var actualSize int64
 
@@ -804,7 +804,7 @@ func (fs *FSObjects) CompleteMultipartUpload(ctx context.Context, bucket string,
 // that this is an atomic idempotent operation. Subsequent calls have
 // no affect and further requests to the same uploadID would not be
 // honored.
-func (fs *FSObjects) AbortMultipartUpload(ctx context.Context, bucket, object, uploadID string, opts ObjectOptions) error {
+func (fs *FSObjects) AbortMultipartUpload(ctx context.Context, bucket, object, uploadID string, _ ObjectOptions) error {
 	if err := checkAbortMultipartArgs(ctx, bucket, object, fs); err != nil {
 		return err
 	}

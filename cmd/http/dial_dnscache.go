@@ -46,7 +46,7 @@ func DialContextWithDNSCache(cache *DNSCache, baseDialCtx DialContext) DialConte
 			KeepAlive: 30 * time.Second,
 		}).DialContext
 	}
-	return func(ctx context.Context, network, host string) (net.Conn, error) {
+	return func(ctx context.Context, _, host string) (net.Conn, error) {
 		h, p, err := net.SplitHostPort(host)
 		if err != nil {
 			return nil, err

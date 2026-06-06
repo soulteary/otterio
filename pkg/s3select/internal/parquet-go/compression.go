@@ -19,7 +19,7 @@ package parquet
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"sync"
 
 	"github.com/klauspost/compress/gzip"
@@ -32,6 +32,8 @@ import (
 type compressionCodec parquet.CompressionCodec
 
 var zstdOnce sync.Once
+
+//nolint:unused
 var zstdEnc *zstd.Encoder
 var zstdDec *zstd.Decoder
 
@@ -42,6 +44,7 @@ func initZstd() {
 	})
 }
 
+//nolint:unused
 func (c compressionCodec) compress(buf []byte) ([]byte, error) {
 	switch parquet.CompressionCodec(c) {
 	case parquet.CompressionCodec_UNCOMPRESSED:
@@ -113,10 +116,10 @@ func (c compressionCodec) uncompress(buf []byte) ([]byte, error) {
 			return nil, err
 		}
 		defer reader.Close()
-		return ioutil.ReadAll(reader)
+		return io.ReadAll(reader)
 
 	case parquet.CompressionCodec_LZ4:
-		return ioutil.ReadAll(lz4.NewReader(bytes.NewReader(buf)))
+		return io.ReadAll(lz4.NewReader(bytes.NewReader(buf)))
 
 	case parquet.CompressionCodec_ZSTD:
 		initZstd()

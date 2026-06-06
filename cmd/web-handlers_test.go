@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -49,7 +48,7 @@ type flushWriter struct {
 func (f *flushWriter) Flush()                            {}
 func (f *flushWriter) Write(b []byte) (n int, err error) { return f.Writer.Write(b) }
 func (f *flushWriter) Header() http.Header               { return http.Header{} }
-func (f *flushWriter) WriteHeader(code int)              {}
+func (f *flushWriter) WriteHeader(_ int)                 {}
 
 func newFlushWriter(writer io.Writer) http.ResponseWriter {
 	return &flushWriter{writer}
@@ -126,7 +125,7 @@ func TestWriteWebErrorResponse(t *testing.T) {
 }
 
 // Authenticate and get JWT token - will be called before every webrpc handler invocation
-func getWebRPCToken(apiRouter http.Handler, accessKey, secretKey string) (token string, err error) {
+func getWebRPCToken(_ http.Handler, accessKey, secretKey string) (token string, err error) {
 	return authenticateWeb(accessKey, secretKey)
 }
 
@@ -136,7 +135,7 @@ func TestWebHandlerLogin(t *testing.T) {
 }
 
 // testLoginWebHandler - Test login web handler
-func testLoginWebHandler(obj ObjectLayer, instanceType string, t TestErrHandler) {
+func testLoginWebHandler(obj ObjectLayer, _ string, t TestErrHandler) {
 	// Register the API end points with Erasure/FS object layer.
 	apiRouter := initTestWebRPCEndPoint(obj)
 	credentials := globalActiveCred
@@ -175,7 +174,7 @@ func TestWebHandlerStorageInfo(t *testing.T) {
 }
 
 // testStorageInfoWebHandler - Test StorageInfo web handler
-func testStorageInfoWebHandler(obj ObjectLayer, instanceType string, t TestErrHandler) {
+func testStorageInfoWebHandler(obj ObjectLayer, _ string, t TestErrHandler) {
 	// get random bucket name.
 	// Register the API end points with Erasure/FS object layer.
 	apiRouter := initTestWebRPCEndPoint(obj)
@@ -209,7 +208,7 @@ func TestWebHandlerServerInfo(t *testing.T) {
 }
 
 // testServerInfoWebHandler - Test ServerInfo web handler
-func testServerInfoWebHandler(obj ObjectLayer, instanceType string, t TestErrHandler) {
+func testServerInfoWebHandler(obj ObjectLayer, _ string, t TestErrHandler) {
 	// Register the API end points with Erasure/FS object layer.
 	apiRouter := initTestWebRPCEndPoint(obj)
 	credentials := globalActiveCred
@@ -251,7 +250,7 @@ func TestWebHandlerMakeBucket(t *testing.T) {
 }
 
 // testMakeBucketWebHandler - Test MakeBucket web handler
-func testMakeBucketWebHandler(obj ObjectLayer, instanceType string, t TestErrHandler) {
+func testMakeBucketWebHandler(obj ObjectLayer, _ string, t TestErrHandler) {
 	// Register the API end points with Erasure/FS object layer.
 	apiRouter := initTestWebRPCEndPoint(obj)
 	credentials := globalActiveCred
@@ -623,7 +622,7 @@ func testRemoveObjectWebHandler(obj ObjectLayer, instanceType string, t TestErrH
 	if rec.Code != http.StatusOK {
 		t.Fatalf("Expected the response status to be 200, but instead found `%d`", rec.Code)
 	}
-	b, err := ioutil.ReadAll(rec.Body)
+	b, err := io.ReadAll(rec.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -644,7 +643,7 @@ func getTokenString(accessKey, secretKey string) (string, error) {
 	return token.SignedString([]byte(secretKey))
 }
 
-func testCreateURLToken(obj ObjectLayer, instanceType string, t TestErrHandler) {
+func testCreateURLToken(obj ObjectLayer, _ string, t TestErrHandler) {
 	apiRouter := initTestWebRPCEndPoint(obj)
 	credentials := globalActiveCred
 
@@ -725,7 +724,7 @@ func testUploadWebHandler(obj ObjectLayer, instanceType string, t TestErrHandler
 		req.Header.Set("Accept", "*/*")
 		req.Header.Set("User-Agent", "Mozilla")
 
-		req.Body = ioutil.NopCloser(bytes.NewReader(content))
+		req.Body = io.NopCloser(bytes.NewReader(content))
 
 		if !sendContentLength {
 			req.ContentLength = -1
@@ -1035,7 +1034,7 @@ func testWebPresignedGetHandler(obj ObjectLayer, instanceType string, t TestErrH
 	if arec.Code != http.StatusOK {
 		t.Fatalf("Expected the response status to be 200, but instead found `%d`", arec.Code)
 	}
-	savedData, err := ioutil.ReadAll(arec.Body)
+	savedData, err := io.ReadAll(arec.Body)
 	if err != nil {
 		t.Fatal("Reading body failed", err)
 	}
@@ -1146,7 +1145,7 @@ func TestWebCheckAuthorization(t *testing.T) {
 	req.Header.Set("Content-Length", strconv.Itoa(len(content)))
 	req.Header.Set("x-amz-date", "20160814T114029Z")
 	req.Header.Set("Accept", "*/*")
-	req.Body = ioutil.NopCloser(bytes.NewReader(content))
+	req.Body = io.NopCloser(bytes.NewReader(content))
 	if err != nil {
 		t.Fatalf("Cannot create upload request, %v", err)
 	}
@@ -1273,7 +1272,7 @@ func TestWebObjectLayerFaultyDisks(t *testing.T) {
 	req.Header.Set("Content-Length", strconv.Itoa(len(content)))
 	req.Header.Set("x-amz-date", "20160814T114029Z")
 	req.Header.Set("Accept", "*/*")
-	req.Body = ioutil.NopCloser(bytes.NewReader(content))
+	req.Body = io.NopCloser(bytes.NewReader(content))
 	if err != nil {
 		t.Fatalf("Cannot create upload request, %v", err)
 	}

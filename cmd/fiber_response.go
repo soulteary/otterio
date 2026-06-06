@@ -38,23 +38,28 @@ func writeResponseFiber(c fiber.Ctx, statusCode int, response []byte, mType mime
 	}
 }
 
+//nolint:unused
 func writeSuccessResponseJSONFiber(c fiber.Ctx, response []byte) {
 	writeResponseFiber(c, fiber.StatusOK, response, mimeJSON)
 }
 
+//nolint:unused
 func writeSuccessResponseXMLFiber(c fiber.Ctx, response []byte) {
 	writeResponseFiber(c, fiber.StatusOK, response, mimeXML)
 }
 
+//nolint:unused
 func writeSuccessNoContentFiber(c fiber.Ctx) {
 	writeResponseFiber(c, fiber.StatusNoContent, nil, mimeNone)
 }
 
+//nolint:unused
 func writeRedirectSeeOtherFiber(c fiber.Ctx, location string) {
 	c.Set(xhttp.Location, location)
 	writeResponseFiber(c, fiber.StatusSeeOther, nil, mimeNone)
 }
 
+//nolint:unused
 func writeSuccessResponseHeadersOnlyFiber(c fiber.Ctx) {
 	writeResponseFiber(c, fiber.StatusOK, nil, mimeNone)
 }
@@ -86,7 +91,7 @@ func writeErrorResponseHeadersOnlyFiber(c fiber.Ctx, err APIError) {
 	writeResponseFiber(c, err.HTTPStatusCode, nil, mimeNone)
 }
 
-func writeErrorResponseStringFiber(ctx context.Context, c fiber.Ctx, err APIError) {
+func writeErrorResponseStringFiber(_ context.Context, c fiber.Ctx, err APIError) {
 	writeResponseFiber(c, err.HTTPStatusCode, []byte(err.Description), mimeNone)
 }
 

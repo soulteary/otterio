@@ -345,7 +345,7 @@ func (sys *BucketMetadataSys) GetQuotaConfig(bucket string) (*madmin.BucketQuota
 
 // GetReplicationConfig returns configured bucket replication config
 // The returned object may not be modified.
-func (sys *BucketMetadataSys) GetReplicationConfig(ctx context.Context, bucket string) (*replication.Config, error) {
+func (sys *BucketMetadataSys) GetReplicationConfig(_ context.Context, bucket string) (*replication.Config, error) {
 	meta, err := sys.GetConfig(bucket)
 	if err != nil {
 		if errors.Is(err, errConfigNotFound) {

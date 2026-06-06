@@ -29,11 +29,11 @@ import (
 
 // TestStreamHandlerStreamsBodyWithContentLength verifies that the streaming
 // bridge applies the handler status/headers (preserving literal casing such as
-// "ETag"), honours a handler-declared Content-Length, and streams the body
+// "ETag"), honors a handler-declared Content-Length, and streams the body
 // written across multiple Write calls.
 func TestStreamHandlerStreamsBodyWithContentLength(t *testing.T) {
 	app := newFiberApp()
-	app.Get("/stream", toOtterioStreamHandler(func(w http.ResponseWriter, r *http.Request) {
+	app.Get("/stream", toOtterioStreamHandler(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header()["ETag"] = []string{`"abc"`}
 		w.Header().Set("Content-Length", "6")
@@ -80,7 +80,7 @@ func TestStreamHandlerCompletionDeferred(t *testing.T) {
 	var completions int
 
 	wrapped := func(c fiber.Ctx) error {
-		err := toOtterioStreamHandler(func(w http.ResponseWriter, r *http.Request) {
+		err := toOtterioStreamHandler(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Length", "6")
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("foobar"))
@@ -117,7 +117,7 @@ func TestStreamHandlerCompletionDeferred(t *testing.T) {
 // status before any body still streams correctly with the right status code.
 func TestStreamHandlerErrorResponse(t *testing.T) {
 	app := newFiberApp()
-	app.Get("/stream", toOtterioStreamHandler(func(w http.ResponseWriter, r *http.Request) {
+	app.Get("/stream", toOtterioStreamHandler(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte("<Error/>"))
@@ -142,7 +142,7 @@ func TestStreamHandlerErrorResponse(t *testing.T) {
 // flush at all (responseBodyWriter has no Flush), so they must stream.
 func TestStreamHandlerKeepAliveFlush(t *testing.T) {
 	app := newFiberApp()
-	app.Get("/stream", toOtterioStreamHandler(func(w http.ResponseWriter, r *http.Request) {
+	app.Get("/stream", toOtterioStreamHandler(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
 		flusher, ok := w.(http.Flusher)

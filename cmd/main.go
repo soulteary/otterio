@@ -141,7 +141,7 @@ func newApp(name string) *cli.App {
 	app.HideHelpCommand = true // Hide `help, h` command, we already have `otterio --help`.
 	app.Commands = commands
 	app.CustomAppHelpTemplate = otterioHelpTemplate
-	app.CommandNotFound = func(ctx *cli.Context, command string) {
+	app.CommandNotFound = func(_ *cli.Context, command string) {
 		console.Printf("‘%s’ is not a otterio sub-command. See ‘otterio --help’.\n", command)
 		closestCommands := findClosestCommands(command)
 		if len(closestCommands) > 0 {

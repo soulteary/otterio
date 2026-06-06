@@ -17,7 +17,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -27,7 +27,7 @@ import (
 	"github.com/soulteary/otterio/pkg/madmin"
 )
 
-// TestAddUserRejectsPolicyNameField pins down the handler-layer defence for
+// TestAddUserRejectsPolicyNameField pins down the handler-layer defense for
 // CVE-2021-43858 / GHSA-j6jc-jqqc-p6cx. Sending an admin AddUser request whose
 // encrypted madmin.UserInfo body carries a non-empty PolicyName must be
 // rejected with HTTP 400 (XOtterioAdminUserInfoPolicyNameNotAllowed). The
@@ -42,7 +42,7 @@ func TestAddUserRejectsPolicyNameField(t *testing.T) {
 
 	bed, err := prepareAdminErasureTestBed(ctx)
 	if err != nil {
-		t.Fatalf("failed to initialise admin testbed: %v", err)
+		t.Fatalf("failed to initialize admin testbed: %v", err)
 	}
 	defer bed.TearDown()
 
@@ -76,11 +76,11 @@ func TestAddUserRejectsPolicyNameField(t *testing.T) {
 	bed.router.ServeHTTP(rec, req)
 
 	if rec.Code != 400 {
-		respBody, _ := ioutil.ReadAll(rec.Body)
+		respBody, _ := io.ReadAll(rec.Body)
 		t.Fatalf("expected 400 for AddUser carrying PolicyName, got %d body=%s", rec.Code, string(respBody))
 	}
 
-	respBody, _ := ioutil.ReadAll(rec.Body)
+	respBody, _ := io.ReadAll(rec.Body)
 	if !strings.Contains(string(respBody), "PolicyName") {
 		t.Fatalf("expected response body to mention PolicyName, got %s", string(respBody))
 	}
@@ -98,7 +98,7 @@ func TestAddUserAcceptsRequestWithoutPolicyName(t *testing.T) {
 
 	bed, err := prepareAdminErasureTestBed(ctx)
 	if err != nil {
-		t.Fatalf("failed to initialise admin testbed: %v", err)
+		t.Fatalf("failed to initialize admin testbed: %v", err)
 	}
 	defer bed.TearDown()
 
@@ -135,20 +135,20 @@ func TestAddUserAcceptsRequestWithoutPolicyName(t *testing.T) {
 	// stood up in this single-node testbed. What we MUST NOT see is the new
 	// 400 PolicyName rejection: that would indicate the guard fires on every
 	// request, not just the smuggling case.
-	respBody, _ := ioutil.ReadAll(rec.Body)
+	respBody, _ := io.ReadAll(rec.Body)
 	if rec.Code == 400 && strings.Contains(string(respBody), "PolicyName") {
 		t.Fatalf("AddUser with empty PolicyName was rejected as if it carried PolicyName: code=%d body=%s", rec.Code, string(respBody))
 	}
 }
 
-// TestAddUserPolicyNameIgnoredAtIAMLayer pins down the second line of defence
+// TestAddUserPolicyNameIgnoredAtIAMLayer pins down the second line of defense
 // statically: even if the handler-layer reject above is ever removed, the IAM
 // layer's CreateUser must continue to ignore madmin.UserInfo.PolicyName
 // silently (matching upstream MinIO PR #13976). We assert this by parsing
 // cmd/iam.go and checking that the CreateUser method body does not reference
 // the PolicyName field at all - if a future refactor accidentally restores
-// the upstream pre-#13976 behaviour ("policyDBSet(name, uinfo.PolicyName)"),
-// this test fires immediately, even outside a fully-initialised testbed.
+// the upstream pre-#13976 behavior ("policyDBSet(name, uinfo.PolicyName)"),
+// this test fires immediately, even outside a fully-initialized testbed.
 func TestAddUserPolicyNameIgnoredAtIAMLayer(t *testing.T) {
 	t.Parallel()
 

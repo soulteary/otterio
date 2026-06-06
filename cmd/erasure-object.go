@@ -209,7 +209,7 @@ func (er erasureObjects) GetObjectNInfo(ctx context.Context, bucket, object stri
 //
 // startOffset indicates the starting read location of the object.
 // length indicates the total length of the object.
-func (er erasureObjects) GetObject(ctx context.Context, bucket, object string, startOffset int64, length int64, writer io.Writer, etag string, opts ObjectOptions) (err error) {
+func (er erasureObjects) GetObject(ctx context.Context, bucket, object string, startOffset int64, length int64, writer io.Writer, _ string, opts ObjectOptions) (err error) {
 	// Lock the object before reading.
 	lk := er.NewNSLock(bucket, object)
 	ctx, err = lk.GetRLock(ctx, globalOperationTimeout)
@@ -835,6 +835,8 @@ func (er erasureObjects) deleteObjectVersion(ctx context.Context, bucket, object
 
 // deleteEmptyDir knows only how to remove an empty directory (not the empty object with a
 // trailing slash), this is called for the healing code to remove such directories.
+//
+//nolint:unused
 func (er erasureObjects) deleteEmptyDir(ctx context.Context, bucket, object string) error {
 	defer ObjectPathUpdated(pathJoin(bucket, object))
 

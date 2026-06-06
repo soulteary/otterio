@@ -21,7 +21,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"strings"
 	"time"
@@ -154,7 +154,7 @@ func testGetObject() {
 			continue
 		}
 
-		body, err := ioutil.ReadAll(result.Body)
+		body, err := io.ReadAll(result.Body)
 		if err != nil {
 			failureLog(function, args, startTime, "", fmt.Sprintf("GetObject(%d) expected to return data but failed", i+1), err).Fatal()
 			return

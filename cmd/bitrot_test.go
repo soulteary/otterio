@@ -19,13 +19,12 @@ package cmd
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 )
 
 func testBitrotReaderWriterAlgo(t *testing.T, bitrotAlgo BitrotAlgorithm) {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}

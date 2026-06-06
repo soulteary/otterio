@@ -514,7 +514,7 @@ func serverMain(ctx *cli.Context) {
 	}
 
 	httpServer := xhttp.NewServer([]string{globalOtterioAddr}, s3App, getCert)
-	httpServer.BaseContext = func(listener net.Listener) context.Context {
+	httpServer.BaseContext = func(_ net.Listener) context.Context {
 		return GlobalContext
 	}
 	go func() {
@@ -541,7 +541,7 @@ func serverMain(ctx *cli.Context) {
 		)
 
 		consoleServer := xhttp.NewServer([]string{globalOtterioConsoleAddr}, consoleApp, consoleGetCert)
-		consoleServer.BaseContext = func(listener net.Listener) context.Context {
+		consoleServer.BaseContext = func(_ net.Listener) context.Context {
 			return GlobalContext
 		}
 		go func() {

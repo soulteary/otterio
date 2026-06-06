@@ -56,7 +56,7 @@ func (m *masterKeyKMS) Stat() (kms.Status, error) {
 	}, nil
 }
 
-func (m *masterKeyKMS) CreateKey(keyID string) error {
+func (m *masterKeyKMS) CreateKey(_ string) error {
 	return errors.New("crypto: creating keys is not supported by a static master key")
 }
 

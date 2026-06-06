@@ -32,19 +32,19 @@ func (a badDisk) String() string {
 	return "bad-disk"
 }
 
-func (a badDisk) AppendFile(ctx context.Context, volume string, path string, buf []byte) error {
+func (a badDisk) AppendFile(_ context.Context, _ string, _ string, _ []byte) error {
 	return errFaultyDisk
 }
 
-func (a badDisk) ReadFileStream(ctx context.Context, volume, path string, offset, length int64) (io.ReadCloser, error) {
+func (a badDisk) ReadFileStream(_ context.Context, _, _ string, _, _ int64) (io.ReadCloser, error) {
 	return nil, errFaultyDisk
 }
 
-func (a badDisk) UpdateBloomFilter(ctx context.Context, oldest, current uint64) (*bloomFilterResponse, error) {
+func (a badDisk) UpdateBloomFilter(_ context.Context, _, _ uint64) (*bloomFilterResponse, error) {
 	return nil, errFaultyDisk
 }
 
-func (a badDisk) CreateFile(ctx context.Context, volume, path string, size int64, reader io.Reader) error {
+func (a badDisk) CreateFile(_ context.Context, _, _ string, _ int64, _ io.Reader) error {
 	return errFaultyDisk
 }
 

@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
@@ -91,7 +90,7 @@ func TestDataUpdateTracker(t *testing.T) {
 
 	dut.Current.bf = dut.newBloomFilter()
 
-	tmpDir, err := ioutil.TempDir("", "TestDataUpdateTracker")
+	tmpDir, err := os.MkdirTemp("", "TestDataUpdateTracker")
 	if err != nil {
 		t.Fatal(err)
 	}

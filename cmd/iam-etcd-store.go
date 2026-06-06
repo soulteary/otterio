@@ -268,7 +268,7 @@ func (ies *IAMEtcdStore) loadPolicyDoc(ctx context.Context, policy string, m map
 	return nil
 }
 
-func (ies *IAMEtcdStore) getPolicyDoc(ctx context.Context, kvs *mvccpb.KeyValue, m map[string]iampolicy.Policy) error {
+func (ies *IAMEtcdStore) getPolicyDoc(_ context.Context, kvs *mvccpb.KeyValue, m map[string]iampolicy.Policy) error {
 	var p iampolicy.Policy
 	err := getIAMConfig(&p, kvs.Value)
 	if err != nil {
@@ -326,7 +326,7 @@ func (ies *IAMEtcdStore) addUser(ctx context.Context, user string, userType IAMU
 	if globalOldCred.IsValid() && u.Credentials.IsServiceAccount() {
 		if !globalOldCred.Equal(globalActiveCred) {
 			m := jwtgo.MapClaims{}
-			stsTokenCallback := func(t *jwtgo.Token) (interface{}, error) {
+			stsTokenCallback := func(_ *jwtgo.Token) (interface{}, error) {
 				return []byte(globalOldCred.SecretKey), nil
 			}
 			if _, err := jwtgo.ParseWithClaims(u.Credentials.SessionToken, m, stsTokenCallback); err == nil {
@@ -439,7 +439,7 @@ func (ies *IAMEtcdStore) loadMappedPolicy(ctx context.Context, name string, user
 	return nil
 }
 
-func getMappedPolicy(ctx context.Context, kv *mvccpb.KeyValue, userType IAMUserType, isGroup bool, m map[string]MappedPolicy, basePrefix string) error {
+func getMappedPolicy(_ context.Context, kv *mvccpb.KeyValue, _ IAMUserType, _ bool, m map[string]MappedPolicy, basePrefix string) error {
 	var p MappedPolicy
 	err := getIAMConfig(&p, kv.Value)
 	if err != nil {
@@ -490,7 +490,7 @@ func (ies *IAMEtcdStore) loadMappedPolicies(ctx context.Context, userType IAMUse
 		rawNames = append(rawNames, extractPathPrefixAndSuffix(string(kv.Key), basePrefix, ".json"))
 	}
 
-	// SECURITY (LDAP DN normalisation): mirror the object-store migration on
+	// SECURITY (LDAP DN normalization): mirror the object-store migration on
 	// the etcd backend. See cmd/iam-object-store.go:migrateMappedPolicyToCanonical
 	// for the conflict policy. We do not implement the on-disk rename for
 	// etcd here (that would need a separate transactional helper); instead we

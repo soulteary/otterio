@@ -125,7 +125,7 @@ func TestDynamicTimeoutManyDecreases(t *testing.T) {
 	}
 }
 
-func TestDynamicTimeoutConcurrent(t *testing.T) {
+func TestDynamicTimeoutConcurrent(_ *testing.T) {
 	// Race test.
 	timeout := newDynamicTimeout(time.Second, time.Millisecond)
 	var wg sync.WaitGroup
@@ -170,7 +170,7 @@ func TestDynamicTimeoutHitMinimum(t *testing.T) {
 	}
 }
 
-func testDynamicTimeoutAdjust(t *testing.T, timeout *dynamicTimeout, f func() float64) {
+func testDynamicTimeoutAdjust(_ *testing.T, timeout *dynamicTimeout, f func() float64) {
 
 	const successTimeout = 20 * time.Second
 

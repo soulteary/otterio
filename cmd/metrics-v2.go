@@ -920,7 +920,7 @@ func getGoMetrics() MetricsGroup {
 	return MetricsGroup{
 		id:         "GoMetrics",
 		cachedRead: cachedRead,
-		read: func(ctx context.Context) (metrics []Metric) {
+		read: func(_ context.Context) (metrics []Metric) {
 			metrics = append(metrics, Metric{
 				Description: getOtterIOGORoutineCountMD(),
 				Value:       float64(runtime.NumGoroutine()),
@@ -933,7 +933,7 @@ func getS3TTFBMetric() MetricsGroup {
 	return MetricsGroup{
 		id:         "s3TTFBMetric",
 		cachedRead: cachedRead,
-		read: func(ctx context.Context) (metrics []Metric) {
+		read: func(_ context.Context) (metrics []Metric) {
 
 			// Read prometheus metric on this channel
 			ch := make(chan prometheus.Metric)
@@ -1088,7 +1088,7 @@ func getCacheMetrics() MetricsGroup {
 	return MetricsGroup{
 		id:         "CacheMetrics",
 		cachedRead: cachedRead,
-		read: func(ctx context.Context) (metrics []Metric) {
+		read: func(_ context.Context) (metrics []Metric) {
 			metrics = make([]Metric, 0, 20)
 			cacheObjLayer := newCachedObjectLayerFn()
 			// Service not initialized yet
@@ -1138,7 +1138,7 @@ func getHTTPMetrics() MetricsGroup {
 	return MetricsGroup{
 		id:         "httpMetrics",
 		cachedRead: cachedRead,
-		read: func(ctx context.Context) (metrics []Metric) {
+		read: func(_ context.Context) (metrics []Metric) {
 			httpStats := globalHTTPStats.toServerHTTPStats()
 			metrics = make([]Metric, 0, 3+
 				len(httpStats.CurrentS3Requests.APIStats)+
@@ -1201,7 +1201,7 @@ func getNetworkMetrics() MetricsGroup {
 	return MetricsGroup{
 		id:         "networkMetrics",
 		cachedRead: cachedRead,
-		read: func(ctx context.Context) (metrics []Metric) {
+		read: func(_ context.Context) (metrics []Metric) {
 			metrics = make([]Metric, 0, 10)
 			metrics = append(metrics, Metric{
 				Description: getInternodeFailedRequests(),

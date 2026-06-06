@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/user"
@@ -212,7 +211,7 @@ func (fs *FSObjects) LocalStorageInfo(ctx context.Context) (StorageInfo, []error
 }
 
 // StorageInfo - returns underlying storage statistics.
-func (fs *FSObjects) StorageInfo(ctx context.Context) (StorageInfo, []error) {
+func (fs *FSObjects) StorageInfo(_ context.Context) (StorageInfo, []error) {
 	atomic.AddInt64(&fs.activeIOCount, 1)
 	defer func() {
 		atomic.AddInt64(&fs.activeIOCount, -1)
@@ -375,7 +374,7 @@ func (fs *FSObjects) scanBucket(ctx context.Context, bucket string, cache dataUs
 // getBucketDir - will convert incoming bucket names to
 // corresponding valid bucket names on the backend in a platform
 // compatible way for all operating systems.
-func (fs *FSObjects) getBucketDir(ctx context.Context, bucket string) (string, error) {
+func (fs *FSObjects) getBucketDir(_ context.Context, bucket string) (string, error) {
 	if bucket == "" || bucket == "." || bucket == ".." {
 		return "", errVolumeNotFound
 	}
@@ -777,6 +776,8 @@ func (fs *FSObjects) GetObjectNInfo(ctx context.Context, bucket, object string, 
 }
 
 // getObject - wrapper for GetObject
+//
+//nolint:unused
 func (fs *FSObjects) getObject(ctx context.Context, bucket, object string, offset int64, length int64, writer io.Writer, etag string, lock bool) (err error) {
 	if _, err = fs.statBucketDir(ctx, bucket); err != nil {
 		return toObjectErr(err, bucket)
@@ -894,7 +895,7 @@ func (fs *FSObjects) getObjectInfoNoFSLock(ctx context.Context, bucket, object s
 
 	rc, _, err := fsOpenFile(ctx, fsMetaPath, 0)
 	if err == nil {
-		fsMetaBuf, rerr := ioutil.ReadAll(rc)
+		fsMetaBuf, rerr := io.ReadAll(rc)
 		rc.Close()
 		if rerr == nil {
 			var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -1309,7 +1310,7 @@ func (fs *FSObjects) isLeafDir(bucket string, leafPath string) bool {
 	return fs.isObjectDir(bucket, leafPath)
 }
 
-func (fs *FSObjects) isLeaf(bucket string, leafPath string) bool {
+func (fs *FSObjects) isLeaf(_ string, leafPath string) bool {
 	return !strings.HasSuffix(leafPath, slashSeparator)
 }
 
@@ -1349,6 +1350,8 @@ func (fs *FSObjects) isObjectDir(bucket, prefix string) bool {
 
 // getObjectETag is a helper function, which returns only the md5sum
 // of the file on the disk.
+//
+//nolint:unused
 func (fs *FSObjects) getObjectETag(ctx context.Context, bucket, entry string, lock bool) (string, error) {
 	fsMetaPath := pathJoin(fs.fsPath, otterioMetaBucket, bucketMetaPrefix, bucket, entry, fs.metaJSONFile)
 
@@ -1397,7 +1400,7 @@ func (fs *FSObjects) getObjectETag(ctx context.Context, bucket, entry string, lo
 		return "", nil
 	}
 
-	fsMetaBuf, err := ioutil.ReadAll(reader)
+	fsMetaBuf, err := io.ReadAll(reader)
 	if err != nil {
 		logger.LogIf(ctx, err)
 		return "", toObjectErr(err, bucket, entry)
@@ -1419,7 +1422,7 @@ func (fs *FSObjects) getObjectETag(ctx context.Context, bucket, entry string, lo
 }
 
 // ListObjectVersions not implemented for FS mode.
-func (fs *FSObjects) ListObjectVersions(ctx context.Context, bucket, prefix, marker, versionMarker, delimiter string, maxKeys int) (loi ListObjectVersionsInfo, e error) {
+func (fs *FSObjects) ListObjectVersions(_ context.Context, _, _, _, _, _ string, _ int) (loi ListObjectVersionsInfo, e error) {
 	return loi, NotImplemented{}
 }
 
@@ -1508,18 +1511,18 @@ func (fs *FSObjects) DeleteObjectTags(ctx context.Context, bucket, object string
 }
 
 // HealFormat - no-op for fs, Valid only for Erasure.
-func (fs *FSObjects) HealFormat(ctx context.Context, dryRun bool) (madmin.HealResultItem, error) {
+func (fs *FSObjects) HealFormat(_ context.Context, _ bool) (madmin.HealResultItem, error) {
 	return madmin.HealResultItem{}, NotImplemented{}
 }
 
 // HealObject - no-op for fs. Valid only for Erasure.
-func (fs *FSObjects) HealObject(ctx context.Context, bucket, object, versionID string, opts madmin.HealOpts) (
+func (fs *FSObjects) HealObject(_ context.Context, _, _, _ string, _ madmin.HealOpts) (
 	res madmin.HealResultItem, err error) {
 	return res, NotImplemented{}
 }
 
 // HealBucket - no-op for fs, Valid only for Erasure.
-func (fs *FSObjects) HealBucket(ctx context.Context, bucket string, opts madmin.HealOpts) (madmin.HealResultItem,
+func (fs *FSObjects) HealBucket(_ context.Context, _ string, _ madmin.HealOpts) (madmin.HealResultItem,
 	error) {
 	return madmin.HealResultItem{}, NotImplemented{}
 }
@@ -1529,12 +1532,12 @@ func (fs *FSObjects) HealBucket(ctx context.Context, bucket string, opts madmin.
 // to allocate a receive channel for ObjectInfo, upon any unhandled
 // error walker returns error. Optionally if context.Done() is received
 // then Walk() stops the walker.
-func (fs *FSObjects) Walk(ctx context.Context, bucket, prefix string, results chan<- ObjectInfo, opts ObjectOptions) error {
+func (fs *FSObjects) Walk(ctx context.Context, bucket, prefix string, results chan<- ObjectInfo, _ ObjectOptions) error {
 	return fsWalk(ctx, fs, bucket, prefix, fs.listDirFactory(), fs.isLeaf, fs.isLeafDir, results, fs.getObjectInfoNoFSLock, fs.getObjectInfoNoFSLock)
 }
 
 // HealObjects - no-op for fs. Valid only for Erasure.
-func (fs *FSObjects) HealObjects(ctx context.Context, bucket, prefix string, opts madmin.HealOpts, fn HealObjectFn) (e error) {
+func (fs *FSObjects) HealObjects(ctx context.Context, _, _ string, _ madmin.HealOpts, _ HealObjectFn) (e error) {
 	logger.LogIf(ctx, NotImplemented{})
 	return NotImplemented{}
 }
@@ -1546,7 +1549,7 @@ func (fs *FSObjects) GetMetrics(ctx context.Context) (*BackendMetrics, error) {
 }
 
 // ListObjectsV2 lists all blobs in bucket filtered by prefix
-func (fs *FSObjects) ListObjectsV2(ctx context.Context, bucket, prefix, continuationToken, delimiter string, maxKeys int, fetchOwner bool, startAfter string) (result ListObjectsV2Info, err error) {
+func (fs *FSObjects) ListObjectsV2(ctx context.Context, bucket, prefix, continuationToken, delimiter string, maxKeys int, _ bool, startAfter string) (result ListObjectsV2Info, err error) {
 	marker := continuationToken
 	if marker == "" {
 		marker = startAfter
@@ -1593,7 +1596,7 @@ func (fs *FSObjects) IsTaggingSupported() bool {
 }
 
 // Health returns health of the object layer
-func (fs *FSObjects) Health(ctx context.Context, opts HealthOptions) HealthResult {
+func (fs *FSObjects) Health(_ context.Context, _ HealthOptions) HealthResult {
 	if _, err := os.Stat(fs.fsPath); err != nil {
 		return HealthResult{}
 	}
@@ -1603,7 +1606,7 @@ func (fs *FSObjects) Health(ctx context.Context, opts HealthOptions) HealthResul
 }
 
 // ReadHealth returns "read" health of the object layer
-func (fs *FSObjects) ReadHealth(ctx context.Context) bool {
+func (fs *FSObjects) ReadHealth(_ context.Context) bool {
 	_, err := os.Stat(fs.fsPath)
 	return err == nil
 }

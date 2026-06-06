@@ -21,7 +21,7 @@ import "math/big"
 
 // Defined in <linux/nvme_ioctl.h>
 //
-//nolint:structcheck,deadcode
+//nolint:unused
 type nvmePassthruCommand struct {
 	opcode      uint8
 	flags       uint8
@@ -43,6 +43,7 @@ type nvmePassthruCommand struct {
 	result      uint32
 } // 72 bytes
 
+//nolint:unused
 type nvmeIdentPowerState struct {
 	MaxPower        uint16 // Centiwatts
 	Rsvd2           uint8
@@ -61,7 +62,7 @@ type nvmeIdentPowerState struct {
 	Rsvd23          [9]byte
 }
 
-//nolint:deadcode
+//nolint:unused
 type nvmeIdentController struct {
 	VendorID     uint16                  // PCI Vendor ID
 	Ssvid        uint16                  // PCI Subsystem Vendor ID
@@ -116,13 +117,14 @@ type nvmeIdentController struct {
 	Vs           [1024]byte              // Vendor Specific
 } // 4096 bytes
 
+//nolint:unused
 type nvmeLBAF struct {
 	Ms uint16
 	Ds uint8
 	Rp uint8
 }
 
-//nolint:deadcode
+//nolint:unused
 type nvmeIdentNamespace struct {
 	Nsze    uint64
 	Ncap    uint64
@@ -153,7 +155,7 @@ type nvmeIdentNamespace struct {
 	Vs      [3712]byte
 } // 4096 bytes
 
-//nolint:deadcode
+//nolint:unused
 type nvmeSMARTLog struct {
 	CritWarning      uint8
 	Temperature      [2]uint8
@@ -178,11 +180,10 @@ type nvmeSMARTLog struct {
 } // 512 bytes
 
 // NVMeDevice represents drive data about NVMe drives
-//
-//nolint:structcheck
 type NVMeDevice struct {
 	Name string
-	fd   int
+	//nolint:unused
+	fd int
 }
 
 // Info contains S.M.A.R.T data about the drive

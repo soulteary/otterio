@@ -24,7 +24,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -180,7 +179,7 @@ func loadFileConfigEtcd(filename string, clnt *etcd.Client, v interface{}) error
 // decoder format according to the filename extension. If no
 // extension is provided, json will be selected by default.
 func loadFileConfig(filename string, v interface{}) error {
-	fileData, err := ioutil.ReadFile(filename)
+	fileData, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}

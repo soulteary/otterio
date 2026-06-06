@@ -19,7 +19,7 @@ package cmd
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"os"
 	"reflect"
@@ -421,7 +421,7 @@ func newStorageRESTHTTPServerClient(t *testing.T) (*httptest.Server, *storageRES
 		globalOtterioHost, globalOtterioPort = prevHost, prevPort
 	}()
 
-	endpointPath, err := ioutil.TempDir("", ".TestStorageREST.")
+	endpointPath, err := os.MkdirTemp("", ".TestStorageREST.")
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
 	}
@@ -616,7 +616,7 @@ func TestStorageRESTClientReadFileStream(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFileStream failed: %v", err)
 	}
-	got, err := ioutil.ReadAll(rc)
+	got, err := io.ReadAll(rc)
 	rc.Close()
 	if err != nil {
 		t.Fatalf("reading streamed body failed: %v", err)
@@ -630,7 +630,7 @@ func TestStorageRESTClientReadFileStream(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFileStream (offset) failed: %v", err)
 	}
-	got, err = ioutil.ReadAll(rc)
+	got, err = io.ReadAll(rc)
 	rc.Close()
 	if err != nil {
 		t.Fatalf("reading partial streamed body failed: %v", err)

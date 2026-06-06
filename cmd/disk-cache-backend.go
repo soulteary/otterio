@@ -25,7 +25,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -317,7 +316,7 @@ func (c *diskCache) purge(ctx context.Context) {
 		return fm
 	}
 
-	filterFn := func(name string, typ os.FileMode) error {
+	filterFn := func(name string, _ os.FileMode) error {
 		if name == otterioMetaBucket {
 			// Proceed to next file.
 			return nil
@@ -493,7 +492,7 @@ func (c *diskCache) statRange(ctx context.Context, bucket, object string, rs *HT
 }
 
 // statCache is a convenience function for purge() to get ObjectInfo for cached object
-func (c *diskCache) statCache(ctx context.Context, cacheObjPath string) (meta *cacheMeta, partial bool, numHits int, err error) {
+func (c *diskCache) statCache(_ context.Context, cacheObjPath string) (meta *cacheMeta, partial bool, numHits int, err error) {
 	// Stat the file to get file size.
 	metaPath := pathJoin(cacheObjPath, cacheMetaJSONFile)
 	f, err := os.Open(metaPath)
@@ -529,7 +528,7 @@ func (c *diskCache) SaveMetadata(ctx context.Context, bucket, object string, met
 
 // saves object metadata to disk cache
 // incHitsOnly is true if metadata update is incrementing only the hit counter
-func (c *diskCache) saveMetadata(ctx context.Context, bucket, object string, meta map[string]string, actualSize int64, rs *HTTPRangeSpec, rsFileName string, incHitsOnly bool) error {
+func (c *diskCache) saveMetadata(_ context.Context, bucket, object string, meta map[string]string, actualSize int64, rs *HTTPRangeSpec, rsFileName string, incHitsOnly bool) error {
 	cachedPath := getCacheSHADir(c.dir, bucket, object)
 	metaPath := pathJoin(cachedPath, cacheMetaJSONFile)
 	// Create cache directory if needed
@@ -692,7 +691,7 @@ func newCacheEncryptMetadata(bucket, object string, metadata map[string]string) 
 // Caches the object to disk
 func (c *diskCache) Put(ctx context.Context, bucket, object string, data io.Reader, size int64, rs *HTTPRangeSpec, opts ObjectOptions, incHitsOnly bool) (oi ObjectInfo, err error) {
 	if !c.diskSpaceAvailable(size) {
-		io.Copy(ioutil.Discard, data)
+		io.Copy(io.Discard, data)
 		return oi, errDiskFull
 	}
 	cachePath := getCacheSHADir(c.dir, bucket, object)
@@ -992,7 +991,7 @@ func (c *diskCache) Delete(ctx context.Context, bucket, object string) (err erro
 }
 
 // convenience function to check if object is cached on this diskCache
-func (c *diskCache) Exists(ctx context.Context, bucket, object string) bool {
+func (c *diskCache) Exists(_ context.Context, bucket, object string) bool {
 	if _, err := os.Stat(getCacheSHADir(c.dir, bucket, object)); err != nil {
 		return false
 	}
@@ -1002,7 +1001,7 @@ func (c *diskCache) Exists(ctx context.Context, bucket, object string) bool {
 // queues writeback upload failures on server startup
 func (c *diskCache) scanCacheWritebackFailures(ctx context.Context) {
 	defer close(c.retryWritebackCh)
-	filterFn := func(name string, typ os.FileMode) error {
+	filterFn := func(name string, _ os.FileMode) error {
 		if name == otterioMetaBucket {
 			// Proceed to next file.
 			return nil

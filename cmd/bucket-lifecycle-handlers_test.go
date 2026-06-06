@@ -33,7 +33,7 @@ func TestBucketLifecycleWrongCredentials(t *testing.T) {
 
 // Test for authentication
 func testBucketLifecycleHandlersWrongCredentials(obj ObjectLayer, instanceType, bucketName string, apiRouter http.Handler,
-	credentials auth.Credentials, t *testing.T) {
+	_ auth.Credentials, t *testing.T) {
 	// test cases with sample input and expected output.
 	testCases := []struct {
 		method     string
@@ -254,7 +254,7 @@ func testBucketLifecycleHandlers(obj ObjectLayer, instanceType, bucketName strin
 }
 
 // testBucketLifecycle is a generic testing of lifecycle requests
-func testBucketLifecycle(obj ObjectLayer, instanceType, bucketName string, apiRouter http.Handler,
+func testBucketLifecycle(_ ObjectLayer, instanceType, _ string, apiRouter http.Handler,
 	t *testing.T, testCases []struct {
 		method             string
 		bucketName         string

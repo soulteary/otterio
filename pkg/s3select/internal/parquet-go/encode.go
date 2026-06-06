@@ -185,12 +185,14 @@ func valuesToRLEBytes(values interface{}, bitWidth int32, valueType parquet.Type
 	return result
 }
 
+//nolint:unused
 func valuesToRLEBitPackedHybridBytes(values interface{}, bitWidth int32, dataType parquet.Type) []byte {
 	rleBytes := valuesToRLEBytes(values, bitWidth, dataType)
 	lenBytes := valueToBytes(int32(len(rleBytes)), parquet.Type_INT32)
 	return append(lenBytes, rleBytes...)
 }
 
+//nolint:unused
 func valuesToBitPackedBytes(values interface{}, bitWidth int64, withHeader bool, dataType parquet.Type) []byte {
 	var i64s []int64
 	switch dataType {
@@ -264,17 +266,20 @@ func valuesToBitPackedBytes(values interface{}, bitWidth int64, withHeader bool,
 	return valueBytes
 }
 
+//nolint:unused
 const (
 	blockSize     = 128
 	subBlockSize  = 32
 	subBlockCount = blockSize / subBlockSize
 )
 
+//nolint:unused
 var (
 	blockSizeBytes     = unsignedVarIntToBytes(blockSize)
 	subBlockCountBytes = unsignedVarIntToBytes(subBlockCount)
 )
 
+//nolint:unused
 func int32ToDeltaBytes(i32s []int32) []byte {
 	getValue := func(i32 int32) uint64 {
 		return uint64((i32 >> 31) ^ (i32 << 1))
@@ -332,6 +337,7 @@ func int32ToDeltaBytes(i32s []int32) []byte {
 	return result
 }
 
+//nolint:unused
 func int64ToDeltaBytes(i64s []int64) []byte {
 	getValue := func(i64 int64) uint64 {
 		return uint64((i64 >> 63) ^ (i64 << 1))
@@ -389,6 +395,7 @@ func int64ToDeltaBytes(i64s []int64) []byte {
 	return result
 }
 
+//nolint:unused
 func valuesToDeltaBytes(values interface{}, dataType parquet.Type) []byte {
 	switch dataType {
 	case parquet.Type_INT32:
@@ -400,6 +407,7 @@ func valuesToDeltaBytes(values interface{}, dataType parquet.Type) []byte {
 	return nil
 }
 
+//nolint:unused
 func stringsToDeltaLengthByteArrayBytes(strs []string) []byte {
 	lengths := make([]int32, len(strs))
 	for i, s := range strs {
@@ -414,6 +422,7 @@ func stringsToDeltaLengthByteArrayBytes(strs []string) []byte {
 	return result
 }
 
+//nolint:unused
 func stringsToDeltaByteArrayBytes(strs []string) []byte {
 	prefixLengths := make([]int32, len(strs))
 	suffixes := make([]string, len(strs))
@@ -434,6 +443,7 @@ func stringsToDeltaByteArrayBytes(strs []string) []byte {
 	return append(result, stringsToDeltaLengthByteArrayBytes(suffixes)...)
 }
 
+//nolint:unused
 func encodeValues(values interface{}, dataType parquet.Type, encoding parquet.Encoding, bitWidth int32) []byte {
 	switch encoding {
 	case parquet.Encoding_RLE:

@@ -329,8 +329,8 @@ func fsCreateFile(ctx context.Context, filePath string, reader io.Reader, falloc
 
 // fsFAllocate is similar to Fallocate but provides a convenient
 // wrapper to handle various operating system specific errors.
-func fsFAllocate(fd int, offset int64, len int64) (err error) {
-	e := Fallocate(fd, offset, len)
+func fsFAllocate(fd int, offset int64, length int64) (err error) {
+	e := Fallocate(fd, offset, length)
 	if e != nil {
 		switch {
 		case isSysErrNoSpace(e):

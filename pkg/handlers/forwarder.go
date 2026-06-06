@@ -74,7 +74,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, inReq *http.Request) {
 // customErrHandler is originally implemented to avoid having the following error
 //
 //	`http: proxy error: context canceled` printed by Golang
-func (f *Forwarder) customErrHandler(w http.ResponseWriter, r *http.Request, err error) {
+func (f *Forwarder) customErrHandler(w http.ResponseWriter, _ *http.Request, err error) {
 	if f.Logger != nil && err != context.Canceled {
 		f.Logger(err)
 	}

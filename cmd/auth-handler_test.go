@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -385,7 +384,7 @@ func TestIsReqAuthenticated(t *testing.T) {
 	for i, testCase := range testCases {
 		s3Error := isReqAuthenticated(ctx, testCase.req, globalServerRegion, serviceS3)
 		if s3Error != testCase.s3Error {
-			if _, err := ioutil.ReadAll(testCase.req.Body); toAPIErrorCode(ctx, err) != testCase.s3Error {
+			if _, err := io.ReadAll(testCase.req.Body); toAPIErrorCode(ctx, err) != testCase.s3Error {
 				t.Fatalf("Test %d: Unexpected S3 error: want %d - got %d (got after reading request %s)", i, testCase.s3Error, s3Error, toAPIError(ctx, err).Code)
 			}
 		}

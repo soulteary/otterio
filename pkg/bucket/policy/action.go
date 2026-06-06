@@ -309,7 +309,7 @@ func parseAction(s string) (Action, error) {
 	return action, Errorf("unsupported action '%v'", s)
 }
 
-// objectTagConditionKeys lists tag-aware condition prefix keys recognised by
+// objectTagConditionKeys lists tag-aware condition prefix keys recognized by
 // per-object actions. Listing the bare prefix (e.g. "s3:ExistingObjectTag/")
 // is enough because KeySet.Difference treats prefix-form concrete keys
 // (e.g. "s3:ExistingObjectTag/dept") as covered by the registered prefix.

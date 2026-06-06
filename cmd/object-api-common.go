@@ -87,7 +87,7 @@ func newStorageAPI(endpoint Endpoint) (storage StorageAPI, err error) {
 	return newStorageRESTClient(endpoint, true), nil
 }
 
-func listObjectsNonSlash(ctx context.Context, bucket, prefix, marker, delimiter string, maxKeys int, tpool *TreeWalkPool, listDir ListDirFunc, isLeaf IsLeafFunc, isLeafDir IsLeafDirFunc, getObjInfo func(context.Context, string, string) (ObjectInfo, error), getObjectInfoDirs ...func(context.Context, string, string) (ObjectInfo, error)) (loi ListObjectsInfo, err error) {
+func listObjectsNonSlash(ctx context.Context, bucket, prefix, marker, delimiter string, maxKeys int, _ *TreeWalkPool, listDir ListDirFunc, isLeaf IsLeafFunc, isLeafDir IsLeafDirFunc, getObjInfo func(context.Context, string, string) (ObjectInfo, error), _ ...func(context.Context, string, string) (ObjectInfo, error)) (loi ListObjectsInfo, err error) {
 	endWalkCh := make(chan struct{})
 	defer close(endWalkCh)
 	recursive := true

@@ -21,14 +21,14 @@
 package sys
 
 import (
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
 
 // GetMaxThreads returns the maximum number of threads that the system can create.
 func GetMaxThreads() (int, error) {
-	sysMaxThreadsStr, err := ioutil.ReadFile("/proc/sys/kernel/threads-max")
+	sysMaxThreadsStr, err := os.ReadFile("/proc/sys/kernel/threads-max")
 	if err != nil {
 		return 0, err
 	}

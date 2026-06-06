@@ -321,9 +321,8 @@ func scanDataFolder(ctx context.Context, basePath string, cache dataUsageCache, 
 			if !h.mod(s.oldCache.Info.NextCycle, s.healFolderInclude/folder.objectHealProbDiv) {
 				s.newCache.replaceHashed(h, folder.parent, s.oldCache.Cache[h.Key()])
 				continue
-			} else {
-				folder.objectHealProbDiv = s.healFolderInclude
 			}
+			folder.objectHealProbDiv = s.healFolderInclude
 			folder.objectHealProbDiv = dataUsageUpdateDirCycles
 		}
 		if s.withFilter != nil {
@@ -337,13 +336,12 @@ func scanDataFolder(ctx context.Context, basePath string, cache dataUsageCache, 
 						}
 						s.newCache.replaceHashed(h, folder.parent, s.oldCache.Cache[h.Key()])
 						continue
-					} else {
-						if s.dataUsageScannerDebug {
-							console.Debugf(logPrefix+"Adding non-updated folder to heal check: %v %s\n", folder.name, logSuffix)
-						}
-						// Update probability of including objects
-						folder.objectHealProbDiv = s.healFolderInclude
 					}
+					if s.dataUsageScannerDebug {
+						console.Debugf(logPrefix+"Adding non-updated folder to heal check: %v %s\n", folder.name, logSuffix)
+					}
+					// Update probability of including objects
+					folder.objectHealProbDiv = s.healFolderInclude
 				}
 			}
 		}
@@ -405,13 +403,12 @@ func (f *folderScanner) scanQueuedLevels(ctx context.Context, folders []cachedFo
 						console.Debugf(scannerLogPrefix+" Skipping non-updated folder: %v\n", folder.name)
 					}
 					continue
-				} else {
-					if f.dataUsageScannerDebug {
-						console.Debugf(scannerLogPrefix+" Adding non-updated folder to heal check: %v\n", folder.name)
-					}
-					// If probability was already scannerHealFolderInclude, keep it.
-					folder.objectHealProbDiv = f.healFolderInclude
 				}
+				if f.dataUsageScannerDebug {
+					console.Debugf(scannerLogPrefix+" Adding non-updated folder to heal check: %v\n", folder.name)
+				}
+				// If probability was already scannerHealFolderInclude, keep it.
+				folder.objectHealProbDiv = f.healFolderInclude
 			}
 		}
 		scannerSleeper.Sleep(ctx, dataScannerSleepPerFolder)
@@ -993,7 +990,7 @@ func evalActionFromLifecycle(ctx context.Context, lc lifecycle.Lifecycle, obj Ob
 	return action
 }
 
-func applyTransitionAction(ctx context.Context, action lifecycle.Action, objLayer ObjectLayer, obj ObjectInfo) bool {
+func applyTransitionAction(ctx context.Context, _ lifecycle.Action, objLayer ObjectLayer, obj ObjectInfo) bool {
 	opts := ObjectOptions{}
 	if obj.TransitionStatus == "" {
 		opts.Versioned = globalBucketVersioningSys.Enabled(obj.Bucket)
@@ -1129,7 +1126,7 @@ func (i *scannerItem) healReplication(ctx context.Context, o ObjectLayer, oi Obj
 }
 
 // healReplicationDeletes will heal a scanned deleted item that failed to replicate deletes.
-func (i *scannerItem) healReplicationDeletes(ctx context.Context, o ObjectLayer, oi ObjectInfo) {
+func (i *scannerItem) healReplicationDeletes(ctx context.Context, _ ObjectLayer, oi ObjectInfo) {
 	// handle soft delete and permanent delete failures here.
 	if oi.DeleteMarker || !oi.VersionPurgeStatus.Empty() {
 		versionID := ""

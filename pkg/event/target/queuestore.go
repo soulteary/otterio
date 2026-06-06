@@ -18,7 +18,6 @@ package target
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -96,7 +95,7 @@ func (store *QueueStore) write(key string, e event.Event) error {
 	}
 
 	path := filepath.Join(store.directory, key+eventExt)
-	if err := ioutil.WriteFile(path, eventData, os.FileMode(0770)); err != nil {
+	if err := os.WriteFile(path, eventData, os.FileMode(0770)); err != nil {
 		return err
 	}
 
@@ -133,7 +132,7 @@ func (store *QueueStore) Get(key string) (event event.Event, err error) {
 	}(store)
 
 	var eventData []byte
-	eventData, err = ioutil.ReadFile(filepath.Join(store.directory, key+eventExt))
+	eventData, err = os.ReadFile(filepath.Join(store.directory, key+eventExt))
 	if err != nil {
 		return event, err
 	}
@@ -188,9 +187,18 @@ func (store *QueueStore) List() ([]string, error) {
 // list lock less.
 func (store *QueueStore) list() ([]string, error) {
 	var names []string
-	files, err := ioutil.ReadDir(store.directory)
+	dentries, err := os.ReadDir(store.directory)
 	if err != nil {
 		return names, err
+	}
+
+	files := make([]os.FileInfo, 0, len(dentries))
+	for _, d := range dentries {
+		fi, ferr := d.Info()
+		if ferr != nil {
+			continue
+		}
+		files = append(files, fi)
 	}
 
 	// Sort the dentries.

@@ -456,7 +456,7 @@ func (sts *stsAPIHandlers) AssumeRoleWithLDAPIdentity(w http.ResponseWriter, r *
 		return
 	}
 
-	// SECURITY (LDAP DN normalisation): Bind() guarantees that ldapUserDN and
+	// SECURITY (LDAP DN normalization): Bind() guarantees that ldapUserDN and
 	// every entry in groupDistNames are already in canonical NormalizeDN form
 	// (see cmd/config/identity/ldap/config.go). The IAM policy lookup,
 	// SetTempUser, ParentUser and JWT ldapUser claim below all rely on that

@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -36,7 +35,7 @@ func TestServerConfigMigrateV1(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Init Test config failed")
 	}
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	rootPath, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +49,7 @@ func TestServerConfigMigrateV1(t *testing.T) {
 	// Create a V1 config json file and store it
 	configJSON := "{ \"version\":\"1\", \"accessKeyId\":\"abcde\", \"secretAccessKey\":\"abcdefgh\"}"
 	configPath := rootPath + "/fsUsers.json"
-	if err := ioutil.WriteFile(configPath, []byte(configJSON), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configJSON), 0644); err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}
 
@@ -73,7 +72,7 @@ func TestServerConfigMigrateV1(t *testing.T) {
 // Test if all migrate code returns nil when config file does not
 // exist
 func TestServerConfigMigrateInexistentConfig(t *testing.T) {
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	rootPath, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +162,7 @@ func TestServerConfigMigrateInexistentConfig(t *testing.T) {
 
 // Test if a config migration from v2 to v33 is successfully done
 func TestServerConfigMigrateV2toV33(t *testing.T) {
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	rootPath, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +179,7 @@ func TestServerConfigMigrateV2toV33(t *testing.T) {
 	configPath := rootPath + SlashSeparator + otterioConfigFile
 
 	// Create a corrupted config file
-	if err := ioutil.WriteFile(configPath, []byte("{ \"version\":\"2\","), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte("{ \"version\":\"2\","), 0644); err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}
 	// Fire a migrateConfig()
@@ -193,7 +192,7 @@ func TestServerConfigMigrateV2toV33(t *testing.T) {
 
 	// Create a V2 config json file and store it
 	configJSON := "{ \"version\":\"2\", \"credentials\": {\"accessKeyId\":\"" + accessKey + "\", \"secretAccessKey\":\"" + secretKey + "\", \"region\":\"us-east-1\"}, \"mongoLogger\":{\"addr\":\"127.0.0.1:3543\", \"db\":\"foodb\", \"collection\":\"foo\"}, \"syslogLogger\":{\"network\":\"127.0.0.1:543\", \"addr\":\"addr\"}, \"fileLogger\":{\"filename\":\"log.out\"}}"
-	if err := ioutil.WriteFile(configPath, []byte(configJSON), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configJSON), 0644); err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}
 
@@ -233,7 +232,7 @@ func TestServerConfigMigrateV2toV33(t *testing.T) {
 
 // Test if all migrate code returns error with corrupted config files
 func TestServerConfigMigrateFaultyConfig(t *testing.T) {
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	rootPath, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +242,7 @@ func TestServerConfigMigrateFaultyConfig(t *testing.T) {
 	configPath := rootPath + SlashSeparator + otterioConfigFile
 
 	// Create a corrupted config file
-	if err := ioutil.WriteFile(configPath, []byte("{ \"version\":\"2\", \"test\":"), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte("{ \"version\":\"2\", \"test\":"), 0644); err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}
 
@@ -330,7 +329,7 @@ func TestServerConfigMigrateFaultyConfig(t *testing.T) {
 
 // Test if all migrate code returns error with corrupted config files
 func TestServerConfigMigrateCorruptedConfig(t *testing.T) {
-	rootPath, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	rootPath, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,7 +340,7 @@ func TestServerConfigMigrateCorruptedConfig(t *testing.T) {
 
 	for i := 3; i <= 17; i++ {
 		// Create a corrupted config file
-		if err = ioutil.WriteFile(configPath, []byte(fmt.Sprintf("{ \"version\":\"%d\", \"credential\": { \"accessKey\": 1 } }", i)),
+		if err = os.WriteFile(configPath, []byte(fmt.Sprintf("{ \"version\":\"%d\", \"credential\": { \"accessKey\": 1 } }", i)),
 			0644); err != nil {
 			t.Fatal("Unexpected error: ", err)
 		}
@@ -353,7 +352,7 @@ func TestServerConfigMigrateCorruptedConfig(t *testing.T) {
 	}
 
 	// Create a corrupted config file for version '2'.
-	if err = ioutil.WriteFile(configPath, []byte("{ \"version\":\"2\", \"credentials\": { \"accessKeyId\": 1 } }"), 0644); err != nil {
+	if err = os.WriteFile(configPath, []byte("{ \"version\":\"2\", \"credentials\": { \"accessKeyId\": 1 } }"), 0644); err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}
 

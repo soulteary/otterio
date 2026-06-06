@@ -98,7 +98,7 @@ func TestParseGatewayEndpoint(t *testing.T) {
 
 // Test validateGatewayArguments
 func TestValidateGatewayArguments(t *testing.T) {
-	nonLoopBackIPs := localIP4.FuncMatch(func(ip string, matchString string) bool {
+	nonLoopBackIPs := localIP4.FuncMatch(func(ip string, _ string) bool {
 		return !strings.HasPrefix(ip, "127.")
 	}, "")
 	if len(nonLoopBackIPs) == 0 {

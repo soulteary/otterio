@@ -41,26 +41,26 @@ func reduceErrs(errs []error, ignoredErrs []error) (maxCount int, maxErr error) 
 		errorCounts[err]++
 	}
 
-	max := 0
+	mx := 0
 	for err, count := range errorCounts {
 		switch {
-		case max < count:
-			max = count
+		case mx < count:
+			mx = count
 			maxErr = err
 
 		// Prefer `nil` over other error values with the same
 		// number of occurrences.
-		case max == count && err == nil:
+		case mx == count && err == nil:
 			maxErr = err
 		}
 	}
-	return max, maxErr
+	return mx, maxErr
 }
 
 // reduceQuorumErrs behaves like reduceErrs by only for returning
 // values of maximally occurring errors validated against a generic
 // quorum number that can be read or write quorum depending on usage.
-func reduceQuorumErrs(ctx context.Context, errs []error, ignoredErrs []error, quorum int, quorumErr error) error {
+func reduceQuorumErrs(_ context.Context, errs []error, ignoredErrs []error, quorum int, quorumErr error) error {
 	maxCount, maxErr := reduceErrs(errs, ignoredErrs)
 	if maxCount >= quorum {
 		return maxErr

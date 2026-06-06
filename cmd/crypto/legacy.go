@@ -135,7 +135,7 @@ func SetKMSConfig(s config.Config, cfg KMSConfig) {
 //
 // It sets the global KMS configuration according to the merged configuration
 // on success.
-func lookupConfigLegacy(kvs config.KVS) (VaultConfig, error) {
+func lookupConfigLegacy(_ config.KVS) (VaultConfig, error) {
 	vcfg := VaultConfig{
 		Auth: VaultAuth{
 			Type: "approle",

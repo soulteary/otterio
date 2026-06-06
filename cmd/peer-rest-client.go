@@ -172,7 +172,7 @@ func (client *peerRESTClient) doNetTest(ctx context.Context, dataSize int64, thr
 				continue
 			}
 
-			go func(i int) {
+			go func(_ int) {
 				start := time.Now()
 				before := atomic.LoadInt64(&totalTransferred)
 

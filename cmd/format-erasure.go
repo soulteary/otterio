@@ -23,7 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"sync"
 
@@ -241,7 +241,7 @@ func formatErasureMigrateV1ToV2(export, version string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(formatPath, b, 0644)
+	return os.WriteFile(formatPath, b, 0644)
 }
 
 // Migrates V2 for format.json to V3 (Flat hierarchy for multipart)
@@ -283,7 +283,7 @@ func formatErasureMigrateV2ToV3(export, version string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(formatPath, b, 0644)
+	return os.WriteFile(formatPath, b, 0644)
 }
 
 // countErrs - count a specific error.
@@ -499,7 +499,7 @@ func formatErasureGetDeploymentID(refFormat *formatErasureV3, formats []*formatE
 }
 
 // formatErasureFixDeploymentID - Add deployment id if it is not present.
-func formatErasureFixDeploymentID(endpoints Endpoints, storageDisks []StorageAPI, refFormat *formatErasureV3) (err error) {
+func formatErasureFixDeploymentID(_ Endpoints, storageDisks []StorageAPI, refFormat *formatErasureV3) (err error) {
 	// Attempt to load all `format.json` from all disks.
 	formats, _ := loadFormatErasureAll(storageDisks, false)
 	for index := range formats {
@@ -699,7 +699,7 @@ func initErasureMetaVolumesInLocalDisks(storageDisks []StorageAPI, formats []*fo
 
 // saveUnformattedFormat - populates `format.json` on unformatted disks.
 // also adds `.healing.bin` on the disks which are being actively healed.
-func saveUnformattedFormat(ctx context.Context, storageDisks []StorageAPI, formats []*formatErasureV3) error {
+func saveUnformattedFormat(_ context.Context, storageDisks []StorageAPI, formats []*formatErasureV3) error {
 	for index, format := range formats {
 		if format == nil {
 			continue
@@ -917,7 +917,7 @@ func makeFormatErasureMetaVolumes(disk StorageAPI) error {
 }
 
 // Initialize a new set of set formats which will be written to all disks.
-func newHealFormatSets(refFormat *formatErasureV3, setCount, setDriveCount int, formats []*formatErasureV3, errs []error) [][]*formatErasureV3 {
+func newHealFormatSets(refFormat *formatErasureV3, setCount, setDriveCount int, _ []*formatErasureV3, errs []error) [][]*formatErasureV3 {
 	newFormats := make([][]*formatErasureV3, setCount)
 	for i := range refFormat.Erasure.Sets {
 		newFormats[i] = make([]*formatErasureV3, setDriveCount)

@@ -175,7 +175,7 @@ func getGroups(conn *ldap.Conn, sreq *ldap.SearchRequest) ([]string, error) {
 	for _, entry := range sres.Entries {
 		// We only queried one attribute,
 		// so we only look up the first one.
-		// SECURITY (LDAP DN normalisation): the directory may return DNs in
+		// SECURITY (LDAP DN normalization): the directory may return DNs in
 		// any case / whitespace form; before they reach the IAM map we must
 		// canonicalise them. Returning ErrInvalidDN aborts the bind so that
 		// an unparsable DN never silently widens the policy lookup.
@@ -239,14 +239,14 @@ func (l *Config) usernameFormatsBind(conn *ldap.Conn, username, password string)
 		errMsg := fmt.Sprintf("Multiple username formats succeeded - ambiguous user login (succeeded for: %s)", successDistNames)
 		return "", errors.New(errMsg)
 	}
-	// SECURITY (LDAP DN normalisation): the bindDN was synthesised from the
+	// SECURITY (LDAP DN normalization): the bindDN was synthesized from the
 	// configured username format string, so it carries whatever case /
 	// whitespace the operator typed in their config. Canonicalise it here so
 	// downstream IAM look-ups see the same canonical form regardless of how
 	// the format string was written.
 	canonical, err := NormalizeDN(bindDistNames[0])
 	if err != nil {
-		return "", fmt.Errorf("synthesised bind DN %q is not RFC 4514 valid: %w", bindDistNames[0], err)
+		return "", fmt.Errorf("synthesized bind DN %q is not RFC 4514 valid: %w", bindDistNames[0], err)
 	}
 	return canonical, nil
 }
@@ -274,7 +274,7 @@ func (l *Config) lookupUserDN(conn *ldap.Conn, username string) (string, error) 
 	if len(searchResult.Entries) != 1 {
 		return "", fmt.Errorf("Multiple DNs for %s found - please fix the search filter", username)
 	}
-	// SECURITY (LDAP DN normalisation): canonicalise the bind DN before it
+	// SECURITY (LDAP DN normalization): canonicalise the bind DN before it
 	// flows into IAM. See cmd/config/identity/ldap/dn.go for the rationale.
 	dn, err := NormalizeDN(searchResult.Entries[0].DN)
 	if err != nil {
@@ -314,7 +314,7 @@ func (l *Config) searchForUserGroups(conn *ldap.Conn, username, bindDN string) (
 
 // LookupUserDN searches for the full DN ang groups of a given username
 //
-// SECURITY (LDAP DN normalisation): the DN and group DNs returned here are
+// SECURITY (LDAP DN normalization): the DN and group DNs returned here are
 // guaranteed to be in canonical form (NormalizeDN) so callers may use them
 // as IAM map keys directly. The lookupUserDN / searchForUserGroups helpers
 // invoked below normalise on egress; we re-normalise once more here as a
@@ -414,7 +414,7 @@ func (l *Config) Bind(username, password string) (string, []string, error) {
 		return "", nil, err
 	}
 
-	// SECURITY (LDAP DN normalisation): every helper above already returns a
+	// SECURITY (LDAP DN normalization): every helper above already returns a
 	// canonical form, so this final pass is purely an invariant check. If a
 	// future refactor introduces a new bindDN path that bypasses
 	// lookupUserDN/usernameFormatsBind, re-normalising here ensures we still
@@ -559,7 +559,7 @@ func Lookup(kvs config.KVS, rootCAs *x509.CertPool) (l Config, err error) {
 	lookupBindDN := env.Get(EnvLookupBindDN, kvs.Get(LookupBindDN))
 	lookupBindPassword := env.Get(EnvLookupBindPassword, kvs.Get(LookupBindPassword))
 	if lookupBindDN != "" {
-		// SECURITY (LDAP DN normalisation): canonicalise operator-supplied
+		// SECURITY (LDAP DN normalization): canonicalise operator-supplied
 		// DN-shaped config values up front so runtime IAM key comparisons see
 		// the same form regardless of how the value was originally typed.
 		canonicalLookupBindDN, err := NormalizeDN(lookupBindDN)
@@ -600,7 +600,7 @@ func Lookup(kvs config.KVS, rootCAs *x509.CertPool) (l Config, err error) {
 
 	// At least one of bind mode or username format must be used.
 	if !l.isUsingLookupBind && len(l.UsernameFormats) == 0 {
-		return l, errors.New("Either Lookup Bind mode or Username Format mode is required.")
+		return l, errors.New("either Lookup Bind mode or Username Format mode is required")
 	}
 
 	// Test connection to LDAP server.
@@ -621,7 +621,7 @@ func Lookup(kvs config.KVS, rootCAs *x509.CertPool) (l Config, err error) {
 		l.GroupSearchFilter = grpSearchFilter
 		l.GroupSearchBaseDistName = grpSearchBaseDN
 		l.GroupSearchBaseDistNames = strings.Split(l.GroupSearchBaseDistName, dnDelimiter)
-		// SECURITY (LDAP DN normalisation): operator-supplied group search
+		// SECURITY (LDAP DN normalization): operator-supplied group search
 		// bases are canonicalised once here. NormalizeDNSlice ignores empty
 		// entries gracefully but rejects malformed ones with a typed error.
 		if err := NormalizeDNSlice(l.GroupSearchBaseDistNames); err != nil {

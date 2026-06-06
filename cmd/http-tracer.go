@@ -20,7 +20,6 @@ package cmd
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"reflect"
@@ -192,7 +191,7 @@ func Trace(f http.HandlerFunc, logBody bool, w http.ResponseWriter, r *http.Requ
 	}
 
 	reqBodyRecorder := &recordRequest{Reader: r.Body, logBody: logBody, headers: reqHeaders}
-	r.Body = ioutil.NopCloser(reqBodyRecorder)
+	r.Body = io.NopCloser(reqBodyRecorder)
 
 	now := time.Now().UTC()
 	t := trace.Info{TraceType: trace.HTTP, FuncName: name, Time: now}

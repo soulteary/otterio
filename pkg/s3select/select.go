@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -73,9 +72,9 @@ var bufPool = sync.Pool{
 
 var bufioWriterPool = sync.Pool{
 	New: func() interface{} {
-		// ioutil.Discard is just used to create the writer. Actual destination
+		// io.Discard is just used to create the writer. Actual destination
 		// writer is set later by Reset() before using it.
-		return bufio.NewWriter(ioutil.Discard)
+		return bufio.NewWriter(io.Discard)
 	},
 }
 
@@ -356,7 +355,7 @@ func (s3Select *S3Select) marshal(buf *bytes.Buffer, record sql.Record) error {
 		// Use bufio Writer to prevent csv.Writer from allocating a new buffer.
 		bufioWriter := bufioWriterPool.Get().(*bufio.Writer)
 		defer func() {
-			bufioWriter.Reset(ioutil.Discard)
+			bufioWriter.Reset(io.Discard)
 			bufioWriterPool.Put(bufioWriter)
 		}()
 

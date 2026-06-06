@@ -552,8 +552,8 @@ func (l *s3EncObjects) PutObjectPart(ctx context.Context, bucket string, object 
 
 // CopyObjectPart creates a part in a multipart upload by copying
 // existing object or a part of it.
-func (l *s3EncObjects) CopyObjectPart(ctx context.Context, srcBucket, srcObject, destBucket, destObject, uploadID string,
-	partID int, startOffset, length int64, srcInfo otterio.ObjectInfo, srcOpts, dstOpts otterio.ObjectOptions) (p otterio.PartInfo, err error) {
+func (l *s3EncObjects) CopyObjectPart(ctx context.Context, _, _, destBucket, destObject, uploadID string,
+	partID int, _, _ int64, srcInfo otterio.ObjectInfo, _, dstOpts otterio.ObjectOptions) (p otterio.PartInfo, err error) {
 	return l.PutObjectPart(ctx, destBucket, destObject, uploadID, partID, srcInfo.PutObjReader, dstOpts)
 }
 
@@ -784,7 +784,7 @@ func (l *s3EncObjects) getStalePartsForBucket(ctx context.Context, bucket string
 	return
 }
 
-func (l *s3EncObjects) DeleteBucket(ctx context.Context, bucket string, forceDelete bool) error {
+func (l *s3EncObjects) DeleteBucket(ctx context.Context, bucket string, _ bool) error {
 	var prefix, continuationToken, delimiter, startAfter string
 	expParts := make(map[string]string)
 

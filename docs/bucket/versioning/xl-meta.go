@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -80,7 +79,7 @@ GLOBAL FLAGS:
 				r = f
 			}
 
-			b, err := ioutil.ReadAll(r)
+			b, err := io.ReadAll(r)
 			if err != nil {
 				return err
 			}

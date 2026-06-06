@@ -22,7 +22,6 @@ import (
 	crand "crypto/rand"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"testing"
@@ -322,7 +321,7 @@ func TestGetObjectNoQuorum(t *testing.T) {
 		}
 	}
 
-	err = xl.GetObject(ctx, bucket, object, 0, int64(len(buf)), ioutil.Discard, "", opts)
+	err = xl.GetObject(ctx, bucket, object, 0, int64(len(buf)), io.Discard, "", opts)
 	if err != toObjectErr(errFileNotFound, bucket, object) {
 		t.Errorf("Expected GetObject to fail with %v, but failed with %v", toObjectErr(errErasureWriteQuorum, bucket, object), err)
 	}
@@ -358,7 +357,7 @@ func TestGetObjectNoQuorum(t *testing.T) {
 		}
 		z.serverPools[0].erasureDisksMu.Unlock()
 		// Fetch object from store.
-		err = xl.GetObject(ctx, bucket, object, 0, int64(len("abcd")), ioutil.Discard, "", opts)
+		err = xl.GetObject(ctx, bucket, object, 0, int64(len("abcd")), io.Discard, "", opts)
 		if err != toObjectErr(errErasureReadQuorum, bucket, object) {
 			t.Errorf("Expected GetObject to fail with %v, but failed with %v", toObjectErr(errErasureWriteQuorum, bucket, object), err)
 		}
@@ -572,7 +571,7 @@ func TestObjectQuorumFromMeta(t *testing.T) {
 	ExecObjectLayerTestWithDirs(t, testObjectQuorumFromMeta)
 }
 
-func testObjectQuorumFromMeta(obj ObjectLayer, instanceType string, dirs []string, t TestErrHandler) {
+func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHandler) {
 	restoreGlobalStorageClass := globalStorageClass
 	defer func() {
 		globalStorageClass = restoreGlobalStorageClass

@@ -88,7 +88,7 @@ func ClusterReadCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // ReadinessCheckHandler Checks if the process is up. Always returns success.
-func ReadinessCheckHandler(w http.ResponseWriter, r *http.Request) {
+func ReadinessCheckHandler(w http.ResponseWriter, _ *http.Request) {
 	if shouldProxy() {
 		// Service not initialized yet
 		w.Header().Set(xhttp.OtterIOServerStatus, unavailable)
@@ -98,7 +98,7 @@ func ReadinessCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // LivenessCheckHandler - Checks if the process is up. Always returns success.
-func LivenessCheckHandler(w http.ResponseWriter, r *http.Request) {
+func LivenessCheckHandler(w http.ResponseWriter, _ *http.Request) {
 	if shouldProxy() {
 		// Service not initialized yet
 		w.Header().Set(xhttp.OtterIOServerStatus, unavailable)

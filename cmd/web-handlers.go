@@ -61,7 +61,7 @@ import (
 
 func extractBucketObject(args reflect.Value) (bucketName, objectName string) {
 	switch args.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		a := args.Elem()
 		for i := 0; i < a.NumField(); i++ {
 			switch a.Type().Field(i).Name {
@@ -2218,7 +2218,7 @@ type DiscoveryDocResp struct {
 }
 
 // GetDiscoveryDoc - returns parsed value of OpenID discovery document
-func (web *webAPIHandlers) GetDiscoveryDoc(r *http.Request, args *WebGenericArgs, reply *DiscoveryDocResp) error {
+func (web *webAPIHandlers) GetDiscoveryDoc(_ *http.Request, _ *WebGenericArgs, reply *DiscoveryDocResp) error {
 	if globalOpenIDConfig.DiscoveryDoc.AuthEndpoint != "" {
 		reply.DiscoveryDoc = globalOpenIDConfig.DiscoveryDoc
 		reply.ClientID = globalOpenIDConfig.ClientID

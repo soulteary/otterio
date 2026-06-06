@@ -31,7 +31,7 @@ import (
 // These are L1 tests: they use a recording mockKMS so we can assert
 // exactly what AEAD AAD UnsealObjectKey hands to the KMS, without
 // relying on a particular KMS implementation. End-to-end cryptographic
-// behaviour is covered by L2 tests sitting alongside this file.
+// behavior is covered by L2 tests sitting alongside this file.
 
 // recordingKMS is a kms.KMS that records the (keyID, ctx) pair given
 // to GenerateKey/DecryptKey and is otherwise dumb. The Plaintext it

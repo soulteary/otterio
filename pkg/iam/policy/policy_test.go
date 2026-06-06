@@ -1210,7 +1210,7 @@ func TestSessionPolicyDenyOnlyEscalation(t *testing.T) {
 	}
 
 	// Sanity: with DenyOnly the session policy lets through any action it does
-	// not explicitly deny - this is exactly the unsafe behaviour the fix avoids
+	// not explicitly deny - this is exactly the unsafe behavior the fix avoids
 	// for sub policies.
 	denyOnlyArgs := createSvcAcctArgs
 	denyOnlyArgs.DenyOnly = true

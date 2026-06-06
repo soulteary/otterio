@@ -292,7 +292,7 @@ func setEncryptionMetadata(r *http.Request, bucket, object string, metadata map[
 // boundary needs to call enforceSSEKMSRequest BEFORE any KMS or
 // object-layer effect to reject reserved-key overrides without
 // triggering the KMS. Calling EncryptRequest with an SSE-KMS request
-// returns crypto.ErrIncompatibleEncryptionMethod as a defence-in-depth
+// returns crypto.ErrIncompatibleEncryptionMethod as a defense-in-depth
 // signal so a future caller cannot accidentally bypass the gate.
 func EncryptRequest(content io.Reader, r *http.Request, bucket, object string, metadata map[string]string) (io.Reader, crypto.ObjectKey, error) {
 	if crypto.S3KMS.IsRequested(r.Header) {

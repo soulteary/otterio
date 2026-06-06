@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -346,7 +345,7 @@ func loadAndValidateCacheFormat(ctx context.Context, drives []string) (formats [
 
 // reads cached object on disk and writes it back after adding bitrot
 // hashsum per block as per the new disk cache format.
-func migrateCacheData(ctx context.Context, c *diskCache, bucket, object, oldfile, destDir string, metadata map[string]string) error {
+func migrateCacheData(_ context.Context, c *diskCache, bucket, object, oldfile, destDir string, metadata map[string]string) error {
 	st, err := os.Stat(oldfile)
 	if err != nil {
 		err = osErrToFileErr(err)
@@ -399,7 +398,7 @@ func migrateOldCache(ctx context.Context, c *diskCache) error {
 		bucket = strings.TrimSuffix(bucket, SlashSeparator)
 		var objMetaPaths []string
 		root := path.Join(oldCacheBucketsPath, bucket)
-		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(root, func(path string, _ os.FileInfo, _ error) error {
 			if strings.HasSuffix(path, cacheMetaJSONFile) {
 				objMetaPaths = append(objMetaPaths, path)
 			}
@@ -422,7 +421,7 @@ func migrateOldCache(ctx context.Context, c *diskCache) error {
 			// get old cached metadata
 			oldMetaPath := pathJoin(oldCacheBucketsPath, bucket, object, cacheMetaJSONFile)
 			metaPath := pathJoin(destdir, cacheMetaJSONFile)
-			metaBytes, err := ioutil.ReadFile(oldMetaPath)
+			metaBytes, err := os.ReadFile(oldMetaPath)
 			if err != nil {
 				return err
 			}
@@ -460,7 +459,7 @@ func migrateOldCache(ctx context.Context, c *diskCache) error {
 				return err
 			}
 
-			if err = ioutil.WriteFile(metaPath, jsonData, 0644); err != nil {
+			if err = os.WriteFile(metaPath, jsonData, 0644); err != nil {
 				return err
 			}
 		}

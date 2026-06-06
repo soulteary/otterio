@@ -231,7 +231,7 @@ func fiberTestFasthttpRequest(r *http.Request) (*fasthttp.Request, error) {
 	}
 	if clientContentLengthSet && len(clientContentLength) > 0 {
 		// Reassert the client's Content-Length so SetBody / fasthttp's
-		// internal normalisation cannot demote it back to len(body).
+		// internal normalization cannot demote it back to len(body).
 		req.Header.Set("Content-Length", clientContentLength[0])
 	}
 	return req, nil

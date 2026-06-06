@@ -23,7 +23,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -139,7 +139,7 @@ func getEnvValueFromHTTP(urlStr, envKey string) (string, string, string, error) 
 		return "", "", "", err
 	}
 
-	envValueBytes, err := ioutil.ReadAll(resp.Body)
+	envValueBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", "", err
 	}

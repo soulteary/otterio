@@ -143,7 +143,7 @@ const (
 // of per-tag-key conditions ("s3:ExistingObjectTag/dept", etc.). Validation of
 // concrete prefix-form keys is handled by Key.IsValid below; listing the bare
 // prefixes here lets callers (e.g. cmd/iam policy AllActions) treat them as
-// recognised condition-key categories.
+// recognized condition-key categories.
 var AllSupportedKeys = append([]Key{
 	S3SignatureVersion,
 	S3AuthType,
@@ -210,7 +210,7 @@ func substFuncFromValues(values map[string][]string) func(string) string {
 // IsValid - checks if key is valid or not.
 func (key Key) IsValid() bool {
 	// Bare prefix forms ("s3:ExistingObjectTag/" with no tag-key) are
-	// catalogue entries listed in AllSupportedKeys for introspection - they
+	// catalog entries listed in AllSupportedKeys for introspection - they
 	// are *not* valid concrete condition keys on their own.
 	for _, prefix := range tagConditionKeyPrefixes {
 		if key == prefix {

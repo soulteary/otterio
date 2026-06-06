@@ -207,7 +207,7 @@ func (v *vaultService) Stat() (kms.Status, error) {
 // a not-implemented error.
 //
 // Creating keys requires a KES instance between OtterIO and Vault.
-func (v *vaultService) CreateKey(keyID string) error {
+func (v *vaultService) CreateKey(_ string) error {
 	// Creating new keys requires KES.
 	return errors.New("crypto: creating keys is not supported by Vault")
 }

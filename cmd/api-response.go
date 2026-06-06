@@ -542,7 +542,7 @@ func generateListObjectsV1Response(bucket, prefix, marker, delimiter, encodingTy
 }
 
 // generates an ListObjectsV2 response for the said bucket with other enumerated options.
-func generateListObjectsV2Response(bucket, prefix, token, nextToken, startAfter, delimiter, encodingType string, fetchOwner, isTruncated bool, maxKeys int, objects []ObjectInfo, prefixes []string, metadata bool) ListObjectsV2Response {
+func generateListObjectsV2Response(bucket, prefix, token, nextToken, startAfter, delimiter, encodingType string, _, isTruncated bool, maxKeys int, objects []ObjectInfo, prefixes []string, metadata bool) ListObjectsV2Response {
 	contents := make([]Object, 0, len(objects))
 	var owner = Owner{
 		ID:          globalOtterioDefaultOwnerID,
@@ -805,7 +805,8 @@ func writeErrorResponseHeadersOnly(w http.ResponseWriter, err APIError) {
 	writeResponse(w, err.HTTPStatusCode, nil, mimeNone)
 }
 
-func writeErrorResponseString(ctx context.Context, w http.ResponseWriter, err APIError, reqURL *url.URL) {
+//nolint:unused
+func writeErrorResponseString(_ context.Context, w http.ResponseWriter, err APIError, _ *url.URL) {
 	// Generate string error response.
 	writeResponse(w, err.HTTPStatusCode, []byte(err.Description), mimeNone)
 }

@@ -51,7 +51,7 @@ func NewBucketQuotaSys() *BucketQuotaSys {
 }
 
 // parseBucketQuota parses BucketQuota from json
-func parseBucketQuota(bucket string, data []byte) (quotaCfg *madmin.BucketQuota, err error) {
+func parseBucketQuota(_ string, data []byte) (quotaCfg *madmin.BucketQuota, err error) {
 	quotaCfg = &madmin.BucketQuota{}
 	if err = json.Unmarshal(data, quotaCfg); err != nil {
 		return quotaCfg, err
@@ -62,7 +62,7 @@ func parseBucketQuota(bucket string, data []byte) (quotaCfg *madmin.BucketQuota,
 	return
 }
 
-func (sys *BucketQuotaSys) check(ctx context.Context, bucket string, size int64) error {
+func (sys *BucketQuotaSys) check(_ context.Context, bucket string, size int64) error {
 	objAPI := newObjectLayerFn()
 	if objAPI == nil {
 		return errServerNotInitialized

@@ -141,10 +141,7 @@ func (p PostgreSQLArgs) Validate() error {
 		}
 	}
 
-	if p.ConnectionString != "" {
-		// No pq API doesn't help to validate connection string
-		// prior connection, so no validation for now.
-	} else {
+	if p.ConnectionString == "" {
 		// Some fields need to be specified when ConnectionString is unspecified
 		if p.Port == "" {
 			return fmt.Errorf("unspecified port")

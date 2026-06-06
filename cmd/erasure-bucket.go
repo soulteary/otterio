@@ -34,7 +34,7 @@ var bucketMetadataOpIgnoredErrs = append(bucketOpIgnoredErrs, errVolumeNotFound)
 /// Bucket operations
 
 // MakeBucket - make a bucket.
-func (er erasureObjects) MakeBucketWithLocation(ctx context.Context, bucket string, opts BucketOptions) error {
+func (er erasureObjects) MakeBucketWithLocation(ctx context.Context, bucket string, _ BucketOptions) error {
 	// Verify if bucket is valid.
 	if err := s3utils.CheckValidBucketNameStrict(bucket); err != nil {
 		return BucketNameInvalid{Bucket: bucket}

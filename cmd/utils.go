@@ -26,7 +26,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -126,7 +125,7 @@ const (
 
 // nopCharsetConverter is a dummy charset convert which just copies input to output,
 // it is used to ignore custom encoding charset in S3 XML body.
-func nopCharsetConverter(label string, input io.Reader) (io.Reader, error) {
+func nopCharsetConverter(_ string, input io.Reader) (io.Reader, error) {
 	return input, nil
 }
 
@@ -281,7 +280,7 @@ func startProfiler(profilerType string) (otterioProfiler, error) {
 	// library creates to store profiling data.
 	switch madmin.ProfilerType(profilerType) {
 	case madmin.ProfilerCPU:
-		dirPath, err := ioutil.TempDir("", "profile")
+		dirPath, err := os.MkdirTemp("", "profile")
 		if err != nil {
 			return nil, err
 		}
@@ -301,7 +300,7 @@ func startProfiler(profilerType string) (otterioProfiler, error) {
 				return nil, err
 			}
 			defer os.RemoveAll(dirPath)
-			return ioutil.ReadFile(fn)
+			return os.ReadFile(fn)
 		}
 	case madmin.ProfilerMEM:
 		runtime.GC()
@@ -345,7 +344,7 @@ func startProfiler(profilerType string) (otterioProfiler, error) {
 			return buf.Bytes(), err
 		}
 	case madmin.ProfilerTrace:
-		dirPath, err := ioutil.TempDir("", "profile")
+		dirPath, err := os.MkdirTemp("", "profile")
 		if err != nil {
 			return nil, err
 		}
@@ -366,7 +365,7 @@ func startProfiler(profilerType string) (otterioProfiler, error) {
 				return nil, err
 			}
 			defer os.RemoveAll(dirPath)
-			return ioutil.ReadFile(fn)
+			return os.ReadFile(fn)
 		}
 	default:
 		return nil, errors.New("profiler type unknown")

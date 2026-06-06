@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -194,7 +193,7 @@ func extractMetadataFromMime(ctx context.Context, v textproto.MIMEHeader, m map[
 		}
 	}
 
-	// Defence-in-depth for GHSA-3rh2-v3gr-35p9 (SSE metadata injection):
+	// Defense-in-depth for GHSA-3rh2-v3gr-35p9 (SSE metadata injection):
 	// even if the request slipped past filterReservedMetadata (e.g. via a
 	// future router that forgets to mount the middleware), drop any key
 	// whose canonical or "X-Amz-Meta-" wrapped form falls inside the
@@ -331,7 +330,7 @@ func extractPostPolicyFormValues(ctx context.Context, form *multipart.Form) (fil
 			b.WriteString(v)
 		}
 		fileSize = int64(b.Len())
-		filePart = ioutil.NopCloser(b)
+		filePart = io.NopCloser(b)
 		return filePart, fileName, fileSize, formValues, nil
 	}
 
@@ -373,6 +372,8 @@ func extractPostPolicyFormValues(ctx context.Context, form *multipart.Form) (fil
 }
 
 // Log headers and body.
+//
+//nolint:unused
 func httpTraceAll(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if globalTrace.NumSubscribers() == 0 {
@@ -385,6 +386,8 @@ func httpTraceAll(f http.HandlerFunc) http.HandlerFunc {
 }
 
 // Log only the headers.
+//
+//nolint:unused
 func httpTraceHdrs(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if globalTrace.NumSubscribers() == 0 {
@@ -396,6 +399,7 @@ func httpTraceHdrs(f http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+//nolint:unused
 func collectAPIStats(api string, f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		globalHTTPStats.currentS3Requests.Inc(api)
@@ -441,6 +445,7 @@ func getResource(path string, host string, domains []string) (string, error) {
 
 var regexVersion = regexp.MustCompile(`^` + otterioReservedBucketPath + `.*/(v\d+)/.*`)
 
+//nolint:unused
 func extractAPIVersion(r *http.Request) string {
 	if matches := regexVersion.FindStringSubmatch(r.URL.Path); len(matches) > 1 {
 		return matches[1]
@@ -448,7 +453,8 @@ func extractAPIVersion(r *http.Request) string {
 	return "unknown"
 }
 
-func methodNotAllowedHandler(api string) func(w http.ResponseWriter, r *http.Request) {
+//nolint:unused
+func methodNotAllowedHandler(_ string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions {
 			return
@@ -502,6 +508,8 @@ func methodNotAllowedHandler(api string) func(w http.ResponseWriter, r *http.Req
 }
 
 // If none of the http routes match respond with appropriate errors
+//
+//nolint:unused
 func errorResponseHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		return
@@ -565,7 +573,7 @@ func getHostName(r *http.Request) (hostName string) {
 }
 
 // Proxy any request to an endpoint.
-func proxyRequest(ctx context.Context, w http.ResponseWriter, r *http.Request, ep ProxyEndpoint) (success bool) {
+func proxyRequest(_ context.Context, w http.ResponseWriter, r *http.Request, ep ProxyEndpoint) (success bool) {
 	success = true
 
 	// Make sure we remove any existing headers before
@@ -577,7 +585,7 @@ func proxyRequest(ctx context.Context, w http.ResponseWriter, r *http.Request, e
 	f := handlers.NewForwarder(&handlers.Forwarder{
 		PassHost:     true,
 		RoundTripper: ep.Transport,
-		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+		ErrorHandler: func(_ http.ResponseWriter, _ *http.Request, err error) {
 			success = false
 			if err != nil && !errors.Is(err, context.Canceled) {
 				logger.LogIf(GlobalContext, err)

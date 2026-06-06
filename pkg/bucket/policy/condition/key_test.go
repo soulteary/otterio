@@ -213,7 +213,7 @@ func TestKeySetToSlice(t *testing.T) {
 	}
 }
 
-// TestExistingObjectTagConditionParsedAndMatches pins the behaviour of the
+// TestExistingObjectTagConditionParsedAndMatches pins the behavior of the
 // per-tag prefix condition keys ("s3:ExistingObjectTag/<k>",
 // "s3:RequestObjectTag/<k>"). It covers:
 //

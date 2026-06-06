@@ -19,7 +19,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -116,7 +115,7 @@ func TestIsKubernetes(t *testing.T) {
 // Tests if the environment we are running is Helm chart.
 func TestGetHelmVersion(t *testing.T) {
 	createTempFile := func(content string) string {
-		tmpfile, err := ioutil.TempFile("", "helm-testfile-")
+		tmpfile, err := os.CreateTemp("", "helm-testfile-")
 		if err != nil {
 			t.Fatalf("Unable to create temporary file. %s", err)
 		}

@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"sort"
@@ -136,7 +135,7 @@ func testTreeWalkMarker(t *testing.T, listDir ListDirFunc, isLeaf IsLeafFunc, is
 
 // Test tree-walk.
 func TestTreeWalk(t *testing.T) {
-	fsDir, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	fsDir, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatalf("Unable to create tmp directory: %s", err)
 	}
@@ -158,7 +157,7 @@ func TestTreeWalk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	isLeaf := func(bucket, leafPath string) bool {
+	isLeaf := func(_, leafPath string) bool {
 		return !strings.HasSuffix(leafPath, slashSeparator)
 	}
 
@@ -183,7 +182,7 @@ func TestTreeWalk(t *testing.T) {
 
 // Test if tree walk go-routine exits cleanly if tree walk is aborted because of timeout.
 func TestTreeWalkTimeout(t *testing.T) {
-	fsDir, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	fsDir, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatalf("Unable to create tmp directory: %s", err)
 	}
@@ -202,7 +201,7 @@ func TestTreeWalkTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	isLeaf := func(bucket, leafPath string) bool {
+	isLeaf := func(_, leafPath string) bool {
 		return !strings.HasSuffix(leafPath, slashSeparator)
 	}
 
@@ -259,7 +258,7 @@ func TestTreeWalkTimeout(t *testing.T) {
 // without recursively traversing prefixes.
 func TestRecursiveTreeWalk(t *testing.T) {
 	// Create a backend directories fsDir1.
-	fsDir1, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	fsDir1, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Fatalf("Unable to create tmp directory: %s", err)
 	}
@@ -270,7 +269,7 @@ func TestRecursiveTreeWalk(t *testing.T) {
 		t.Fatalf("Unable to create StorageAPI: %s", err)
 	}
 
-	isLeaf := func(bucket, leafPath string) bool {
+	isLeaf := func(_, leafPath string) bool {
 		return !strings.HasSuffix(leafPath, slashSeparator)
 	}
 
@@ -373,7 +372,7 @@ func TestRecursiveTreeWalk(t *testing.T) {
 
 func TestSortedness(t *testing.T) {
 	// Create a backend directories fsDir1.
-	fsDir1, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	fsDir1, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Errorf("Unable to create tmp directory: %s", err)
 	}
@@ -384,7 +383,7 @@ func TestSortedness(t *testing.T) {
 		t.Fatalf("Unable to create StorageAPI: %s", err)
 	}
 
-	isLeaf := func(bucket, leafPath string) bool {
+	isLeaf := func(_, leafPath string) bool {
 		return !strings.HasSuffix(leafPath, slashSeparator)
 	}
 
@@ -453,7 +452,7 @@ func TestSortedness(t *testing.T) {
 
 func TestTreeWalkIsEnd(t *testing.T) {
 	// Create a backend directories fsDir1.
-	fsDir1, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+	fsDir1, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 	if err != nil {
 		t.Errorf("Unable to create tmp directory: %s", err)
 	}
@@ -464,7 +463,7 @@ func TestTreeWalkIsEnd(t *testing.T) {
 		t.Fatalf("Unable to create StorageAPI: %s", err)
 	}
 
-	isLeaf := func(bucket, leafPath string) bool {
+	isLeaf := func(_, leafPath string) bool {
 		return !strings.HasSuffix(leafPath, slashSeparator)
 	}
 
@@ -515,8 +514,10 @@ func TestTreeWalkIsEnd(t *testing.T) {
 	}
 	for i, test := range testCases {
 		var entry TreeWalkResult
-		for entry = range startTreeWalk(context.Background(), volume, test.prefix,
-			test.marker, test.recursive, listDir, isLeaf, isLeafDir, endWalkCh) {
+		ch := startTreeWalk(context.Background(), volume, test.prefix,
+			test.marker, test.recursive, listDir, isLeaf, isLeafDir, endWalkCh)
+		for entry = range ch {
+			_ = entry
 		}
 		if entry.entry != test.expectedEntry {
 			t.Errorf("Test %d: Expected entry %s, but received %s with the EOF marker", i, test.expectedEntry, entry.entry)

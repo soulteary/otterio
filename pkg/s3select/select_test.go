@@ -21,7 +21,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
@@ -446,12 +445,12 @@ func TestJSONQueries(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err = s3Select.Open(func(offset, length int64) (io.ReadCloser, error) {
+			if err = s3Select.Open(func(_, _ int64) (io.ReadCloser, error) {
 				in := input
 				if len(testCase.withJSON) > 0 {
 					in = testCase.withJSON
 				}
-				return ioutil.NopCloser(bytes.NewBufferString(in)), nil
+				return io.NopCloser(bytes.NewBufferString(in)), nil
 			}); err != nil {
 				t.Fatal(err)
 			}
@@ -461,7 +460,7 @@ func TestJSONQueries(t *testing.T) {
 			s3Select.Close()
 			resp := http.Response{
 				StatusCode:    http.StatusOK,
-				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+				Body:          io.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
 			res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -469,7 +468,7 @@ func TestJSONQueries(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got, err := ioutil.ReadAll(res)
+			got, err := io.ReadAll(res)
 			if err != nil {
 				t.Error(err)
 				return
@@ -494,12 +493,12 @@ func TestJSONQueries(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err = s3Select.Open(func(offset, length int64) (io.ReadCloser, error) {
+			if err = s3Select.Open(func(_, _ int64) (io.ReadCloser, error) {
 				in := input
 				if len(testCase.withJSON) > 0 {
 					in = testCase.withJSON
 				}
-				return ioutil.NopCloser(bytes.NewBufferString(in)), nil
+				return io.NopCloser(bytes.NewBufferString(in)), nil
 			}); err != nil {
 				t.Fatal(err)
 			}
@@ -509,7 +508,7 @@ func TestJSONQueries(t *testing.T) {
 			s3Select.Close()
 			resp := http.Response{
 				StatusCode:    http.StatusOK,
-				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+				Body:          io.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
 			res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -517,7 +516,7 @@ func TestJSONQueries(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got, err := ioutil.ReadAll(res)
+			got, err := io.ReadAll(res)
 			if err != nil {
 				t.Error(err)
 				return
@@ -581,8 +580,8 @@ func TestCSVQueries(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err = s3Select.Open(func(offset, length int64) (io.ReadCloser, error) {
-				return ioutil.NopCloser(bytes.NewBufferString(input)), nil
+			if err = s3Select.Open(func(_, _ int64) (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewBufferString(input)), nil
 			}); err != nil {
 				t.Fatal(err)
 			}
@@ -592,7 +591,7 @@ func TestCSVQueries(t *testing.T) {
 			s3Select.Close()
 			resp := http.Response{
 				StatusCode:    http.StatusOK,
-				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+				Body:          io.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
 			res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -600,7 +599,7 @@ func TestCSVQueries(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got, err := ioutil.ReadAll(res)
+			got, err := io.ReadAll(res)
 			if err != nil {
 				t.Error(err)
 				return
@@ -707,8 +706,8 @@ func TestCSVQueries2(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err = s3Select.Open(func(offset, length int64) (io.ReadCloser, error) {
-				return ioutil.NopCloser(bytes.NewBufferString(input)), nil
+			if err = s3Select.Open(func(_, _ int64) (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewBufferString(input)), nil
 			}); err != nil {
 				t.Fatal(err)
 			}
@@ -718,7 +717,7 @@ func TestCSVQueries2(t *testing.T) {
 			s3Select.Close()
 			resp := http.Response{
 				StatusCode:    http.StatusOK,
-				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+				Body:          io.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
 			res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -726,7 +725,7 @@ func TestCSVQueries2(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got, err := ioutil.ReadAll(res)
+			got, err := io.ReadAll(res)
 			if err != nil {
 				t.Error(err)
 				return
@@ -853,8 +852,8 @@ true`,
 				t.Fatal(err)
 			}
 
-			if err = s3Select.Open(func(offset, length int64) (io.ReadCloser, error) {
-				return ioutil.NopCloser(bytes.NewBufferString(input)), nil
+			if err = s3Select.Open(func(_, _ int64) (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewBufferString(input)), nil
 			}); err != nil {
 				t.Fatal(err)
 			}
@@ -864,7 +863,7 @@ true`,
 			s3Select.Close()
 			resp := http.Response{
 				StatusCode:    http.StatusOK,
-				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+				Body:          io.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
 			res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -872,7 +871,7 @@ true`,
 				t.Error(err)
 				return
 			}
-			got, err := ioutil.ReadAll(res)
+			got, err := io.ReadAll(res)
 			if err != nil {
 				t.Error(err)
 				return
@@ -999,8 +998,8 @@ func TestCSVInput(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err = s3Select.Open(func(offset, length int64) (io.ReadCloser, error) {
-				return ioutil.NopCloser(bytes.NewReader(csvData)), nil
+			if err = s3Select.Open(func(_, _ int64) (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewReader(csvData)), nil
 			}); err != nil {
 				t.Fatal(err)
 			}
@@ -1012,7 +1011,7 @@ func TestCSVInput(t *testing.T) {
 			if !reflect.DeepEqual(w.response, testCase.expectedResult) {
 				resp := http.Response{
 					StatusCode:    http.StatusOK,
-					Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+					Body:          io.NopCloser(bytes.NewReader(w.response)),
 					ContentLength: int64(len(w.response)),
 				}
 				res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -1020,7 +1019,7 @@ func TestCSVInput(t *testing.T) {
 					t.Error(err)
 					return
 				}
-				got, err := ioutil.ReadAll(res)
+				got, err := io.ReadAll(res)
 				if err != nil {
 					t.Error(err)
 					return
@@ -1123,8 +1122,8 @@ func TestJSONInput(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err = s3Select.Open(func(offset, length int64) (io.ReadCloser, error) {
-				return ioutil.NopCloser(bytes.NewReader(jsonData)), nil
+			if err = s3Select.Open(func(_, _ int64) (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewReader(jsonData)), nil
 			}); err != nil {
 				t.Fatal(err)
 			}
@@ -1136,7 +1135,7 @@ func TestJSONInput(t *testing.T) {
 			if !reflect.DeepEqual(w.response, testCase.expectedResult) {
 				resp := http.Response{
 					StatusCode:    http.StatusOK,
-					Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+					Body:          io.NopCloser(bytes.NewReader(w.response)),
 					ContentLength: int64(len(w.response)),
 				}
 				res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -1144,7 +1143,7 @@ func TestJSONInput(t *testing.T) {
 					t.Error(err)
 					return
 				}
-				got, err := ioutil.ReadAll(res)
+				got, err := io.ReadAll(res)
 				if err != nil {
 					t.Error(err)
 					return
@@ -1214,7 +1213,7 @@ func TestParquetInput(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			getReader := func(offset int64, length int64) (io.ReadCloser, error) {
+			getReader := func(offset int64, _ int64) (io.ReadCloser, error) {
 				testdataFile := "testdata/testdata.parquet"
 				file, err := os.Open(testdataFile)
 				if err != nil {
@@ -1253,7 +1252,7 @@ func TestParquetInput(t *testing.T) {
 			if !reflect.DeepEqual(w.response, testCase.expectedResult) {
 				resp := http.Response{
 					StatusCode:    http.StatusOK,
-					Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+					Body:          io.NopCloser(bytes.NewReader(w.response)),
 					ContentLength: int64(len(w.response)),
 				}
 				res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -1261,7 +1260,7 @@ func TestParquetInput(t *testing.T) {
 					t.Error(err)
 					return
 				}
-				got, err := ioutil.ReadAll(res)
+				got, err := io.ReadAll(res)
 				if err != nil {
 					t.Error(err)
 					return
@@ -1335,7 +1334,7 @@ func TestParquetInputSchema(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			getReader := func(offset int64, length int64) (io.ReadCloser, error) {
+			getReader := func(offset int64, _ int64) (io.ReadCloser, error) {
 				testdataFile := "testdata/lineitem_shipdate.parquet"
 				file, err := os.Open(testdataFile)
 				if err != nil {
@@ -1372,7 +1371,7 @@ func TestParquetInputSchema(t *testing.T) {
 			s3Select.Close()
 			resp := http.Response{
 				StatusCode:    http.StatusOK,
-				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+				Body:          io.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
 			res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -1380,7 +1379,7 @@ func TestParquetInputSchema(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got, err := ioutil.ReadAll(res)
+			got, err := io.ReadAll(res)
 			if err != nil {
 				t.Error(err)
 				return
@@ -1454,7 +1453,7 @@ func TestParquetInputSchemaCSV(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			getReader := func(offset int64, length int64) (io.ReadCloser, error) {
+			getReader := func(offset int64, _ int64) (io.ReadCloser, error) {
 				testdataFile := "testdata/lineitem_shipdate.parquet"
 				file, err := os.Open(testdataFile)
 				if err != nil {
@@ -1491,7 +1490,7 @@ func TestParquetInputSchemaCSV(t *testing.T) {
 			s3Select.Close()
 			resp := http.Response{
 				StatusCode:    http.StatusOK,
-				Body:          ioutil.NopCloser(bytes.NewReader(w.response)),
+				Body:          io.NopCloser(bytes.NewReader(w.response)),
 				ContentLength: int64(len(w.response)),
 			}
 			res, err := otterio.NewSelectResults(&resp, "testbucket")
@@ -1499,7 +1498,7 @@ func TestParquetInputSchemaCSV(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			got, err := ioutil.ReadAll(res)
+			got, err := io.ReadAll(res)
 			if err != nil {
 				t.Error(err)
 				return

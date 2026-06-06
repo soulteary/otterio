@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -423,7 +422,7 @@ func (c *kesClient) postRetry(path string, body io.ReadSeeker, limit int64) (io.
 		if i < len(c.endpoints) {
 			continue
 		}
-		<-time.After(LinearJitterBackoff(retryWaitMin, retryWaitMax, i))
+		<-time.After(LinearJitterBackoff(retryWaitMinDur, retryWaitMaxDur, i))
 	}
 }
 
@@ -457,7 +456,7 @@ func loadCACertificates(path string, rootCAs *x509.CertPool) error {
 	// and try to add it to the CertPool. If this fails
 	// return an error.
 	if !stat.IsDir() {
-		cert, err := ioutil.ReadFile(path)
+		cert, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
@@ -472,12 +471,12 @@ func loadCACertificates(path string, rootCAs *x509.CertPool) error {
 	// certificate and add it to the CertPool.
 	// If a file is not a PEM-encoded certificate
 	// we ignore it.
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	for _, file := range files {
-		cert, err := ioutil.ReadFile(filepath.Join(path, file.Name()))
+		cert, err := os.ReadFile(filepath.Join(path, file.Name()))
 		if err != nil {
 			continue // ignore files which are not readable
 		}

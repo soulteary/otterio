@@ -917,7 +917,7 @@ func updateDomainIPs(endPoints set.StringSet) {
 		ipList.Add(net.JoinHostPort(host, port))
 	}
 
-	globalDomainIPs = ipList.FuncMatch(func(ip string, matchString string) bool {
+	globalDomainIPs = ipList.FuncMatch(func(ip string, _ string) bool {
 		host, _, err := net.SplitHostPort(ip)
 		if err != nil {
 			host = ip

@@ -28,10 +28,12 @@ import (
 	"github.com/soulteary/otterio/pkg/ioutil"
 )
 
+//nolint:unused
 type errHashMismatch struct {
 	message string
 }
 
+//nolint:unused
 func (err *errHashMismatch) Error() string {
 	return err.message
 }
@@ -80,7 +82,7 @@ func newStreamingBitrotWriterBuffer(w io.Writer, algo BitrotAlgorithm, shardSize
 }
 
 // Returns streaming bitrot writer implementation.
-func newStreamingBitrotWriter(disk StorageAPI, volume, filePath string, length int64, algo BitrotAlgorithm, shardSize int64, heal bool) io.Writer {
+func newStreamingBitrotWriter(disk StorageAPI, volume, filePath string, length int64, algo BitrotAlgorithm, shardSize int64, _ bool) io.Writer {
 	r, w := io.Pipe()
 	h := algo.New()
 

@@ -273,7 +273,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	}
 
 	httpServer := xhttp.NewServer([]string{globalCLIContext.Addr}, s3App, getCert)
-	httpServer.BaseContext = func(listener net.Listener) context.Context {
+	httpServer.BaseContext = func(_ net.Listener) context.Context {
 		return GlobalContext
 	}
 	go func() {
@@ -300,7 +300,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 		)
 
 		consoleServer := xhttp.NewServer([]string{globalOtterioConsoleAddr}, consoleApp, consoleGetCert)
-		consoleServer.BaseContext = func(listener net.Listener) context.Context {
+		consoleServer.BaseContext = func(_ net.Listener) context.Context {
 			return GlobalContext
 		}
 		go func() {

@@ -38,7 +38,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"net"
@@ -97,7 +96,7 @@ func TestMain(m *testing.M) {
 
 	if !testing.Verbose() {
 		// Disable printing console messages during tests.
-		color.Output = ioutil.Discard
+		color.Output = io.Discard
 		logger.Disable = true
 	}
 	// Uncomment the following line to see trace logs during unit tests.
@@ -511,12 +510,12 @@ func truncateChunkByHalfSigv4(req *http.Request) (*http.Request, error) {
 
 	newChunkHdr := []byte(fmt.Sprintf("%s"+s3ChunkSignatureStr+"%s\r\n",
 		hexChunkSize, chunkSignature))
-	newChunk, err := ioutil.ReadAll(bufReader)
+	newChunk, err := io.ReadAll(bufReader)
 	if err != nil {
 		return nil, err
 	}
 	newReq := req
-	newReq.Body = ioutil.NopCloser(
+	newReq.Body = io.NopCloser(
 		bytes.NewReader(bytes.Join([][]byte{newChunkHdr, newChunk[:len(newChunk)/2]},
 			[]byte(""))),
 	)
@@ -533,14 +532,14 @@ func malformDataSigV4(req *http.Request, newByte byte) (*http.Request, error) {
 
 	newChunkHdr := []byte(fmt.Sprintf("%s"+s3ChunkSignatureStr+"%s\r\n",
 		hexChunkSize, chunkSignature))
-	newChunk, err := ioutil.ReadAll(bufReader)
+	newChunk, err := io.ReadAll(bufReader)
 	if err != nil {
 		return nil, err
 	}
 
 	newChunk[0] = newByte
 	newReq := req
-	newReq.Body = ioutil.NopCloser(
+	newReq.Body = io.NopCloser(
 		bytes.NewReader(bytes.Join([][]byte{newChunkHdr, newChunk},
 			[]byte(""))),
 	)
@@ -560,13 +559,13 @@ func malformChunkSizeSigV4(req *http.Request, badSize int64) (*http.Request, err
 	newHexChunkSize := []byte(fmt.Sprintf("%x", n))
 	newChunkHdr := []byte(fmt.Sprintf("%s"+s3ChunkSignatureStr+"%s\r\n",
 		newHexChunkSize, chunkSignature))
-	newChunk, err := ioutil.ReadAll(bufReader)
+	newChunk, err := io.ReadAll(bufReader)
 	if err != nil {
 		return nil, err
 	}
 
 	newReq := req
-	newReq.Body = ioutil.NopCloser(
+	newReq.Body = io.NopCloser(
 		bytes.NewReader(bytes.Join([][]byte{newChunkHdr, newChunk},
 			[]byte(""))),
 	)
@@ -692,10 +691,10 @@ func newTestStreamingRequest(method, urlStr string, dataLength, chunkSize int64,
 	}
 
 	if body == nil {
-		// this is added to avoid panic during ioutil.ReadAll(req.Body).
+		// this is added to avoid panic during io.ReadAll(req.Body).
 		// th stack trace can be found here  https://github.com/soulteary/otterio/pull/2074 .
 		// This is very similar to https://github.com/golang/go/issues/7527.
-		req.Body = ioutil.NopCloser(bytes.NewReader([]byte("")))
+		req.Body = io.NopCloser(bytes.NewReader([]byte("")))
 	}
 
 	contentLength := calculateStreamContentLength(dataLength, chunkSize)
@@ -709,7 +708,7 @@ func newTestStreamingRequest(method, urlStr string, dataLength, chunkSize int64,
 	body.Seek(0, 0)
 
 	// Add body
-	req.Body = ioutil.NopCloser(body)
+	req.Body = io.NopCloser(body)
 	req.ContentLength = contentLength
 
 	return req, nil
@@ -760,7 +759,7 @@ func assembleStreamingChunks(req *http.Request, body io.ReadSeeker, chunkSize in
 		}
 
 	}
-	req.Body = ioutil.NopCloser(bytes.NewReader(stream))
+	req.Body = io.NopCloser(bytes.NewReader(stream))
 	return req, nil
 }
 
@@ -1058,7 +1057,7 @@ func newTestRequest(method, urlStr string, contentLength int64, body io.ReadSeek
 	case body == nil:
 		hashedPayload = getSHA256Hash([]byte{})
 	default:
-		payloadBytes, err := ioutil.ReadAll(body)
+		payloadBytes, err := io.ReadAll(body)
 		if err != nil {
 			return nil, err
 		}
@@ -1175,7 +1174,7 @@ func newTestSignedRequestV4(method, urlStr string, contentLength int64, body io.
 }
 
 // Return new WebRPC request object.
-func newWebRPCRequest(methodRPC, authorization string, body io.ReadSeeker) (*http.Request, error) {
+func newWebRPCRequest(_, authorization string, body io.ReadSeeker) (*http.Request, error) {
 	req, err := http.NewRequest(http.MethodPost, "/otterio/webrpc", nil)
 	if err != nil {
 		return nil, err
@@ -1189,12 +1188,12 @@ func newWebRPCRequest(methodRPC, authorization string, body io.ReadSeeker) (*htt
 	if body != nil {
 		body.Seek(0, 0)
 		// Add body
-		req.Body = ioutil.NopCloser(body)
+		req.Body = io.NopCloser(body)
 	} else {
-		// this is added to avoid panic during ioutil.ReadAll(req.Body).
+		// this is added to avoid panic during io.ReadAll(req.Body).
 		// th stack trace can be found here  https://github.com/soulteary/otterio/pull/2074 .
 		// This is very similar to https://github.com/golang/go/issues/7527.
-		req.Body = ioutil.NopCloser(bytes.NewReader([]byte("")))
+		req.Body = io.NopCloser(bytes.NewReader([]byte("")))
 	}
 	return req, nil
 }
@@ -1508,7 +1507,7 @@ func getListMultipartUploadsURLWithParams(endPoint, bucketName, prefix, keyMarke
 }
 
 // return URL for a listing parts on a given upload id.
-func getListMultipartURLWithParams(endPoint, bucketName, objectName, uploadID, maxParts, partNumberMarker, encoding string) string {
+func getListMultipartURLWithParams(endPoint, bucketName, objectName, uploadID, maxParts, partNumberMarker, _ string) string {
 	queryValues := url.Values{}
 	queryValues.Set("uploadId", uploadID)
 	queryValues.Set("max-parts", maxParts)
@@ -1538,14 +1537,14 @@ func getListenNotificationURL(endPoint, bucketName string, prefixes, suffixes, e
 
 // returns temp root directory. `
 func getTestRoot() (string, error) {
-	return ioutil.TempDir(globalTestTmpDir, "api-")
+	return os.MkdirTemp(globalTestTmpDir, "api-")
 }
 
 // getRandomDisks - Creates a slice of N random disks, each of the form - otterio-XXX
 func getRandomDisks(N int) ([]string, error) {
 	var erasureDisks []string
 	for i := 0; i < N; i++ {
-		path, err := ioutil.TempDir(globalTestTmpDir, "otterio-")
+		path, err := os.MkdirTemp(globalTestTmpDir, "otterio-")
 		if err != nil {
 			// Remove directories created so far.
 			removeRoots(erasureDisks)
@@ -1667,8 +1666,8 @@ func prepareTestBackend(ctx context.Context, instanceType string) (ObjectLayer, 
 // The test works in 2 steps, here is the description of the steps.
 //
 //	STEP 1: Call the handler with the unsigned HTTP request (anonReq), assert for the `ErrAccessDenied` error response.
-func ExecObjectLayerAPIAnonTest(t *testing.T, obj ObjectLayer, testName, bucketName, objectName, instanceType string, apiRouter http.Handler,
-	anonReq *http.Request, bucketPolicy *policy.Policy) {
+func ExecObjectLayerAPIAnonTest(t *testing.T, _ ObjectLayer, testName, bucketName, objectName, instanceType string, apiRouter http.Handler,
+	anonReq *http.Request, _ *policy.Policy) {
 
 	anonTestStr := "Anonymous HTTP request test"
 	unknownSignTestStr := "Unknown HTTP signature test"
@@ -1683,14 +1682,14 @@ func ExecObjectLayerAPIAnonTest(t *testing.T, obj ObjectLayer, testName, bucketN
 	rec := httptest.NewRecorder()
 	// reading the body to preserve it so that it can be used again for second attempt of sending unsigned HTTP request.
 	// If the body is read in the handler the same request cannot be made use of.
-	buf, err := ioutil.ReadAll(anonReq.Body)
+	buf, err := io.ReadAll(anonReq.Body)
 	if err != nil {
 		t.Fatal(failTestStr(anonTestStr, err.Error()))
 	}
 
 	// creating 2 read closer (to set as request body) from the body content.
-	readerOne := ioutil.NopCloser(bytes.NewBuffer(buf))
-	readerTwo := ioutil.NopCloser(bytes.NewBuffer(buf))
+	readerOne := io.NopCloser(bytes.NewBuffer(buf))
+	readerTwo := io.NopCloser(bytes.NewBuffer(buf))
 
 	anonReq.Body = readerOne
 
@@ -1707,7 +1706,7 @@ func ExecObjectLayerAPIAnonTest(t *testing.T, obj ObjectLayer, testName, bucketN
 	if anonReq.Method != http.MethodHead {
 		// read the response body.
 		var actualContent []byte
-		actualContent, err = ioutil.ReadAll(rec.Body)
+		actualContent, err = io.ReadAll(rec.Body)
 		if err != nil {
 			t.Fatal(failTestStr(anonTestStr, fmt.Sprintf("Failed parsing response body: <ERROR> %v", err)))
 		}
@@ -1737,7 +1736,7 @@ func ExecObjectLayerAPIAnonTest(t *testing.T, obj ObjectLayer, testName, bucketN
 	// verify the response body for `ErrAccessDenied` message =.
 	if anonReq.Method != http.MethodHead {
 		// read the response body.
-		actualContent, err := ioutil.ReadAll(rec.Body)
+		actualContent, err := io.ReadAll(rec.Body)
 		if err != nil {
 			t.Fatal(failTestStr(unknownSignTestStr, fmt.Sprintf("Failed parsing response body: <ERROR> %v", err)))
 		}
@@ -1794,7 +1793,7 @@ func ExecObjectLayerAPINilTest(t TestErrHandler, bucketName, objectName, instanc
 	// for other type of HTTP requests compare the response body content with the expected one.
 	if req.Method != http.MethodHead {
 		// read the response body.
-		actualContent, err := ioutil.ReadAll(rec.Body)
+		actualContent, err := io.ReadAll(rec.Body)
 		if err != nil {
 			t.Fatalf("OtterIO %s: Failed parsing response body: <ERROR> %v", instanceType, err)
 		}
@@ -2137,12 +2136,12 @@ func getEndpointsLocalAddr(endpointServerPools EndpointServerPools) string {
 }
 
 // fetches a random number between range min-max.
-func getRandomRange(min, max int, seed int64) int {
+func getRandomRange(minVal, maxVal int, seed int64) int {
 	// special value -1 means no explicit seeding.
 	if seed != -1 {
 		rand.Seed(seed)
 	}
-	return rand.Intn(max-min) + min
+	return rand.Intn(maxVal-minVal) + minVal
 }
 
 // Randomizes the order of bytes in the byte array
@@ -2194,7 +2193,7 @@ func uploadTestObject(t *testing.T, apiRouter http.Handler, creds auth.Credentia
 
 	checkRespErr := func(rec *httptest.ResponseRecorder, exp int) {
 		if rec.Code != exp {
-			b, err := ioutil.ReadAll(rec.Body)
+			b, err := io.ReadAll(rec.Body)
 			t.Fatalf("Expected: %v, Got: %v, Body: %s, err: %v", exp, rec.Code, string(b), err)
 		}
 	}

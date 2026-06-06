@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/klauspost/compress/snappy"
 	"github.com/pierrec/lz4"
@@ -134,10 +134,10 @@ func Uncompress(compressionType parquet.CompressionCodec, data []byte) ([]byte, 
 			return nil, err
 		}
 		defer reader.Close()
-		return ioutil.ReadAll(reader)
+		return io.ReadAll(reader)
 
 	case parquet.CompressionCodec_LZ4:
-		return ioutil.ReadAll(lz4.NewReader(bytes.NewReader(data)))
+		return io.ReadAll(lz4.NewReader(bytes.NewReader(data)))
 	}
 
 	return nil, fmt.Errorf("unsupported compression codec %v", compressionType)

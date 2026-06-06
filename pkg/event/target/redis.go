@@ -286,7 +286,7 @@ func NewRedisTarget(id string, args RedisArgs, doneCh <-chan struct{}, loggerOnc
 
 			return conn, nil
 		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+		TestOnBorrow: func(c redis.Conn, _ time.Time) error {
 			_, err := c.Do("PING")
 			return err
 		},

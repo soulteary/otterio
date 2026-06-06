@@ -236,7 +236,7 @@ func collectAPIStatsFiber(api string, f OtterioHandler) OtterioHandler {
 	}
 }
 
-func maxClientsFiber(api string, f OtterioHandler) OtterioHandler {
+func maxClientsFiber(_ string, f OtterioHandler) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		pool, deadline := globalAPIConfig.getRequestsPool()
 		if pool == nil {
@@ -279,7 +279,7 @@ func maxClientsFiber(api string, f OtterioHandler) OtterioHandler {
 	}
 }
 
-func methodNotAllowedHandlerFiber(api string) OtterioHandler {
+func methodNotAllowedHandlerFiber(_ string) OtterioHandler {
 	return func(c fiber.Ctx) error {
 		if c.Method() == fiber.MethodOptions {
 			return nil

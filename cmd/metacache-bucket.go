@@ -339,9 +339,8 @@ func (b *bucketMetacache) cleanup() {
 				b.debugf("cache %s can be replaced by %s", id, cache2.id)
 				remove[id] = struct{}{}
 				break
-			} else {
-				b.debugf("cache %s can be NOT replaced by %s", id, cache2.id)
 			}
+			b.debugf("cache %s can be NOT replaced by %s", id, cache2.id)
 		}
 	}
 
@@ -388,6 +387,8 @@ func interestingCaches(root string, cachesRoot map[string][]string) []string {
 // updateCache will update a cache by id.
 // If the cache cannot be found nil is returned.
 // The bucket cache will be locked until the done .
+//
+//nolint:unused
 func (b *bucketMetacache) updateCache(id string) (cache *metacache, done func()) {
 	b.mu.Lock()
 	c, ok := b.caches[id]
@@ -438,6 +439,8 @@ func (b *bucketMetacache) cloneCaches() (map[string]metacache, map[string][]stri
 
 // getCache will return a clone of a specific metacache.
 // Will return nil if the cache doesn't exist.
+//
+//nolint:unused
 func (b *bucketMetacache) getCache(id string) *metacache {
 	b.mu.RLock()
 	c, ok := b.caches[id]

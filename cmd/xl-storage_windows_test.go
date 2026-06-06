@@ -24,7 +24,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -42,7 +41,7 @@ func TestUNCPaths(t *testing.T) {
 		{string(bytes.Repeat([]byte("界"), 280)), false},
 		{`/p/q/r/s/t`, true},
 	}
-	dir, err := ioutil.TempDir("", "testdisk-")
+	dir, err := os.MkdirTemp("", "testdisk-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +77,7 @@ func TestUNCPaths(t *testing.T) {
 // Test to validate xlStorage behavior on windows when a non-final path component is a file.
 func TestUNCPathENOTDIR(t *testing.T) {
 	// Instantiate posix object to manage a disk
-	dir, err := ioutil.TempDir("", "testdisk-")
+	dir, err := os.MkdirTemp("", "testdisk-")
 	if err != nil {
 		t.Fatal(err)
 	}

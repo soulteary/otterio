@@ -138,7 +138,7 @@ func (m gwMetaV1) ObjectToPartOffset(ctx context.Context, offset int64) (partInd
 }
 
 // Constructs GWMetaV1 using `jsoniter` lib to retrieve each field.
-func gwMetaUnmarshalJSON(ctx context.Context, gwMetaBuf []byte) (gwMeta gwMetaV1, err error) {
+func gwMetaUnmarshalJSON(_ context.Context, gwMetaBuf []byte) (gwMeta gwMetaV1, err error) {
 	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	err = json.Unmarshal(gwMetaBuf, &gwMeta)
 	return gwMeta, err
@@ -161,7 +161,7 @@ func readGWMetadata(ctx context.Context, buf bytes.Buffer) (gwMeta gwMetaV1, err
 }
 
 // getGWMetadata - unmarshals dare.meta into a *otterio.PutObjReader
-func getGWMetadata(ctx context.Context, bucket, prefix string, gwMeta gwMetaV1) (*otterio.PutObjReader, error) {
+func getGWMetadata(ctx context.Context, _, _ string, gwMeta gwMetaV1) (*otterio.PutObjReader, error) {
 	// Marshal json.
 	metadataBytes, err := json.Marshal(&gwMeta)
 	if err != nil {

@@ -386,6 +386,8 @@ func setPathVars(c fiber.Ctx, bucket, object string) {
 }
 
 // newContextFiber returns context with ReqInfo details set from a Fiber request.
+//
+//nolint:unused
 func newContextFiber(c fiber.Ctx, api string) context.Context {
 	bucket := pathParamBucket(c)
 	object := pathParamObject(c)
@@ -413,6 +415,7 @@ func fiberRequestID(c fiber.Ctx) string {
 	return string(c.Response().Header.Peek(xhttp.AmzRequestID))
 }
 
+//nolint:unused
 func getHostNameFiber(c fiber.Ctx) (hostName string) {
 	if globalIsDistErasure {
 		hostName = globalLocalNodeName
@@ -586,6 +589,7 @@ func guessIsBrowserReqFiber(c fiber.Ctx) bool {
 	return guessIsBrowserReq(r)
 }
 
+//nolint:unused
 func guessIsHealthCheckReqFiber(c fiber.Ctx) bool {
 	if method := c.Method(); method != fiber.MethodGet && method != fiber.MethodHead {
 		return false
@@ -605,6 +609,7 @@ func guessIsHealthCheckReqFiber(c fiber.Ctx) bool {
 	return guessIsHealthCheckReq(r)
 }
 
+//nolint:unused
 func guessIsMetricsReqFiber(c fiber.Ctx) bool {
 	switch c.Path() {
 	case otterioReservedBucketPath + prometheusMetricsPathLegacy,
@@ -622,11 +627,14 @@ func guessIsMetricsReqFiber(c fiber.Ctx) bool {
 
 // guessIsRPCReqFiber mirrors guessIsRPCReq but reads the method/path directly
 // from fasthttp, avoiding an *http.Request allocation entirely.
+//
+//nolint:unused
 func guessIsRPCReqFiber(c fiber.Ctx) bool {
 	return c.Method() == fiber.MethodPost &&
 		strings.HasPrefix(c.Path(), otterioReservedBucketPath+SlashSeparator)
 }
 
+//nolint:unused
 func isAdminReqFiber(c fiber.Ctx) bool {
 	return strings.HasPrefix(c.Path(), adminPathPrefix)
 }

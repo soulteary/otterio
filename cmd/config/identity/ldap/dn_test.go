@@ -17,7 +17,7 @@ import (
 )
 
 // TestNormalizeDNCaseFold pins down the primary attack surface from the
-// upstream LDAP DN-normalisation CVEs: an Active Directory backend treats
+// upstream LDAP DN-normalization CVEs: an Active Directory backend treats
 // `cn=alice,...` and `CN=Alice,...` as the same identity, so OtterIO must
 // produce the same canonical key for both. Without this guarantee, an
 // attacker who can influence the casing returned by the directory can pick
@@ -176,7 +176,7 @@ func TestNormalizeDNRejectInvalid(t *testing.T) {
 // pulling in golang.org/x/text), but we DO promise that a deterministic,
 // stable canonical form is produced for non-ASCII inputs - i.e. running
 // NormalizeDN twice on the same string is idempotent. This guards against
-// future refactors that add a half-finished Unicode normalisation step and
+// future refactors that add a half-finished Unicode normalization step and
 // accidentally break idempotency, which would silently re-shard the IAM map.
 func TestNormalizeDNUnicode(t *testing.T) {
 	t.Parallel()

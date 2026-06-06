@@ -68,7 +68,7 @@ func (f Filter) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 }
 
 // UnmarshalXML - decodes XML data.
-func (f *Filter) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
+func (f *Filter) UnmarshalXML(d *xml.Decoder, _ xml.StartElement) (err error) {
 	f.set = true
 	for {
 		// Read tokens from the XML document in a stream.

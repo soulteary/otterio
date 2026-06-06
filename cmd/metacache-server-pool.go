@@ -180,7 +180,7 @@ func (z *erasureServerPools) listPath(ctx context.Context, o listPathOptions) (e
 				entries.merge(e, -1)
 
 				// Resolve non-trivial conflicts
-				entries.deduplicate(func(existing, other *metaCacheEntry) (replace bool) {
+				entries.deduplicate(func(existing, _ *metaCacheEntry) (replace bool) {
 					if existing.isDir() {
 						return false
 					}

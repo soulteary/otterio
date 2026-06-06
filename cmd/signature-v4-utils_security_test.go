@@ -53,7 +53,7 @@ func newPresignedSha256TestRequest(t *testing.T, queryValue string, querySet boo
 // `!(ok && v[0] != unsignedPayload)` guard (because v[0] != UNSIGNED-PAYLOAD)
 // and force the canonicaliser into a bogus comparison against the empty
 // string. The new helper treats empty as "not provided" and reports
-// "skip checksum", matching the behaviour for a fully-absent header.
+// "skip checksum", matching the behavior for a fully-absent header.
 func TestSkipContentSha256EmptyValue(t *testing.T) {
 	r := newSha256TestRequest(t, "", true)
 	if !skipContentSha256Cksum(r) {
@@ -133,7 +133,7 @@ func TestSkipContentSha256PresignedQueryWins(t *testing.T) {
 	}
 }
 
-// TestSignedHeadersLowercased pins the new lowercase normalisation in
+// TestSignedHeadersLowercased pins the new lowercase normalization in
 // parseSignedHeader. SignedHeaders=Host;X-Amz-Content-Sha256 (mixed case) and
 // SignedHeaders=host;x-amz-content-sha256 (canonical case) MUST yield the
 // same parsed slice. This is what makes utils.contains(signedHeaders, "host")

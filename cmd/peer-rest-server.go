@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -363,7 +362,7 @@ func (s *peerRESTServer) NetInfoHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusOK)
 
-	n, err := io.Copy(ioutil.Discard, r.Body)
+	n, err := io.Copy(io.Discard, r.Body)
 	if err == io.ErrUnexpectedEOF {
 		w.Header().Set("FinalStatus", err.Error())
 		return

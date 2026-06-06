@@ -95,7 +95,7 @@ func checkListObjsArgs(ctx context.Context, bucket, prefix, marker string, obj g
 }
 
 // Checks for all ListMultipartUploads arguments validity.
-func checkListMultipartArgs(ctx context.Context, bucket, prefix, keyMarker, uploadIDMarker, delimiter string, obj ObjectLayer) error {
+func checkListMultipartArgs(ctx context.Context, bucket, prefix, keyMarker, uploadIDMarker, _ string, obj ObjectLayer) error {
 	if err := checkListObjsArgs(ctx, bucket, prefix, keyMarker, obj); err != nil {
 		return err
 	}

@@ -643,7 +643,7 @@ func (z *erasureServerPools) GetObjectNInfo(ctx context.Context, bucket, object 
 	}
 	wg.Wait()
 
-	var found int = -1
+	found := -1
 	for i, err := range errs {
 		if err == nil {
 			found = i
@@ -703,7 +703,7 @@ func (z *erasureServerPools) GetObjectInfo(ctx context.Context, bucket, object s
 	}
 	wg.Wait()
 
-	var found int = -1
+	found := -1
 	for i, err := range errs {
 		if err == nil {
 			found = i
@@ -873,7 +873,7 @@ func (z *erasureServerPools) CopyObject(ctx context.Context, srcBucket, srcObjec
 	return z.serverPools[poolIdx].PutObject(ctx, dstBucket, dstObject, srcInfo.PutObjReader, putOpts)
 }
 
-func (z *erasureServerPools) ListObjectsV2(ctx context.Context, bucket, prefix, continuationToken, delimiter string, maxKeys int, fetchOwner bool, startAfter string) (ListObjectsV2Info, error) {
+func (z *erasureServerPools) ListObjectsV2(ctx context.Context, bucket, prefix, continuationToken, delimiter string, maxKeys int, _ bool, startAfter string) (ListObjectsV2Info, error) {
 	marker := continuationToken
 	if marker == "" {
 		marker = startAfter
@@ -1058,7 +1058,7 @@ func (z *erasureServerPools) NewMultipartUpload(ctx context.Context, bucket, obj
 }
 
 // Copies a part of an object from source hashedSet to destination hashedSet.
-func (z *erasureServerPools) CopyObjectPart(ctx context.Context, srcBucket, srcObject, destBucket, destObject string, uploadID string, partID int, startOffset int64, length int64, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (PartInfo, error) {
+func (z *erasureServerPools) CopyObjectPart(ctx context.Context, srcBucket, srcObject, destBucket, destObject string, uploadID string, partID int, _ int64, _ int64, srcInfo ObjectInfo, _, dstOpts ObjectOptions) (PartInfo, error) {
 	if err := checkNewMultipartArgs(ctx, srcBucket, srcObject, z); err != nil {
 		return PartInfo{}, err
 	}
@@ -1503,7 +1503,7 @@ func (z *erasureServerPools) Walk(ctx context.Context, bucket, prefix string, re
 // HealObjectFn closure function heals the object.
 type HealObjectFn func(bucket, object, versionID string) error
 
-func (z *erasureServerPools) HealObjects(ctx context.Context, bucket, prefix string, opts madmin.HealOpts, healObject HealObjectFn) error {
+func (z *erasureServerPools) HealObjects(ctx context.Context, bucket, prefix string, _ madmin.HealOpts, healObject HealObjectFn) error {
 	errCh := make(chan error)
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
@@ -1583,7 +1583,7 @@ func (z *erasureServerPools) HealObjects(ctx context.Context, bucket, prefix str
 						minDisks:       1,
 						reportNotFound: false,
 						agreed:         healEntry,
-						partial: func(entries metaCacheEntries, nAgreed int, errs []error) {
+						partial: func(entries metaCacheEntries, _ int, _ []error) {
 							entry, ok := entries.resolve(&resolver)
 							if ok {
 								healEntry(*entry)

@@ -162,7 +162,7 @@ func loadBucketMetadata(ctx context.Context, objectAPI ObjectLayer, bucket strin
 
 // parseAllConfigs will parse all configs and populate the private fields.
 // The first error encountered is returned.
-func (b *BucketMetadata) parseAllConfigs(ctx context.Context, objectAPI ObjectLayer) (err error) {
+func (b *BucketMetadata) parseAllConfigs(_ context.Context, _ ObjectLayer) (err error) {
 	if len(b.PolicyConfigJSON) != 0 {
 		b.policyConfig, err = policy.ParseConfig(bytes.NewReader(b.PolicyConfigJSON), b.Name)
 		if err != nil {
