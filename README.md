@@ -39,15 +39,13 @@ This README provides quickstart instructions on running OtterIO on baremetal har
 > upstream `minio/minio` after that date must be evaluated and back-ported
 > separately. OtterIO does **not** automatically inherit those fixes.
 >
-> The OtterIO maintainers actively triage these issues — see
+> **Backlog status (as of 2026-06): 14 closed, 2 not-applicable, 0 open.**
+> Every advisory currently triaged against the post-2021-04 baseline has
+> been resolved on `main` — see
 > [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)
-> for the rolling backlog and the items that have already been closed
-> (notably the SSE metadata-injection class equivalent to GHSA-3rh2-v3gr-35p9,
-> the service-account sub-policy escalation introduced upstream in
-> RELEASE.2025-10-15, the `AddUser` PolicyName privilege escalation
-> CVE-2021-43858, and the LDAP DN normalisation family of upstream
-> advisories from 2022–2024) — but several historical advisories remain
-> open.
+> for the per-item table with the OtterIO codepath, the upstream
+> reference, and the regression tests pinning each fix. New upstream
+> advisories will be added with status `Pending` and tracked from there.
 >
 > **Operators upgrading from a previous OtterIO build that used LDAP**
 > should consult [`docs/security/ldap-dn-normalization-migration.md`](./docs/security/ldap-dn-normalization-migration.md)
@@ -55,9 +53,71 @@ This README provides quickstart instructions on running OtterIO on baremetal har
 > it touches the IAM policy map, which is a one-shot breaking change for
 > deployments that happened to rely on case-only DN differences.
 >
-> **OtterIO is not yet recommended for production deployments handling
-> untrusted users or untrusted networks.** See [`SECURITY.md`](./SECURITY.md)
-> for the disclosure policy and the supported-versions matrix.
+> **Before adopting OtterIO**, please evaluate fitness against your own
+> deployment context — workload profile, capacity / throughput targets,
+> compliance and data-residency requirements, supported-version policy,
+> and your organisation's change-management expectations. As with any
+> infrastructure component, we recommend a staged rollout (lab → staging
+> → production) and validating the relevant codepaths against your own
+> regression suite. See [`SECURITY.md`](./SECURITY.md) for the disclosure
+> policy and the supported-versions matrix.
+
+## Security Hardening Highlights
+
+Relative to the 2021-04-22 Apache-licensed MinIO baseline OtterIO has
+back-ported and (where applicable) hardened the following upstream
+advisories — full per-item context, codepaths, and regression tests live
+in [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md):
+
+- **SSE metadata injection** (GHSA-3rh2-v3gr-35p9 class) — reserved-prefix
+  metadata is rejected at both the router edge and `extractMetadata`.
+- **Precondition GET / HEAD metadata disclosure**
+  (GHSA-95fr-cm4m-q5p9 / CVE-2024-36107) — `s3:ExistingObjectTag/*` and
+  `s3:RequestObjectTag/*` are now first-class condition keys, and the
+  precondition path re-runs auth before writing `ETag` / `Last-Modified`
+  so a tag-gated deny no longer leaks object state.
+- **SSE-KMS context binding** (multiple post-2022 CVEs) — bucket / object
+  AAD is reconstructed from the runtime `(bucket, object)` on every seal
+  and unseal, hostile or tampered `MetaContext` blobs are rejected with a
+  dedicated 403 sentinel before the KMS is ever called, and the seven
+  legacy `ErrNotImplemented` PUT-handler stubs have been replaced with a
+  single `enforceSSEKMSRequest` security gate covering single-PUT,
+  multipart, copy and post-policy paths.
+- **Service-account privilege escalation** — `GHSA-jjjj-jwhf-8rgr` (own-
+  account create-SA bypass), the RELEASE.2025-10-15 sub-policy escalation,
+  and `GHSA-xx8w-mq23-29g4 / CVE-2024-24747` (admin:UpdateServiceAccount)
+  are all closed; sub-policies must be a subset of the caller's capability.
+- **`AddUser` PolicyName privilege escalation** (CVE-2021-43858) —
+  defence-in-depth at both the handler (HTTP 400) and IAM-layer
+  (silent strip).
+- **LDAP DN normalisation family** (2022–2024 advisories) — RFC 4514 +
+  RFC 4518 canonicalisation at every DN egress and at the IAM boundary,
+  with a one-shot persisted-data migration; see the migration note
+  linked above.
+- **Bucket / IAM policy parsing** — `Principal` / `Resource` / `Action`
+  unmarshal panics fixed, attacker-controlled input no longer reflected
+  into error messages, fuzz corpus added.
+- **SigV4 signed-headers and chunked-upload hardening** — empty
+  `X-Amz-Content-Sha256` is treated as "not provided" instead of coercing
+  the canonicaliser, `SignedHeaders` is case-folded, and aws-chunked
+  uploads must sign `x-amz-decoded-content-length`.
+- **Replication-header IAM gate** — fork-private `X-Otterio-Source-*`
+  headers now require the `s3:ReplicateObject` action via
+  `enforceSourceHeaderIAM`, closing a forge path that could rewrite
+  object mtime / ETag or force delete-markers under ordinary
+  `s3:PutObject` / `s3:DeleteObject` permissions.
+- **CVE-2023-28432 bootstrap info disclosure** — `VerifyHandler` is now
+  gated on the same inter-node JWT validator used by peer-rest /
+  storage-rest / lock-rest; only `HealthHandler` remains anonymous.
+- **Multi-value `Host` header smuggle (fork-introduced concern)** —
+  audited and pinned: both fasthttp and net/http collapse or reject
+  duplicate Host headers before any handler runs, and SigV4 reads only
+  the scalar `r.Host`, so the two-header smuggle is not constructible.
+
+Two further upstream advisories (CVE-2021-41137 regular-user policy
+bypass and GHSA-cwq8-g58r-32hg `ImportIAM` privilege escalation) are
+**not applicable** to the 2021-04 baseline — see the backlog for the
+audit trail and the negative-pinning regression tests.
 
 ## About OtterIO
 

@@ -10,22 +10,28 @@ against `minio/minio` after that date is treated as **potentially applicable
 to OtterIO until proven otherwise**, and is tracked in
 [`docs/security/upstream-cve-backlog.md`](docs/security/upstream-cve-backlog.md).
 
-Until the backlog is fully drained, OtterIO is **not** recommended for
-deployments that accept traffic from untrusted users or untrusted networks.
-Deployments that sit entirely behind a trusted boundary (e.g. internal lab
-storage, single-tenant CI artefact stores) are a reasonable starting point.
+**Backlog status (as of 2026-06): 14 closed, 2 not-applicable, 0 open.**
+New upstream advisories are triaged into the same table with status
+`Pending` and resolved on `main`.
+
+As with any infrastructure component, adopters are expected to evaluate
+fitness against their own deployment context — workload profile, capacity
+and throughput targets, compliance and data-residency requirements, and
+internal change-management policy — and to validate the relevant
+codepaths against their own regression suite before promoting to
+production.
 
 ## Supported versions
 
-The project currently ships from `main` only. There is no semver release
-train yet; the public Docker / source tarball tags are best-effort snapshots
-of `main` and inherit the same backlog. Expect to track `main` and rebuild
-when a security fix lands.
+The project currently ships from `main`. Public Docker images and source
+tarballs are snapshots of `main` and roll forward as security and
+compatibility fixes land — track `main` and rebuild when a relevant fix
+is merged.
 
 | Branch | Supported | Notes |
 | --- | --- | --- |
-| `main` | yes (best effort) | All security fixes land here first. |
-| Tagged releases | no formal SLA | Upgrade to the latest `main` for fixes. |
+| `main` | yes | All security fixes land here first. |
+| Tagged releases | best effort | Upgrade to the latest `main` for the fastest fix availability. |
 | Forks / vendored copies | no | The maintainers cannot patch unknown forks; please rebase. |
 
 ## Reporting a vulnerability
@@ -88,15 +94,19 @@ OtterIO 派生自 MinIO 最后一个 Apache 2.0 版本（约
 CVE / GHSA，**在被明确排除之前**都视为可能影响 OtterIO，相关清单维护在
 [`docs/security/upstream-cve-backlog.md`](docs/security/upstream-cve-backlog.md)。
 
-在该清单尚未清空之前，**不建议**将 OtterIO 部署到面向不可信用户或不可信
-网络的环境中。完全位于可信边界内的部署（例如内部实验存储、单租户 CI
-归档）是合理的起点。
+**当前积压清单状态（2026-06）：14 项已修复、2 项不适用、0 项待处理。**
+上游若有新公告，会以 `Pending` 状态滚动纳入同一张表，并在 `main` 上
+完成修复。
+
+与任何基础设施组件一样，请结合自身部署场景做严谨的适用性评估：业务
+负载特征、容量与吞吐目标、合规与数据驻留要求，以及组织内部的变更
+管理规范；并在投产之前，于贵方自有的回归测试集中验证相关代码路径。
 
 ### 受支持的版本
 
-项目目前仅从 `main` 分支发布，尚无 semver 发版节奏。Docker/源码 tarball
-标签是 `main` 的快照，沿用同样的待修缺口。请直接跟随 `main`，并在安全修复
-合入后重新构建。
+项目目前从 `main` 分支出货。公开的 Docker 镜像与源码 tarball 是 `main`
+的快照，会随安全与兼容性修复持续滚动 —— 请直接跟随 `main`，并在相关
+修复合入后重新构建。
 
 ### 漏洞报告
 
