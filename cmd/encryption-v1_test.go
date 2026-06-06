@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	humanize "github.com/dustin/go-humanize"
@@ -649,7 +650,39 @@ func Test_decryptObjectInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	os.Setenv("OTTERIO_KMS_MASTER_KEY", "my-otterio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
+	// The testdata fixture was recorded against the historical upstream
+	// metadata namespace ("X-Minio-Internal-...") and KMS key ID
+	// ("my-minio-key"). After the fork rename we read metadata using
+	// "X-Otterio-Internal-..." constants, so rewrite the persisted
+	// metadata keys in-memory before handing them to decryptObjectInfo.
+	// This keeps the production code under test exercising the real
+	// (renamed) constants while preserving binary compatibility with
+	// the recorded ciphertext, whose AEAD/HMAC bytes do NOT depend on
+	// the metadata key names themselves -- only on (bucket, object,
+	// keyID, IV, sealed key bytes).
+	const (
+		oldMetaPrefix = "X-Minio-Internal-"
+		newMetaPrefix = "X-Otterio-Internal-"
+	)
+	for i := range testSet {
+		ud := testSet[i].UserDef
+		rewritten := make(map[string]string, len(ud))
+		for k, v := range ud {
+			if strings.HasPrefix(k, oldMetaPrefix) {
+				rewritten[newMetaPrefix+strings.TrimPrefix(k, oldMetaPrefix)] = v
+			} else {
+				rewritten[k] = v
+			}
+		}
+		testSet[i].UserDef = rewritten
+	}
+
+	// The recorded ciphertext was sealed under the KMS key ID
+	// "my-minio-key"; the single-key KMS rejects decrypt requests
+	// whose keyID does not match its configured key name, so configure
+	// the KMS with the historical name (independent of the env var
+	// name itself, which is unrelated to the AEAD AAD).
+	os.Setenv("OTTERIO_KMS_MASTER_KEY", "my-minio-key:6368616e676520746869732070617373776f726420746f206120736563726574")
 	defer os.Setenv("OTTERIO_KMS_MASTER_KEY", "")
 	GlobalKMS, err = crypto.NewKMS(crypto.KMSConfig{})
 	if err != nil {

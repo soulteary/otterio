@@ -71,7 +71,10 @@ func (a adminAPIHandlers) ServiceHandler(w http.ResponseWriter, r *http.Request)
 
 	defer logger.AuditLog(ctx, w, r, mustGetClaimsFromToken(r))
 
-	action := urlVar(r, "action")
+	// "action" is supplied as a query parameter (e.g. /service?action=restart),
+	// not a path variable. Read it from r.URL.Query() so the route handler
+	// resolves the requested action correctly.
+	action := r.URL.Query().Get("action")
 
 	var serviceSig serviceSignal
 	switch madmin.ServiceAction(action) {

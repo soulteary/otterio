@@ -202,6 +202,18 @@ func fiberTestFasthttpRequest(r *http.Request) (*fasthttp.Request, error) {
 	req.SetRequestURI(r.RequestURI)
 	req.Header.SetHost(r.Host)
 	req.SetHost(r.Host)
+	// Capture whether the caller explicitly supplied a Content-Length header
+	// before we copy headers in. fasthttp normalises Content-Length onto the
+	// header object, so a later SetContentLength(len(body)) below would
+	// silently overwrite a client-declared value (e.g. an aws-chunked
+	// upload that signs `Content-Length: 0` while the wire body holds the
+	// chunk-encoded bytes). Preserving the client-declared value keeps the
+	// SigV4 canonicaliser in lockstep with what the client signed: the
+	// extractedSignedHeaders path reads Content-Length straight off
+	// r.Header when present, so flipping the header out from underneath the
+	// signature would manufacture a SignatureDoesNotMatch in tests that
+	// drive the handler through this fasthttp bridge.
+	clientContentLength, clientContentLengthSet := r.Header["Content-Length"]
 	for k, vv := range r.Header {
 		for _, v := range vv {
 			req.Header.Add(k, v)
@@ -213,9 +225,14 @@ func fiberTestFasthttpRequest(r *http.Request) (*fasthttp.Request, error) {
 			return nil, err
 		}
 		req.SetBody(body)
-		if r.ContentLength >= 0 {
+		if !clientContentLengthSet && r.ContentLength >= 0 {
 			req.Header.SetContentLength(len(body))
 		}
+	}
+	if clientContentLengthSet && len(clientContentLength) > 0 {
+		// Reassert the client's Content-Length so SetBody / fasthttp's
+		// internal normalisation cannot demote it back to len(body).
+		req.Header.Set("Content-Length", clientContentLength[0])
 	}
 	return req, nil
 }

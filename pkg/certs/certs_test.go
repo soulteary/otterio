@@ -84,17 +84,26 @@ func TestValidPairAfterWrite(t *testing.T) {
 	updateCerts("new-public.crt", "new-private.key")
 	defer updateCerts("original-public.crt", "original-private.key")
 
-	// Wait for the write event..
-	time.Sleep(200 * time.Millisecond)
-
+	// Wait for the file watcher to pick up the change and reload the
+	// certificate. fsnotify timing varies across platforms (especially on
+	// macOS where FSEvents may coalesce events), so poll instead of
+	// relying on a single fixed sleep.
 	hello := &tls.ClientHelloInfo{}
-	gcert, err := c.GetCertificate(hello)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(gcert.Certificate, expectedCert.Certificate) {
-		t.Error("certificate doesn't match expected certificate")
+	deadline := time.Now().Add(5 * time.Second)
+	var gcert *tls.Certificate
+	for {
+		gcert, err = c.GetCertificate(hello)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if reflect.DeepEqual(gcert.Certificate, expectedCert.Certificate) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Error("certificate doesn't match expected certificate")
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	rInfo := &tls.CertificateRequestInfo{}

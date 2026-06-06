@@ -102,8 +102,9 @@ func TestSimpleLock(t *testing.T) {
 
 	dm.Lock(id, source)
 
-	// fmt.Println("Lock acquired, waiting...")
-	time.Sleep(2500 * time.Millisecond)
+	// Brief hold; the previous 2.5s sleep added nothing because no other
+	// goroutine is contending for "test" here.
+	time.Sleep(50 * time.Millisecond)
 
 	dm.Unlock()
 }
@@ -141,18 +142,22 @@ func TestTwoSimultaneousLocksForSameResource(t *testing.T) {
 
 	dm1st.Lock(id, source)
 
-	// Release lock after 10 seconds
+	// Release the first lock after a short hold. The original test held
+	// it for 10s; that is wasteful relative to lockRetryInterval (1s) and
+	// is the main reason the package historically blew past `go test ./...
+	// -timeout=60s`. 2s is comfortably longer than one retry cycle so the
+	// second Lock still races against a held lock at least once before
+	// succeeding, preserving the contention being exercised.
 	go func() {
-		time.Sleep(10 * time.Second)
-		// fmt.Println("Unlocking dm1")
-
+		time.Sleep(2 * time.Second)
 		dm1st.Unlock()
 	}()
 
 	dm2nd.Lock(id, source)
 
-	// fmt.Printf("2nd lock obtained after 1st lock is released\n")
-	time.Sleep(2500 * time.Millisecond)
+	// Brief hold so we exercise the post-acquire path; the original 2.5s
+	// added no signal because dm2nd has no contender at this point.
+	time.Sleep(200 * time.Millisecond)
 
 	dm2nd.Unlock()
 }
@@ -166,11 +171,11 @@ func TestThreeSimultaneousLocksForSameResource(t *testing.T) {
 
 	dm1st.Lock(id, source)
 
-	// Release lock after 10 seconds
+	// Release the first lock after 2s for the same reason as
+	// TestTwoSimultaneousLocksForSameResource: the goal is to exercise
+	// contention against lockRetryInterval (1s), not to sleep for 10s.
 	go func() {
-		time.Sleep(10 * time.Second)
-		// fmt.Println("Unlocking dm1")
-
+		time.Sleep(2 * time.Second)
 		dm1st.Unlock()
 	}()
 
@@ -182,19 +187,16 @@ func TestThreeSimultaneousLocksForSameResource(t *testing.T) {
 
 		dm2nd.Lock(id, source)
 
-		// Release lock after 10 seconds
+		// Hold long enough for a retry cycle to observe contention,
+		// then drop. 500ms == half a retry interval, plenty for the
+		// dm3rd Lock below to spin once before succeeding.
 		go func() {
-			time.Sleep(2500 * time.Millisecond)
-			// fmt.Println("Unlocking dm2")
-
+			time.Sleep(500 * time.Millisecond)
 			dm2nd.Unlock()
 		}()
 
 		dm3rd.Lock(id, source)
-
-		// fmt.Printf("3rd lock obtained after 1st & 2nd locks are released\n")
-		time.Sleep(2500 * time.Millisecond)
-
+		time.Sleep(200 * time.Millisecond)
 		dm3rd.Unlock()
 	}()
 
@@ -203,19 +205,13 @@ func TestThreeSimultaneousLocksForSameResource(t *testing.T) {
 
 		dm3rd.Lock(id, source)
 
-		// Release lock after 10 seconds
 		go func() {
-			time.Sleep(2500 * time.Millisecond)
-			// fmt.Println("Unlocking dm3")
-
+			time.Sleep(500 * time.Millisecond)
 			dm3rd.Unlock()
 		}()
 
 		dm2nd.Lock(id, source)
-
-		// fmt.Printf("2nd lock obtained after 1st & 3rd locks are released\n")
-		time.Sleep(2500 * time.Millisecond)
-
+		time.Sleep(200 * time.Millisecond)
 		dm2nd.Unlock()
 	}()
 
@@ -231,8 +227,10 @@ func TestTwoSimultaneousLocksForDifferentResources(t *testing.T) {
 	dm1.Lock(id, source)
 	dm2.Lock(id, source)
 
-	// fmt.Println("Both locks acquired, waiting...")
-	time.Sleep(2500 * time.Millisecond)
+	// No contention here (different resource names) -- the original
+	// 2.5s sleep was dead time. Hold briefly to keep both locks live
+	// across at least a scheduler tick, then release.
+	time.Sleep(50 * time.Millisecond)
 
 	dm1.Unlock()
 	dm2.Unlock()
@@ -242,6 +240,15 @@ func TestTwoSimultaneousLocksForDifferentResources(t *testing.T) {
 
 // Test refreshing lock
 func TestFailedRefreshLock(t *testing.T) {
+	// This test must wait one full drwMutexRefreshInterval (10s, a
+	// package-level const) for the refresh failure to be observed and
+	// the lock callback to fire. That makes it the slowest test in this
+	// package; let `-short` skip it so `go test ./... -short` stays
+	// within tight per-package timeouts.
+	if testing.Short() {
+		t.Skip("skipping: waits one drwMutexRefreshInterval (~10s) by design")
+	}
+
 	// Simulate Refresh RPC response to return no locking found
 	for i := range lockServers {
 		lockServers[i].setRefreshReply(false)

@@ -40,36 +40,32 @@ func testSimpleWriteLock(t *testing.T, duration time.Duration) (locked bool) {
 	if !drwm.GetRLock(ctx1, cancel1, id, source, Options{Timeout: time.Second}) {
 		panic("Failed to acquire read lock")
 	}
-	// fmt.Println("1st read lock acquired, waiting...")
 
 	ctx2, cancel2 := context.WithCancel(context.Background())
 	if !drwm.GetRLock(ctx2, cancel2, id, source, Options{Timeout: time.Second}) {
 		panic("Failed to acquire read lock")
 	}
-	// fmt.Println("2nd read lock acquired, waiting...")
+
+	// Stagger the two RUnlocks so there is still contention while the
+	// write Lock is being attempted. The longer hold (2nd RUnlock) must
+	// stay > the `duration=1s` used by TestSimpleWriteLockTimedOut so
+	// that test still observes a timeout.
+	go func() {
+		time.Sleep(1 * time.Second)
+		drwm.RUnlock()
+	}()
 
 	go func() {
 		time.Sleep(2 * time.Second)
 		drwm.RUnlock()
-		// fmt.Println("1st read lock released, waiting...")
 	}()
 
-	go func() {
-		time.Sleep(3 * time.Second)
-		drwm.RUnlock()
-		// fmt.Println("2nd read lock released, waiting...")
-	}()
-
-	// fmt.Println("Trying to acquire write lock, waiting...")
 	ctx3, cancel3 := context.WithCancel(context.Background())
 	locked = drwm.GetLock(ctx3, cancel3, id, source, Options{Timeout: duration})
 	if locked {
-		// fmt.Println("Write lock acquired, waiting...")
-		time.Sleep(time.Second)
-
+		time.Sleep(100 * time.Millisecond)
 		drwm.Unlock()
 	}
-	// fmt.Println("Write lock failed due to timeout")
 	return
 }
 
@@ -101,22 +97,23 @@ func testDualWriteLock(t *testing.T, duration time.Duration) (locked bool) {
 		panic("Failed to acquire initial write lock")
 	}
 
+	// Hold for 1.5s. Must be > the `duration=1s` used by
+	// TestDualWriteLockTimedOut so the second GetLock there genuinely
+	// times out, but no longer than necessary -- the original 2s just
+	// burned wall time.
 	go func() {
-		time.Sleep(2 * time.Second)
+		time.Sleep(1500 * time.Millisecond)
 		drwm.Unlock()
-		// fmt.Println("Initial write lock released, waiting...")
 	}()
 
 	// fmt.Println("Trying to acquire 2nd write lock, waiting...")
 	ctx2, cancel2 := context.WithCancel(context.Background())
 	locked = drwm.GetLock(ctx2, cancel2, id, source, Options{Timeout: duration})
 	if locked {
-		// fmt.Println("2nd write lock acquired, waiting...")
-		time.Sleep(time.Second)
-
+		// Brief hold; nothing else is contending here.
+		time.Sleep(100 * time.Millisecond)
 		drwm.Unlock()
 	}
-	// fmt.Println("2nd write lock failed due to timeout")
 	return
 }
 

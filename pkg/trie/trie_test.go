@@ -51,18 +51,18 @@ func TestInsert(t *testing.T) {
 func TestPrefixMatch(t *testing.T) {
 	trie := NewTrie()
 
-	// Feed it some fodder: only 'otterio' and 'miny-os' should trip the matcher.
-	trie.Insert("otterio")
+	// Feed it some fodder: only 'minio' and 'min-io's' should trip the matcher.
+	trie.Insert("minio")
 	trie.Insert("amazon")
 	trie.Insert("cheerio")
-	trie.Insert("miny-o's")
+	trie.Insert("min-io's")
 
 	matches := trie.PrefixMatch("min")
 	if len(matches) != 2 {
 		t.Errorf("expected two matches, got: %d", len(matches))
 	}
 
-	if matches[0] != "otterio" && matches[1] != "otterio" {
-		t.Errorf("expected one match to be 'otterio', got: '%s' and '%s'", matches[0], matches[1])
+	if matches[0] != "minio" && matches[1] != "minio" {
+		t.Errorf("expected one match to be 'minio', got: '%s' and '%s'", matches[0], matches[1])
 	}
 }

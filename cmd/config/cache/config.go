@@ -120,7 +120,7 @@ func parseCacheDrives(drives string) ([]string, error) {
 func parseCacheDrivePaths(arg string) (ep []string, err error) {
 	patterns, perr := ellipses.FindEllipsesPatterns(arg)
 	if perr != nil {
-		return []string{}, config.ErrInvalidCacheDrivesValue(nil).Msg(perr.Error())
+		return []string{}, config.ErrInvalidCacheDrivesValue(nil).Msg("%s", perr.Error())
 	}
 
 	for _, lbls := range patterns.Expand() {

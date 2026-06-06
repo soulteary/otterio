@@ -132,7 +132,14 @@ func TestGetHostIP(t *testing.T) {
 		expectedErr    error
 	}{
 		{"localhost", set.CreateStringSet("127.0.0.1"), nil},
-		{"example.org", set.CreateStringSet("93.184.216.34"), nil},
+		// example.org used to resolve to a fixed IANA address (93.184.216.34),
+		// but its A-record changed over time and many networks (corporate DNS
+		// guards, public resolvers with ad/threat blocking, captive portals)
+		// rewrite it to a sinkhole. Keep the case to exercise public-DNS
+		// resolution but assert only that resolution succeeds and produces a
+		// non-empty result, instead of pinning a specific IP that depends on
+		// the operator's network.
+		{"example.org", nil, nil},
 	}
 
 	for _, testCase := range testCases {
@@ -149,6 +156,9 @@ func TestGetHostIP(t *testing.T) {
 
 		if testCase.expectedIPList != nil && testCase.expectedIPList.Intersection(ipList).IsEmpty() {
 			t.Fatalf("host: expected = %v, got = %v", testCase.expectedIPList, ipList)
+		}
+		if testCase.expectedIPList == nil && testCase.expectedErr == nil && ipList.IsEmpty() {
+			t.Fatalf("host: %s resolved to an empty IP set", testCase.host)
 		}
 	}
 }

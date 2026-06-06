@@ -21,7 +21,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"hash"
 	"io"
 
@@ -218,7 +217,7 @@ func bitrotSelfTest() {
 
 		checksum, err := hex.DecodeString(checksums[algorithm])
 		if err != nil {
-			logger.Fatal(errSelfTestFailure, fmt.Sprintf("bitrot: failed to decode %v checksum %s for selftest: %v", algorithm, checksums[algorithm], err))
+			logger.Fatal(errSelfTestFailure, "bitrot: failed to decode %v checksum %s for selftest: %v", algorithm, checksums[algorithm], err)
 		}
 		var (
 			hash = algorithm.New()
@@ -232,7 +231,7 @@ func bitrotSelfTest() {
 			hash.Reset()
 		}
 		if !bytes.Equal(sum, checksum) {
-			logger.Fatal(errSelfTestFailure, fmt.Sprintf("bitrot: %v selftest checksum mismatch: got %x - want %x", algorithm, sum, checksum))
+			logger.Fatal(errSelfTestFailure, "bitrot: %v selftest checksum mismatch: got %x - want %x", algorithm, sum, checksum)
 		}
 	}
 }

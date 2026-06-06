@@ -72,7 +72,7 @@ func testObjectNewMultipartUpload(obj ObjectLayer, instanceType string, t TestEr
 		case InvalidUploadID:
 			t.Fatalf("%s: New Multipart upload failed to create uuid file.", instanceType)
 		default:
-			t.Fatalf(err.Error())
+			t.Fatalf("%s", err.Error())
 		}
 	}
 }
@@ -754,7 +754,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 			MaxUploads:     10,
 			KeyMarker:      "otterio-object-1.txt",
 			IsTruncated:    false,
-			Prefix:         "min",
+			Prefix:         "otterio",
 			UploadIDMarker: uploadIDs[1],
 			Uploads: []MultipartInfo{
 				{
@@ -1085,7 +1085,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		{bucketNames[1], "orange", "", "", "", 10, listMultipartResults[22], nil, true},
 		{bucketNames[1], "Asia", "", "", "", 10, listMultipartResults[23], nil, true},
 		// Test case with `Prefix` and `UploadIDMarker` (Test number 37).
-		{bucketNames[1], "min", "otterio-object-1.txt", uploadIDs[1], "", 10, listMultipartResults[24], nil, true},
+		{bucketNames[1], "otterio", "otterio-object-1.txt", uploadIDs[1], "", 10, listMultipartResults[24], nil, true},
 		// Test case for bucket with multiple objects in it.
 		//	Bucket used : `bucketNames[2]`.
 		//	Objects used: `objectNames[1-5]`.

@@ -17,7 +17,6 @@
 package pubsub
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -67,7 +66,7 @@ func TestPubSub(t *testing.T) {
 	ps.Publish(val)
 	msg := <-ch1
 	if msg != "hello" {
-		t.Errorf(fmt.Sprintf("expected %s , found %s", val, msg))
+		t.Errorf("expected %s , found %s", val, msg)
 	}
 }
 
@@ -85,6 +84,6 @@ func TestMultiPubSub(t *testing.T) {
 	msg1 := <-ch1
 	msg2 := <-ch2
 	if msg1 != "hello" && msg2 != "hello" {
-		t.Errorf(fmt.Sprintf("expected both subscribers to have%s , found %s and  %s", val, msg1, msg2))
+		t.Errorf("expected both subscribers to have%s , found %s and  %s", val, msg1, msg2)
 	}
 }

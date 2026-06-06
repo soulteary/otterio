@@ -139,7 +139,7 @@ func getSetIndexes(args []string, totalSizes []uint64, customSetDriveCount uint6
 		// Check if totalSize has minimum range upto setSize
 		if totalSize < setSizes[0] || totalSize < customSetDriveCount {
 			msg := fmt.Sprintf("Incorrect number of endpoints provided %s", args)
-			return nil, config.ErrInvalidNumberOfErasureEndpoints(nil).Msg(msg)
+			return nil, config.ErrInvalidNumberOfErasureEndpoints(nil).Msg("%s", msg)
 		}
 	}
 
@@ -156,7 +156,7 @@ func getSetIndexes(args []string, totalSizes []uint64, customSetDriveCount uint6
 	setCounts := possibleSetCounts(commonSize)
 	if len(setCounts) == 0 {
 		msg := fmt.Sprintf("Incorrect number of endpoints provided %s, number of disks %d is not divisible by any supported erasure set sizes %d", args, commonSize, setSizes)
-		return nil, config.ErrInvalidNumberOfErasureEndpoints(nil).Msg(msg)
+		return nil, config.ErrInvalidNumberOfErasureEndpoints(nil).Msg("%s", msg)
 	}
 
 	var setSize uint64
@@ -171,7 +171,7 @@ func getSetIndexes(args []string, totalSizes []uint64, customSetDriveCount uint6
 			}
 		}
 		if !found {
-			return nil, config.ErrInvalidErasureSetSize(nil).Msg(msg)
+			return nil, config.ErrInvalidErasureSetSize(nil).Msg("%s", msg)
 		}
 
 		// No automatic symmetry calculation expected, user is on their own
@@ -183,7 +183,7 @@ func getSetIndexes(args []string, totalSizes []uint64, customSetDriveCount uint6
 
 		if len(setCounts) == 0 {
 			msg := fmt.Sprintf("No symmetric distribution detected with input endpoints provided %s, disks %d cannot be spread symmetrically by any supported erasure set sizes %d", args, commonSize, setSizes)
-			return nil, config.ErrInvalidNumberOfErasureEndpoints(nil).Msg(msg)
+			return nil, config.ErrInvalidNumberOfErasureEndpoints(nil).Msg("%s", msg)
 		}
 
 		// Final set size with all the symmetry accounted for.
@@ -193,7 +193,7 @@ func getSetIndexes(args []string, totalSizes []uint64, customSetDriveCount uint6
 	// Check whether setSize is with the supported range.
 	if !isValidSetSize(setSize) {
 		msg := fmt.Sprintf("Incorrect number of endpoints provided %s, number of disks %d is not divisible by any supported erasure set sizes %d", args, commonSize, setSizes)
-		return nil, config.ErrInvalidNumberOfErasureEndpoints(nil).Msg(msg)
+		return nil, config.ErrInvalidNumberOfErasureEndpoints(nil).Msg("%s", msg)
 	}
 
 	for i := range totalSizes {
@@ -256,14 +256,14 @@ func parseEndpointSet(customSetDriveCount uint64, args ...string) (ep endpointSe
 	for i, arg := range args {
 		patterns, perr := ellipses.FindEllipsesPatterns(arg)
 		if perr != nil {
-			return endpointSet{}, config.ErrInvalidErasureEndpoints(nil).Msg(perr.Error())
+			return endpointSet{}, config.ErrInvalidErasureEndpoints(nil).Msg("%s", perr.Error())
 		}
 		argPatterns[i] = patterns
 	}
 
 	ep.setIndexes, err = getSetIndexes(args, getTotalSizes(argPatterns), customSetDriveCount, argPatterns)
 	if err != nil {
-		return endpointSet{}, config.ErrInvalidErasureEndpoints(nil).Msg(err.Error())
+		return endpointSet{}, config.ErrInvalidErasureEndpoints(nil).Msg("%s", err.Error())
 	}
 
 	ep.argPatterns = argPatterns
@@ -317,7 +317,7 @@ func GetAllSets(args ...string) ([][]string, error) {
 	for _, sargs := range setArgs {
 		for _, arg := range sargs {
 			if uniqueArgs.Contains(arg) {
-				return nil, config.ErrInvalidErasureEndpoints(nil).Msg(fmt.Sprintf("Input args (%s) has duplicate ellipses", args))
+				return nil, config.ErrInvalidErasureEndpoints(nil).Msg("Input args (%s) has duplicate ellipses", args)
 			}
 			uniqueArgs.Add(arg)
 		}

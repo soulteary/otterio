@@ -150,7 +150,7 @@ func createPermDeniedFile(t *testing.T) (permDeniedDir string) {
 			os.RemoveAll(permDeniedDir)
 		}
 
-		t.Fatalf(errMsg)
+		t.Fatalf("%s", errMsg)
 	}()
 
 	var err error

@@ -126,7 +126,7 @@ func NewFSObjectLayer(fsPath string) (ObjectLayer, error) {
 	var err error
 	if fsPath, err = getValidPath(fsPath); err != nil {
 		if err == errMinDiskSize {
-			return nil, config.ErrUnableToWriteInBackend(err).Hint(err.Error())
+			return nil, config.ErrUnableToWriteInBackend(err).Hint("%s", err.Error())
 		}
 
 		// Show a descriptive error with a hint about how to fix it.
@@ -137,7 +137,7 @@ func NewFSObjectLayer(fsPath string) (ObjectLayer, error) {
 			username = "<your-username>"
 		}
 		hint := fmt.Sprintf("Use 'sudo chown -R %s %s && sudo chmod u+rxw %s' to provide sufficient permissions.", username, fsPath, fsPath)
-		return nil, config.ErrUnableToWriteInBackend(err).Hint(hint)
+		return nil, config.ErrUnableToWriteInBackend(err).Hint("%s", hint)
 	}
 
 	// Assign a new UUID for FS otterio mode. Each server instance

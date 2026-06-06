@@ -56,7 +56,7 @@ mr/cKCUyBL7rcAvg0zNq1vcSrUSGlAmY3SEDCu3GOKnjG/U4E7+p957ocWSV+mQU
 		shouldPass      bool
 	}{{"", LicenseInfo{}, false},
 		{"eyJhbGciOiJFUzM4NCIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJrYW5hZ2FyYWorYzFAbWluaW8uaW8iLCJjYXAiOjUwLCJvcmciOiJHcmluZ290dHMgSW5jLiIsImV4cCI6MS42NDE0NDYxNjkwMDExOTg4OTRlOSwicGxhbiI6IlNUQU5EQVJEIiwiaXNzIjoic3VibmV0QG1pbi5pbyIsImFpZCI6MSwiaWF0IjoxLjYwOTkxMDE2OTAwMTE5ODg5NGU5fQ.EhTL2xwMHnUoLQF4UR-5bjUCja3whseLU5mb9XEj7PvAae6HEIDCOMEF8Hhh20DN_v_LRE283j2ZlA5zulcXSZXS0CLcrKqbVy6QLvZfvvLuerOjJI-NBa9dSJWJ0WoN", LicenseInfo{
-			Email:           "kanagaraj+c1@otterio.io",
+			Email:           "kanagaraj+c1@minio.io",
 			Organization:    "Gringotts Inc.",
 			AccountID:       1,
 			StorageCapacity: 50,
@@ -78,7 +78,13 @@ mr/cKCUyBL7rcAvg0zNq1vcSrUSGlAmY3SEDCu3GOKnjG/U4E7+p957ocWSV+mQU
 					t.Fatalf("%d: Expected license to fail verification but passed", i+1)
 				}
 				if !areEqLicenseInfo(tc.expectedLicInfo, licInfo) {
-					t.Fatalf("%d: Expected license info %v but got %v", i+1, tc.expectedLicInfo, licInfo)
+					// Format times in UTC so the diagnostic message does not
+					// depend on the local timezone of the machine running tests.
+					expected := tc.expectedLicInfo
+					actual := licInfo
+					expected.ExpiresAt = expected.ExpiresAt.UTC()
+					actual.ExpiresAt = actual.ExpiresAt.UTC()
+					t.Fatalf("%d: Expected license info %v but got %v", i+1, expected, actual)
 				}
 			}
 		})

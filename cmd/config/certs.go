@@ -97,7 +97,7 @@ func LoadX509KeyPair(certFile, keyFile string) (tls.Certificate, error) {
 	}
 	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 	if err != nil {
-		return tls.Certificate{}, ErrSSLUnexpectedData(nil).Msg(err.Error())
+		return tls.Certificate{}, ErrSSLUnexpectedData(nil).Msg("%s", err.Error())
 	}
 	// Ensure that the private key is not a P-384 or P-521 EC key.
 	// The Go TLS stack does not provide constant-time implementations of P-384 and P-521.

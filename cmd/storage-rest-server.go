@@ -947,7 +947,7 @@ func (s *storageRESTServer) VerifyFileHandler(w http.ResponseWriter, r *http.Req
 // Do not like it :-(
 func logFatalErrs(err error, endpoint Endpoint, exit bool) {
 	if errors.Is(err, errMinDiskSize) {
-		logger.Fatal(config.ErrUnableToWriteInBackend(err).Hint(err.Error()), "Unable to initialize backend")
+		logger.Fatal(config.ErrUnableToWriteInBackend(err).Hint("%s", err.Error()), "Unable to initialize backend")
 	} else if errors.Is(err, errUnsupportedDisk) {
 		var hint string
 		if endpoint.URL != nil {
@@ -955,7 +955,7 @@ func logFatalErrs(err error, endpoint Endpoint, exit bool) {
 		} else {
 			hint = "Disks do not support O_DIRECT flags, OtterIO erasure coding requires filesystems with O_DIRECT support"
 		}
-		logger.Fatal(config.ErrUnsupportedBackend(err).Hint(hint), "Unable to initialize backend")
+		logger.Fatal(config.ErrUnsupportedBackend(err).Hint("%s", hint), "Unable to initialize backend")
 	} else if errors.Is(err, errDiskNotDir) {
 		var hint string
 		if endpoint.URL != nil {
@@ -963,7 +963,7 @@ func logFatalErrs(err error, endpoint Endpoint, exit bool) {
 		} else {
 			hint = "Disks are not directories, OtterIO erasure coding needs directories"
 		}
-		logger.Fatal(config.ErrUnableToWriteInBackend(err).Hint(hint), "Unable to initialize backend")
+		logger.Fatal(config.ErrUnableToWriteInBackend(err).Hint("%s", hint), "Unable to initialize backend")
 	} else if errors.Is(err, errFileAccessDenied) {
 		// Show a descriptive error with a hint about how to fix it.
 		var username string
@@ -979,7 +979,7 @@ func logFatalErrs(err error, endpoint Endpoint, exit bool) {
 		} else {
 			hint = fmt.Sprintf("Run the following command to add write permissions: `sudo chown -R %s. <path> && sudo chmod u+rxw <path>`", username)
 		}
-		logger.Fatal(config.ErrUnableToWriteInBackend(err).Hint(hint), "Unable to initialize backend")
+		logger.Fatal(config.ErrUnableToWriteInBackend(err).Hint("%s", hint), "Unable to initialize backend")
 	} else if errors.Is(err, errFaultyDisk) {
 		if !exit {
 			logger.LogIf(GlobalContext, fmt.Errorf("disk is faulty at %s, please replace the drive - disk will be offline", endpoint))
