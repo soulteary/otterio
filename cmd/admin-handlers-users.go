@@ -437,6 +437,22 @@ func (a adminAPIHandlers) AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SECURITY (CVE-2021-43858 / GHSA-j6jc-jqqc-p6cx): the AddUser admin API
+	// must not be a backdoor for attaching policies. Upstream MinIO PR #13976
+	// closed this by ignoring madmin.UserInfo.PolicyName silently inside
+	// IAMSys.CreateUser (see cmd/iam.go: the "PolicyName field is
+	// intentionally ignored here" guard around the create-user path). We add
+	// the second layer of defence here at the handler boundary: any caller
+	// that ships PolicyName on the wire is rejected with HTTP 400 and pointed
+	// at SetPolicyForUserOrGroup, which performs its own AttachPolicy
+	// authorisation check. This way a future regression that removes the
+	// silent-strip in IAMSys.CreateUser still cannot turn AddUser into a
+	// privilege-escalation primitive.
+	if uinfo.PolicyName != "" {
+		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrAdminUserInfoPolicyNameNotAllowed), r.URL)
+		return
+	}
+
 	if err = globalIAMSys.CreateUser(accessKey, uinfo); err != nil {
 		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
 		return

@@ -21,7 +21,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
 	"path"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -29,11 +32,157 @@ import (
 
 	jwtgo "github.com/dgrijalva/jwt-go"
 
+	"github.com/soulteary/otterio/cmd/config/identity/ldap"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/auth"
 	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 	"github.com/soulteary/otterio/pkg/madmin"
 )
+
+// envIAMLDAPDNMigration is the feature flag that gates the one-time
+// LDAP DN normalisation migration in loadMappedPolicies. Defaults to "on".
+// Operators may set OTTERIO_IAM_LDAP_DN_MIGRATION=off to defer the migration
+// (e.g. for an audit dry-run) - while the flag is off the in-memory policy
+// map will be sharded across DN case variants exactly as on disk.
+const envIAMLDAPDNMigration = "OTTERIO_IAM_LDAP_DN_MIGRATION"
+
+// migrateMappedPolicyToCanonical re-keys a single on-disk policy mapping
+// whose name is an LDAP DN to its NormalizeDN canonical form.
+//
+// It is invoked at boot from loadMappedPolicies for the regular-user and
+// group code paths when the IAM layer is configured with
+// LDAPUsersSysType. Three cases:
+//
+//  1. The on-disk name is already canonical: no-op.
+//  2. The on-disk name is non-canonical and the canonical key is FREE:
+//     the caller has already loaded the mapping into m[name]; we move it
+//     to m[canonical], remove the old in-memory entry, copy the on-disk
+//     blob to the canonical path and delete the old path.
+//  3. The on-disk name is non-canonical and the canonical key is OCCUPIED
+//     by a mapping with different content: we keep the lex-min name as
+//     winner (deterministic) and move the loser to a `.conflict-<ns>`
+//     side-car so an operator can reconcile it manually. Both the load
+//     and the side-car moves are best-effort: an error is logged but we
+//     do not abort the whole IAM load - the running policy map is still
+//     correct, and the operator can retry the migration after fixing
+//     the storage layer.
+//
+// On parse-failure of the on-disk DN we log and skip; the caller has
+// already populated the in-memory map with the literal name as a fallback,
+// matching pre-normalisation behaviour for that one entry.
+func (iamOS *IAMObjectStore) migrateMappedPolicyToCanonical(ctx context.Context,
+	rawName string, userType IAMUserType, isGroup bool, m map[string]MappedPolicy) {
+
+	if rawName == "" {
+		return
+	}
+	canonical, err := ldap.NormalizeDN(rawName)
+	if err != nil {
+		logger.LogIf(ctx, fmt.Errorf("LDAP DN migration: skipping unparseable on-disk name %q: %w", rawName, err))
+		return
+	}
+	if canonical == rawName {
+		return
+	}
+
+	rawPath := getMappedPolicyPath(rawName, userType, isGroup)
+	canonicalPath := getMappedPolicyPath(canonical, userType, isGroup)
+
+	rawPolicy, hasRaw := m[rawName]
+	canonicalPolicy, hasCanonical := m[canonical]
+
+	winner := rawPolicy
+	winnerName := rawName
+	loserName := ""
+	switch {
+	case hasCanonical && hasRaw && reflect.DeepEqual(rawPolicy, canonicalPolicy):
+		// duplicate content: just delete the raw side, keep the canonical.
+		winner = canonicalPolicy
+		winnerName = canonical
+		loserName = rawName
+	case hasCanonical && hasRaw && !reflect.DeepEqual(rawPolicy, canonicalPolicy):
+		// real conflict: pick lex-min as winner, side-car the other.
+		if rawName < canonical {
+			winner = rawPolicy
+			winnerName = canonical // we still want the in-memory key canonical
+			loserName = ""         // canonical itself is the loser content; it goes to .conflict
+			logger.LogIf(ctx, fmt.Errorf("LDAP DN migration conflict: %q (winner) and %q (loser): keeping winner content; loser archived to %s.conflict-%d",
+				rawName, canonical, canonicalPath, time.Now().UnixNano()))
+			iamOS.archiveConflict(ctx, canonicalPath, time.Now())
+		} else {
+			winner = canonicalPolicy
+			winnerName = canonical
+			logger.LogIf(ctx, fmt.Errorf("LDAP DN migration conflict: %q (loser) and %q (winner): keeping winner content; loser archived to %s.conflict-%d",
+				rawName, canonical, rawPath, time.Now().UnixNano()))
+			iamOS.archiveConflict(ctx, rawPath, time.Now())
+		}
+	case hasRaw && !hasCanonical:
+		winner = rawPolicy
+		winnerName = canonical
+		loserName = rawName
+	default:
+		// nothing to do
+		return
+	}
+
+	// In-memory: ensure the canonical key holds the winner and the raw key
+	// is gone.
+	m[canonical] = winner
+	if winnerName != rawName {
+		delete(m, rawName)
+	}
+	_ = loserName // currently used only for clarity; future audit log hook.
+
+	// On-disk: copy the winner blob to the canonical path and delete the
+	// raw path. Migration is gated by OTTERIO_IAM_LDAP_DN_MIGRATION; when
+	// disabled we leave disk untouched so an operator can dry-run.
+	if !iamLDAPDNMigrationEnabled() {
+		return
+	}
+	if err := iamOS.saveMappedPolicy(ctx, canonical, userType, isGroup, winner); err != nil {
+		logger.LogIf(ctx, fmt.Errorf("LDAP DN migration: failed to write canonical mapping %q: %w", canonicalPath, err))
+		return
+	}
+	if rawPath != canonicalPath {
+		if err := iamOS.deleteIAMConfig(ctx, rawPath); err != nil && err != errConfigNotFound {
+			logger.LogIf(ctx, fmt.Errorf("LDAP DN migration: failed to remove old non-canonical mapping %q: %w", rawPath, err))
+		}
+	}
+}
+
+// archiveConflict best-effort renames the IAM mapping at p to a
+// `<p>.conflict-<unix-nano>` sentinel so a human can reconcile it later.
+// We deliberately do not surface failures: a failed archive must not block
+// the IAM load, and the caller has already logged the conflict.
+func (iamOS *IAMObjectStore) archiveConflict(ctx context.Context, p string, when time.Time) {
+	if !iamLDAPDNMigrationEnabled() {
+		return
+	}
+	// "Read original bytes, write to .conflict-<ts>, delete original".
+	raw, err := readConfig(ctx, iamOS.objAPI, p)
+	if err != nil {
+		// Nothing to archive (already gone or unreadable); fine.
+		return
+	}
+	conflictPath := fmt.Sprintf("%s.conflict-%d", p, when.UnixNano())
+	if err := saveConfig(ctx, iamOS.objAPI, conflictPath, raw); err != nil {
+		logger.LogIf(ctx, fmt.Errorf("LDAP DN migration: failed to write conflict archive %q: %w", conflictPath, err))
+		return
+	}
+	if err := iamOS.deleteIAMConfig(ctx, p); err != nil && err != errConfigNotFound {
+		logger.LogIf(ctx, fmt.Errorf("LDAP DN migration: failed to remove conflicting mapping %q after archiving: %w", p, err))
+	}
+}
+
+func iamLDAPDNMigrationEnabled() bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(envIAMLDAPDNMigration)))
+	switch v {
+	case "", "on", "true", "1", "yes":
+		return true
+	default:
+		return false
+	}
+}
 
 // IAMObjectStore implements IAMStorageAPI
 type IAMObjectStore struct {
@@ -388,15 +537,37 @@ func (iamOS *IAMObjectStore) loadMappedPolicies(ctx context.Context, userType IA
 			basePath = iamConfigPolicyDBUsersPrefix
 		}
 	}
+	// rawNames keeps the on-disk keys in their original (possibly
+	// non-canonical) form so the post-load LDAP DN migration can rewrite
+	// them. Skipping conflict-side-cars is intentional: those files are
+	// quarantined for human review, not loaded into the running policy map.
+	var rawNames []string
 	for item := range listIAMConfigItems(ctx, iamOS.objAPI, basePath) {
 		if item.Err != nil {
 			return item.Err
 		}
 
 		policyFile := item.Item
+		if strings.Contains(policyFile, ".conflict-") {
+			continue
+		}
 		userOrGroupName := strings.TrimSuffix(policyFile, ".json")
 		if err := iamOS.loadMappedPolicy(ctx, userOrGroupName, userType, isGroup, m); err != nil && err != errNoSuchPolicy {
 			return err
+		}
+		rawNames = append(rawNames, userOrGroupName)
+	}
+
+	// SECURITY (LDAP DN normalisation): when the IAM layer is in LDAP mode
+	// and the names we just loaded are LDAP DNs (regular user / group, but
+	// not service-account or STS), re-key them to their canonical NormalizeDN
+	// form. See migrateMappedPolicyToCanonical for the conflict policy.
+	// This runs at most once per startup; once on-disk paths are canonical
+	// the inner loop is a no-op.
+	if globalIAMSys != nil && globalIAMSys.usersSysType == LDAPUsersSysType &&
+		(isGroup || userType == regularUser) {
+		for _, raw := range rawNames {
+			iamOS.migrateMappedPolicyToCanonical(ctx, raw, userType, isGroup, m)
 		}
 	}
 	return nil

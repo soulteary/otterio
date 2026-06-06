@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/soulteary/otterio/cmd/config/identity/ldap"
 	"github.com/soulteary/otterio/cmd/config/identity/openid"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
@@ -453,6 +454,27 @@ func (sts *stsAPIHandlers) AssumeRoleWithLDAPIdentity(w http.ResponseWriter, r *
 		err = fmt.Errorf("LDAP server error: %w", err)
 		writeSTSErrorResponse(ctx, w, true, ErrSTSInvalidParameterValue, err)
 		return
+	}
+
+	// SECURITY (LDAP DN normalisation): Bind() guarantees that ldapUserDN and
+	// every entry in groupDistNames are already in canonical NormalizeDN form
+	// (see cmd/config/identity/ldap/config.go). The IAM policy lookup,
+	// SetTempUser, ParentUser and JWT ldapUser claim below all rely on that
+	// invariant. We re-assert it here so that a future refactor that introduces
+	// a new bind helper without canonicalisation cannot silently widen the
+	// attack surface; on failure we abort with an STS error rather than
+	// minting a credential bound to a non-canonical key.
+	if canonical, normErr := ldap.NormalizeDN(ldapUserDN); normErr != nil || canonical != ldapUserDN {
+		writeSTSErrorResponse(ctx, w, true, ErrSTSInternalError,
+			fmt.Errorf("LDAP DN invariant violated for bind DN %q (canonical=%q, err=%v)", ldapUserDN, canonical, normErr))
+		return
+	}
+	for _, g := range groupDistNames {
+		if canonical, normErr := ldap.NormalizeDN(g); normErr != nil || canonical != g {
+			writeSTSErrorResponse(ctx, w, true, ErrSTSInternalError,
+				fmt.Errorf("LDAP DN invariant violated for group DN %q (canonical=%q, err=%v)", g, canonical, normErr))
+			return
+		}
 	}
 
 	// Check if this user or their groups have a policy applied.

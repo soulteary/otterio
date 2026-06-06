@@ -259,6 +259,7 @@ const (
 	ErrAdminConfigBadJSON
 	ErrAdminConfigDuplicateKeys
 	ErrAdminCredentialsMismatch
+	ErrAdminUserInfoPolicyNameNotAllowed
 	ErrInsecureClientRequest
 	ErrObjectTampered
 	// Bucket Quota error codes
@@ -1216,6 +1217,11 @@ var errorCodes = errorCodeMap{
 		Code:           "XOtterioAdminCredentialsMismatch",
 		Description:    "Credentials in config mismatch with server environment variables",
 		HTTPStatusCode: http.StatusServiceUnavailable,
+	},
+	ErrAdminUserInfoPolicyNameNotAllowed: {
+		Code:           "XOtterioAdminUserInfoPolicyNameNotAllowed",
+		Description:    "PolicyName field on AddUser is not accepted; attach policies via SetPolicyForUserOrGroup (CVE-2021-43858).",
+		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrAdminBucketQuotaExceeded: {
 		Code:           "XOtterioAdminBucketQuotaExceeded",

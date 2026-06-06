@@ -31,6 +31,7 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio/cmd/config/identity/ldap"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/auth"
 	"github.com/soulteary/otterio/pkg/bucket/policy"
@@ -131,6 +132,18 @@ func getPolicyDocPath(name string) string {
 	return pathJoin(iamConfigPoliciesPrefix, name, iamPolicyFile)
 }
 
+// getMappedPolicyPath returns the persistent storage key for a user/group
+// policy mapping.
+//
+// SECURITY (LDAP DN normalisation): when this path encodes an LDAP DN
+// (i.e. the IAMSys is configured with usersSysType == LDAPUsersSysType),
+// callers MUST pass `name` already canonicalised via ldap.NormalizeDN.
+// Otherwise the same logical identity can be persisted to multiple files
+// (`CN=Alice.json` vs `cn=alice.json`) and a directory that switches
+// casing during a Bind can pick whichever mapping the administrator did
+// NOT intend. policyDBSet/PolicyDBGet enforce that invariant on the
+// in-memory side; iam-object-store.loadMappedPolicies handles persisted
+// data via a one-time migration.
 func getMappedPolicyPath(name string, userType IAMUserType, isGroup bool) string {
 	if isGroup {
 		return pathJoin(iamConfigPolicyDBGroupsPrefix, name+".json")
@@ -1794,9 +1807,27 @@ func (sys *IAMSys) PolicyDBSet(name, policy string, isGroup bool) error {
 
 // policyDBSet - sets a policy for user in the policy db. Assumes that caller
 // has sys.Lock(). If policy == "", then policy mapping is removed.
+//
+// SECURITY (LDAP DN normalisation): when usersSysType is LDAPUsersSysType the
+// `name` argument is an LDAP distinguished name returned by an upstream Bind
+// or LookupUserDN call. Those helpers already canonicalise via
+// ldap.NormalizeDN, but we re-normalise here as an invariant check so that a
+// new caller path that forgets to normalise still cannot fragment the IAM
+// map across case-only DN variants. A parse error is reported as
+// errInvalidArgument so the caller surfaces a 400, mirroring the upstream
+// LDAP CVE fixes.
 func (sys *IAMSys) policyDBSet(name, policyName string, userType IAMUserType, isGroup bool) error {
 	if name == "" {
 		return errInvalidArgument
+	}
+
+	if sys.usersSysType == LDAPUsersSysType {
+		canonical, err := ldap.NormalizeDN(name)
+		if err != nil {
+			logger.LogIf(GlobalContext, fmt.Errorf("policyDBSet: refusing non-canonical LDAP DN %q: %w", name, err))
+			return errInvalidArgument
+		}
+		name = canonical
 	}
 
 	if sys.usersSysType == OtterIOUsersSysType {
@@ -1853,6 +1884,10 @@ func (sys *IAMSys) policyDBSet(name, policyName string, userType IAMUserType, is
 
 // PolicyDBGet - gets policy set on a user or group. If a list of groups is
 // given, policies associated with them are included as well.
+//
+// SECURITY (LDAP DN normalisation): see policyDBSet for the rationale; the
+// same canonicalisation is applied to `name` and `groups` here so look-ups
+// always see the same key that policyDBSet wrote.
 func (sys *IAMSys) PolicyDBGet(name string, isGroup bool, groups ...string) ([]string, error) {
 	if !sys.Initialized() {
 		return nil, errServerNotInitialized
@@ -1860,6 +1895,24 @@ func (sys *IAMSys) PolicyDBGet(name string, isGroup bool, groups ...string) ([]s
 
 	if name == "" {
 		return nil, errInvalidArgument
+	}
+
+	if sys.usersSysType == LDAPUsersSysType {
+		canonical, err := ldap.NormalizeDN(name)
+		if err != nil {
+			logger.LogIf(GlobalContext, fmt.Errorf("PolicyDBGet: refusing non-canonical LDAP DN %q: %w", name, err))
+			return nil, errInvalidArgument
+		}
+		name = canonical
+		if len(groups) > 0 {
+			canonGroups := make([]string, len(groups))
+			copy(canonGroups, groups)
+			if err := ldap.NormalizeDNSlice(canonGroups); err != nil {
+				logger.LogIf(GlobalContext, fmt.Errorf("PolicyDBGet: refusing non-canonical LDAP group DN: %w", err))
+				return nil, errInvalidArgument
+			}
+			groups = canonGroups
+		}
 	}
 
 	sys.store.rlock()

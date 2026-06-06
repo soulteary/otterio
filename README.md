@@ -42,9 +42,18 @@ This README provides quickstart instructions on running OtterIO on baremetal har
 > The OtterIO maintainers actively triage these issues — see
 > [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)
 > for the rolling backlog and the items that have already been closed
-> (notably the SSE metadata-injection class equivalent to GHSA-3rh2-v3gr-35p9
-> and the service-account sub-policy escalation introduced upstream in
-> RELEASE.2025-10-15) — but several historical advisories remain open.
+> (notably the SSE metadata-injection class equivalent to GHSA-3rh2-v3gr-35p9,
+> the service-account sub-policy escalation introduced upstream in
+> RELEASE.2025-10-15, the `AddUser` PolicyName privilege escalation
+> CVE-2021-43858, and the LDAP DN normalisation family of upstream
+> advisories from 2022–2024) — but several historical advisories remain
+> open.
+>
+> **Operators upgrading from a previous OtterIO build that used LDAP**
+> should consult [`docs/security/ldap-dn-normalization-migration.md`](./docs/security/ldap-dn-normalization-migration.md)
+> before rolling out: the new release canonicalises every LDAP DN before
+> it touches the IAM policy map, which is a one-shot breaking change for
+> deployments that happened to rely on case-only DN differences.
 >
 > **OtterIO is not yet recommended for production deployments handling
 > untrusted users or untrusted networks.** See [`SECURITY.md`](./SECURITY.md)

@@ -22,7 +22,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +32,7 @@ import (
 
 	jwtgo "github.com/dgrijalva/jwt-go"
 	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio/cmd/config/identity/ldap"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/auth"
 	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
@@ -474,9 +477,43 @@ func (ies *IAMEtcdStore) loadMappedPolicies(ctx context.Context, userType IAMUse
 	}
 
 	// Parse all policies mapping to create the proper data model
+	var rawNames []string
 	for _, kv := range r.Kvs {
+		if strings.Contains(string(kv.Key), ".conflict-") {
+			continue
+		}
+		// reuse getMappedPolicy and recover the same in-memory key it uses
+		// so we can later rewrite it under its canonical form.
 		if err = getMappedPolicy(ctx, kv, userType, isGroup, m, basePrefix); err != nil && err != errNoSuchPolicy {
 			return err
+		}
+		rawNames = append(rawNames, extractPathPrefixAndSuffix(string(kv.Key), basePrefix, ".json"))
+	}
+
+	// SECURITY (LDAP DN normalisation): mirror the object-store migration on
+	// the etcd backend. See cmd/iam-object-store.go:migrateMappedPolicyToCanonical
+	// for the conflict policy. We do not implement the on-disk rename for
+	// etcd here (that would need a separate transactional helper); instead we
+	// re-key in memory and log a one-shot warning so an operator can run the
+	// object-store backend migration first or schedule an etcd-side cleanup.
+	if globalIAMSys != nil && globalIAMSys.usersSysType == LDAPUsersSysType &&
+		(isGroup || userType == regularUser) {
+		for _, raw := range rawNames {
+			canonical, normErr := ldap.NormalizeDN(raw)
+			if normErr != nil || canonical == raw {
+				continue
+			}
+			if rawPolicy, ok := m[raw]; ok {
+				if existing, hasCanonical := m[canonical]; hasCanonical {
+					if !reflect.DeepEqual(rawPolicy, existing) && raw < canonical {
+						m[canonical] = rawPolicy
+					}
+				} else {
+					m[canonical] = rawPolicy
+				}
+				delete(m, raw)
+				logger.LogIf(ctx, fmt.Errorf("LDAP DN migration (etcd, in-memory only): re-keyed %q to canonical %q; the on-disk etcd entry will be rewritten on the next saveMappedPolicy. Set OTTERIO_IAM_LDAP_DN_MIGRATION=on and re-save to persist", raw, canonical))
+			}
 		}
 	}
 	return nil
