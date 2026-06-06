@@ -368,6 +368,14 @@ const (
 	ErrAccountNotEligible
 	ErrAdminServiceAccountNotFound
 	ErrPostPolicyConditionInvalidFormat
+	// ErrAccessDeniedReplicationHeader is returned when a caller (anonymous
+	// or signed) sends one of the fork-private X-Otterio-Source-* replication
+	// headers without holding the s3:ReplicateObject IAM action. The S3 wire
+	// code is intentionally the generic "AccessDenied" so callers cannot
+	// fingerprint replication-specific permission state, while the internal
+	// code lets audit logs distinguish "header forgery rejected" from a
+	// vanilla AccessDenied.
+	ErrAccessDeniedReplicationHeader
 )
 
 type errorCodeMap map[APIErrorCode]APIError
@@ -1768,6 +1776,11 @@ var errorCodes = errorCodeMap{
 		Description:    "Invalid according to Policy: Policy Condition failed",
 		HTTPStatusCode: http.StatusForbidden,
 	},
+	ErrAccessDeniedReplicationHeader: {
+		Code:           "AccessDenied",
+		Description:    "Caller is not authorized to send X-Otterio-Source-* replication headers (s3:ReplicateObject required).",
+		HTTPStatusCode: http.StatusForbidden,
+	},
 	// Add your error structure here.
 }
 
@@ -1792,6 +1805,8 @@ func toAPIErrorCode(ctx context.Context, err error) (apiErr APIErrorCode) {
 	switch err {
 	case errInvalidArgument:
 		apiErr = ErrAdminInvalidArgument
+	case errAccessDeniedReplicationHeader:
+		apiErr = ErrAccessDeniedReplicationHeader
 	case errNoSuchUser:
 		apiErr = ErrAdminNoSuchUser
 	case errNoSuchServiceAccount:

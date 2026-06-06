@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -29,7 +30,114 @@ import (
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
+	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 )
+
+// SECURITY: trust boundary for fork-private replication headers.
+//
+// The X-Otterio-Source-* headers below are how OtterIO's replication peers
+// communicate persistent metadata (mtime, etag, delete-marker state, version
+// purge intent) about an object that is being replicated from another site.
+// They are *not* part of the public S3 contract — a regular S3 client has no
+// reason to set them. If they are accepted unconditionally, any caller with
+// s3:PutObject / s3:DeleteObject can ride a normal SigV4 PUT/DELETE while
+// smuggling these headers and silently:
+//
+//   - rewrite an object's mtime (bypass mtime-based retention / pollute audit
+//     timelines),
+//   - poison an object's etag (break content-integrity reconciliation),
+//   - flip a PUT into a delete-marker creation,
+//   - force VersionPurgeStatus = Complete on a DELETE (potentially evading
+//     versioning / object-lock protection).
+//
+// To close that gap, every request that carries any of these headers must
+// also carry s3:ReplicateObject authority. We reuse isPutActionAllowed as
+// the policy evaluator because it already correctly handles the five caller
+// shapes that hit this codepath (anonymous via bucket policy, SigV4, SigV2,
+// streaming-signed, JWT). On rejection we surface a sentinel error which
+// toAPIErrorCode maps to ErrAccessDeniedReplicationHeader (HTTP 403, S3 code
+// "AccessDenied") so handlers do not need any special-casing.
+//
+// X-Otterio-Source-Proxy-Request is intentionally NOT in this set: it only
+// influences whether bucket-replication.go takes the active-active GET proxy
+// branch and never persists to object metadata; misusing it cannot corrupt
+// data, only make a request fail to proxy.
+var otterioSourceHeaderKeys = []string{
+	xhttp.OtterIOSourceMTime,
+	xhttp.OtterIOSourceETag,
+	xhttp.OtterIOSourceDeleteMarker,
+	xhttp.OtterIOSourceDeleteMarkerDelete,
+	xhttp.OtterIOSourceReplicationRequest,
+}
+
+// errAccessDeniedReplicationHeader is the sentinel returned by getOpts /
+// putOpts / delOpts when the IAM gate rejects a caller that tried to set one
+// of the otterioSourceHeaderKeys. toAPIErrorCode translates it to
+// ErrAccessDeniedReplicationHeader (403 / "AccessDenied") at the handler
+// boundary, which lets every existing call site keep its `error` return
+// shape unchanged.
+var errAccessDeniedReplicationHeader = errors.New("caller is not authorized to send X-Otterio-Source-* replication headers")
+
+// hasAnyOtterIOSourceHeader reports whether the request carries any of the
+// IAM-gated source headers. It is the cheap pre-check that lets ordinary S3
+// traffic skip the IAM evaluation entirely.
+//
+// Subtleties worth pinning here:
+//
+//  1. Presence vs value. cmd/handler-utils.go:259 and cmd/notification.go:1429
+//     treat OtterIOSourceReplicationRequest as a *boolean flag whose value is
+//     irrelevant* - the key alone, even with an empty string value, suppresses
+//     replica-creation notifications. So the gate must trigger on *presence*,
+//     not on a non-empty value, otherwise an attacker could set
+//     `X-Otterio-Source-Replication-Request:` (empty) and silently mute the
+//     audit channel.
+//
+//  2. Case folding. The OtterIOSource* constants in cmd/http/headers.go are
+//     spelled lower-case while http.Header maps populated by net/http's parser
+//     are in canonical MIME-header form. On a real request the lookup just
+//     works because http.Header.Values canonicalises before reading. To stay
+//     robust against fixtures or middleware that bypassed canonicalisation
+//     (e.g. directly assigning to the underlying map), we additionally walk
+//     the map with a case-insensitive comparison. The set of OtterIO source
+//     keys is small and fixed so this stays O(headers).
+func hasAnyOtterIOSourceHeader(h http.Header) bool {
+	if len(h) == 0 {
+		return false
+	}
+	for _, key := range otterioSourceHeaderKeys {
+		if _, ok := h[key]; ok {
+			return true
+		}
+		if _, ok := h[http.CanonicalHeaderKey(key)]; ok {
+			return true
+		}
+	}
+	for k := range h {
+		canonical := strings.ToLower(k)
+		for _, key := range otterioSourceHeaderKeys {
+			if canonical == strings.ToLower(key) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// enforceSourceHeaderIAM gates X-Otterio-Source-* replication headers on
+// s3:ReplicateObject. It returns nil for the common case (no source header
+// present) and for callers that hold the action; otherwise it returns
+// errAccessDeniedReplicationHeader. The IAM evaluation is delegated to
+// isPutActionAllowed because that helper already handles anonymous (bucket
+// policy), SigV4, SigV2, streaming-signed and JWT callers in one place.
+func enforceSourceHeaderIAM(ctx context.Context, r *http.Request, bucket, object string) error {
+	if !hasAnyOtterIOSourceHeader(r.Header) {
+		return nil
+	}
+	if s3Err := isPutActionAllowed(ctx, getRequestAuthType(r), bucket, object, r, iampolicy.ReplicateObjectAction); s3Err != ErrNone {
+		return errAccessDeniedReplicationHeader
+	}
+	return nil
+}
 
 // set encryption options for pass through to backend in the case of gateway and UserDefined metadata
 func getDefaultOpts(header http.Header, copySource bool, metadata map[string]string) (opts ObjectOptions, err error) {
@@ -79,6 +187,10 @@ func getOpts(ctx context.Context, r *http.Request, bucket, object string) (Objec
 		encryption encrypt.ServerSide
 		opts       ObjectOptions
 	)
+
+	if err := enforceSourceHeaderIAM(ctx, r, bucket, object); err != nil {
+		return opts, err
+	}
 
 	var partNumber int
 	var err error
@@ -148,6 +260,14 @@ func getOpts(ctx context.Context, r *http.Request, bucket, object string) (Objec
 }
 
 func delOpts(ctx context.Context, r *http.Request, bucket, object string) (opts ObjectOptions, err error) {
+	// Belt-and-suspenders: getOpts (called below) also runs this check, but
+	// keeping a direct gate at the top of delOpts makes the trust boundary
+	// obvious to readers and decouples delOpts' guarantees from getOpts'
+	// internals (so a future refactor that reshuffles getOpts cannot
+	// silently widen the DELETE attack surface).
+	if err = enforceSourceHeaderIAM(ctx, r, bucket, object); err != nil {
+		return opts, err
+	}
 	versioned := globalBucketVersioningSys.Enabled(bucket)
 	opts, err = getOpts(ctx, r, bucket, object)
 	if err != nil {
@@ -207,6 +327,9 @@ func delOpts(ctx context.Context, r *http.Request, bucket, object string) (opts 
 
 // get ObjectOptions for PUT calls from encryption headers and metadata
 func putOpts(ctx context.Context, r *http.Request, bucket, object string, metadata map[string]string) (opts ObjectOptions, err error) {
+	if err = enforceSourceHeaderIAM(ctx, r, bucket, object); err != nil {
+		return opts, err
+	}
 	versioned := globalBucketVersioningSys.Enabled(bucket)
 	vid := strings.TrimSpace(r.URL.Query().Get(xhttp.VersionID))
 	if vid != "" && vid != nullVersionID {
