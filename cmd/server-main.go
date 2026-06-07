@@ -232,9 +232,15 @@ func newAllSubsystems() {
 	if globalIsErasure {
 		globalHealStateLK.Lock()
 		// New global heal state
-		globalAllHealState = newHealState(true)
-		globalBackgroundHealState = newHealState(false)
+		globalAllHealState = newHealState(GlobalContext, true)
+		globalBackgroundHealState = newHealState(GlobalContext, false)
 		globalHealStateLK.Unlock()
+	}
+
+	// Tear down the previous notification system (if any) before replacing it,
+	// otherwise the targetResCh consumer goroutine would leak across test runs.
+	if globalNotificationSys != nil {
+		globalNotificationSys.Shutdown(GlobalContext)
 	}
 
 	// Create new notification system and initialize notification targets
@@ -248,8 +254,14 @@ func newAllSubsystems() {
 		globalBucketMetadataSys.Reset()
 	}
 
+	// Stop the previous bucket bandwidth monitor (if any) before replacing it,
+	// to avoid leaking trackEWMA goroutines across repeated test setups.
+	if globalBucketMonitor != nil {
+		globalBucketMonitor.Stop()
+	}
+
 	// Create the bucket bandwidth monitor
-	globalBucketMonitor = bandwidth.NewMonitor(GlobalServiceDoneCh)
+	globalBucketMonitor = bandwidth.NewMonitor(GlobalContext, GlobalServiceDoneCh)
 
 	// Create a new config system.
 	globalConfigSys = NewConfigSys()
@@ -628,7 +640,7 @@ func newObjectLayer(ctx context.Context, endpointServerPools EndpointServerPools
 	// For FS only, directly use the disk.
 	if endpointServerPools.NEndpoints() == 1 {
 		// Initialize new FS object layer.
-		return NewFSObjectLayer(endpointServerPools[0].Endpoints[0].Path)
+		return NewFSObjectLayer(ctx, endpointServerPools[0].Endpoints[0].Path)
 	}
 
 	return newErasureServerPools(ctx, endpointServerPools)

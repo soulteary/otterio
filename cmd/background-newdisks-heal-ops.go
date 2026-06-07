@@ -247,6 +247,9 @@ func initAutoHeal(ctx context.Context, objAPI ObjectLayer) {
 	initBackgroundHealing(ctx, objAPI) // start quick background healing
 
 	bgSeq := mustGetHealSequence(ctx)
+	if bgSeq == nil {
+		return
+	}
 
 	globalBackgroundHealState.pushHealLocalDisks(getLocalDisksToHeal()...)
 

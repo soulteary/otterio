@@ -27,7 +27,7 @@ import (
 
 // Tests for if parent directory is object
 func TestFSParentDirIsObject(t *testing.T) {
-	obj, disk, err := prepareFS()
+	obj, disk, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,11 +99,11 @@ func TestNewFS(t *testing.T) {
 	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
 	defer os.RemoveAll(disk)
 
-	_, err := NewFSObjectLayer("")
+	_, err := NewFSObjectLayer(GlobalContext, "")
 	if err != errInvalidArgument {
 		t.Errorf("Expecting error invalid argument, got %s", err)
 	}
-	_, err = NewFSObjectLayer(disk)
+	_, err = NewFSObjectLayer(GlobalContext, disk)
 	if err != nil {
 		errMsg := "Unable to recognize backend format, Disk is not in FS format."
 		if err.Error() == errMsg {

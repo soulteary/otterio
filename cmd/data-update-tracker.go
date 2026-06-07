@@ -53,11 +53,27 @@ var (
 	//nolint:unused
 	objectUpdatedCh      chan<- string
 	intDataUpdateTracker *dataUpdateTracker
+
+	// dataUpdateTrackerStartOnce guarantees the package-level dataUpdateTracker
+	// goroutines (startCollector / startSaver) are spawned at most once across
+	// the whole process. NewFSObjectLayer / newErasureServerPools may both be
+	// invoked many times in test suites; without this guard each call would
+	// leak a fresh pair of goroutines.
+	dataUpdateTrackerStartOnce sync.Once
 )
 
 func init() {
 	intDataUpdateTracker = newDataUpdateTracker()
 	objectUpdatedCh = intDataUpdateTracker.input
+}
+
+// startSharedDataUpdateTracker starts the shared, package-level data update
+// tracker exactly once for the lifetime of the process. Subsequent calls are
+// no-ops (drives passed in later calls are ignored).
+func startSharedDataUpdateTracker(ctx context.Context, drives ...string) {
+	dataUpdateTrackerStartOnce.Do(func() {
+		go intDataUpdateTracker.start(ctx, drives...)
+	})
 }
 
 type dataUpdateTracker struct {
@@ -477,8 +493,18 @@ func (d *dataUpdateTracker) deserialize(src io.Reader, newerThan time.Time) erro
 
 // start a collector that picks up entries from objectUpdatedCh
 // and adds them  to the current bloom filter.
-func (d *dataUpdateTracker) startCollector(_ context.Context) {
-	for in := range d.input {
+func (d *dataUpdateTracker) startCollector(ctx context.Context) {
+	for {
+		var in string
+		select {
+		case <-ctx.Done():
+			return
+		case v, ok := <-d.input:
+			if !ok {
+				return
+			}
+			in = v
+		}
 		bucket, _ := path2BucketObjectWithBasePath("", in)
 		if bucket == "" {
 			if d.debug && len(in) > 0 {

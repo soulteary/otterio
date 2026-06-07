@@ -26,7 +26,7 @@ import (
 )
 
 func testAuthenticate(authType string, t *testing.T) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestAuthenticateURL(t *testing.T) {
 
 // Tests web request authenticator.
 func TestWebRequestAuthenticate(t *testing.T) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +146,7 @@ func TestWebRequestAuthenticate(t *testing.T) {
 }
 
 func BenchmarkParseJWTStandardClaims(b *testing.B) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(b)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func BenchmarkParseJWTStandardClaims(b *testing.B) {
 }
 
 func BenchmarkParseJWTMapClaims(b *testing.B) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(b)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func BenchmarkParseJWTMapClaims(b *testing.B) {
 }
 
 func BenchmarkAuthenticateNode(b *testing.B) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(b)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func BenchmarkAuthenticateNode(b *testing.B) {
 }
 
 func BenchmarkAuthenticateWeb(b *testing.B) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(b)
 	if err != nil {
 		b.Fatal(err)
 	}

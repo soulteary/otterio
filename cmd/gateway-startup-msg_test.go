@@ -24,7 +24,7 @@ import (
 
 // Test printing Gateway common message.
 func TestPrintGatewayCommonMessage(t *testing.T) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestPrintGatewayCommonMessage(t *testing.T) {
 
 // Test print gateway startup message.
 func TestPrintGatewayStartupMessage(t *testing.T) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}

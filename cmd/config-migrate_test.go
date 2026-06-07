@@ -26,7 +26,7 @@ import (
 
 // Test if config v1 is purged
 func TestServerConfigMigrateV1(t *testing.T) {
-	objLayer, fsDir, err := prepareFS()
+	objLayer, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestServerConfigMigrateV2toV33(t *testing.T) {
 
 	globalConfigDir = &ConfigDir{path: rootPath}
 
-	objLayer, fsDir, err := prepareFS()
+	objLayer, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}

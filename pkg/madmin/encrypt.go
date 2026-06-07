@@ -20,6 +20,8 @@ package madmin
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
 	"errors"
 	"io"
 
@@ -32,6 +34,29 @@ var idKey func([]byte, []byte, []byte, []byte, uint32) []byte
 
 func init() {
 	idKey = argon2.NewIDKey(1, 64*1024, 4)
+}
+
+// SetIDKeyForTesting overrides the package-level Argon2id key derivation
+// function. This is intended for tests only: the default Argon2id parameters
+// (1 iteration, 64 MiB, 4 threads) are deliberately expensive and become
+// unbearably slow under -race because the Go race detector instruments every
+// memory access in the 64 MiB working set, which drastically slows the
+// large-loop XOR kernel and was observed to wedge the cmd/ test suite past
+// its 20-minute deadline. Tests that exercise saveServerConfig / DecryptData
+// indirectly (e.g. via initAllSubsystems) should call this with a cheap key
+// derivation function (see SetCheapTestIDKey).
+func SetIDKeyForTesting(fn func([]byte, []byte, []byte, []byte, uint32) []byte) (restore func()) {
+	prev := idKey
+	idKey = fn
+	return func() { idKey = prev }
+}
+
+// SetCheapTestIDKey installs a deterministic, non-cryptographic key derivation
+// function suitable only for tests. It expands the password+salt into a
+// keyLen-byte key by repeating SHA-256, which is roughly five orders of
+// magnitude faster than the production Argon2id parameters under -race.
+func SetCheapTestIDKey() (restore func()) {
+	return SetIDKeyForTesting(cheapTestIDKey)
 }
 
 // EncryptData encrypts the data with an unique key
@@ -141,3 +166,27 @@ const (
 	aesGcm   = 0x00
 	c20p1305 = 0x01
 )
+
+// cheapTestIDKey is a deterministic key derivation function used only by
+// SetCheapTestIDKey. It is intentionally NOT cryptographically strong: callers
+// outside of tests must keep using the Argon2id-based default. The keyLen
+// parameter is a uint32 to match the Argon2 IDKey signature; only the lower
+// 32 bits are used.
+func cheapTestIDKey(password, salt, _, _ []byte, keyLen uint32) []byte {
+	if keyLen == 0 {
+		return nil
+	}
+	out := make([]byte, 0, keyLen)
+	var counter uint32
+	for uint32(len(out)) < keyLen {
+		var ctr [4]byte
+		binary.BigEndian.PutUint32(ctr[:], counter)
+		h := sha256.New()
+		_, _ = h.Write(password)
+		_, _ = h.Write(salt)
+		_, _ = h.Write(ctr[:])
+		out = h.Sum(out)
+		counter++
+	}
+	return out[:keyLen]
+}

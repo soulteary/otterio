@@ -27,7 +27,7 @@ import (
 
 // Helper function to create a lock server for testing
 func createLockTestServer(t *testing.T) (string, *lockRESTServer, string) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}

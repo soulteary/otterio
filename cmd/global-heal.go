@@ -129,7 +129,7 @@ func getBackgroundHealStatus(ctx context.Context, o ObjectLayer) (madmin.BgHealS
 
 }
 
-func mustGetHealSequence(_ context.Context) *healSequence {
+func mustGetHealSequence(ctx context.Context) *healSequence {
 	// Get background heal sequence to send elements to heal
 	for {
 		globalHealStateLK.RLock()
@@ -137,13 +137,21 @@ func mustGetHealSequence(_ context.Context) *healSequence {
 		globalHealStateLK.RUnlock()
 
 		if hstate == nil {
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-time.After(time.Second):
+			}
 			continue
 		}
 
 		bgSeq, ok := hstate.getHealSequenceByToken(bgHealingUUID)
 		if !ok {
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-time.After(time.Second):
+			}
 			continue
 		}
 		return bgSeq
@@ -153,6 +161,9 @@ func mustGetHealSequence(_ context.Context) *healSequence {
 // healErasureSet lists and heals all objects in a specific erasure set
 func (er *erasureObjects) healErasureSet(ctx context.Context, buckets []BucketInfo, tracker *healingTracker) error {
 	bgSeq := mustGetHealSequence(ctx)
+	if bgSeq == nil {
+		return ctx.Err()
+	}
 	buckets = append(buckets, BucketInfo{
 		Name: pathJoin(otterioMetaBucket, otterioConfigPrefix),
 	})

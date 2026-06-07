@@ -92,7 +92,7 @@ func TestDoesPolicySignatureMatch(t *testing.T) {
 }
 
 func TestDoesPresignedSignatureMatch(t *testing.T) {
-	obj, fsDir, err := prepareFS()
+	obj, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}

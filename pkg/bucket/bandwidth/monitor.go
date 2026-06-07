@@ -49,18 +49,35 @@ type Monitor struct {
 	bucketThrottle map[string]*throttle
 
 	doneCh <-chan struct{}
+	ctx    context.Context
+
+	stopCh chan struct{}
+	once   sync.Once
 }
 
 // NewMonitor returns a monitor with defaults.
-func NewMonitor(doneCh <-chan struct{}) *Monitor {
+func NewMonitor(ctx context.Context, doneCh <-chan struct{}) *Monitor {
 	m := &Monitor{
 		activeBuckets:         make(map[string]*bucketMeasurement),
 		bucketMovingAvgTicker: time.NewTicker(2 * time.Second),
 		bucketThrottle:        make(map[string]*throttle),
 		doneCh:                doneCh,
+		ctx:                   ctx,
+		stopCh:                make(chan struct{}),
 	}
 	go m.trackEWMA()
 	return m
+}
+
+// Stop terminates the trackEWMA goroutine. Idempotent.
+func (m *Monitor) Stop() {
+	if m == nil {
+		return
+	}
+	m.once.Do(func() {
+		close(m.stopCh)
+		m.bucketMovingAvgTicker.Stop()
+	})
 }
 
 // SelectionFunction for buckets
@@ -116,6 +133,10 @@ func (m *Monitor) trackEWMA() {
 		case <-m.bucketMovingAvgTicker.C:
 			m.updateMovingAvg()
 		case <-m.doneCh:
+			return
+		case <-m.ctx.Done():
+			return
+		case <-m.stopCh:
 			return
 		}
 	}

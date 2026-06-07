@@ -19,6 +19,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -80,6 +81,11 @@ type FSObjects struct {
 
 	// To manage the appendRoutine go-routines
 	nsMutex *nsLockMap
+
+	// Lifecycle management for goroutines started in NewFSObjectLayer.
+	cancelCtx context.Context
+	cancelFn  context.CancelFunc
+	wg        sync.WaitGroup
 }
 
 // Represents the background append file.
@@ -116,8 +122,7 @@ func initMetaVolumeFS(fsPath, fsUUID string) error {
 }
 
 // NewFSObjectLayer - initialize new fs object layer.
-func NewFSObjectLayer(fsPath string) (ObjectLayer, error) {
-	ctx := GlobalContext
+func NewFSObjectLayer(ctx context.Context, fsPath string) (ObjectLayer, error) {
 	if fsPath == "" {
 		return nil, errInvalidArgument
 	}
@@ -167,6 +172,7 @@ func NewFSObjectLayer(fsPath string) (ObjectLayer, error) {
 		appendFileMap: make(map[string]*fsAppendFile),
 		diskMount:     mountinfo.IsLikelyMountPoint(fsPath),
 	}
+	fs.cancelCtx, fs.cancelFn = context.WithCancel(ctx)
 
 	// Once the filesystem has initialized hold the read lock for
 	// the life time of the server. This is done to ensure that under
@@ -174,8 +180,14 @@ func NewFSObjectLayer(fsPath string) (ObjectLayer, error) {
 	// or cause changes on backend format.
 	fs.fsFormatRlk = rlk
 
-	go fs.cleanupStaleUploads(ctx, GlobalStaleUploadsCleanupInterval, GlobalStaleUploadsExpiry)
-	go intDataUpdateTracker.start(ctx, fsPath)
+	fs.wg.Add(1)
+	go func() {
+		defer fs.wg.Done()
+		fs.cleanupStaleUploads(fs.cancelCtx, GlobalStaleUploadsCleanupInterval, GlobalStaleUploadsExpiry)
+	}()
+	// The shared dataUpdateTracker goroutines are package-global; only start them
+	// the first time any FSObjectLayer is constructed in this process.
+	startSharedDataUpdateTracker(GlobalContext, fsPath)
 
 	// Return successfully initialized object layer.
 	return fs, nil
@@ -194,6 +206,21 @@ func (fs *FSObjects) SetDriveCounts() []int {
 
 // Shutdown - should be called when process shuts down.
 func (fs *FSObjects) Shutdown(ctx context.Context) error {
+	if fs.cancelFn != nil {
+		fs.cancelFn()
+	}
+
+	waitDone := make(chan struct{})
+	go func() {
+		fs.wg.Wait()
+		close(waitDone)
+	}()
+	select {
+	case <-waitDone:
+	case <-time.After(30 * time.Second):
+		logger.LogIf(ctx, errors.New("FSObjects.Shutdown: timed out waiting for background goroutines"))
+	}
+
 	fs.fsFormatRlk.Close()
 
 	// Cleanup and delete tmp uuid.

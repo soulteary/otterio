@@ -96,6 +96,11 @@ type erasureSets struct {
 
 	mrfMU         sync.Mutex
 	mrfOperations map[healSource]int
+
+	// Lifecycle management for goroutines started in newErasureSets.
+	cancelCtx context.Context
+	cancelFn  context.CancelFunc
+	wg        sync.WaitGroup
 }
 
 func isEndpointConnected(diskMap map[string]StorageAPI, endpoint string) bool {
@@ -369,6 +374,9 @@ func newErasureSets(ctx context.Context, endpoints Endpoints, storageDisks []Sto
 		poolIndex:          poolIdx,
 	}
 
+	// Bind a cancellable context that owns all background goroutines spawned below.
+	s.cancelCtx, s.cancelFn = context.WithCancel(ctx)
+
 	mutex := newNSLock(globalIsDistErasure)
 
 	// Number of buffers, max 2GB
@@ -440,15 +448,35 @@ func newErasureSets(ctx context.Context, endpoints Endpoints, storageDisks []Sto
 	}
 
 	// start cleanup stale uploads go-routine.
-	go s.cleanupStaleUploads(ctx, GlobalStaleUploadsCleanupInterval, GlobalStaleUploadsExpiry)
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.cleanupStaleUploads(s.cancelCtx, GlobalStaleUploadsCleanupInterval, GlobalStaleUploadsExpiry)
+	}()
 
 	// start cleanup of deleted objects.
-	go s.cleanupDeletedObjects(ctx, deletedObjectsCleanupInterval)
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.cleanupDeletedObjects(s.cancelCtx, deletedObjectsCleanupInterval)
+	}()
 
 	// Start the disk monitoring and connect routine.
-	go s.monitorAndConnectEndpoints(ctx, defaultMonitorConnectEndpointInterval)
-	go s.maintainMRFList()
-	go s.healMRFRoutine()
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.monitorAndConnectEndpoints(s.cancelCtx, defaultMonitorConnectEndpointInterval)
+	}()
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.maintainMRFList(s.cancelCtx)
+	}()
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.healMRFRoutine(s.cancelCtx)
+	}()
 
 	return s, nil
 }
@@ -654,6 +682,11 @@ func (s *erasureSets) LocalStorageInfo(ctx context.Context) (StorageInfo, []erro
 // Shutdown shutsdown all erasure coded sets in parallel
 // returns error upon first error.
 func (s *erasureSets) Shutdown(ctx context.Context) error {
+	// Signal all background goroutines owned by this erasureSets to stop.
+	if s.cancelFn != nil {
+		s.cancelFn()
+	}
+
 	g := errgroup.WithNErrs(len(s.sets))
 
 	for index := range s.sets {
@@ -668,6 +701,8 @@ func (s *erasureSets) Shutdown(ctx context.Context) error {
 			return err
 		}
 	}
+
+	// Close setReconnectEvent so that healMRFRoutine's range exits.
 	select {
 	case _, ok := <-s.setReconnectEvent:
 		if ok {
@@ -676,6 +711,20 @@ func (s *erasureSets) Shutdown(ctx context.Context) error {
 	default:
 		close(s.setReconnectEvent)
 	}
+
+	// Wait for owned goroutines to exit, with a hard deadline so a stuck
+	// goroutine cannot make Shutdown block forever.
+	waitDone := make(chan struct{})
+	go func() {
+		s.wg.Wait()
+		close(waitDone)
+	}()
+	select {
+	case <-waitDone:
+	case <-time.After(30 * time.Second):
+		logger.LogIf(ctx, errors.New("erasureSets.Shutdown: timed out waiting for background goroutines"))
+	}
+
 	return nil
 }
 
@@ -1345,64 +1394,106 @@ func (s *erasureSets) GetObjectTags(ctx context.Context, bucket, object string, 
 // maintainMRFList gathers the list of successful partial uploads
 // from all underlying er.sets and puts them in a global map which
 // should not have more than 10000 entries.
-func (s *erasureSets) maintainMRFList() {
+func (s *erasureSets) maintainMRFList(ctx context.Context) {
 	var agg = make(chan partialOperation, 10000)
+	var aggWG sync.WaitGroup
 	for i, er := range s.sets {
+		aggWG.Add(1)
 		go func(c <-chan partialOperation, setIndex int) {
-			for msg := range c {
-				msg.failedSet = setIndex
+			defer aggWG.Done()
+			for {
 				select {
-				case agg <- msg:
-				default:
+				case <-ctx.Done():
+					return
+				case msg, ok := <-c:
+					if !ok {
+						return
+					}
+					msg.failedSet = setIndex
+					select {
+					case agg <- msg:
+					case <-ctx.Done():
+						return
+					default:
+					}
 				}
 			}
 		}(er.mrfOpCh, i)
 	}
 
-	for fOp := range agg {
-		s.mrfMU.Lock()
-		if len(s.mrfOperations) > 10000 {
+	// Close agg once all aggregator goroutines finish so the consumer below exits cleanly.
+	go func() {
+		aggWG.Wait()
+		close(agg)
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case fOp, ok := <-agg:
+			if !ok {
+				return
+			}
+			s.mrfMU.Lock()
+			if len(s.mrfOperations) > 10000 {
+				s.mrfMU.Unlock()
+				continue
+			}
+			s.mrfOperations[healSource{
+				bucket:    fOp.bucket,
+				object:    fOp.object,
+				versionID: fOp.versionID,
+				opts:      &madmin.HealOpts{Remove: true},
+			}] = fOp.failedSet
 			s.mrfMU.Unlock()
-			continue
 		}
-		s.mrfOperations[healSource{
-			bucket:    fOp.bucket,
-			object:    fOp.object,
-			versionID: fOp.versionID,
-			opts:      &madmin.HealOpts{Remove: true},
-		}] = fOp.failedSet
-		s.mrfMU.Unlock()
 	}
 }
 
 // healMRFRoutine monitors new disks connection, sweep the MRF list
 // to find objects related to the new disk that needs to be healed.
-func (s *erasureSets) healMRFRoutine() {
+func (s *erasureSets) healMRFRoutine(ctx context.Context) {
 	// Wait until background heal state is initialized
-	bgSeq := mustGetHealSequence(GlobalContext)
+	bgSeq := mustGetHealSequence(ctx)
+	if bgSeq == nil {
+		return
+	}
 
-	for setIndex := range s.setReconnectEvent {
-		// Get the list of objects related the er.set
-		// to which the connected disk belongs.
-		var mrfOperations []healSource
-		s.mrfMU.Lock()
-		for k, v := range s.mrfOperations {
-			if v == setIndex {
-				mrfOperations = append(mrfOperations, k)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case setIndex, ok := <-s.setReconnectEvent:
+			if !ok {
+				return
 			}
-		}
-		s.mrfMU.Unlock()
-
-		// Heal objects
-		for _, u := range mrfOperations {
-			waitForLowHTTPReq(globalHealConfig.IOCount, globalHealConfig.Sleep)
-
-			// Send an object to background heal
-			bgSeq.sourceCh <- u
-
+			// Get the list of objects related the er.set
+			// to which the connected disk belongs.
+			var mrfOperations []healSource
 			s.mrfMU.Lock()
-			delete(s.mrfOperations, u)
+			for k, v := range s.mrfOperations {
+				if v == setIndex {
+					mrfOperations = append(mrfOperations, k)
+				}
+			}
 			s.mrfMU.Unlock()
+
+			// Heal objects
+			for _, u := range mrfOperations {
+				waitForLowHTTPReq(globalHealConfig.IOCount, globalHealConfig.Sleep)
+
+				// Send an object to background heal, exit early on cancel.
+				select {
+				case <-ctx.Done():
+					return
+				case bgSeq.sourceCh <- u:
+				}
+
+				s.mrfMU.Lock()
+				delete(s.mrfOperations, u)
+				s.mrfMU.Unlock()
+			}
 		}
 	}
 }

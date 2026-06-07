@@ -56,6 +56,10 @@ type NotificationSys struct {
 	bucketRemoteTargetRulesMap map[string]map[event.TargetID]event.RulesMap
 	peerClients                []*peerRESTClient // Excludes self
 	allPeerClients             []*peerRESTClient // Includes nil client for self
+
+	// Lifecycle management for the goroutine spawned in Init.
+	initCancel context.CancelFunc
+	wg         sync.WaitGroup
 }
 
 // GetARNList - returns available ARNs.
@@ -750,18 +754,76 @@ func (sys *NotificationSys) Init(ctx context.Context, buckets []BucketInfo, objA
 
 	logger.LogIf(ctx, sys.targetList.Add(globalConfigTargetList.Targets()...))
 
+	// Use a cancellable context derived from the passed-in ctx so that
+	// Shutdown can stop this goroutine deterministically. If Init is invoked
+	// more than once on the same NotificationSys (which happens repeatedly in
+	// the test suite via newAllSubsystems → globalNotificationSys.Init), the
+	// previous goroutine must be canceled and waited for first; otherwise
+	// each Init call would leak another consumer goroutine on targetResCh.
+	sys.Lock()
+	prevCancel := sys.initCancel
+	sys.initCancel = nil
+	sys.Unlock()
+	if prevCancel != nil {
+		prevCancel()
+		// Wait for the previous goroutine to fully exit before installing the
+		// new one so that wg accounting stays consistent with Shutdown.
+		sys.wg.Wait()
+	}
+
+	loopCtx, cancel := context.WithCancel(ctx)
+	sys.Lock()
+	sys.initCancel = cancel
+	sys.Unlock()
+
+	sys.wg.Add(1)
 	go func() {
-		for res := range sys.targetResCh {
-			if res.Err != nil {
-				reqInfo := &logger.ReqInfo{}
-				reqInfo.AppendTags("targetID", res.ID.Name)
-				logger.LogOnceIf(logger.SetReqInfo(GlobalContext, reqInfo), res.Err, res.ID)
+		defer sys.wg.Done()
+		for {
+			select {
+			case <-loopCtx.Done():
+				return
+			case res, ok := <-sys.targetResCh:
+				if !ok {
+					return
+				}
+				if res.Err != nil {
+					reqInfo := &logger.ReqInfo{}
+					reqInfo.AppendTags("targetID", res.ID.Name)
+					logger.LogOnceIf(logger.SetReqInfo(loopCtx, reqInfo), res.Err, res.ID)
+				}
 			}
 		}
 	}()
 
 	go sys.load(buckets)
 	return nil
+}
+
+// Shutdown stops the background goroutine started in Init and waits for it to exit.
+func (sys *NotificationSys) Shutdown(ctx context.Context) {
+	if sys == nil {
+		return
+	}
+	sys.Lock()
+	cancel := sys.initCancel
+	sys.initCancel = nil
+	sys.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+
+	waitDone := make(chan struct{})
+	go func() {
+		sys.wg.Wait()
+		close(waitDone)
+	}()
+	select {
+	case <-waitDone:
+	case <-time.After(10 * time.Second):
+		logger.LogIf(ctx, errors.New("NotificationSys.Shutdown: timed out waiting for background goroutine"))
+	case <-ctx.Done():
+	}
 }
 
 // AddRulesMap - adds rules map for bucket name.

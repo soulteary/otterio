@@ -25,7 +25,7 @@ import (
 )
 
 func TestServerConfig(t *testing.T) {
-	objLayer, fsDir, err := prepareFS()
+	objLayer, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}

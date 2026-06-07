@@ -346,7 +346,7 @@ func mustNewSignedBadMD5Request(method string, urlStr string, contentLength int6
 
 // Tests is requested authenticated function, tests replies for s3 errors.
 func TestIsReqAuthenticated(t *testing.T) {
-	objLayer, fsDir, err := prepareFS()
+	objLayer, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +392,7 @@ func TestIsReqAuthenticated(t *testing.T) {
 }
 
 func TestCheckAdminRequestAuthType(t *testing.T) {
-	objLayer, fsDir, err := prepareFS()
+	objLayer, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -430,7 +430,7 @@ func TestValidateAdminSignature(t *testing.T) {
 
 	ctx := context.Background()
 
-	objLayer, fsDir, err := prepareFS()
+	objLayer, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
 	}

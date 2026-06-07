@@ -66,11 +66,23 @@ import (
 	"github.com/soulteary/otterio/pkg/auth"
 	"github.com/soulteary/otterio/pkg/bucket/policy"
 	"github.com/soulteary/otterio/pkg/hash"
+	"github.com/soulteary/otterio/pkg/madmin"
 )
 
 // TestMain to set up global env.
 func TestMain(m *testing.M) {
 	flag.Parse()
+
+	// Replace the production Argon2id-based key derivation function with a
+	// cheap, deterministic SHA-256 expansion for the entire test binary.
+	// The default parameters (1 iteration, 64 MiB, 4 threads) are designed
+	// to be expensive on real CPUs; under -race the race detector instruments
+	// every memory access in that 64 MiB working set, which made each
+	// initAllSubsystems → saveServerConfig → EncryptData call take many
+	// minutes and was the primary cause of the 20-minute test-suite timeout.
+	// Using a cheap KDF here is acceptable because tests never read the
+	// encrypted on-disk config back through a different process.
+	madmin.SetCheapTestIDKey()
 
 	globalActiveCred = auth.Credentials{
 		AccessKey: auth.DefaultAccessKey,
@@ -106,7 +118,7 @@ func TestMain(m *testing.M) {
 	setMaxResources()
 
 	// Initialize globalConsoleSys system
-	globalConsoleSys = NewConsoleLogger(context.Background())
+	globalConsoleSys = NewConsoleLogger(GlobalContext)
 
 	globalDNSCache = xhttp.NewDNSCache(3*time.Second, 10*time.Second, logger.LogOnceIf)
 
@@ -118,7 +130,29 @@ func TestMain(m *testing.M) {
 
 	os.Setenv("OTTERIO_CI_CD", "ci")
 
-	os.Exit(m.Run())
+	exitCode := m.Run()
+
+	// Drain background goroutines from any tracked object layers (FSObjects /
+	// erasureSets) that individual tests may have forgotten to Shutdown.
+	shutdownTrackedTestObjectLayers()
+
+	// Cancel the global context to stop background goroutines (logOnce cleanup,
+	// DNSCache refresher, etc.) before the process exits, so we don't leak
+	// long-lived goroutines into the next test binary or get flagged by
+	// goroutine-leak detection.
+	if globalDNSCache != nil {
+		globalDNSCache.Stop()
+	}
+	if globalNotificationSys != nil {
+		globalNotificationSys.Shutdown(GlobalContext)
+	}
+	if globalBucketMonitor != nil {
+		globalBucketMonitor.Stop()
+	}
+	logger.StopLogOnce()
+	cancelGlobalContext()
+
+	os.Exit(exitCode)
 }
 
 // concurrency level for certain parallel tests.
@@ -184,15 +218,59 @@ func calculateStreamContentLength(dataLen, chunkSize int64) int64 {
 	return streamLen
 }
 
-func prepareFS() (ObjectLayer, string, error) {
+// trackedTestObjectLayers tracks all object layers created by helpers in this
+// package so that TestMain can shut them all down before the test binary exits.
+// Without this, individual tests that forget to call Shutdown leak background
+// goroutines (cleanupStaleUploads, etc.) which accumulate across the whole
+// test run and eventually trip the -race -timeout 20m budget.
+var (
+	trackedTestObjectLayersMu sync.Mutex
+	trackedTestObjectLayers   []ObjectLayer
+)
+
+func trackTestObjectLayer(obj ObjectLayer) {
+	if obj == nil {
+		return
+	}
+	trackedTestObjectLayersMu.Lock()
+	trackedTestObjectLayers = append(trackedTestObjectLayers, obj)
+	trackedTestObjectLayersMu.Unlock()
+}
+
+func shutdownTrackedTestObjectLayers() {
+	trackedTestObjectLayersMu.Lock()
+	layers := trackedTestObjectLayers
+	trackedTestObjectLayers = nil
+	trackedTestObjectLayersMu.Unlock()
+	for _, l := range layers {
+		shutdownCtx, cancel := context.WithTimeout(GlobalContext, 5*time.Second)
+		_ = l.Shutdown(shutdownCtx)
+		cancel()
+	}
+}
+
+// prepareFS creates a fresh single-disk FS object layer for unit tests and
+// registers a tb.Cleanup to Shutdown the layer when the test (or its parent)
+// finishes, so that goroutines spawned in NewFSObjectLayer (cleanupStaleUploads,
+// etc.) do not leak across the rest of the test run.
+func prepareFS(tb testing.TB) (ObjectLayer, string, error) {
 	nDisks := 1
 	fsDirs, err := getRandomDisks(nDisks)
 	if err != nil {
 		return nil, "", err
 	}
-	obj, err := NewFSObjectLayer(fsDirs[0])
+	obj, err := NewFSObjectLayer(GlobalContext, fsDirs[0])
 	if err != nil {
 		return nil, "", err
+	}
+	if tb != nil {
+		tb.Cleanup(func() {
+			shutdownCtx, cancel := context.WithTimeout(GlobalContext, 5*time.Second)
+			_ = obj.Shutdown(shutdownCtx)
+			cancel()
+		})
+	} else {
+		trackTestObjectLayer(obj)
 	}
 	return obj, fsDirs[0], nil
 }
@@ -221,10 +299,15 @@ func prepareErasure16(ctx context.Context) (ObjectLayer, []string, error) {
 // Initialize FS objects.
 func initFSObjects(disk string, t *testing.T) (obj ObjectLayer) {
 	var err error
-	obj, err = NewFSObjectLayer(disk)
+	obj, err = NewFSObjectLayer(GlobalContext, disk)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		shutdownCtx, cancel := context.WithTimeout(GlobalContext, 5*time.Second)
+		_ = obj.Shutdown(shutdownCtx)
+		cancel()
+	})
 	newTestConfig(globalOtterioDefaultRegion, obj)
 	return obj
 }
@@ -424,7 +507,7 @@ func resetGlobalIsErasure() {
 func resetGlobalHealState() {
 	// Init global heal state
 	if globalAllHealState == nil {
-		globalAllHealState = newHealState(false)
+		globalAllHealState = newHealState(GlobalContext, false)
 	} else {
 		globalAllHealState.Lock()
 		for _, v := range globalAllHealState.healSeqMap {
@@ -437,7 +520,7 @@ func resetGlobalHealState() {
 
 	// Init background heal state
 	if globalBackgroundHealState == nil {
-		globalBackgroundHealState = newHealState(false)
+		globalBackgroundHealState = newHealState(GlobalContext, false)
 	} else {
 		globalBackgroundHealState.Lock()
 		for _, v := range globalBackgroundHealState.healSeqMap {
@@ -1560,7 +1643,7 @@ func newTestObjectLayer(ctx context.Context, endpointServerPools EndpointServerP
 	// For FS only, directly use the disk.
 	if endpointServerPools.NEndpoints() == 1 {
 		// Initialize new FS object layer.
-		return NewFSObjectLayer(endpointServerPools[0].Endpoints[0].Path)
+		return NewFSObjectLayer(ctx, endpointServerPools[0].Endpoints[0].Path)
 	}
 
 	z, err := newErasureServerPools(ctx, endpointServerPools)
@@ -1646,7 +1729,7 @@ func prepareTestBackend(ctx context.Context, instanceType string) (ObjectLayer, 
 		return prepareErasure16(ctx)
 	default:
 		// return FS backend by default.
-		obj, disk, err := prepareFS()
+		obj, disk, err := prepareFS(nil)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1823,7 +1906,7 @@ func ExecObjectLayerAPITest(t *testing.T, objAPITest objAPITestType, endpoints [
 	// this is to make sure that the tests are not affected by modified value.
 	resetTestGlobals()
 
-	objLayer, fsDir, err := prepareFS()
+	objLayer, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatalf("Initialization of object layer failed for single node setup: %s", err)
 	}
@@ -1885,7 +1968,7 @@ type objTestDiskNotFoundType func(obj ObjectLayer, instanceType string, dirs []s
 // ExecObjectLayerTest - executes object layer tests.
 // Creates single node and Erasure ObjectLayer instance and runs test for both the layers.
 func ExecObjectLayerTest(t TestErrHandler, objTest objTestType) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(GlobalContext)
 	defer cancel()
 
 	if localMetacacheMgr != nil {
@@ -1893,7 +1976,7 @@ func ExecObjectLayerTest(t TestErrHandler, objTest objTestType) {
 	}
 	defer setObjectLayer(newObjectLayerFn())
 
-	objLayer, fsDir, err := prepareFS()
+	objLayer, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatalf("Initialization of object layer failed for single node setup: %s", err)
 	}
@@ -1912,6 +1995,16 @@ func ExecObjectLayerTest(t TestErrHandler, objTest objTestType) {
 	// Executing the object layer tests for single node setup.
 	objTest(objLayer, FSTestStr, t)
 
+	// Tear down FS layer (and its background goroutines) before moving on to
+	// the erasure layer so we don't accumulate goroutines across both halves
+	// of the test, which is what previously caused the 20m race timeout.
+	if err := objLayer.Shutdown(ctx); err != nil {
+		t.Logf("FS object layer Shutdown error: %v", err)
+	}
+	if globalNotificationSys != nil {
+		globalNotificationSys.Shutdown(ctx)
+	}
+
 	if localMetacacheMgr != nil {
 		localMetacacheMgr.deleteAll()
 	}
@@ -1924,7 +2017,12 @@ func ExecObjectLayerTest(t TestErrHandler, objTest objTestType) {
 	}
 	setObjectLayer(objLayer)
 
-	defer objLayer.Shutdown(context.Background())
+	defer func() {
+		objLayer.Shutdown(ctx)
+		if globalNotificationSys != nil {
+			globalNotificationSys.Shutdown(ctx)
+		}
+	}()
 
 	initAllSubsystems(ctx, objLayer)
 

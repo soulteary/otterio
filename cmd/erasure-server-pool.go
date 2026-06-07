@@ -112,8 +112,8 @@ func newErasureServerPools(ctx context.Context, endpointServerPools EndpointServ
 			return nil, err
 		}
 	}
-	ctx, z.shutdown = context.WithCancel(ctx)
-	go intDataUpdateTracker.start(ctx, localDrives...)
+	_, z.shutdown = context.WithCancel(ctx)
+	startSharedDataUpdateTracker(GlobalContext, localDrives...)
 	return z, nil
 }
 
