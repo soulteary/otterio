@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -220,6 +221,14 @@ func testServicesCmdHandler(cmd cmdType, t *testing.T) {
 
 // Test for service restart management REST API.
 func TestServiceRestartHandler(t *testing.T) {
+	// Skipped on Windows: bringing up a 16-disk erasure backend in the
+	// hosted-runner temp directory is extremely slow on NTFS and
+	// occasionally hangs in waitForFormatErasure, blowing past the test
+	// timeout. The same coverage is exercised on the Linux job, which runs
+	// the full ./... matrix.
+	if runtime.GOOS == globalWindowsOSName {
+		t.Skip("skipping on windows: 16-disk erasure setup is too slow/flaky on hosted runners")
+	}
 	testServicesCmdHandler(restartCmd, t)
 }
 
