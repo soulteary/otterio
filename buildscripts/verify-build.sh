@@ -256,8 +256,8 @@ function __init__()
     ## version is purposefully set to '3' for otterio to migrate configuration file
     echo '{"version": "3", "credential": {"accessKey": "otterio", "secretKey": "otterio123"}, "region": "us-east-1"}' > "$OTTERIO_CONFIG_DIR/config.json"
 
-    if ! wget -q -O "$FUNCTIONAL_TESTS" https://raw.githubusercontent.com/otterio/mc/master/functional-tests.sh; then
-        echo "failed to download https://raw.githubusercontent.com/otterio/mc/master/functional-tests.sh"
+    if ! wget -q -O "$FUNCTIONAL_TESTS" https://raw.githubusercontent.com/minio/mc/master/functional-tests.sh; then
+        echo "failed to download https://raw.githubusercontent.com/minio/mc/master/functional-tests.sh"
         exit 1
     fi
 
