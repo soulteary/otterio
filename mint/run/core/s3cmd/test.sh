@@ -100,6 +100,7 @@ function show()
     fi
 }
 
+# shellcheck disable=SC2317,SC2329
 function fail()
 {
     rv="$1"
@@ -146,6 +147,7 @@ function assert_failure() {
     assert 1 "$@"
 }
 
+# shellcheck disable=SC2317,SC2329
 function s3cmd_cmd()
 {
     cmd=( "${S3CMD_CMD[@]}" "$@" )
@@ -154,6 +156,7 @@ function s3cmd_cmd()
     return "$rv"
 }
 
+# shellcheck disable=SC2317,SC2329
 function check_md5sum()
 {
     expected_checksum="$1"
@@ -317,6 +320,7 @@ function run_test()
     test_put_object_error
     test_put_object_multipart
     test_get_object
+    test_get_object_error
     test_get_object_multipart
     test_sync_list_objects
 
