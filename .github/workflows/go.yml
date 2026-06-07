@@ -40,26 +40,54 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # setup-go ships its own module cache helper, but it does not cover the
+      # build cache (GOCACHE) and uses different keys per platform. We disable
+      # it here and manage both caches explicitly below so Windows benefits as
+      # much as Linux on subsequent runs.
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+          cache: false
 
-      - name: Build & test (windows)
+      - name: Resolve Go cache paths
+        id: gocache
+        shell: bash
+        run: |
+          echo "modcache=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+          echo "buildcache=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.gocache.outputs.modcache }}
+            ${{ steps.gocache.outputs.buildcache }}
+          key: ${{ runner.os }}-go-${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ env.GO_VERSION }}-
+
+      # Pull modules in a dedicated step so the (potentially noisy) download
+      # output is clearly separated from the build/test output in the UI.
+      - name: Download modules
+        shell: bash
+        run: go mod download
+
+      - name: Build & smoke test (windows)
         if: matrix.os == 'windows-latest'
         shell: bash
         run: |
           # Inject version info via gen-ldflags so the binary (and the browser
           # uiVersion it reports) is a valid RFC3339 version instead of the
           # "DEVELOPMENT.GOGET" default, matching the Makefile/Docker builds.
+          # Windows is intentionally limited to a compile + ./cmd/... smoke
+          # run; the full ./... matrix lives on Linux where it is much faster.
           go build --ldflags="$(go run buildscripts/gen-ldflags.go)" -o otterio.exe
-          go test -v --timeout 50m ./...
+          go test -timeout 20m ./cmd/...
 
       - name: Build & test (linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
           go build --ldflags="$(go run buildscripts/gen-ldflags.go)" -o otterio
-          go test --timeout 50m ./...
+          go test -timeout 50m ./...
 
   # Race detector tests are by far the slowest step, so they get their own job.
   test-race:
