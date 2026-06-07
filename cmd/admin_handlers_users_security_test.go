@@ -37,6 +37,7 @@ import (
 // at the handler boundary prevents that primitive even if the IAM-layer
 // silent-strip in cmd/iam.go ever regresses.
 func TestAddUserRejectsPolicyNameField(t *testing.T) {
+	skipIfWindowsAdminErasureTestBed(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -93,6 +94,7 @@ func TestAddUserRejectsPolicyNameField(t *testing.T) {
 // from "rejects PolicyName" to "rejects everything" and is masking real
 // AddUser failures.
 func TestAddUserAcceptsRequestWithoutPolicyName(t *testing.T) {
+	skipIfWindowsAdminErasureTestBed(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

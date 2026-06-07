@@ -41,6 +41,24 @@ type adminErasureTestBed struct {
 	router      http.Handler
 }
 
+// skipIfWindowsAdminErasureTestBed centralises the Windows skip used by every
+// test that spins up a 16-disk Erasure backend via prepareAdminErasureTestBed.
+//
+// Bringing up the testbed on a hosted Windows runner is dominated by NTFS file
+// metadata operations under D:\a\_temp; in practice waitForFormatErasure has
+// been observed to either run for many minutes or hang outright, blowing past
+// the per-job test timeout (see prior CI failures on TestServiceRestartHandler
+// and TestAdminServerInfo). The Linux job in the same matrix already exercises
+// these handlers via the full ./... run, so we trade Windows coverage for a
+// reliable, fast CI signal rather than re-implementing the underlying erasure
+// initialisation to be Windows-friendly.
+func skipIfWindowsAdminErasureTestBed(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == globalWindowsOSName {
+		t.Skip("skipping on windows: 16-disk erasure setup is too slow/flaky on hosted runners")
+	}
+}
+
 // prepareAdminErasureTestBed - helper function that setups a single-node
 // Erasure backend for admin-handler tests.
 func prepareAdminErasureTestBed(ctx context.Context) (*adminErasureTestBed, error) {
@@ -221,14 +239,7 @@ func testServicesCmdHandler(cmd cmdType, t *testing.T) {
 
 // Test for service restart management REST API.
 func TestServiceRestartHandler(t *testing.T) {
-	// Skipped on Windows: bringing up a 16-disk erasure backend in the
-	// hosted-runner temp directory is extremely slow on NTFS and
-	// occasionally hangs in waitForFormatErasure, blowing past the test
-	// timeout. The same coverage is exercised on the Linux job, which runs
-	// the full ./... matrix.
-	if runtime.GOOS == globalWindowsOSName {
-		t.Skip("skipping on windows: 16-disk erasure setup is too slow/flaky on hosted runners")
-	}
+	skipIfWindowsAdminErasureTestBed(t)
 	testServicesCmdHandler(restartCmd, t)
 }
 
@@ -253,6 +264,7 @@ func buildAdminRequest(queryVal url.Values, method, path string,
 }
 
 func TestAdminServerInfo(t *testing.T) {
+	skipIfWindowsAdminErasureTestBed(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
