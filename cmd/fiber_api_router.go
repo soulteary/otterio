@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	fiberAmzCopySourceRegex      = regexp.MustCompile(`.*?(\\/|%2F).*?`)
+	fiberAmzCopySourceRegex      = regexp.MustCompile(`.*?(/|%2F).*?`)
 	fiberAmzSnowballExtractRegex = regexp.MustCompile(`(?i)^true$`)
 	// SECURITY (CVE-2023-28434): anchor the full Content-Type value so the
 	// post-policy route only matches when the media type is exactly
