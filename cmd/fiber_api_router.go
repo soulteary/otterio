@@ -164,6 +164,15 @@ func objectS3APIRules(api objectAPIHandlers) []routeRule {
 		s3Route([]string{http.MethodPut}, "putobject", true, api.PutObjectHandler, nil, nil),
 		s3Route([]string{http.MethodDelete}, "deleteobject", false, api.DeleteObjectHandler, nil, nil),
 		s3Route([]string{http.MethodPost}, "restoreobject", false, api.PostRestoreObjectHandler, qm("restore", ""), nil),
+		// POST + multipart/form-data falling through to the object path is a
+		// presigned post policy whose URL erroneously contains the object key.
+		// Route it to PostPolicyBucketHandler so it can return MethodNotAllowed
+		// (the handler rejects URLs whose resource path contains an object
+		// name; see cmd/bucket-handlers.go). Without this rule the request
+		// hits methodNotAllowedHandlerFiber's default branch and surfaces as
+		// BadRequest, breaking mc's test_presigned_post_policy_error.
+		s3Route([]string{http.MethodPost}, "postpolicybucket", true, api.PostPolicyBucketHandler, nil,
+			map[string]*regexp.Regexp{xhttp.ContentType: fiberMultipartFormRegex}),
 	}
 }
 
