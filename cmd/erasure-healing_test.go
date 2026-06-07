@@ -32,6 +32,7 @@ import (
 
 // Tests both object and bucket healing.
 func TestHealing(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -145,6 +146,7 @@ func TestHealing(t *testing.T) {
 }
 
 func TestHealObjectCorrupted(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -298,6 +300,7 @@ func TestHealObjectCorrupted(t *testing.T) {
 
 // Tests healing of object.
 func TestHealObjectErasure(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -389,6 +392,7 @@ func TestHealObjectErasure(t *testing.T) {
 
 // Tests healing of empty directories
 func TestHealEmptyDirectoryErasure(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

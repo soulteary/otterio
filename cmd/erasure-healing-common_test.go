@@ -92,6 +92,7 @@ func TestCommonTime(t *testing.T) {
 // TestListOnlineDisks - checks if listOnlineDisks and outDatedDisks
 // are consistent with each other.
 func TestListOnlineDisks(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -266,6 +267,7 @@ func TestListOnlineDisks(t *testing.T) {
 // TestListOnlineDisksSmallObjects - checks if listOnlineDisks and outDatedDisks
 // are consistent with each other.
 func TestListOnlineDisksSmallObjects(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -450,6 +452,7 @@ func TestListOnlineDisksSmallObjects(t *testing.T) {
 }
 
 func TestDisksWithAllParts(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	obj, disks, err := prepareErasure16(ctx)

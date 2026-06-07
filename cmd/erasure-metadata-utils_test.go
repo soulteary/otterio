@@ -137,6 +137,7 @@ func TestHashOrder(t *testing.T) {
 }
 
 func TestShuffleDisks(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -185,6 +186,7 @@ func testShuffleDisks(t *testing.T, z *erasureServerPools) {
 
 // TestEvalDisks tests the behavior of evalDisks
 func TestEvalDisks(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

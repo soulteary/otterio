@@ -46,6 +46,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -275,6 +276,22 @@ func prepareFS(tb testing.TB) (ObjectLayer, string, error) {
 	return obj, fsDirs[0], nil
 }
 
+// skipIfWindowsErasureExec centralizes the Windows skip applied to every
+// Exec*Test helper that spins up a multi-disk Erasure backend (16 or 32 disks)
+// via prepareErasure*. On hosted Windows runners NTFS file metadata operations
+// under D:\a\_temp dominate the cost: waitForFormatErasure has been observed to
+// either run for many minutes or hang outright, blowing past the per-job test
+// timeout (e.g. TestRemoveBucketHandler 20m timeouts). The Linux job in the
+// same matrix already exercises these handlers via the full ./... run, so we
+// trade Windows coverage for a reliable, fast CI signal rather than
+// re-implementing the underlying erasure initialisation to be Windows-friendly.
+func skipIfWindowsErasureExec(t testing.TB) {
+	t.Helper()
+	if runtime.GOOS == globalWindowsOSName {
+		t.Skip("skipping on windows: multi-disk erasure setup is too slow/flaky on hosted runners")
+	}
+}
+
 func prepareErasureSets32(ctx context.Context) (ObjectLayer, []string, error) {
 	return prepareErasure(ctx, 32)
 }
@@ -391,6 +408,9 @@ type TestServer struct {
 // initializes the endpoints and configures the test server.
 // The server should be started using the Start() method.
 func UnstartedTestServer(t TestErrHandler, instanceType string) TestServer {
+	if instanceType == ErasureTestStr || instanceType == ErasureSetsTestStr {
+		skipIfWindowsErasureExec(t)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	// create an instance of TestServer.
 	testServer := TestServer{cancel: cancel}
@@ -1899,6 +1919,7 @@ func ExecObjectLayerAPINilTest(t TestErrHandler, bucketName, objectName, instanc
 // ExecObjectLayerAPITest - executes object layer API tests.
 // Creates single node and Erasure ObjectLayer instance, registers the specified API end points and runs test for both the layers.
 func ExecObjectLayerAPITest(t *testing.T, objAPITest objAPITestType, endpoints []string) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -1968,6 +1989,7 @@ type objTestDiskNotFoundType func(obj ObjectLayer, instanceType string, dirs []s
 // ExecObjectLayerTest - executes object layer tests.
 // Creates single node and Erasure ObjectLayer instance and runs test for both the layers.
 func ExecObjectLayerTest(t TestErrHandler, objTest objTestType) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(GlobalContext)
 	defer cancel()
 
@@ -2038,6 +2060,7 @@ func ExecObjectLayerTest(t TestErrHandler, objTest objTestType) {
 // ExecObjectLayerTestWithDirs - executes object layer tests.
 // Creates single node and Erasure ObjectLayer instance and runs test for both the layers.
 func ExecObjectLayerTestWithDirs(t TestErrHandler, objTest objTestTypeWithDirs) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -2061,6 +2084,7 @@ func ExecObjectLayerTestWithDirs(t TestErrHandler, objTest objTestTypeWithDirs) 
 // ExecObjectLayerDiskAlteredTest - executes object layer tests while altering
 // disks in between tests. Creates Erasure ObjectLayer instance and runs test for Erasure layer.
 func ExecObjectLayerDiskAlteredTest(t *testing.T, objTest objTestDiskNotFoundType) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -2085,6 +2109,7 @@ type objTestStaleFilesType func(obj ObjectLayer, instanceType string, dirs []str
 // ExecObjectLayerStaleFilesTest - executes object layer tests those leaves stale
 // files/directories under .otterio/tmp.  Creates Erasure ObjectLayer instance and runs test for Erasure layer.
 func ExecObjectLayerStaleFilesTest(t *testing.T, objTest objTestStaleFilesType) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

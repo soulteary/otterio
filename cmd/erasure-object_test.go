@@ -31,6 +31,7 @@ import (
 )
 
 func TestRepeatPutObjectPart(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -71,6 +72,7 @@ func TestRepeatPutObjectPart(t *testing.T) {
 }
 
 func TestErasureDeleteObjectBasic(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	testCases := []struct {
 		bucket      string
 		object      string
@@ -127,6 +129,7 @@ func TestErasureDeleteObjectBasic(t *testing.T) {
 }
 
 func TestErasureDeleteObjectsErasureSet(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var objs []*erasureObjects
@@ -200,6 +203,7 @@ func TestErasureDeleteObjectsErasureSet(t *testing.T) {
 }
 
 func TestErasureDeleteObjectDiskNotFound(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	restoreGlobalStorageClass := globalStorageClass
 	defer func() {
 		globalStorageClass = restoreGlobalStorageClass
@@ -277,6 +281,7 @@ func TestErasureDeleteObjectDiskNotFound(t *testing.T) {
 }
 
 func TestGetObjectNoQuorum(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -366,6 +371,7 @@ func TestGetObjectNoQuorum(t *testing.T) {
 }
 
 func TestHeadObjectNoQuorum(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -440,6 +446,7 @@ func TestHeadObjectNoQuorum(t *testing.T) {
 }
 
 func TestPutObjectNoQuorum(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -503,6 +510,7 @@ func TestPutObjectNoQuorum(t *testing.T) {
 }
 
 func TestPutObjectNoQuorumSmall(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

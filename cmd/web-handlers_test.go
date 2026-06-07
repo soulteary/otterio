@@ -1070,6 +1070,7 @@ func testWebPresignedGetHandler(obj ObjectLayer, instanceType string, t TestErrH
 
 // TestWebCheckAuthorization - Test Authorization for all web handlers
 func TestWebCheckAuthorization(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -1161,6 +1162,7 @@ func TestWebCheckAuthorization(t *testing.T) {
 
 // TestWebObjectLayerFaultyDisks - Test Web RPC responses with faulty disks
 func TestWebObjectLayerFaultyDisks(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

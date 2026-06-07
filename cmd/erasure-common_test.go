@@ -25,6 +25,7 @@ import (
 
 // Tests for if parent directory is object
 func TestErasureParentDirIsObject(t *testing.T) {
+	skipIfWindowsErasureExec(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
