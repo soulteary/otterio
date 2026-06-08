@@ -101,7 +101,7 @@ OTTERIO_IDENTITY_LDAP_USERNAME_FORMAT         (list)      ";" separated list of 
 
 ### Group membership search
 
-OtterIO can be configured to find the groups of a user from AD/LDAP by specifying the folllowing variables:
+OtterIO can be configured to find the groups of a user from AD/LDAP by specifying the following variables:
 
 ```
 OTTERIO_IDENTITY_LDAP_GROUP_SEARCH_FILTER     (string)    search filter for groups e.g. "(&(objectclass=groupOfNames)(memberUid=%s))"
