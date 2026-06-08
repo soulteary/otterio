@@ -86,7 +86,7 @@ func replayEvents(store Store, doneCh <-chan struct{}, loggerOnce func(ctx conte
 	return eventKeyCh
 }
 
-// IsConnRefusedErr - To check fot "connection refused" error.
+// IsConnRefusedErr - To check for "connection refused" error.
 func IsConnRefusedErr(err error) bool {
 	return errors.Is(err, syscall.ECONNREFUSED)
 }
