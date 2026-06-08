@@ -295,7 +295,7 @@ func (l *s3Objects) MakeBucketWithLocation(ctx context.Context, bucket string, o
 	// Verify if bucket name is valid.
 	// We are using a separate helper function here to validate bucket
 	// names instead of IsValidBucketName() because there is a possibility
-	// that certains users might have buckets which are non-DNS compliant
+	// that certain users might have buckets which are non-DNS compliant
 	// in us-east-1 and we might severely restrict them by not allowing
 	// access to these buckets.
 	// Ref - http://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
