@@ -120,7 +120,7 @@ func TestSSEKMSEndToEndCrossObjectUnsealFails(t *testing.T) {
 	}
 	// The exact error string belongs to pkg/kms/single-key.go ("encrypted
 	// key is not authentic"). We only assert that the error is non-nil
-	// and that the failure is not pre-empted by an earlier ctx-shape
+	// and that the failure is not pre-emptied by an earlier ctx-shape
 	// check pretending to be an authenticity failure.
 	if errors.Is(err, errKMSContextBindingConflict) {
 		t.Fatalf("got errKMSContextBindingConflict, expected an AEAD authenticity failure from the KMS layer")
