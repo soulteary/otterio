@@ -118,7 +118,7 @@ func (lrw *ResponseWriter) Flush() {
 	lrw.ResponseWriter.(http.Flusher).Flush()
 }
 
-// Size - reutrns the number of bytes written
+// Size - returns the number of bytes written
 func (lrw *ResponseWriter) Size() int {
 	return lrw.bytesWritten
 }
