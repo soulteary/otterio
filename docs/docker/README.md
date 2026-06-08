@@ -134,7 +134,7 @@ docker service create --name="otterio-service" \
   --env="OTTERIO_ROOT_PASSWORD_FILE=my_secret_key" \
   soulteary/otterio:latest server /data
 ```
-`OTTERIO_ROOT_USER_FILE` and `OTTERIO_ROOT_PASSWORD_FILE` also support custom absolute paths, in case Docker secrets are mounted to custom locations or other tools are used to mount secrets into the container. For example, HashiCorp Vault injects secrets to `/vault/secrets`. With the custom names above, set the environment variables to
+`OTTERIO_ROOT_USER_FILE` and `OTTERIO_ROOT_PASSWORD_FILE` also support custom absolute paths, in case Docker secrets are mounted to custom locations or other tools are used to mount secrets into the container. For example, HashCorp Vault injects secrets to `/vault/secrets`. With the custom names above, set the environment variables to
 ```
 OTTERIO_ROOT_USER_FILE=/vault/secrets/my_access_key
 OTTERIO_ROOT_PASSWORD_FILE=/vault/secrets/my_secret_key
