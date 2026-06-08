@@ -138,7 +138,7 @@ $ go run web-identity.go -cid 204367807228-ok7601k6gj1pgge7m09h7d79co8p35xx.apps
 - Visit http://localhost:8080, login will direct the user to the Google OAuth2 Auth URL to obtain a permission grant.
 - The redirection URI (callback handler) receives the OAuth2 callback, verifies the state parameter, and obtains a Token.
 - Using the access token the callback handler further talks to Google OAuth2 Token URL to obtain an JWT id_token.
-- Once obtained the JWT id_token is further sent to STS endpoint i.e OtterIO to retrive temporary credentials.
+- Once obtained the JWT id_token is further sent to STS endpoint i.e OtterIO to retrieve temporary credentials.
 - Temporary credentials are displayed on the browser upon successful retrieval.
 
 ## Using OtterIO Browser
@@ -156,7 +156,7 @@ Sample URLs for Keycloak are
 
 `config_url` - `http://localhost:8080/auth/realms/demo/.well-known/openid-configuration`
 
-JWT token returned by the Identity Provider should include a custom claim for the policy, this is required to create a STS user in OtterIO. The name of the custom claim could be either `policy` or `<NAMESPACE_PREFIX>policy`.  If there is no namespace then `claim_prefix` can be ingored. For example if the custom claim name is `https://min.io/policy` then, `claim_prefix` should be set as `https://min.io/`.
+JWT token returned by the Identity Provider should include a custom claim for the policy, this is required to create a STS user in OtterIO. The name of the custom claim could be either `policy` or `<NAMESPACE_PREFIX>policy`.  If there is no namespace then `claim_prefix` can be ignored. For example if the custom claim name is `https://min.io/policy` then, `claim_prefix` should be set as `https://min.io/`.
 
 - Open OtterIO Browser and click `Log in with OpenID`
 - Enter the `Client ID` obtained from Identity Provider and press ENTER, if not you can set a `client_id` on server to avoid this step.
