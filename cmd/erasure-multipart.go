@@ -73,7 +73,7 @@ func (er erasureObjects) checkUploadIDExists(ctx context.Context, bucket, object
 	return err
 }
 
-// Removes part given by partName belonging to a mulitpart upload from otterioMetaBucket
+// Removes part given by partName belonging to a multipart upload from otterioMetaBucket
 func (er erasureObjects) removeObjectPart(bucket, object, uploadID, dataDir string, partNumber int) {
 	uploadIDPath := er.getUploadIDDir(bucket, object, uploadID)
 	curpartPath := pathJoin(uploadIDPath, dataDir, fmt.Sprintf("part.%d", partNumber))
