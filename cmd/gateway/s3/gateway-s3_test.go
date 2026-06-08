@@ -62,7 +62,7 @@ func TestS3ToObjectError(t *testing.T) {
 			inputErr:    errResponse("NoSuchBucket"),
 			expectedErr: otterio.BucketNotFound{},
 		},
-		// with empty Object in otteriogo.ErrorRepsonse, NoSuchKey
+		// with empty Object in otteriogo.ErrorResponse, NoSuchKey
 		// is interpreted as BucketNotFound
 		{
 			inputErr:    errResponse("NoSuchKey"),
