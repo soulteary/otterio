@@ -1714,7 +1714,7 @@ func removeDiskN(disks []string, n int) {
 
 // creates a bucket for the tests and returns the bucket name.
 // initializes the specified API endpoints for the tests.
-// initialise the root and returns its path.
+// initialize the root and returns its path.
 // return credentials.
 func initAPIHandlerTest(obj ObjectLayer, endpoints []string) (string, http.Handler, error) {
 	newAllSubsystems()
