@@ -93,7 +93,7 @@ func testListObjects(obj ObjectLayer, instanceType string, t1 TestErrHandler) {
 
 	}
 
-	// Formualting the result data set to be expected from ListObjects call inside the tests,
+	// Formulating the result data set to be expected from ListObjects call inside the tests,
 	// This will be used in testCases and used for asserting the correctness of ListObjects output in the tests.
 
 	resultCases := []ListObjectsInfo{
@@ -501,7 +501,7 @@ func testListObjects(obj ObjectLayer, instanceType string, t1 TestErrHandler) {
 		{"volatile-bucket-1", "", "", "", 0, ListObjectsInfo{}, BucketNotFound{Bucket: "volatile-bucket-1"}, false},
 		{"volatile-bucket-2", "", "", "", 0, ListObjectsInfo{}, BucketNotFound{Bucket: "volatile-bucket-2"}, false},
 		{"volatile-bucket-3", "", "", "", 0, ListObjectsInfo{}, BucketNotFound{Bucket: "volatile-bucket-3"}, false},
-		// Testing for failure cases with both perfix and marker (11).
+		// Testing for failure cases with both prefix and marker (11).
 		// The prefix and marker combination to be valid it should satisfy strings.HasPrefix(marker, prefix).
 		{"test-bucket-list-object", "asia", "europe-object", "", 0, ListObjectsInfo{}, fmt.Errorf("Invalid combination of marker '%s' and prefix '%s'", "europe-object", "asia"), false},
 		// Setting a non-existing directory to be prefix (12-13).
@@ -520,7 +520,7 @@ func testListObjects(obj ObjectLayer, instanceType string, t1 TestErrHandler) {
 		{"test-bucket-list-object", "", "", "", -1, resultCases[0], nil, true},
 		// Testing for very large value of maxKey, this should set maxKeys to listObjectsLimit (20).
 		{"test-bucket-list-object", "", "", "", 1234567890, resultCases[0], nil, true},
-		// Testing for trancated value (21-24).
+		// Testing for truncated value (21-24).
 		{"test-bucket-list-object", "", "", "", 5, resultCases[1], nil, true},
 		{"test-bucket-list-object", "", "", "", 4, resultCases[2], nil, true},
 		{"test-bucket-list-object", "", "", "", 3, resultCases[3], nil, true},
@@ -546,7 +546,7 @@ func testListObjects(obj ObjectLayer, instanceType string, t1 TestErrHandler) {
 		// Marker being set to a value which is lesser than and all object names when sorted (37).
 		// Expected to send all the objects in the bucket in this case.
 		{"test-bucket-list-object", "", "Abc", "", 10, resultCases[14], nil, true},
-		// Marker is to a hierarhical value (38-39).
+		// Marker is to a hierarchical value (38-39).
 		{"test-bucket-list-object", "", "Asia/India/India-summer-photos-1", "", 10, resultCases[15], nil, true},
 		{"test-bucket-list-object", "", "Asia/India/Karnataka/Bangalore/Koramangala/pics", "", 10, resultCases[16], nil, true},
 		// Testing with marker and truncation, but no prefix (40-42).
@@ -577,7 +577,7 @@ func testListObjects(obj ObjectLayer, instanceType string, t1 TestErrHandler) {
 		{"test-bucket-list-object", "Asia", "", SlashSeparator, 10, resultCases[25], nil, true},
 		{"test-bucket-list-object", "new", "", SlashSeparator, 10, resultCases[26], nil, true},
 		{"test-bucket-list-object", "Asia/India/", "", SlashSeparator, 10, resultCases[27], nil, true},
-		// Test with marker set as hierarhical value and with delimiter. (58-59)
+		// Test with marker set as hierarchical value and with delimiter. (58-59)
 		{"test-bucket-list-object", "", "Asia/India/India-summer-photos-1", SlashSeparator, 10, resultCases[28], nil, true},
 		{"test-bucket-list-object", "", "Asia/India/Karnataka/Bangalore/Koramangala/pics", SlashSeparator, 10, resultCases[29], nil, true},
 		// Test with prefix and delimiter set to '/'. (60)
@@ -768,7 +768,7 @@ func testListObjectVersions(obj ObjectLayer, instanceType string, t1 TestErrHand
 
 	}
 
-	// Formualting the result data set to be expected from ListObjects call inside the tests,
+	// Formulating the result data set to be expected from ListObjects call inside the tests,
 	// This will be used in testCases and used for asserting the correctness of ListObjects output in the tests.
 
 	resultCases := []ListObjectsInfo{
@@ -1176,7 +1176,7 @@ func testListObjectVersions(obj ObjectLayer, instanceType string, t1 TestErrHand
 		{"volatile-bucket-1", "", "", "", 0, ListObjectsInfo{}, BucketNotFound{Bucket: "volatile-bucket-1"}, false},
 		{"volatile-bucket-2", "", "", "", 0, ListObjectsInfo{}, BucketNotFound{Bucket: "volatile-bucket-2"}, false},
 		{"volatile-bucket-3", "", "", "", 0, ListObjectsInfo{}, BucketNotFound{Bucket: "volatile-bucket-3"}, false},
-		// Testing for failure cases with both perfix and marker (9).
+		// Testing for failure cases with both prefix and marker (9).
 		// The prefix and marker combination to be valid it should satisfy strings.HasPrefix(marker, prefix).
 		{"test-bucket-list-object", "asia", "europe-object", "", 0, ListObjectsInfo{}, fmt.Errorf("Invalid combination of marker '%s' and prefix '%s'", "europe-object", "asia"), false},
 		// Setting a non-existing directory to be prefix (10-11).
@@ -1195,7 +1195,7 @@ func testListObjectVersions(obj ObjectLayer, instanceType string, t1 TestErrHand
 		{"test-bucket-list-object", "", "", "", -1, resultCases[0], nil, true},
 		// Testing for very large value of maxKey, this should set maxKeys to listObjectsLimit (18).
 		{"test-bucket-list-object", "", "", "", 1234567890, resultCases[0], nil, true},
-		// Testing for trancated value (19-22).
+		// Testing for truncated value (19-22).
 		{"test-bucket-list-object", "", "", "", 5, resultCases[1], nil, true},
 		{"test-bucket-list-object", "", "", "", 4, resultCases[2], nil, true},
 		{"test-bucket-list-object", "", "", "", 3, resultCases[3], nil, true},
@@ -1220,7 +1220,7 @@ func testListObjectVersions(obj ObjectLayer, instanceType string, t1 TestErrHand
 		// Marker being set to a value which is lesser than and all object names when sorted (35).
 		// Expected to send all the objects in the bucket in this case.
 		{"test-bucket-list-object", "", "Abc", "", 10, resultCases[14], nil, true},
-		// Marker is to a hierarhical value (36-37).
+		// Marker is to a hierarchical value (36-37).
 		{"test-bucket-list-object", "", "Asia/India/India-summer-photos-1", "", 10, resultCases[15], nil, true},
 		{"test-bucket-list-object", "", "Asia/India/Karnataka/Bangalore/Koramangala/pics", "", 10, resultCases[16], nil, true},
 		// Testing with marker and truncation, but no prefix (38-40).
@@ -1251,7 +1251,7 @@ func testListObjectVersions(obj ObjectLayer, instanceType string, t1 TestErrHand
 		{"test-bucket-list-object", "Asia", "", SlashSeparator, 10, resultCases[25], nil, true},
 		{"test-bucket-list-object", "new", "", SlashSeparator, 10, resultCases[26], nil, true},
 		{"test-bucket-list-object", "Asia/India/", "", SlashSeparator, 10, resultCases[27], nil, true},
-		// Test with marker set as hierarhical value and with delimiter. (56-57)
+		// Test with marker set as hierarchical value and with delimiter. (56-57)
 		{"test-bucket-list-object", "", "Asia/India/India-summer-photos-1", SlashSeparator, 10, resultCases[28], nil, true},
 		{"test-bucket-list-object", "", "Asia/India/Karnataka/Bangalore/Koramangala/pics", SlashSeparator, 10, resultCases[29], nil, true},
 		// Test with prefix and delimiter set to '/'. (58)
