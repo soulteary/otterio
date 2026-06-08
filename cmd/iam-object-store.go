@@ -78,7 +78,7 @@ func (iamOS *IAMObjectStore) migrateMappedPolicyToCanonical(ctx context.Context,
 	}
 	canonical, err := ldap.NormalizeDN(rawName)
 	if err != nil {
-		logger.LogIf(ctx, fmt.Errorf("LDAP DN migration: skipping unparseable on-disk name %q: %w", rawName, err))
+		logger.LogIf(ctx, fmt.Errorf("LDAP DN migration: skipping unparsable on-disk name %q: %w", rawName, err))
 		return
 	}
 	if canonical == rawName {

@@ -145,7 +145,7 @@ func TestFSShutdown(t *testing.T) {
 	}
 }
 
-// TestFSGetBucketInfo - test GetBucketInfo with healty and faulty disks
+// TestFSGetBucketInfo - test GetBucketInfo with healthy and faulty disks
 func TestFSGetBucketInfo(t *testing.T) {
 	// Prepare for testing
 	disk := filepath.Join(globalTestTmpDir, "otterio-"+nextSuffix())
@@ -242,7 +242,7 @@ func TestFSPutObject(t *testing.T) {
 
 	_, err = obj.PutObject(GlobalContext, bucketName, objectName+"/1/", mustGetPutObjReader(t, bytes.NewReader([]byte("abcd")), 0, "", ""), ObjectOptions{})
 	if err == nil {
-		t.Fatal("Unexpected should fail here, backned corruption occurred")
+		t.Fatal("Unexpected should fail here, backend corruption occurred")
 	}
 	if nerr, ok := err.(ParentIsObject); !ok {
 		t.Fatalf("Expected ParentIsObject, got %#v", err)
@@ -321,7 +321,7 @@ func TestFSDeleteBucket(t *testing.T) {
 		t.Fatal("Unexpected error: ", err)
 	}
 
-	// Test with an inexistant bucket
+	// Test with an inexistent bucket
 	if err = fs.DeleteBucket(GlobalContext, "foobucket", false); !isSameType(err, BucketNotFound{}) {
 		t.Fatal("Unexpected error: ", err)
 	}

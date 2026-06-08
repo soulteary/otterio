@@ -428,7 +428,7 @@ func LookupRegion(kv KVS) (string, error) {
 }
 
 // CheckValidKeys - checks if inputs KVS has the necessary keys,
-// returns error if it find extra or superflous keys.
+// returns error if it find extra or superfluous keys.
 func CheckValidKeys(subSys string, kv KVS, validKVS KVS) error {
 	nkv := KVS{}
 	for _, kv := range kv {

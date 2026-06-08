@@ -571,7 +571,7 @@ func (fs *FSObjects) ListBuckets(ctx context.Context) ([]BucketInfo, error) {
 		return bucketInfos[i].Name < bucketInfos[j].Name
 	})
 
-	// Succes.
+	// Success.
 	return bucketInfos, nil
 }
 

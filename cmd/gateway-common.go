@@ -217,7 +217,7 @@ func FromOtterioClientListBucketResultToV2Info(bucket string, result otterio.Lis
 	}
 }
 
-// ToOtterioClientObjectInfoMetadata convertes metadata to map[string][]string
+// ToOtterioClientObjectInfoMetadata converts metadata to map[string][]string
 func ToOtterioClientObjectInfoMetadata(metadata map[string]string) map[string][]string {
 	mm := make(map[string][]string, len(metadata))
 	for k, v := range metadata {

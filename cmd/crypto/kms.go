@@ -32,7 +32,7 @@ import (
 // associated with a certain object.
 type Context = kms.Context
 
-// KMS represents an active and authenticted connection
+// KMS represents an active and authenticated connection
 // to a Key-Management-Service. It supports generating
 // data key generation and unsealing of KMS-generated
 // data keys.

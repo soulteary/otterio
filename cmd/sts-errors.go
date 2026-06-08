@@ -25,7 +25,7 @@ import (
 	"github.com/soulteary/otterio/cmd/logger"
 )
 
-// writeSTSErrorRespone writes error headers
+// writeSTSErrorResponse writes error headers
 func writeSTSErrorResponse(ctx context.Context, w http.ResponseWriter, isErrCodeSTS bool, errCode STSErrorCode, errCtxt error) {
 	var err STSError
 	if isErrCodeSTS {

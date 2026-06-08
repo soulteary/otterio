@@ -204,7 +204,7 @@ var defaultVaultCfg = VaultConfig{
 
 var defaultKesCfg = KesConfig{}
 
-// EnabledVault returns true if HashiCorp Vault is enabled.
+// EnabledVault returns true if HashCorp Vault is enabled.
 func EnabledVault(kvs config.KVS) bool {
 	endpoint := kvs.Get(KMSVaultEndpoint)
 	return endpoint != ""
@@ -321,7 +321,7 @@ func LookupConfig(c config.Config, defaultRootCAsDir string, transport *http.Tra
 // file. So it is never made a persistent setting.
 //
 // It sets the global KMS configuration according to the merged configuration
-// on succes.
+// on success.
 func LookupVaultConfig(kvs config.KVS) (VaultConfig, error) {
 	if err := config.CheckValidKeys(config.KmsVaultSubSys, kvs, DefaultVaultKVS); err != nil {
 		return VaultConfig{}, err

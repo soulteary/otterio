@@ -1714,7 +1714,7 @@ func removeDiskN(disks []string, n int) {
 
 // creates a bucket for the tests and returns the bucket name.
 // initializes the specified API endpoints for the tests.
-// initialies the root and returns its path.
+// initialise the root and returns its path.
 // return credentials.
 func initAPIHandlerTest(obj ObjectLayer, endpoints []string) (string, http.Handler, error) {
 	newAllSubsystems()
@@ -1805,7 +1805,7 @@ func ExecObjectLayerAPIAnonTest(t *testing.T, _ ObjectLayer, testName, bucketNam
 		t.Fatal(failTestStr(anonTestStr, fmt.Sprintf("Object API Nil Test expected to fail with %d, but failed with %d", accessDenied, rec.Code)))
 	}
 
-	// HEAD HTTTP request doesn't contain response body.
+	// HEAD HTTP request doesn't contain response body.
 	if anonReq.Method != http.MethodHead {
 		// read the response body.
 		var actualContent []byte
@@ -1861,12 +1861,12 @@ func ExecObjectLayerAPIAnonTest(t *testing.T, _ ObjectLayer, testName, bucketNam
 	// expected error response when the unsigned HTTP request is not permitted.
 	unsupportedSignature := getAPIError(ErrSignatureVersionNotSupported).HTTPStatusCode
 	if rec.Code != unsupportedSignature {
-		t.Fatal(failTestStr(unknownSignTestStr, fmt.Sprintf("Object API Unknow auth test for \"%s\", expected to fail with %d, but failed with %d", testName, unsupportedSignature, rec.Code)))
+		t.Fatal(failTestStr(unknownSignTestStr, fmt.Sprintf("Object API Unknown auth test for \"%s\", expected to fail with %d, but failed with %d", testName, unsupportedSignature, rec.Code)))
 	}
 
 }
 
-// ExecObjectLayerAPINilTest - Sets the object layer to `nil`, and calls rhe registered object layer API endpoint,
+// ExecObjectLayerAPINilTest - Sets the object layer to `nil`, and calls the registered object layer API endpoint,
 // and assert the error response. The purpose is to validate the API handlers response when the object layer is uninitialized.
 // Usage hint: Should be used at the end of the API end points tests (ex: check the last few lines of `testAPIListObjectPartsHandler`),
 // need a sample HTTP request to be sent as argument so that the relevant handler is called, the handler registration is expected
@@ -1876,7 +1876,7 @@ func ExecObjectLayerAPINilTest(t TestErrHandler, bucketName, objectName, instanc
 	// httptest Recorder to capture all the response by the http handler.
 	rec := httptest.NewRecorder()
 
-	// The  API handler gets the referece to the object layer via the global object Layer,
+	// The  API handler gets the reference to the object layer via the global object Layer,
 	// setting it to `nil` in order test for handlers response for uninitialized object layer.
 	globalObjLayerMutex.Lock()
 	globalObjectAPI = nil
@@ -1956,7 +1956,7 @@ func ExecObjectLayerAPITest(t *testing.T, objAPITest objAPITestType, endpoints [
 
 	bucketErasure, erAPIRouter, err := initAPIHandlerTest(objLayer, endpoints)
 	if err != nil {
-		t.Fatalf("Initialzation of API handler tests failed: <ERROR> %s", err)
+		t.Fatalf("Initialization of API handler tests failed: <ERROR> %s", err)
 	}
 	// Executing the object layer tests for Erasure.
 	objAPITest(objLayer, ErasureTestStr, bucketErasure, erAPIRouter, credentials, t)

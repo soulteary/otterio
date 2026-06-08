@@ -103,7 +103,7 @@ func initHelp() {
 		},
 		config.HelpKV{
 			Key:         config.KmsVaultSubSys,
-			Description: "enable external HashiCorp Vault key management service",
+			Description: "enable external HashCorp Vault key management service",
 		},
 		config.HelpKV{
 			Key:         config.KmsKesSubSys,

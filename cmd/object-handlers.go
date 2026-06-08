@@ -2926,7 +2926,7 @@ func (w *whiteSpaceWriter) WriteHeader(statusCode int) {
 
 // Send empty whitespaces every 10 seconds to the client till completeMultiPartUpload() is
 // done so that the client does not time out. Downside is we might send 200 OK and
-// then send error XML. But accoording to S3 spec the client is supposed to check
+// then send error XML. But according to S3 spec the client is supposed to check
 // for error XML even if it received 200 OK. But for erasure this is not a problem
 // as completeMultiPartUpload() is quick. Even For FS, it would not be an issue as
 // we do background append as and when the parts arrive and completeMultiPartUpload
@@ -3121,7 +3121,7 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 	// Get object location.
 	location := getObjectLocation(r, globalDomainNames, bucket, object)
 	// Generate complete multipart response.
-	response := generateCompleteMultpartUploadResponse(bucket, object, location, objInfo.ETag)
+	response := generateCompleteMultipartUploadResponse(bucket, object, location, objInfo.ETag)
 	var encodedSuccessResponse []byte
 	if !headerWritten {
 		encodedSuccessResponse = encodeResponse(response)

@@ -142,7 +142,7 @@ func (fsi *fsIOPool) Open(path string) (*lock.RLockedFile, error) {
 //   - if the file exists. Then we try to get a write lock this
 //     will block if we can't get a lock perhaps another write
 //     or read is in progress. Concurrent calls are protected
-//     by the global namspace lock within the same process.
+//     by the global namespace lock within the same process.
 func (fsi *fsIOPool) Write(path string) (wlk *lock.LockedFile, err error) {
 	if err = checkPathLength(path); err != nil {
 		return nil, err

@@ -153,7 +153,7 @@ func calculateSeedSignature(r *http.Request) (cred auth.Credentials, signature s
 		return cred, "", "", time.Time{}, ErrSignatureDoesNotMatch
 	}
 
-	// Return caculated signature.
+	// Return calculated signature.
 	return cred, newSignature, region, date, ErrNone
 }
 
@@ -226,7 +226,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 	// A chunk has the following format:
 	//   <chunk-size-as-hex> + ";chunk-signature=" + <signature-as-hex> + "\r\n" + <payload> + "\r\n"
 	//
-	// Frist, we read the chunk size but fail if it is larger
+	// First, we read the chunk size but fail if it is larger
 	// than 1 MB. We must not accept arbitrary large chunks.
 	// One 1 MB is a reasonable max limit.
 	//

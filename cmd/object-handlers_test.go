@@ -1315,8 +1315,8 @@ func testAPIPutObjectHandler(obj ObjectLayer, instanceType, bucketName string, a
 	copySourceHeader.Set("X-Amz-Copy-Source", "somewhere")
 	invalidMD5Header := http.Header{}
 	invalidMD5Header.Set("Content-Md5", "42")
-	inalidStorageClassHeader := http.Header{}
-	inalidStorageClassHeader.Set(xhttp.AmzStorageClass, "INVALID")
+	invalidStorageClassHeader := http.Header{}
+	invalidStorageClassHeader.Set(xhttp.AmzStorageClass, "INVALID")
 
 	addCustomHeaders := func(req *http.Request, customHeaders http.Header) {
 		for k, values := range customHeaders {
@@ -1358,7 +1358,7 @@ func testAPIPutObjectHandler(obj ObjectLayer, instanceType, bucketName string, a
 			objectName: objectName,
 			data:       bytesData,
 			dataLen:    len(bytesData),
-			accessKey:  "Wrong-AcessID",
+			accessKey:  "Wrong-AccessID",
 			secretKey:  credentials.SecretKey,
 
 			expectedRespStatus: http.StatusForbidden,
@@ -1416,7 +1416,7 @@ func testAPIPutObjectHandler(obj ObjectLayer, instanceType, bucketName string, a
 		{
 			bucketName:         bucketName,
 			objectName:         objectName,
-			headers:            inalidStorageClassHeader,
+			headers:            invalidStorageClassHeader,
 			data:               bytesData,
 			dataLen:            len(bytesData),
 			accessKey:          credentials.AccessKey,
@@ -1800,7 +1800,7 @@ func testAPICopyObjectPartHandler(obj ObjectLayer, instanceType, bucketName stri
 		},
 
 		// Test case - 6.
-		// Test case with ivalid byte range for exceeding source size boundaries.
+		// Test case with invalid byte range for exceeding source size boundaries.
 		{
 			bucketName:       bucketName,
 			uploadID:         uploadID,
@@ -2449,7 +2449,7 @@ func testAPICopyObjectHandler(obj ObjectLayer, instanceType, bucketName string, 
 }
 
 // Wrapper for calling NewMultipartUpload tests for both Erasure multiple disks and single node setup.
-// First register the HTTP handler for NewMutlipartUpload, then a HTTP request for NewMultipart upload is made.
+// First register the HTTP handler for NewMultipartUpload, then a HTTP request for NewMultipart upload is made.
 // The UploadID from the response body is parsed and its existence is asserted with an attempt to ListParts using it.
 func TestAPINewMultipartHandler(t *testing.T) {
 	defer DetectTestLeak(t)()
@@ -2490,7 +2490,7 @@ func testAPINewMultipartHandler(obj ObjectLayer, instanceType, bucketName string
 		t.Fatalf("Invalid UploadID: <ERROR> %s", err)
 	}
 
-	// Testing the response for Invalid AcccessID.
+	// Testing the response for Invalid AccessID.
 	// Forcing the signature check to fail.
 	rec = httptest.NewRecorder()
 	// construct HTTP request for NewMultipart upload.
@@ -2542,7 +2542,7 @@ func testAPINewMultipartHandler(obj ObjectLayer, instanceType, bucketName string
 		t.Fatalf("Invalid UploadID: <ERROR> %s", err)
 	}
 
-	// Testing the response for invalid AcccessID.
+	// Testing the response for invalid AccessID.
 	// Forcing the V2 signature check to fail.
 	recV2 = httptest.NewRecorder()
 	// construct HTTP request for NewMultipartUpload endpoint.
@@ -2703,7 +2703,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		intputDataSize  int64
+		inputDataSize  int64
 	}{
 		// Case 1-4.
 		// Creating sequence of parts for same uploadID.
@@ -2723,7 +2723,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 	// Iterating over creatPartCases to generate multipart chunks.
 	for _, part := range parts {
 		_, err = obj.PutObjectPart(context.Background(), part.bucketName, part.objName, part.uploadID, part.PartID,
-			mustGetPutObjReader(t, strings.NewReader(part.inputReaderData), part.intputDataSize, part.inputMd5, ""), opts)
+			mustGetPutObjReader(t, strings.NewReader(part.inputReaderData), part.inputDataSize, part.inputMd5, ""), opts)
 		if err != nil {
 			t.Fatalf("%s : %s", instanceType, err)
 		}
@@ -2788,7 +2788,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 	s3MD5 := getCompleteMultipartMD5(inputParts[3].parts)
 
 	// generating the response body content for the success case.
-	successResponse := generateCompleteMultpartUploadResponse(bucketName, objectName, getGetObjectURL("", bucketName, objectName), s3MD5)
+	successResponse := generateCompleteMultipartUploadResponse(bucketName, objectName, getGetObjectURL("", bucketName, objectName), s3MD5)
 	encodedSuccessResponse := encodeResponse(successResponse)
 
 	ctx := context.Background()
@@ -2900,7 +2900,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 		},
 		// Test case - 7.
 		// Test case with proper parts.
-		// Should successed and the content in the response body is asserted.
+		// Should succeeded and the content in the response body is asserted.
 		{
 			bucket:    bucketName,
 			object:    objectName,
@@ -2916,7 +2916,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 		},
 		// Test case - 8.
 		// Test case with proper parts.
-		// Should successed and the content in the response body is asserted.
+		// Should succeeded and the content in the response body is asserted.
 		{
 			bucket:    bucketName,
 			object:    objectName,
@@ -3074,7 +3074,7 @@ func testAPIAbortMultipartHandler(obj ObjectLayer, instanceType, bucketName stri
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		intputDataSize  int64
+		inputDataSize  int64
 	}{
 		// Case 1-4.
 		// Creating sequence of parts for same uploadID.
@@ -3094,7 +3094,7 @@ func testAPIAbortMultipartHandler(obj ObjectLayer, instanceType, bucketName stri
 	// Iterating over createPartCases to generate multipart chunks.
 	for _, part := range parts {
 		_, err = obj.PutObjectPart(context.Background(), part.bucketName, part.objName, part.uploadID, part.PartID,
-			mustGetPutObjReader(t, strings.NewReader(part.inputReaderData), part.intputDataSize, part.inputMd5, ""), opts)
+			mustGetPutObjReader(t, strings.NewReader(part.inputReaderData), part.inputDataSize, part.inputMd5, ""), opts)
 		if err != nil {
 			t.Fatalf("%s : %s", instanceType, err)
 		}
@@ -3120,7 +3120,7 @@ func testAPIAbortMultipartHandler(obj ObjectLayer, instanceType, bucketName stri
 			expectedRespStatus: http.StatusNoContent,
 		},
 		// Test case - 2.
-		// Abort non-existng upload ID.
+		// Abort non-existing upload ID.
 		{
 			bucket:             bucketName,
 			object:             objectName,
@@ -3249,7 +3249,7 @@ func testAPIDeleteObjectHandler(obj ObjectLayer, instanceType, bucketName string
 	}{
 		// Test case - 1.
 		// Deleting an existing object.
-		// Expected to return HTTP resposne status code 204.
+		// Expected to return HTTP response status code 204.
 		{
 			bucketName: bucketName,
 			objectName: objectName,
@@ -3373,7 +3373,7 @@ func testAPIPutObjectPartHandlerStreaming(_ ObjectLayer, instanceType, bucketNam
 	}
 	apiRouter.ServeHTTP(rec, req)
 
-	// Get uploadID of the mulitpart upload initiated.
+	// Get uploadID of the multipart upload initiated.
 	var mpartResp InitiateMultipartUploadResponse
 	mpartRespBytes, err := io.ReadAll(rec.Result().Body)
 	if err != nil {
@@ -3780,7 +3780,7 @@ func testAPIListObjectPartsHandlerPreSign(_ ObjectLayer, instanceType, bucketNam
 	}
 	apiRouter.ServeHTTP(rec, req)
 
-	// Get uploadID of the mulitpart upload initiated.
+	// Get uploadID of the multipart upload initiated.
 	var mpartResp InitiateMultipartUploadResponse
 	mpartRespBytes, err := io.ReadAll(rec.Result().Body)
 	if err != nil {

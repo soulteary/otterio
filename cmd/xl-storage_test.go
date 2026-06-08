@@ -1199,7 +1199,7 @@ func TestXLStorageReadFile(t *testing.T) {
 			if err == nil && err != testCase.expectedErr {
 				t.Errorf("Case: %d %#v, expected: %s, got :%s", i+1, testCase, testCase.expectedErr, err)
 			}
-			// Expected error retured, proceed further to validate the returned results.
+			// Expected error returned, proceed further to validate the returned results.
 			if err == nil && err == testCase.expectedErr {
 				if !bytes.Equal(testCase.expectedBuf, buf) {
 					t.Errorf("Case: %d %#v, expected: \"%s\", got: \"%s\"", i+1, testCase, string(testCase.expectedBuf), string(buf[:testCase.bufSize]))

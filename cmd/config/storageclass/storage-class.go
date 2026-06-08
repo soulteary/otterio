@@ -43,7 +43,7 @@ const (
 	DMAReadWrite = "read+write"
 )
 
-// Standard constats for config info storage class
+// Standard constants for config info storage class
 const (
 	ClassStandard = "standard"
 	ClassRRS      = "rrs"

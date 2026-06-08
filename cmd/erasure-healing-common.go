@@ -29,26 +29,26 @@ import (
 func commonTime(modTimes []time.Time, dataDirs []string) (modTime time.Time, dataDir string) {
 	var maxima int // Counter for remembering max occurrence of elements.
 
-	timeOccurenceMap := make(map[int64]int, len(modTimes))
-	dataDirOccurenceMap := make(map[string]int, len(dataDirs))
+	timeOccurrenceMap := make(map[int64]int, len(modTimes))
+	dataDirOccurrenceMap := make(map[string]int, len(dataDirs))
 	// Ignore the uuid sentinel and count the rest.
 	for _, time := range modTimes {
 		if time.Equal(timeSentinel) {
 			continue
 		}
-		timeOccurenceMap[time.UnixNano()]++
+		timeOccurrenceMap[time.UnixNano()]++
 	}
 
 	for _, dataDir := range dataDirs {
 		if dataDir == "" {
 			continue
 		}
-		dataDirOccurenceMap[dataDir]++
+		dataDirOccurrenceMap[dataDir]++
 	}
 
 	// Find the common cardinality from previously collected
 	// occurrences of elements.
-	for nano, count := range timeOccurenceMap {
+	for nano, count := range timeOccurrenceMap {
 		t := time.Unix(0, nano)
 		if count > maxima || (count == maxima && t.After(modTime)) {
 			maxima = count
@@ -59,7 +59,7 @@ func commonTime(modTimes []time.Time, dataDirs []string) (modTime time.Time, dat
 	// Find the common cardinality from the previously collected
 	// occurrences of elements.
 	var dmaxima int
-	for ddataDir, count := range dataDirOccurenceMap {
+	for ddataDir, count := range dataDirOccurrenceMap {
 		if count > dmaxima {
 			dmaxima = count
 			dataDir = ddataDir
@@ -175,7 +175,7 @@ func getLatestFileInfo(ctx context.Context, partsMetadata []FileInfo, errs []err
 	// Reduce list of UUIDs to a single common value - i.e. the last updated Time
 	modTime, dataDir := commonTime(modTimes, dataDirs)
 
-	// Interate through all the modTimes and count the FileInfo(s) with latest time.
+	// Iterate through all the modTimes and count the FileInfo(s) with latest time.
 	for index, t := range modTimes {
 		if partsMetadata[index].IsValid() && t.Equal(modTime) && dataDir == partsMetadata[index].DataDir {
 			latestFileInfo = partsMetadata[index]

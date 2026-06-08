@@ -33,7 +33,7 @@ type acceptResult struct {
 // httpListener - HTTP listener capable of handling multiple server addresses.
 type httpListener struct {
 	mutex        sync.Mutex         // to guard Close() method.
-	tcpListeners []*net.TCPListener // underlaying TCP listeners.
+	tcpListeners []*net.TCPListener // underlying TCP listeners.
 	acceptCh     chan acceptResult  // channel where all TCP listeners write accepted connection.
 	doneCh       chan struct{}      // done channel for TCP listener goroutines.
 }

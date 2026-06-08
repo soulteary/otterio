@@ -163,7 +163,7 @@ func TestDialContextWithDNSCacheScenario2(t *testing.T) {
 	}
 
 	if _, err := DialContextWithDNSCache(res, nil)(context.Background(), "tcp", "min.io:443"); err == nil {
-		t.Fatalf("exect to fail")
+		t.Fatalf("exact to fail")
 	}
 }
 

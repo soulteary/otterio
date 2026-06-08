@@ -45,7 +45,7 @@ const (
 	// on the client node that requested the lock.
 	lockRESTSource = "source"
 
-	// Quroum value to be saved along lock requester info, useful
+	// Quorum value to be saved along lock requester info, useful
 	// in verifying stale locks
 	lockRESTQuorum = "quorum"
 )

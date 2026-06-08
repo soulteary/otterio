@@ -45,7 +45,7 @@ func testObjectNewMultipartUpload(obj ObjectLayer, instanceType string, t TestEr
 	}
 
 	errMsg := "Bucket not found: otterio-bucket"
-	// opearation expected to fail since the bucket on which NewMultipartUpload is being initiated doesn't exist.
+	// operation expected to fail since the bucket on which NewMultipartUpload is being initiated doesn't exist.
 	_, err = obj.NewMultipartUpload(context.Background(), bucket, object, opts)
 	if err == nil {
 		t.Fatalf("%s: Expected to fail since the NewMultipartUpload is intialized on a non-existent bucket.", instanceType)
@@ -54,7 +54,7 @@ func testObjectNewMultipartUpload(obj ObjectLayer, instanceType string, t TestEr
 		t.Errorf("%s, Expected to fail with Error \"%s\", but instead found \"%s\".", instanceType, errMsg, err.Error())
 	}
 
-	// Create bucket before intiating NewMultipartUpload.
+	// Create bucket before initiating NewMultipartUpload.
 	err = obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
 	if err != nil {
 		// failed to create newbucket, abort.
@@ -88,7 +88,7 @@ func testObjectAbortMultipartUpload(obj ObjectLayer, instanceType string, t Test
 	bucket := "otterio-bucket"
 	object := "otterio-object"
 	opts := ObjectOptions{}
-	// Create bucket before intiating NewMultipartUpload.
+	// Create bucket before initiating NewMultipartUpload.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
 	if err != nil {
 		// failed to create newbucket, abort.
@@ -134,7 +134,7 @@ func testObjectAPIIsUploadIDExists(obj ObjectLayer, instanceType string, t TestE
 	bucket := "otterio-bucket"
 	object := "otterio-object"
 
-	// Create bucket before intiating NewMultipartUpload.
+	// Create bucket before initiating NewMultipartUpload.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
 	if err != nil {
 		// Failed to create newbucket, abort.
@@ -166,7 +166,7 @@ func testObjectAPIPutObjectPart(obj ObjectLayer, instanceType string, t TestErrH
 	bucket := "otterio-bucket"
 	object := "otterio-object"
 	opts := ObjectOptions{}
-	// Create bucket before intiating NewMultipartUpload.
+	// Create bucket before initiating NewMultipartUpload.
 	err := obj.MakeBucketWithLocation(context.Background(), bucket, BucketOptions{})
 	if err != nil {
 		// Failed to create newbucket, abort.
@@ -195,7 +195,7 @@ func testObjectAPIPutObjectPart(obj ObjectLayer, instanceType string, t TestErrH
 		inputReaderData string
 		inputMd5        string
 		inputSHA256     string
-		intputDataSize  int64
+		inputDataSize  int64
 		// flag indicating whether the test should pass.
 		shouldPass bool
 		// expected error output.
@@ -263,7 +263,7 @@ func testObjectAPIPutObjectPart(obj ObjectLayer, instanceType string, t TestErrH
 
 	// Validate all the test cases.
 	for i, testCase := range testCases {
-		actualInfo, actualErr := obj.PutObjectPart(context.Background(), testCase.bucketName, testCase.objName, testCase.uploadID, testCase.PartID, mustGetPutObjReader(t, bytes.NewBufferString(testCase.inputReaderData), testCase.intputDataSize, testCase.inputMd5, testCase.inputSHA256), opts)
+		actualInfo, actualErr := obj.PutObjectPart(context.Background(), testCase.bucketName, testCase.objName, testCase.uploadID, testCase.PartID, mustGetPutObjReader(t, bytes.NewBufferString(testCase.inputReaderData), testCase.inputDataSize, testCase.inputMd5, testCase.inputSHA256), opts)
 		// All are test cases above are expected to fail.
 		if actualErr != nil && testCase.shouldPass {
 			t.Errorf("Test %d: %s: Expected to pass, but failed with: <ERROR> %s.", i+1, instanceType, actualErr.Error())
@@ -320,7 +320,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 	// bucketnames[1].
 	// objectNames[0].
 	// uploadIds [1-3].
-	// Bucket to test for mutiple upload Id's for a given object.
+	// Bucket to test for multiple upload Id's for a given object.
 	err = obj.MakeBucketWithLocation(context.Background(), bucketNames[1], BucketOptions{})
 	if err != nil {
 		// Failed to create newbucket, abort.
@@ -338,7 +338,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		uploadIDs = append(uploadIDs, uploadID)
 	}
 
-	// Bucket to test for mutiple objects, each with unique UUID.
+	// Bucket to test for multiple objects, each with unique UUID.
 	// bucketnames[2].
 	// objectNames[0-2].
 	// uploadIds [4-9].
@@ -368,7 +368,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		intputDataSize  int64
+		inputDataSize  int64
 		expectedMd5     string
 	}{
 		// Case 1-4.
@@ -397,7 +397,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 	sha256sum := ""
 	// Iterating over creatPartCases to generate multipart chunks.
 	for _, testCase := range createPartCases {
-		_, err := obj.PutObjectPart(context.Background(), testCase.bucketName, testCase.objName, testCase.uploadID, testCase.PartID, mustGetPutObjReader(t, bytes.NewBufferString(testCase.inputReaderData), testCase.intputDataSize, testCase.inputMd5, sha256sum), opts)
+		_, err := obj.PutObjectPart(context.Background(), testCase.bucketName, testCase.objName, testCase.uploadID, testCase.PartID, mustGetPutObjReader(t, bytes.NewBufferString(testCase.inputReaderData), testCase.inputDataSize, testCase.inputMd5, sha256sum), opts)
 		if err != nil {
 			t.Fatalf("%s : %s", instanceType, err.Error())
 		}
@@ -1025,7 +1025,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		// Valid, existing bucket, delimiter not supported, returns empty values (Test number 8-9).
 		{bucketNames[0], "", "", "", "*", 0, ListMultipartsInfo{Delimiter: "*"}, nil, true},
 		{bucketNames[0], "", "", "", "-", 0, ListMultipartsInfo{Delimiter: "-"}, nil, true},
-		// Testing for failure cases with both perfix and marker (Test number 10).
+		// Testing for failure cases with both prefix and marker (Test number 10).
 		// The prefix and marker combination to be valid it should satisfy strings.HasPrefix(marker, prefix).
 		{bucketNames[0], "asia", "europe-object", "", "", 0, ListMultipartsInfo{},
 			fmt.Errorf("Invalid combination of marker '%s' and prefix '%s'", "europe-object", "asia"), false},
@@ -1166,7 +1166,7 @@ func testListObjectPartsDiskNotFound(obj ObjectLayer, instanceType string, disks
 	// bucketnames[0].
 	// objectNames[0].
 	// uploadIds [0].
-	// Create bucket before intiating NewMultipartUpload.
+	// Create bucket before initiating NewMultipartUpload.
 	err := obj.MakeBucketWithLocation(context.Background(), bucketNames[0], BucketOptions{})
 	if err != nil {
 		// Failed to create newbucket, abort.
@@ -1194,7 +1194,7 @@ func testListObjectPartsDiskNotFound(obj ObjectLayer, instanceType string, disks
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		intputDataSize  int64
+		inputDataSize  int64
 		expectedMd5     string
 	}{
 		// Case 1-4.
@@ -1208,7 +1208,7 @@ func testListObjectPartsDiskNotFound(obj ObjectLayer, instanceType string, disks
 	sha256sum := ""
 	// Iterating over creatPartCases to generate multipart chunks.
 	for _, testCase := range createPartCases {
-		_, err := obj.PutObjectPart(context.Background(), testCase.bucketName, testCase.objName, testCase.uploadID, testCase.PartID, mustGetPutObjReader(t, bytes.NewBufferString(testCase.inputReaderData), testCase.intputDataSize, testCase.inputMd5, sha256sum), opts)
+		_, err := obj.PutObjectPart(context.Background(), testCase.bucketName, testCase.objName, testCase.uploadID, testCase.PartID, mustGetPutObjReader(t, bytes.NewBufferString(testCase.inputReaderData), testCase.inputDataSize, testCase.inputMd5, sha256sum), opts)
 		if err != nil {
 			t.Fatalf("%s : %s", instanceType, err.Error())
 		}
@@ -1411,7 +1411,7 @@ func testListObjectParts(obj ObjectLayer, instanceType string, t TestErrHandler)
 	// bucketnames[0].
 	// objectNames[0].
 	// uploadIds [0].
-	// Create bucket before intiating NewMultipartUpload.
+	// Create bucket before initiating NewMultipartUpload.
 	err := obj.MakeBucketWithLocation(context.Background(), bucketNames[0], BucketOptions{})
 	if err != nil {
 		// Failed to create newbucket, abort.
@@ -1435,7 +1435,7 @@ func testListObjectParts(obj ObjectLayer, instanceType string, t TestErrHandler)
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		intputDataSize  int64
+		inputDataSize  int64
 		expectedMd5     string
 	}{
 		// Case 1-4.
@@ -1449,7 +1449,7 @@ func testListObjectParts(obj ObjectLayer, instanceType string, t TestErrHandler)
 	sha256sum := ""
 	// Iterating over creatPartCases to generate multipart chunks.
 	for _, testCase := range createPartCases {
-		_, err := obj.PutObjectPart(context.Background(), testCase.bucketName, testCase.objName, testCase.uploadID, testCase.PartID, mustGetPutObjReader(t, bytes.NewBufferString(testCase.inputReaderData), testCase.intputDataSize, testCase.inputMd5, sha256sum), opts)
+		_, err := obj.PutObjectPart(context.Background(), testCase.bucketName, testCase.objName, testCase.uploadID, testCase.PartID, mustGetPutObjReader(t, bytes.NewBufferString(testCase.inputReaderData), testCase.inputDataSize, testCase.inputMd5, sha256sum), opts)
 		if err != nil {
 			t.Fatalf("%s : %s", instanceType, err.Error())
 		}
@@ -1657,7 +1657,7 @@ func testObjectCompleteMultipartUpload(obj ObjectLayer, instanceType string, t T
 	// bucketnames[0].
 	// objectNames[0].
 	// uploadIds [0].
-	// Create bucket before intiating NewMultipartUpload.
+	// Create bucket before initiating NewMultipartUpload.
 	err = obj.MakeBucketWithLocation(context.Background(), bucketNames[0], BucketOptions{})
 	if err != nil {
 		// Failed to create newbucket, abort.
@@ -1684,7 +1684,7 @@ func testObjectCompleteMultipartUpload(obj ObjectLayer, instanceType string, t T
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		intputDataSize  int64
+		inputDataSize  int64
 	}{
 		// Case 1-4.
 		// Creating sequence of parts for same uploadID.
@@ -1701,7 +1701,7 @@ func testObjectCompleteMultipartUpload(obj ObjectLayer, instanceType string, t T
 	var opts ObjectOptions
 	// Iterating over creatPartCases to generate multipart chunks.
 	for _, part := range parts {
-		_, err = obj.PutObjectPart(context.Background(), part.bucketName, part.objName, part.uploadID, part.PartID, mustGetPutObjReader(t, bytes.NewBufferString(part.inputReaderData), part.intputDataSize, part.inputMd5, sha256sum), opts)
+		_, err = obj.PutObjectPart(context.Background(), part.bucketName, part.objName, part.uploadID, part.PartID, mustGetPutObjReader(t, bytes.NewBufferString(part.inputReaderData), part.inputDataSize, part.inputMd5, sha256sum), opts)
 		if err != nil {
 			t.Fatalf("%s : %s", instanceType, err)
 		}
