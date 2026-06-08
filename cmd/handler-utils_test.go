@@ -32,7 +32,7 @@ import (
 )
 
 // Tests validate bucket LocationConstraint.
-func TestIsValidLocationContraint(t *testing.T) {
+func TestIsValidLocationConstraint(t *testing.T) {
 	obj, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
