@@ -35,7 +35,7 @@ func TestCrossDeviceMountPaths(t *testing.T) {
 		`/dev/0 /path/to/0/1 type0 flags 0 0
 		/dev/1    /path/to/1   type1	flags 1 1
 		/dev/2 /path/to/1/2 type2 flags,1,2=3 2 2
-                /dev/3 /path/to/1.1 type3 falgs,1,2=3 3 3
+                /dev/3 /path/to/1.1 type3 flags,1,2=3 3 3
 		`
 	dir, err := os.MkdirTemp("", "TestReadProcmountInfos")
 	if err != nil {
@@ -88,7 +88,7 @@ func TestCrossDeviceMount(t *testing.T) {
 		`/dev/0 /path/to/0/1 type0 flags 0 0
 		/dev/1    /path/to/1   type1	flags 1 1
 		/dev/2 /path/to/1/2 type2 flags,1,2=3 2 2
-                /dev/3 /path/to/1.1 type3 falgs,1,2=3 3 3
+                /dev/3 /path/to/1.1 type3 flags,1,2=3 3 3
 		`
 	dir, err := os.MkdirTemp("", "TestReadProcmountInfos")
 	if err != nil {
