@@ -86,7 +86,7 @@ Once successfully set restart the OtterIO instance.
 mc admin service restart myotterio
 ```
 
-### Using WebIdentiy API
+### Using WebIdentify API
 Client ID can be found by clicking any of the clients listed [here](http://localhost:8080/auth/admin/master/console/#/realms/otterio/clients). If you have followed the above steps docs, the default Client ID will be `account`.
 
 ```
