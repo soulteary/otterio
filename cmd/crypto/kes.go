@@ -236,7 +236,7 @@ func (c *kesClient) CreateKey(name string) error {
 // and the ciphertext key as the plaintext key encrypted with
 // the key specified by name.
 //
-// The optional context is crytpo. bound to the generated data key
+// The optional context is crypto. bound to the generated data key
 // such that you have to provide the same context when decrypting
 // the data key.
 func (c *kesClient) GenerateDataKey(name string, context []byte) ([]byte, []byte, error) {
@@ -452,7 +452,7 @@ func loadCACertificates(path string, rootCAs *x509.CertPool) error {
 		return Errorf("crypto: cannot open '%s': %v", path, err)
 	}
 
-	// If path is a file, parse as PEM-encoded certifcate
+	// If path is a file, parse as PEM-encoded certificate
 	// and try to add it to the CertPool. If this fails
 	// return an error.
 	if !stat.IsDir() {
