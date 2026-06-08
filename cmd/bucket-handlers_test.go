@@ -251,7 +251,7 @@ func testHeadBucketHandler(obj ObjectLayer, instanceType, bucketName string, api
 		},
 		// Test case - 3.
 		// Testing for signature mismatch error.
-		// setting invalid acess and secret key.
+		// setting invalid access and secret key.
 		{
 			bucketName:         bucketName,
 			accessKey:          "abcd",
@@ -417,7 +417,7 @@ func testListMultipartUploadsHandler(obj ObjectLayer, instanceType, bucketName s
 			shouldPass:         false,
 		},
 		// Test case - 6.
-		// Setting a negative value to max-uploads paramater, should result in http.StatusBadRequest.
+		// Setting a negative value to max-uploads parameter, should result in http.StatusBadRequest.
 		{
 			bucket:             bucketName,
 			prefix:             "",
@@ -583,7 +583,7 @@ func testListBucketsHandler(obj ObjectLayer, instanceType, bucketName string, ap
 			expectedRespStatus: http.StatusOK,
 		},
 		// Test case - 2.
-		// Test case with invalid accessKey to produce and validate Signature MisMatch error.
+		// Test case with invalid accessKey to produce and validate Signature MissMatch error.
 		{
 			bucketName:         bucketName,
 			accessKey:          "abcd",
