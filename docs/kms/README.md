@@ -4,7 +4,7 @@ OtterIO uses a key-management-system (KMS) to support SSE-S3. If a client reques
 
 ## Quick Start
 
-OtterIO supports multiple KMS implementations via our [KES](https://github.com/minio/kes#kes) project. We run a KES instance at `https://play.min.io:7373` for you to experiment and quickly get started. To run OtterIO with a KMS just fetch the root identity, set the following environment variables and then start your OtterIO server. If you havn't installed OtterIO, yet, then follow the OtterIO [install instructions](https://docs.min.io/docs/minio-quickstart-guide) first.
+OtterIO supports multiple KMS implementations via our [KES](https://github.com/minio/kes#kes) project. We run a KES instance at `https://play.min.io:7373` for you to experiment and quickly get started. To run OtterIO with a KMS just fetch the root identity, set the following environment variables and then start your OtterIO server. If you haven't installed OtterIO, yet, then follow the OtterIO [install instructions](https://docs.min.io/docs/minio-quickstart-guide) first.
 
 #### 1. Fetch the root identity
 As the initial step, fetch the private key and certificate of the root identity:
