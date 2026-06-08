@@ -119,7 +119,7 @@ type ServerCPUInfo struct {
 	Error    string          `json:"error,omitempty"`
 }
 
-// OtterioHealthInfo - Includes OtterIO confifuration information
+// OtterioHealthInfo - Includes OtterIO configuration information
 type OtterioHealthInfo struct {
 	Info   InfoMessage `json:"info,omitempty"`
 	Config interface{} `json:"config,omitempty"`

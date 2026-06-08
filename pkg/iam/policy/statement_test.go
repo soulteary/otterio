@@ -333,7 +333,7 @@ func TestStatementUnmarshalJSONAndValidate(t *testing.T) {
 
 	case4Data := []byte(`{
     "Effect": "Allow",
-    "Action": "s3:PutObjec,
+    "Action": "s3:PutObject,
     "Resource": "arn:aws:s3:::mybucket/myobject*"
 }`)
 

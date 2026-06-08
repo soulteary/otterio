@@ -362,7 +362,7 @@ func ExpectedExpiryTime(modTime time.Time, days int) time.Time {
 }
 
 // PredictExpiryTime returns the expiry date/time of a given object
-// after evaluting the current lifecycle document.
+// after evaluating the current lifecycle document.
 func (lc Lifecycle) PredictExpiryTime(obj ObjectOpts) (string, time.Time) {
 	if obj.DeleteMarker {
 		// We don't need to send any x-amz-expiration for delete marker.

@@ -44,7 +44,7 @@
 // no deletion or modification of existing rows.
 //
 // A different table schema is used for this format. A sample SQL
-// commant that creates a table with the required structure is:
+// command that creates a table with the required structure is:
 //
 // CREATE TABLE myotterio (
 //     event_time TIMESTAMP WITH TIME ZONE NOT NULL,

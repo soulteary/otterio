@@ -28,7 +28,7 @@ import (
 
 // ClearConfigHistoryKV - clears the config entry represented by restoreID.
 // optionally allows setting `all` as a special keyword to automatically
-// erase all config set history entires.
+// erase all config set history entries.
 func (adm *AdminClient) ClearConfigHistoryKV(ctx context.Context, restoreID string) (err error) {
 	v := url.Values{}
 	v.Set("restoreId", restoreID)

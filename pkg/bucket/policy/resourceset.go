@@ -72,7 +72,7 @@ func (resourceSet ResourceSet) Equals(sresourceSet ResourceSet) bool {
 	return true
 }
 
-// Intersection - returns resouces available in both ResourcsSet.
+// Intersection - returns resources available in both ResourcesSet.
 func (resourceSet ResourceSet) Intersection(sset ResourceSet) ResourceSet {
 	nset := NewResourceSet()
 	for k := range resourceSet {

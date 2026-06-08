@@ -521,7 +521,7 @@ func TestPolicyParseConfig(t *testing.T) {
     ]
 }`
 
-	policy5ConditionCurrenTime := `{
+	policy5ConditionCurrentTime := `{
  "Version": "2012-10-17",
  "Statement": [
   {
@@ -544,7 +544,7 @@ func TestPolicyParseConfig(t *testing.T) {
  ]
 }`
 
-	policy5ConditionCurrenTimeLesser := `{
+	policy5ConditionCurrentTimeLesser := `{
  "Version": "2012-10-17",
  "Statement": [
   {
@@ -648,7 +648,7 @@ func TestPolicyParseConfig(t *testing.T) {
 			},
 		},
 		{
-			p:       policy5ConditionCurrenTime,
+			p:       policy5ConditionCurrentTime,
 			allowed: true,
 			args: Args{
 				AccountName: "allowed",
@@ -661,7 +661,7 @@ func TestPolicyParseConfig(t *testing.T) {
 			},
 		},
 		{
-			p:       policy5ConditionCurrenTimeLesser,
+			p:       policy5ConditionCurrentTimeLesser,
 			allowed: false,
 			args: Args{
 				AccountName: "disallowed",

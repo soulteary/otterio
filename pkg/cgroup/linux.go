@@ -76,7 +76,7 @@ func GetEntries(pid int) (CGEntries, error) {
 //
 // Following code block parses this information and
 // returns a procCGroup which is a parsed list of all
-// the line by line entires from /proc/<pid>/cgroup.
+// the line by line entries from /proc/<pid>/cgroup.
 func parseProcCGroup(r io.Reader) (CGEntries, error) {
 	var cgEntries = CGEntries{}
 

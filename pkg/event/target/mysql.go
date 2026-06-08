@@ -26,7 +26,7 @@
 // A table with a specific structure (column names, column types, and
 // primary key/uniqueness constraint) is used. The user may set the
 // table name in the configuration. A sample SQL command that creates
-// a command with the required structure is:
+// a table with the required structure is:
 //
 //     CREATE TABLE myotterio (
 //         key_name VARCHAR(2048),
@@ -44,7 +44,7 @@
 // no deletion or modification of existing rows.
 //
 // A different table schema is used for this format. A sample SQL
-// commant that creates a table with the required structure is:
+// command that creates a table with the required structure is:
 //
 // CREATE TABLE myotterio (
 //     event_time TIMESTAMP WITH TIME ZONE NOT NULL,
