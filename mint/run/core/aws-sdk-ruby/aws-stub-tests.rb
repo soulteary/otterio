@@ -61,7 +61,7 @@ class AwsSdkRubyTest
     { name: 'aws-sdk-ruby',
       function: "#{meth}(#{args_arr.join(',')})",  # method name and arguments
       args: args_arr,  # array of arg names. This'll be replaced with a
-                       # a arg/value pairs insdie the caller method
+                       # a arg/value pairs inside the caller method
       duration: 0,  # test runtime duration in seconds
       alert: alert,
       message: nil,
@@ -73,12 +73,12 @@ class AwsSdkRubyTest
   end
 
   def calculate_duration(t2, t1)
-    # Durations are in miliseconds, with precision of 2 decimal places
+    # Durations are in milliseconds, with precision of 2 decimal places
     ((t2 - t1) * 1000).round(2)
   end
 
   def print_log(log_output, start_time)
-    # Calculate duration in miliseconds
+    # Calculate duration in milliseconds
     log_output[:duration] = calculate_duration(Time.now, start_time)
     # Get rid of the log_output fields if nil
     puts log_output.delete_if{|k, value| value == nil}.to_json
