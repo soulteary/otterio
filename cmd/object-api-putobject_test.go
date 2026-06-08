@@ -68,11 +68,11 @@ func testObjectAPIPutObject(obj ObjectLayer, instanceType string, t TestErrHandl
 	invalidMD5Header := md5Header([]byte("meh"))
 
 	testCases := []struct {
-		bucketName     string
-		objName        string
-		inputData      []byte
-		inputMeta      map[string]string
-		inputSHA256    string
+		bucketName    string
+		objName       string
+		inputData     []byte
+		inputMeta     map[string]string
+		inputSHA256   string
 		inputDataSize int64
 		// expected error output.
 		expectedMd5   string
@@ -230,10 +230,10 @@ func testObjectAPIPutObjectDiskNotFound(obj ObjectLayer, instanceType string, di
 	}
 
 	testCases := []struct {
-		bucketName     string
-		objName        string
-		inputData      []byte
-		inputMeta      map[string]string
+		bucketName    string
+		objName       string
+		inputData     []byte
+		inputMeta     map[string]string
 		inputDataSize int64
 		// flag indicating whether the test should pass.
 		shouldPass bool
@@ -278,10 +278,10 @@ func testObjectAPIPutObjectDiskNotFound(obj ObjectLayer, instanceType string, di
 
 	// Validate the last test.
 	testCase := struct {
-		bucketName     string
-		objName        string
-		inputData      []byte
-		inputMeta      map[string]string
+		bucketName    string
+		objName       string
+		inputData     []byte
+		inputMeta     map[string]string
 		inputDataSize int64
 		// flag indicating whether the test should pass.
 		shouldPass bool

@@ -195,7 +195,7 @@ func testObjectAPIPutObjectPart(obj ObjectLayer, instanceType string, t TestErrH
 		inputReaderData string
 		inputMd5        string
 		inputSHA256     string
-		inputDataSize  int64
+		inputDataSize   int64
 		// flag indicating whether the test should pass.
 		shouldPass bool
 		// expected error output.
@@ -368,7 +368,7 @@ func testListMultipartUploads(obj ObjectLayer, instanceType string, t TestErrHan
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		inputDataSize  int64
+		inputDataSize   int64
 		expectedMd5     string
 	}{
 		// Case 1-4.
@@ -1194,7 +1194,7 @@ func testListObjectPartsDiskNotFound(obj ObjectLayer, instanceType string, disks
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		inputDataSize  int64
+		inputDataSize   int64
 		expectedMd5     string
 	}{
 		// Case 1-4.
@@ -1435,7 +1435,7 @@ func testListObjectParts(obj ObjectLayer, instanceType string, t TestErrHandler)
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		inputDataSize  int64
+		inputDataSize   int64
 		expectedMd5     string
 	}{
 		// Case 1-4.
@@ -1684,7 +1684,7 @@ func testObjectCompleteMultipartUpload(obj ObjectLayer, instanceType string, t T
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		inputDataSize  int64
+		inputDataSize   int64
 	}{
 		// Case 1-4.
 		// Creating sequence of parts for same uploadID.

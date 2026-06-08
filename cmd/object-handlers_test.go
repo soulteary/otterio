@@ -2703,7 +2703,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		inputDataSize  int64
+		inputDataSize   int64
 	}{
 		// Case 1-4.
 		// Creating sequence of parts for same uploadID.
@@ -3074,7 +3074,7 @@ func testAPIAbortMultipartHandler(obj ObjectLayer, instanceType, bucketName stri
 		PartID          int
 		inputReaderData string
 		inputMd5        string
-		inputDataSize  int64
+		inputDataSize   int64
 	}{
 		// Case 1-4.
 		// Creating sequence of parts for same uploadID.

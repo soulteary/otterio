@@ -24,10 +24,10 @@ import (
 )
 
 var (
-	errKeyLookup                 = errors.New("Cannot look up key in non-object value")
-	errIndexLookup               = errors.New("Cannot look up array index in non-array value")
-	errWildcardObjectLookup      = errors.New("Object wildcard used on non-object value")
-	errWildcardArrayLookup       = errors.New("Array wildcard used on non-array value")
+	errKeyLookup                  = errors.New("Cannot look up key in non-object value")
+	errIndexLookup                = errors.New("Cannot look up array index in non-array value")
+	errWildcardObjectLookup       = errors.New("Object wildcard used on non-object value")
+	errWildcardArrayLookup        = errors.New("Array wildcard used on non-array value")
 	errWildcardObjectUsageInvalid = errors.New("Invalid usage of object wildcard")
 )
 
