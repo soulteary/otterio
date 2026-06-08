@@ -124,9 +124,9 @@ func (n byLastOctetValue) Less(i, j int) bool {
 	return []byte(n[i].To4())[3] > []byte(n[j].To4())[3]
 }
 
-// sortIPs - sort ips based on higher octects.
+// sortIPs - sort ips based on higher octets.
 // The logic to sort by last octet is implemented to
-// prefer CIDRs with higher octects, this in-turn skips the
+// prefer CIDRs with higher octets, this in-turn skips the
 // localhost/loopback address to be not preferred as the
 // first ip on the list. Subsequently this list helps us print
 // a user friendly message with appropriate values.
