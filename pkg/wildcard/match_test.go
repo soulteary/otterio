@@ -369,7 +369,7 @@ func TestMatch(t *testing.T) {
 			matched: false,
 		},
 	}
-	// Iterating over the test cases, call the function under test and asert the output.
+	// Iterating over the test cases, call the function under test and assert the output.
 	for i, testCase := range testCases {
 		actualResult := wildcard.Match(testCase.pattern, testCase.text)
 		if testCase.matched != actualResult {
@@ -532,7 +532,7 @@ func TestMatchSimple(t *testing.T) {
 			matched: true,
 		},
 	}
-	// Iterating over the test cases, call the function under test and asert the output.
+	// Iterating over the test cases, call the function under test and assert the output.
 	for i, testCase := range testCases {
 		actualResult := wildcard.MatchSimple(testCase.pattern, testCase.text)
 		if testCase.matched != actualResult {
