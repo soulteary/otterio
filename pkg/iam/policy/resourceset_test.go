@@ -125,7 +125,7 @@ func TestResourceSetIntersection(t *testing.T) {
 
 func TestResourceSetMarshalJSON(t *testing.T) {
 	testCases := []struct {
-		resoruceSet    ResourceSet
+		resourceSet    ResourceSet
 		expectedResult []byte
 		expectErr      bool
 	}{
@@ -137,7 +137,7 @@ func TestResourceSetMarshalJSON(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		result, err := json.Marshal(testCase.resoruceSet)
+		result, err := json.Marshal(testCase.resourceSet)
 		expectErr := (err != nil)
 
 		if expectErr != testCase.expectErr {
