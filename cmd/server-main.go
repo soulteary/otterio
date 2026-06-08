@@ -291,7 +291,7 @@ func newAllSubsystems() {
 		globalBucketVersioningSys.Reset()
 	}
 
-	// Create new bucket replication subsytem
+	// Create new bucket replication subsystem
 	globalBucketTargetSys = NewBucketTargetSys()
 }
 
