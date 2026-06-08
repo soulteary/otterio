@@ -104,7 +104,7 @@ func runAllTests(suite *TestSuiteCommon, c *check) {
 	suite.TestPutBucketErrors(c)
 	suite.TestGetObjectLarge10MiB(c)
 	suite.TestGetObjectLarge11MiB(c)
-	suite.TestGetPartialObjectMisAligned(c)
+	suite.TestGetPartialObjectMissAligned(c)
 	suite.TestGetPartialObjectLarge11MiB(c)
 	suite.TestGetPartialObjectLarge10MiB(c)
 	suite.TestGetObjectErrors(c)
@@ -1810,10 +1810,10 @@ func (s *TestSuiteCommon) TestGetObjectLarge11MiB(c *check) {
 	c.Assert(putMD5, getMD5)
 }
 
-// TestGetPartialObjectMisAligned - tests get object partially mis-aligned.
-// create a large buffer of mis-aligned data and upload it.
+// TestGetPartialObjectMissAligned - tests get object partially miss-aligned.
+// create a large buffer of miss-aligned data and upload it.
 // then make partial range requests to while fetching it back and assert the response content.
-func (s *TestSuiteCommon) TestGetPartialObjectMisAligned(c *check) {
+func (s *TestSuiteCommon) TestGetPartialObjectMissAligned(c *check) {
 	// generate a random bucket name.
 	bucketName := getRandomBucketName()
 	// HTTP request to create the bucket.
