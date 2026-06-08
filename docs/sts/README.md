@@ -64,7 +64,7 @@ export OTTERIO_ETCD_ENDPOINTS=http://localhost:2379
 otterio gateway s3
 ```
 
-### Using WebIdentiy API
+### Using WebIdentify API
 On another terminal run `web-identity.go` a sample client application which obtains JWT access tokens from an identity provider, in our case its Keycloak. Uses the returned access token response to get new temporary credentials from the OtterIO server using the STS API call `AssumeRoleWithWebIdentity`.
 
 ```
