@@ -37,7 +37,7 @@
 |每次list multipart uploads请求可返回的multipart uploads最大数量| 1000|
 
 ###  OtterIO不支持的Amazon S3 API
-我们认为下列AWS S3的API有些冗余或者说用处不大，因此我们在otterio中没有实现这些接口。如果您有不同意见，欢迎在[github](https://github.com/minio/minio/issues)上提issue。
+我们认为下列AWS S3的API有些冗余或者说用处不大，因此我们在otterio中没有实现这些接口。如果您有不同意见，欢迎在[github](https://github.com/soulteary/otterio/issues)上提issue。
 
 #### OtterIO不支持的Amazon S3 Bucket API
 

@@ -257,7 +257,7 @@ When deployed on a single drive, OtterIO server lets clients access any pre-exis
 
 ## Verify
 
-Once OtterIO is running, the deployment uses default root credentials `otterioadmin:otterioadmin` (override via `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` environment variables in production).
+Once OtterIO is running, the deployment uses default root credentials `otterioadmin:otterioadmin` (override via `OTTERIO_ROOT_USER` / `OTTERIO_ROOT_PASSWORD` environment variables in production).
 
 ### Web console
 

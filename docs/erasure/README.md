@@ -56,7 +56,7 @@ docker run -p 9000:9000 --name otterio \
   -v /mnt/data6:/data6 \
   -v /mnt/data7:/data7 \
   -v /mnt/data8:/data8 \
-  minio/minio server /data{1...8}
+  soulteary/otterio:latest server /data{1...8}
 ```
 
 ### 3. Test your setup

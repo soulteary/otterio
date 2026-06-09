@@ -37,6 +37,8 @@ Use client tools like `mc` to set and listen for event notifications using the [
 
 Bucket events can be published to the following targets:
 
+> NOTE: The message-queue targets (Kafka, NATS, NATS Streaming, NSQ, AMQP, MQTT) have been removed from OtterIO. Only the targets listed below are supported.
+
 | Supported Notification Targets    |                             |                                 |
 | :-------------------------------- | --------------------------- | ------------------------------- |
 | [`Redis`](#Redis)                 | [`MySQL`](#MySQL)           |                                 |

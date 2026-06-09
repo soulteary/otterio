@@ -85,9 +85,12 @@ Now the server has expanded total storage by _(newly_added_servers\*m)_ more dis
 To test this setup, access the OtterIO server via browser or [`mc`](https://docs.min.io/docs/minio-client-quickstart-guide).
 
 ## Explore Further
-- [OtterIO Erasure Code QuickStart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide)
-- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+
+> The links below point to the **original upstream MinIO** project's documentation. They remain useful as background reading on S3-compatible workflows, but they describe upstream MinIO behaviour and are **not** maintained by OtterIO.
+
+- [MinIO Erasure Code QuickStart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide) (upstream)
+- [Use `mc` with MinIO Server](https://docs.min.io/docs/minio-client-quickstart-guide) (upstream)
+- [Use `aws-cli` with MinIO Server](https://docs.min.io/docs/aws-cli-with-minio) (upstream)
+- [Use `s3cmd` with MinIO Server](https://docs.min.io/docs/s3cmd-with-minio) (upstream)
+- [Use `minio-go` SDK with MinIO Server](https://docs.min.io/docs/golang-client-quickstart-guide) (upstream)
+- [The MinIO documentation website](https://docs.min.io) (upstream)
