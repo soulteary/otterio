@@ -801,7 +801,7 @@ var errorCodes = errorCodeMap{
 	ErrUnsignedHeaders: {
 		Code:           "AccessDenied",
 		Description:    "There were headers present in the request which were not signed",
-		HTTPStatusCode: http.StatusBadRequest,
+		HTTPStatusCode: http.StatusForbidden,
 	},
 	ErrInvalidQueryParams: {
 		Code:           "AuthorizationQueryParametersError",

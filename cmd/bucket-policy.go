@@ -17,6 +17,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -62,6 +63,14 @@ func (sys *PolicySys) IsAllowed(args policy.Args) bool {
 // NewPolicySys - creates new policy system.
 func NewPolicySys() *PolicySys {
 	return &PolicySys{}
+}
+
+type objectTaggingContextKey struct{}
+
+// withObjectTags carries server-loaded tags without changing signed headers.
+// An empty stored tag set must also override any client-supplied tags.
+func withObjectTags(r *http.Request, objectTags string) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), objectTaggingContextKey{}, objectTags))
 }
 
 func getConditionValues(r *http.Request, lc string, username string, claims map[string]interface{}) map[string][]string {
@@ -183,13 +192,17 @@ func getConditionValues(r *http.Request, lc string, username string, claims map[
 
 	// Per-tag condition values for s3:ExistingObjectTag/<key> and
 	// s3:RequestObjectTag/<key>. The X-Amz-Tagging header is the single
-	// source: per AWS semantics the handler injects the existing object's
-	// tags into this header after ObjectInfo is loaded (see GetObject /
+	// source for request tags. The handler supplies the existing object's
+	// tags through request context after ObjectInfo is loaded (see GetObject /
 	// HeadObject CheckPrecondFn) so policies that gate on per-object tags
 	// can be evaluated *before* checkPreconditions runs and leaks any
 	// metadata. For PutObject / PutObjectTagging the header is set by the
 	// caller and represents request tags.
-	if rawTags := r.Header.Get(xhttp.AmzObjectTagging); rawTags != "" {
+	rawTags := r.Header.Get(xhttp.AmzObjectTagging)
+	if objectTags, ok := r.Context().Value(objectTaggingContextKey{}).(string); ok {
+		rawTags = objectTags
+	}
+	if rawTags != "" {
 		if parsed, err := tags.ParseObjectTags(rawTags); err == nil {
 			// Strip the "s3:" prefix because stringEqualsFunc.evaluate
 			// looks up values by Key.Name(), which itself drops "s3:".

@@ -104,6 +104,12 @@ jobs:
         shell: bash
         run: go run buildscripts/verify-s3-startup.go ./otterio.exe
 
+      - name: SigV4 security regressions (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: >-
+          go test -v -count=1 -timeout 10m ./cmd
+          -run '^(TestSignedHeaderCoverage|TestPresignedHeaderQueryCoverage|TestSignatureV4RejectsInjectedHeaders|TestPresignedHoistedHeaderSignature|TestObjectTagsDoNotMutateSignedHeaders|TestSignatureV4PayloadHeaderCompatibility|TestAPISignedHeaderCopyIsolation|TestAPICopyObjectHandler|TestAPICopyObjectPartHandler|TestAPICopyObjectPartHandlerSanity|TestDoesPresignedSignatureMatch|TestGetObjectPrecondition.*|TestHeadObjectPrecondition.*)$'
+
       - name: Build & test (linux)
         if: matrix.os == 'ubuntu-latest'
         run: |

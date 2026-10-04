@@ -1628,6 +1628,13 @@ func testAPICopyObjectPartHandlerSanity(obj ObjectLayer, instanceType, bucketNam
 		req.Header.Set("X-Amz-Copy-Source", url.QueryEscape(pathJoin(bucketName, objectName)))
 		req.Header.Set("X-Amz-Copy-Source-Range", fmt.Sprintf("bytes=%d-%d", a, b))
 
+		// Copy headers must be part of the signature, not appended after signing.
+		if req.Header.Get("Authorization") != "" {
+			if err = signRequestV4(req, credentials.AccessKey, credentials.SecretKey); err != nil {
+				t.Fatal(err)
+			}
+		}
+
 		// Since `apiRouter` satisfies `http.Handler` it has a ServeHTTP to execute the logic of the handler.
 		// Call the ServeHTTP to execute the handler, `func (api objectAPIHandlers) CopyObjectHandler` handles the request.
 		a = globalMinPartSize + 1
@@ -1940,6 +1947,13 @@ func testAPICopyObjectPartHandler(obj ObjectLayer, instanceType, bucketName stri
 		}
 		if testCase.copySourceRange != "" {
 			req.Header.Set("X-Amz-Copy-Source-Range", testCase.copySourceRange)
+		}
+
+		// Copy headers must be part of the signature, not appended after signing.
+		if req.Header.Get("Authorization") != "" {
+			if err = signRequestV4(req, testCase.accessKey, testCase.secretKey); err != nil {
+				t.Fatal(err)
+			}
 		}
 
 		// Since `apiRouter` satisfies `http.Handler` it has a ServeHTTP to execute the logic of the handler.
@@ -2330,6 +2344,13 @@ func testAPICopyObjectHandler(obj ObjectLayer, instanceType, bucketName string, 
 		if testCase.metadataGarbage {
 			req.Header.Set("X-Amz-Metadata-Directive", "Unknown")
 		}
+		// Copy headers must be part of the signature, not appended after signing.
+		if req.Header.Get("Authorization") != "" {
+			if err = signRequestV4(req, testCase.accessKey, testCase.secretKey); err != nil {
+				t.Fatal(err)
+			}
+		}
+
 		// Since `apiRouter` satisfies `http.Handler` it has a ServeHTTP to execute the logic of the handler.
 		// Call the ServeHTTP to execute the handler, `func (api objectAPIHandlers) CopyObjectHandler` handles the request.
 		apiRouter.ServeHTTP(rec, req)
