@@ -234,11 +234,11 @@ func TestStorageSecurityArithmetic(t *testing.T) {
 			t.Errorf("%d -> %d, want %d", size, got, want)
 		}
 	}
-	max := int64(^uint64(0) >> 1)
-	if got := (ErasureInfo{BlockSize: max, DataBlocks: 2}).ShardFileSize(max); got != max/2+1 {
+	maxInt64 := int64(^uint64(0) >> 1)
+	if got := (ErasureInfo{BlockSize: maxInt64, DataBlocks: 2}).ShardFileSize(maxInt64); got != maxInt64/2+1 {
 		t.Fatal("overflow rounding", got)
 	}
-	if bitrotShardFileSize(max, 1, HighwayHash256S) != -1 {
+	if bitrotShardFileSize(maxInt64, 1, HighwayHash256S) != -1 {
 		t.Fatal("bitrot overflow accepted")
 	}
 	for _, test := range []struct {
@@ -380,7 +380,7 @@ func FuzzStorageSecurityMsgpack(f *testing.F) {
 	b, _ := fi.MarshalMsg(nil)
 	f.Add(b)
 	f.Add([]byte{0xdd, 0xff, 0xff, 0xff, 0xff})
-	f.Fuzz(func(t *testing.T, b []byte) {
+	f.Fuzz(func(_ *testing.T, b []byte) {
 		if len(b) > 1<<20 {
 			return
 		}
