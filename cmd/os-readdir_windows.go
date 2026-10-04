@@ -26,6 +26,8 @@ import (
 	"syscall"
 )
 
+const windowsReadDirBatchSize = 128
+
 func access(name string) error {
 	_, err := os.Lstat(name)
 	return err
@@ -49,74 +51,23 @@ func readDirFn(dirPath string, filter func(name string, typ os.FileMode) error) 
 	}
 	defer f.Close()
 
-	// Check if file or dir. This is the quickest way.
-	// Do not remove this check, on windows syscall.FindNextFile
-	// would throw an exception if Fd() points to a file
-	// instead of a directory, we need to quickly fail
-	// in such situations - this workadound is expected.
-	if _, err = f.Seek(0, io.SeekStart); err == nil {
+	fi, err := f.Stat()
+	if err != nil {
+		if osErrToFileErr(err) == errFileNotFound {
+			return nil
+		}
+		return osErrToFileErr(err)
+	}
+	if !fi.IsDir() {
 		return errFileNotFound
 	}
 
-	data := &syscall.Win32finddata{}
-	for {
-		e := syscall.FindNextFile(syscall.Handle(f.Fd()), data)
-		if e != nil {
-			if e == syscall.ERROR_NO_MORE_FILES {
-				break
-			} else {
-				if isSysErrPathNotFound(e) {
-					return nil
-				}
-				err = osErrToFileErr(&os.PathError{
-					Op:   "FindNextFile",
-					Path: dirPath,
-					Err:  e,
-				})
-				if err == errFileNotFound {
-					return nil
-				}
-				return err
-			}
-		}
-		name := syscall.UTF16ToString(data.FileName[0:])
-		if name == "" || name == "." || name == ".." { // Useless names
-			continue
-		}
-
-		var typ os.FileMode = 0 // regular file
-		switch {
-		case data.FileAttributes&syscall.FILE_ATTRIBUTE_REPARSE_POINT != 0:
-			// Reparse point is a symlink
-			fi, err := os.Stat(pathJoin(dirPath, string(name)))
-			if err != nil {
-				// It got deleted in the meantime, not found
-				// or returns too many symlinks ignore this
-				// file/directory.
-				if osIsNotExist(err) || isSysErrPathNotFound(err) ||
-					isSysErrTooManySymlinks(err) {
-					continue
-				}
-				return err
-			}
-
-			if fi.IsDir() {
-				// Ignore symlinked directories.
-				continue
-			}
-
-			typ = fi.Mode()
-		case data.FileAttributes&syscall.FILE_ATTRIBUTE_DIRECTORY != 0:
-			typ = os.ModeDir
-		}
-
-		if e = filter(name, typ); e == errDoneForNow {
-			// filtering requested to return by caller.
-			return nil
-		}
+	err = readDirEntriesWindows(dirPath, f, -1, filter)
+	if osErrToFileErr(err) == errFileNotFound {
+		// The directory may disappear while the scanner is reading it.
+		return nil
 	}
-
-	return nil
+	return err
 }
 
 // Return N entries at the directory dirPath. If count is -1, return all entries
@@ -127,66 +78,101 @@ func readDirN(dirPath string, count int) (entries []string, err error) {
 	}
 	defer f.Close()
 
-	// Check if file or dir. This is the quickest way.
-	// Do not remove this check, on windows syscall.FindNextFile
-	// would throw an exception if Fd() points to a file
-	// instead of a directory, we need to quickly fail
-	// in such situations - this workadound is expected.
-	if _, err = f.Seek(0, io.SeekStart); err == nil {
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, osErrToFileErr(err)
+	}
+	if !fi.IsDir() {
 		return nil, errFileNotFound
 	}
 
-	data := &syscall.Win32finddata{}
-	handle := syscall.Handle(f.Fd())
+	err = readDirEntriesWindows(dirPath, f, count, func(name string, typ os.FileMode) error {
+		if typ.IsDir() {
+			name += SlashSeparator
+		}
+		entries = append(entries, name)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
 
+// readDirEntriesWindows uses ReadDir's directory handle rather than passing an
+// os.Open handle to FindNextFile, which requires a FindFirstFile search handle.
+// Batches bound memory use and allow callbacks to stop without reading the whole
+// directory. Count applies to accepted entries, after resolving reparse points.
+func readDirEntriesWindows(dirPath string, reader interface {
+	ReadDir(int) ([]os.DirEntry, error)
+}, count int, filter func(name string, typ os.FileMode) error) error {
 	for count != 0 {
-		e := syscall.FindNextFile(handle, data)
-		if e != nil {
-			if e == syscall.ERROR_NO_MORE_FILES {
-				break
-			} else {
-				return nil, osErrToFileErr(&os.PathError{
-					Op:   "FindNextFile",
-					Path: dirPath,
-					Err:  e,
-				})
-			}
+		batchSize := windowsReadDirBatchSize
+		if count > 0 && count < batchSize {
+			batchSize = count
+		}
+		entries, readErr := reader.ReadDir(batchSize)
+		if readErr != nil && readErr != io.EOF {
+			return osErrToFileErr(readErr)
 		}
 
-		name := syscall.UTF16ToString(data.FileName[0:])
-		if name == "" || name == "." || name == ".." { // Useless names
-			continue
-		}
-
-		switch {
-		case data.FileAttributes&syscall.FILE_ATTRIBUTE_REPARSE_POINT != 0:
-			// Reparse point is a symlink
-			fi, err := os.Stat(pathJoin(dirPath, string(name)))
-			if err != nil {
-				// It got deleted in the meantime, not found
-				// or returns too many symlinks ignore this
-				// file/directory.
-				if osIsNotExist(err) || isSysErrPathNotFound(err) ||
-					isSysErrTooManySymlinks(err) {
-					continue
-				}
-				return nil, err
-			}
-
-			if fi.IsDir() {
-				// directory symlinks are ignored.
+		for _, entry := range entries {
+			name := entry.Name()
+			if name == "" || name == "." || name == ".." {
 				continue
 			}
-		case data.FileAttributes&syscall.FILE_ATTRIBUTE_DIRECTORY != 0:
-			name = name + SlashSeparator
+			typ, skip, err := windowsDirEntryType(dirPath, entry)
+			if err != nil {
+				return err
+			}
+			if skip {
+				continue
+			}
+			if filter(name, typ) == errDoneForNow {
+				return nil
+			}
+			if count > 0 {
+				count--
+				if count == 0 {
+					return nil
+				}
+			}
 		}
-
-		count--
-		entries = append(entries, name)
-
+		// ReadDir returns EOF for an empty directory when its limit is positive.
+		// Process any entries first, then report normal exhaustion as success.
+		if readErr == io.EOF {
+			return nil
+		}
 	}
+	return nil
+}
 
-	return entries, nil
+func windowsDirEntryType(dirPath string, entry os.DirEntry) (typ os.FileMode, skip bool, err error) {
+	// Windows ReadDir caches this FileInfo. Inspect the attributes to recognize
+	// every reparse point: junctions are ModeIrregular, not ModeSymlink, in Go 1.23+.
+	fi, err := entry.Info()
+	if err != nil {
+		return 0, false, err
+	}
+	attrs, ok := fi.Sys().(*syscall.Win32FileAttributeData)
+	if ok && attrs.FileAttributes&syscall.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+		fi, err = os.Stat(pathJoin(dirPath, entry.Name()))
+		if err != nil {
+			if osIsNotExist(err) || isSysErrPathNotFound(err) || isSysErrTooManySymlinks(err) {
+				return 0, true, nil
+			}
+			return 0, false, err
+		}
+		if fi.IsDir() {
+			// Ignore directory symlinks and junctions, preserving the storage policy.
+			return 0, true, nil
+		}
+		return fi.Mode(), false, nil
+	}
+	if entry.IsDir() {
+		return os.ModeDir, false, nil
+	}
+	return 0, false, nil
 }
 
 func globalSync() {
