@@ -128,8 +128,9 @@ jobs:
       packages: write
     outputs:
       digest: ${{ steps.image.outputs.digest }}
-      ghcr_repository: ${{ steps.tags.outputs.ghcr_repository }}
-      dockerhub_repository: ${{ steps.tags.outputs.dockerhub_repository }}
+      # Repository names can contain DOCKERHUB_USERNAME and be dropped as secrets.
+      # Keep names within this job; pass only the successful build's selection.
+      dockerhub_published: ${{ steps.tags.outputs.dockerhub_published }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -178,14 +179,16 @@ jobs:
           GHCR_REPO="ghcr.io/${GITHUB_REPOSITORY,,}"
           TAGS="${GHCR_REPO}:${RELEASE_TAG}"
           echo "ghcr_repository=$GHCR_REPO" >> "$GITHUB_OUTPUT"
+          dockerhub_published=false
           if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
             DH_REPO="${DOCKERHUB_USERNAME}/otterio"
             TAGS="${TAGS},${DH_REPO}:${RELEASE_TAG}"
-            echo "dockerhub_repository=$DH_REPO" >> "$GITHUB_OUTPUT"
+            dockerhub_published=true
           fi
           IFS=',' read -ra references <<< "$TAGS"
           bash buildscripts/check-new-image-tags.sh "${references[@]}"
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          echo "dockerhub_published=$dockerhub_published" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v7.4.0
         id: image
         with:
@@ -240,24 +243,16 @@ jobs:
       - name: Verify release assets and record immutable image identities
         env:
           IMAGE_DIGEST: ${{ needs.docker.outputs.digest }}
-          GHCR_REPOSITORY: ${{ needs.docker.outputs.ghcr_repository }}
-          DOCKERHUB_REPOSITORY: ${{ needs.docker.outputs.dockerhub_repository }}
+          DOCKERHUB_PUBLISHED: ${{ needs.docker.outputs.dockerhub_published }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           set -euo pipefail
           (cd dist && sha256sum -c "otterio-${RELEASE_TAG}-checksums.txt")
-          python3 - <<'PY'
-          import json, os, re
-          digest = os.environ['IMAGE_DIGEST']
-          if not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
-              raise SystemExit('missing or invalid built image digest')
-          images = [{'repository': os.environ['GHCR_REPOSITORY'], 'digest': digest}]
-          if os.environ['DOCKERHUB_REPOSITORY']:
-              images.append({'repository': os.environ['DOCKERHUB_REPOSITORY'], 'digest': digest})
-          with open('dist/release-manifest.json', 'w') as output:
-              json.dump({'schema_version': 1, 'tag': os.environ['RELEASE_TAG'],
-                         'source_sha': os.environ['RELEASE_SHA'], 'images': images}, output, indent=2)
-              output.write('\n')
-          PY
+          python3 buildscripts/release-promotion.py "$RELEASE_TAG" \
+            --write-manifest dist/release-manifest.json \
+            --source-sha "$RELEASE_SHA" --repository "$GITHUB_REPOSITORY" \
+            --digest "$IMAGE_DIGEST" --dockerhub-published "$DOCKERHUB_PUBLISHED" \
+            --dockerhub-user "$DOCKERHUB_USERNAME"
       - name: Upload only to a draft and verify downloaded assets
         run: |
           set -euo pipefail
