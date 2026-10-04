@@ -26,11 +26,12 @@ Security and compatibility release. Operators using presigned URLs should upgrad
   the Windows proposal as #11. Its approach was retained and extended in #12;
   #11 itself was closed without merge.
   感谢其提交 #11，相关思路在 #12 中保留并完善，原 PR 未直接合并。
-- Special thanks to the security researcher who privately reported the SigV4
-  issue with detailed analysis and a reproducible test case. We retain anonymous
-  attribution and do not publish identifying or contact information.
-  特别感谢私下报告 SigV4 问题、提供详尽分析及可复现测试的安全研究者；
-  保留匿名致谢，不公开身份、联系方式或邮件原文。
+- Special thanks to **Oren Yomtov of Act Security** for privately reporting the
+  SigV4 issue with detailed analysis and a reproducible test case. This credit
+  uses the reporter's requested attribution; contact details and private
+  correspondence remain unpublished.
+  特别感谢 Oren Yomtov of Act Security 私下报告 SigV4 问题，
+  并提供详尽分析及可复现测试；按其确认的署名致谢，不公开联系方式或邮件原文。
 
 See the [project acknowledgment records](https://github.com/soulteary/otterio/blob/main/ACKNOWLEDGMENTS.md)
 for contribution details. No OtterIO-specific CVE assignment is claimed.

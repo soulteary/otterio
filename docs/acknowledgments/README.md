@@ -38,11 +38,19 @@ Checked on 2026-10-04 against main commit
 - 10 PRs: #3, #5, #7, #9, #11, #12, #13, #14, #15, #16.
 - Issue comments, PR conversation comments, reviews and inline review comments.
 - The files changed by the five community-authored PRs (#3, #5, #7, #9, #11).
-- Current security and release notes, which retain anonymous security acknowledgment.
+- Security and release notes at the time of the audit, which used anonymous security acknowledgment.
 
 All 16 records were closed at the time of this check. Nine PRs were merged;
 #11 was closed in favor of #12. The public history identifies three external
-GitHub contributors. The private security report is acknowledged anonymously.
+GitHub contributors. The private security report was acknowledged anonymously
+at that time.
+
+Following the reporter's approval, the current credit is
+**Oren Yomtov of Act Security**. Contact details and private correspondence
+remain unpublished.
+
+反馈者已确认公开署名为 Oren Yomtov of Act Security；当前致谢已据此更新，
+仍不公开联系方式和私人邮件原文。上述匿名处理描述保留了核查时的历史状态。
 
 Issue #1 contains only “test,” followed by the author's explanation that it was
 created by an AI process. It has no substantive contribution to record.

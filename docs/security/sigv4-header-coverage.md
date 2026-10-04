@@ -7,10 +7,10 @@ For example, a delegated upload could become a server-side copy using the
 signer's source-read permissions. The destination remains constrained by the
 signed URL; reading copied bytes additionally requires access to that destination.
 
-We thank the security researcher who privately reported this issue and provided
-a detailed analysis and reproducible test case. Identifying and contact details
-are omitted here to protect the reporter's privacy. The affected extraction
-logic is present in
+We thank **Oren Yomtov of Act Security** for privately reporting this issue and
+providing a detailed analysis and reproducible test case. The reporter approved
+this attribution; contact details and private correspondence remain unpublished.
+The affected extraction logic is present in
 `RELEASE.2026-06-07T11-32-46Z` and in main at
 `a8f27bf7532928343becf38eacee155e6198601d`. Do not assume an existing image tag
 contains this fix: deploy a build that includes the header-coverage change.

@@ -82,7 +82,8 @@ changed if a later operation fails. Inspect all outputs before announcing.
 ## 4. Verify before announcing
 
 After every Release job succeeds, confirm six binaries and the checksum file,
-review the security notice/anonymous acknowledgement, and verify image platforms:
+review the security notice and reporter-approved acknowledgement, then verify
+image platforms:
 
 ```sh
 # Use the exact TAG printed above, not a newly generated timestamp.
@@ -133,6 +134,6 @@ workflow does not add Cosign signatures or claim reproducible binary rebuilds.
 同步 main、生成 UTC 时间标签、运行只读预检、签名并推送标签即可。发布由 GitHub Actions
 完成，本机不需要安装 GoReleaser。手动触发只接受已存在的标签，不会代替你创建标签。
 
-所有发布任务成功后，再检查六个平台二进制、校验和、多架构镜像和匿名致谢，最后发布
-公告并私下告知反馈者。失败时优先重跑失败任务；需要修改代码则合并修正并使用新标签。
+所有发布任务成功后，再检查六个平台二进制、校验和、多架构镜像及符合反馈者署名意愿的致谢，
+最后发布公告并私下告知反馈者。失败时优先重跑失败任务；需要修改代码则合并修正并使用新标签。
 不要移动旧标签、跳过 CI，或把其他项目的 CVE 编号当作 OtterIO 已获分配的编号。
