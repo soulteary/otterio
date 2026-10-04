@@ -24,16 +24,22 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 )
 
 func genLDFlags(version string) string {
+	commit := commitID()
+	shortCommit := commit
+	if len(shortCommit) > 12 {
+		shortCommit = shortCommit[:12]
+	}
 	ldflagsStr := "-s -w"
 	ldflagsStr += " -X github.com/soulteary/otterio/cmd.Version=" + version
 	ldflagsStr += " -X github.com/soulteary/otterio/cmd.ReleaseTag=" + releaseTag(version)
-	ldflagsStr += " -X github.com/soulteary/otterio/cmd.CommitID=" + commitID()
-	ldflagsStr += " -X github.com/soulteary/otterio/cmd.ShortCommitID=" + commitID()[:12]
+	ldflagsStr += " -X github.com/soulteary/otterio/cmd.CommitID=" + commit
+	ldflagsStr += " -X github.com/soulteary/otterio/cmd.ShortCommitID=" + shortCommit
 	ldflagsStr += " -X github.com/soulteary/otterio/cmd.GOPATH=" + os.Getenv("GOPATH")
 	ldflagsStr += " -X github.com/soulteary/otterio/cmd.GOROOT=" + os.Getenv("GOROOT")
 	return ldflagsStr
@@ -63,20 +69,22 @@ func releaseTag(version string) string {
 	return relTag
 }
 
-// commitID returns the abbreviated commit-id hash of the last commit.
+// commitID permits source-archive/container builds without copying .git. The
+// override is metadata only: it never selects or downloads another source tree.
+// "unknown" is explicit for local builds; ordinary release builds still use Git.
 func commitID() string {
-	// git log --format="%h" -n1
-	var (
-		commit []byte
-		e      error
-	)
-	cmdName := "git"
-	cmdArgs := []string{"log", "--format=%H", "-n1"}
-	if commit, e = exec.Command(cmdName, cmdArgs...).Output(); e != nil {
-		fmt.Fprintln(os.Stderr, "Error generating git commit-id: ", e)
+	if commit := os.Getenv("OTTERIO_BUILD_COMMIT"); commit != "" {
+		if commit == "unknown" || regexp.MustCompile(`^[0-9a-f]{40}$`).MatchString(commit) {
+			return commit
+		}
+		fmt.Fprintln(os.Stderr, "OTTERIO_BUILD_COMMIT must be a full lowercase Git SHA or unknown")
 		os.Exit(1)
 	}
-
+	commit, err := exec.Command("git", "log", "--format=%H", "-n1").Output()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error generating git commit-id: ", err)
+		os.Exit(1)
+	}
 	return strings.TrimSpace(string(commit))
 }
 
