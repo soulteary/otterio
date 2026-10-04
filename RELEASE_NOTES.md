@@ -53,10 +53,11 @@ must not be represented as an OtterIO assignment.
   Its approach was retained and extended in the merged
   [#12](https://github.com/soulteary/otterio/pull/12); #11 itself was not merged.
 
-We thank the security researcher who privately reported the SigV4 header-coverage
-issue and provided a detailed analysis and reproducible test case. Their work
-helped improve OtterIO's security. We are withholding identifying and contact
-information from this release announcement to protect their privacy.
+We thank **Oren Yomtov of Act Security** for privately reporting the SigV4
+header-coverage issue and providing a detailed analysis and reproducible test
+case. Their work helped improve OtterIO's security. This credit uses the
+reporter's requested attribution; contact details and private correspondence
+remain unpublished.
 
 See the [project acknowledgment records](https://github.com/soulteary/otterio/blob/main/ACKNOWLEDGMENTS.md)
 for the individual reports, proposals and patches.
@@ -92,9 +93,9 @@ Mint 兼容测试的拼写改进（#3、#5、#7、#9）；这些改动也包含�
 提交 #11。#11 的思路在 #12 中保留并完善，原 PR 未直接合并。
 详细贡献记录见[项目致谢索引](https://github.com/soulteary/otterio/blob/main/ACKNOWLEDGMENTS.md)。
 
-**特别感谢通过私下渠道报告此问题、提供详尽分析与可复现测试用例的安全研究者。**
-这些反馈帮助 OtterIO 改进了安全性。为保护反馈者隐私，本次发布公告不披露其身份与
-联系方式，也不公开邮件原文。
+**特别感谢 Oren Yomtov of Act Security 通过私下渠道报告此问题、提供详尽分析与可复现测试用例。**
+这些反馈帮助 OtterIO 改进了安全性。本次按反馈者确认的署名公开致谢，
+不公开其联系方式或邮件原文。
 
 本说明不宣称 OtterIO 已获得专属 CVE 编号，不将其他项目的同类 CVE 作为本项目编号。
 升级前请备份并在测试环境验证，使用明确的版本标签、镜像摘要或二进制校验和确认
