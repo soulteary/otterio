@@ -12,6 +12,10 @@ loads that file from the tagged commit; automatic PR/commit excerpts are disable
 An article or date-named file under `docs/releases/` is supporting material,
 not an automatically selected release body or proof that its version exists.
 Choose a fresh UTC tag after merge and verification, not while drafting notes.
+For the current preparation, review the [baseline-to-main change inventory and
+release checklist](releases/2026-10-05-release-review.md), including the storage
+hardening and manifest fix merged after #25. Reconcile any later main commits
+before tagging; a fixed review cutoff is not permission to omit later changes.
 
 Keep reporter acknowledgements anonymous unless public attribution has been
 approved. Never copy private email addresses, mail headers or correspondence into
@@ -89,6 +93,24 @@ GHCR uses `GITHUB_TOKEN` with `packages: write`. Its package must permit this
 repository to publish; existing package settings can still deny the push.
 Do not put tokens in files or release notes.
 
+### Manifest generation and secret-filtered outputs
+
+The image job exports the real build digest and an explicit
+`dockerhub_published=true|false` selection, not repository-name job outputs.
+GitHub may [omit outputs containing secrets](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idoutputs),
+including public names that contain a username stored as a secret. Publication
+reconstructs GHCR from `GITHUB_REPOSITORY` and takes the Docker Hub namespace from
+its configured username; the two owners need not be identical.
+
+`buildscripts/release-promotion.py --write-manifest` validates the tag, source
+SHA, digest, selection and allowed image identities before opening the output
+file. It shares identity checks with promotion. Missing build metadata is an
+error, not a reason to omit an intended registry. The allowlist remains strict;
+never disable masking, encode secrets to bypass it, or relax validation to make
+a failed release green. This prevents new malformed manifests; it does not
+repair an already uploaded one. The workflow does not sign release assets with
+GPG; optional Git tag signing is a separate mechanism.
+
 ### Publication order
 
 1. Validate source, notes and exact-commit main CI; reject an already published
@@ -98,7 +120,7 @@ Do not put tokens in files or release notes.
    changing `latest`. Authentication/network errors are not evidence of absence.
    Run the real S3 startup/create/put/get/delete probe against the pushed GHCR
    digest on Linux amd64; this does not exercise every image architecture.
-4. Record `release-manifest.json`, upload the eight expected files to a stable
+4. Generate and validate `release-manifest.json`, then upload the eight expected files to a stable
    draft, download them again and compare filenames and every file's bytes.
    Publish only after verification, with GitHub's latest marker unchanged.
 5. For tag pushes, automatically call **Stable release promotion**. Manual
@@ -143,11 +165,63 @@ against its entry. This checksum file covers the six binaries, not the later
 created `release-manifest.json`. The manifest records identity; it is not a
 signature or attestation.
 
+### Read-only manifest and fixed-tag verification
+
+From a reviewed checkout containing the current release helper, set `TAG` to
+the actual published version. If that build included Docker Hub, also set
+`DOCKERHUB_USERNAME` to its published namespace (not its token). Leave it unset
+for a GHCR-only build. The following Bash subshell downloads the manifest,
+validates it against the tag commit and stable-release listing, and compares
+every fixed image tag to the recorded digest. It does not create/replace assets,
+change aliases, or generate a replacement manifest. Git/temporary-file writes
+are local; registries may require read authentication.
+
+```bash
+(
+  set -euo pipefail
+  : "${TAG:?Set TAG to the actual published release}"
+  REPO=soulteary/otterio
+  work="$(mktemp -d)"
+  trap 'rm -rf "$work"' EXIT
+  python3 buildscripts/release-promotion.py "$TAG" --validate-tag
+  git fetch --no-tags origin "refs/tags/$TAG"
+  source_sha="$(git rev-parse 'FETCH_HEAD^{commit}')"
+  gh release download "$TAG" --repo "$REPO" \
+    --pattern release-manifest.json --dir "$work"
+  gh api --paginate --slurp "repos/$REPO/releases?per_page=100" > "$work/releases.json"
+  python3 buildscripts/release-promotion.py "$TAG" \
+    --manifest "$work/release-manifest.json" --published "$work/releases.json" \
+    --source-sha "$source_sha" --repository "$REPO" \
+    --dockerhub-user "${DOCKERHUB_USERNAME:-}" > "$work/plan.json"
+  if [ -n "${DOCKERHUB_USERNAME:-}" ]; then
+    jq -e '.has_dockerhub == true' "$work/plan.json" >/dev/null
+  fi
+  jq -r '.images[] | [.repository, .digest] | @tsv' "$work/plan.json" > "$work/images.tsv"
+  while IFS=$'\t' read -r repository digest; do
+    actual="$(docker buildx imagetools inspect "$repository:$TAG" --format '{{json .Manifest}}' | jq -r .digest)"
+    test "$actual" = "$digest" || { echo 'Fixed tag digest mismatch' >&2; exit 1; }
+  done < "$work/images.tsv"
+  jq '{tag, source_sha, images, promote, reason}' "$work/plan.json"
+)
+```
+
+A successful read-only check does not run promotion or prove the S3 smoke tests
+passed. `promote: false` means a newer stable release exists, not corrupt data.
+Review the original workflow's build/smoke evidence and separately inspect
+`latest`. A missing/invalid manifest, omitted expected registry or mismatched
+fixed-tag digest is a stop condition, not something to repair with a permissive
+fallback or a manually invented identity record.
+
 When promotion was requested, inspect every configured registry's `latest`
 digest and GitHub's latest release. If a newer stable version has appeared,
 an older release's promotion is expected to skip rather than replace it.
 Test backup/restore, storage permissions, credential loading, normal S3
 operations, custom signing clients and properly signed copies in staging.
+For storage hardening, also verify existing-object reads, multipart and large
+streaming uploads, and distributed healing/replication. Plan upgrades for every
+node, back up metadata, and handle newly rejected corrupt metadata using a
+known-good copy. See the [storage compatibility and limits](security/sn-2026-002-storage-hardening.md);
+internal 64 MiB buffering limits are not S3 object-size limits.
 Then announce the release and privately notify the reporter with the release
 link. Do not paste their email or original report into a public announcement.
 
@@ -162,8 +236,16 @@ workflow status:
 | Failure before image tags were pushed | Prefer **Re-run failed jobs** on the original run, preserving successful binary outputs. Inspect registry state if a push was attempted. |
 | Versioned image push partly succeeded, or pushed-image smoke failed | Investigate; normally repair on main and use a **new tag**. Do not delete or overwrite image tags just to bypass the guard. |
 | Images succeeded; draft upload/download verification failed | Prefer **Re-run failed jobs** on the original run, reusing successful image/binary outputs. Only stable draft assets may be replaced by the workflow. |
-| GitHub Release published; promotion failed or was omitted | Run **Stable release promotion** for the newest published stable tag. Do not rerun Release to rebuild or re-upload it. |
+| GitHub Release published; manifest is valid, all intended repositories are present, and fixed tags match recorded digests; only promotion failed or was omitted | Run **Stable release promotion** for the newest published stable tag after resolving its operational failure. Do not rerun Release to rebuild or re-upload it. |
+| Manifest is malformed, empty, missing an expected registry, or does not match the source/fixed-tag digest | Stop. Investigate and fix on main, then publish a **new tag** through the full pipeline. Re-running promotion does not repair metadata. Do not overwrite published assets or relax the allowlist. |
 | Older release has no `release-manifest.json` | The new promotion workflow refuses it. Do not fabricate a manifest; publish a new release through the complete verified pipeline. |
+
+[Re-running a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)
+keeps the original event's `GITHUB_SHA` and `GITHUB_REF`; it does not retag newer
+source. Some steps explicitly check out `main` (the promotion helper does), but
+that cannot repair old assets or include later storage fixes in an old binary.
+A workflow fix on main is not proof that a retry of an old release is corrected.
+Use a new tag when the release source or manifest-generation workflow must change.
 
 For an unpublished, existing tag containing the current release helpers, use
 **Actions → Release → Run workflow**, select `main`, and enter that tag. The
@@ -212,5 +294,12 @@ Release checks 全绿。发布文章或日期命名的文档不是实际版本�
 
 失败时先确认已经产生哪些产物。草稿附件失败可优先重跑原任务的失败步骤；
 已有版本镜像或镜像冒烟失败不能靠删除覆盖标签解决，通常需要调查修复后使用新标签。
-正式 Release 已发布而 `latest` 未完成时，单独运行 **Stable release promotion**，
-不要重新构建整个版本。旧版没有身份清单时不能套用新晋升流程。所有验证完成后再公告。
+正式 Release 已发布、清单有效、应有仓库均已记录且固定标签摘要一致，只是 `latest`
+未完成时，才单独运行 **Stable release promotion**。清单为空、损坏、缺失或身份不匹配，
+重跑晋升不会修复；应修复主分支后使用全新标签，不能覆盖正式附件或放宽校验。
+重跑保留原事件 SHA/ref，显式检出 main 的步骤也不会把后续修复加入旧二进制。
+旧版没有身份清单时不能套用新晋升流程；上面的只读检查不会发布或更新 `latest`。
+
+本轮包含内部存储加固：分布式节点应全部升级，提前备份元数据并验证已有对象、分片上传、
+大对象流式读写及修复/复制。64 MiB 限制不针对 S3 对象大小；历史损坏元数据需调查恢复，
+不能以关闭校验绕过。所有产物与部署验证完成后再公告。
