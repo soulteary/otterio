@@ -312,6 +312,8 @@ The links below point to the **original upstream MinIO** project's documentation
 
 ## Contributing
 
+Thank you to our reporters and contributors. See the [acknowledgment records](ACKNOWLEDGMENTS.md) for their specific contributions.
+
 Contributions are welcome via the project repository at <https://github.com/soulteary/otterio>. For coding conventions inherited from the upstream baseline, see the original [Contributor's Guide](https://github.com/minio/minio/blob/master/CONTRIBUTING.md).
 
 ---

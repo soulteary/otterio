@@ -12,7 +12,29 @@ Security and compatibility release. Operators using presigned URLs should upgrad
 
 - Restore Windows directory handling and server startup, with native directory regressions and an S3 startup smoke check (#12).
 - Make dynamic-timeout test samples deterministic (#14).
-- Include documentation and spelling corrections since the previous release.
+- Include community spelling corrections across command code, documentation, packages and Mint compatibility tests (#3, #5, #7, #9).
+
+## Acknowledgements / 致谢
+
+- Thanks to [@luojiyin1987](https://github.com/luojiyin1987) for the command,
+  documentation, package and Mint spelling improvements (#3, #5, #7, #9).
+  感谢其提交命令代码、文档、基础包及 Mint 测试的拼写改进。
+- Thanks to [@929496959](https://github.com/929496959) for the Windows startup
+  report, diagnosis, proposed fix and reported startup validation (#10).
+  感谢其提供 Windows 启动问题报告、诊断、方案及方案验证。
+- Thanks to [@MikhailIzvekov](https://github.com/MikhailIzvekov) for submitting
+  the Windows proposal as #11. Its approach was retained and extended in #12;
+  #11 itself was closed without merge.
+  感谢其提交 #11，相关思路在 #12 中保留并完善，原 PR 未直接合并。
+- Special thanks to the security researcher who privately reported the SigV4
+  issue with detailed analysis and a reproducible test case. We retain anonymous
+  attribution and do not publish identifying or contact information.
+  特别感谢私下报告 SigV4 问题、提供详尽分析及可复现测试的安全研究者；
+  保留匿名致谢，不公开身份、联系方式或邮件原文。
+
+See the [project acknowledgment records](https://github.com/soulteary/otterio/blob/main/ACKNOWLEDGMENTS.md)
+for contribution details. No OtterIO-specific CVE assignment is claimed.
+详细贡献见项目致谢记录；本说明不宣称 OtterIO 已获得专属 CVE 编号。
 
 ## Distribution
 

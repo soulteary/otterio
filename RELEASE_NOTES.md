@@ -25,6 +25,8 @@ must not be represented as an OtterIO assignment.
 
 ## Other changes
 
+- Include community spelling improvements across command code, documentation,
+  packages and Mint compatibility tests (#3, #5, #7, #9).
 - Restore Windows directory enumeration and startup, including bounded reads,
   filtering/count semantics, junction handling, and a real startup/S3 smoke test.
 - Update vulnerable dependencies and require Go 1.26.6 or newer. Release builds
@@ -37,10 +39,27 @@ must not be represented as an OtterIO assignment.
 
 ## Acknowledgements
 
+- Thank you [@luojiyin1987](https://github.com/luojiyin1987) for spelling
+  improvements across command code, documentation, packages and Mint compatibility
+  tests ([#3](https://github.com/soulteary/otterio/pull/3),
+  [#5](https://github.com/soulteary/otterio/pull/5),
+  [#7](https://github.com/soulteary/otterio/pull/7),
+  [#9](https://github.com/soulteary/otterio/pull/9)).
+- Thank you [@929496959](https://github.com/929496959) for reporting the Windows
+  startup failure, investigating its cause and providing a proposed fix and
+  startup validation in [#10](https://github.com/soulteary/otterio/issues/10).
+- Thank you [@MikhailIzvekov](https://github.com/MikhailIzvekov) for submitting
+  the Windows patch in [#11](https://github.com/soulteary/otterio/pull/11).
+  Its approach was retained and extended in the merged
+  [#12](https://github.com/soulteary/otterio/pull/12); #11 itself was not merged.
+
 We thank the security researcher who privately reported the SigV4 header-coverage
 issue and provided a detailed analysis and reproducible test case. Their work
 helped improve OtterIO's security. We are withholding identifying and contact
 information from this release announcement to protect their privacy.
+
+See the [project acknowledgment records](https://github.com/soulteary/otterio/blob/main/ACKNOWLEDGMENTS.md)
+for the individual reports, proposals and patches.
 
 ## Upgrade notes
 
@@ -65,6 +84,13 @@ write operations and avoid granting them access to private source objects.
 
 同时修复 Windows 目录枚举与启动问题，更新存在安全问题的依赖，使动态超时测试
 采用独立、固定种子的随机数生成器，并完善发布工作流的提交一致性和 CI 校验。
+
+感谢 [@luojiyin1987](https://github.com/luojiyin1987) 提交命令代码、文档、基础包及
+Mint 兼容测试的拼写改进（#3、#5、#7、#9）；这些改动也包含在本次更新中。
+感谢 [@929496959](https://github.com/929496959) 在 #10 中报告并分析 Windows 启动故障，
+提供修复方案及方案验证；感谢 [@MikhailIzvekov](https://github.com/MikhailIzvekov)
+提交 #11。#11 的思路在 #12 中保留并完善，原 PR 未直接合并。
+详细贡献记录见[项目致谢索引](https://github.com/soulteary/otterio/blob/main/ACKNOWLEDGMENTS.md)。
 
 **特别感谢通过私下渠道报告此问题、提供详尽分析与可复现测试用例的安全研究者。**
 这些反馈帮助 OtterIO 改进了安全性。为保护反馈者隐私，本次发布公告不披露其身份与
