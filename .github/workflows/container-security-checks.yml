@@ -2,10 +2,10 @@ name: Container security checks
 on:
   pull_request:
     branches: [main]
-    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
   push:
     branches: [main]
-    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
 permissions:
   contents: read
 jobs:

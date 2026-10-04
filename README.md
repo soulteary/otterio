@@ -221,7 +221,7 @@ The directory pointed to by `--console-certs-dir` must contain `public.crt` and 
 
 - `--console-certs-dir` requires `--console-address`; otherwise startup fails fast.
 - If `--console-certs-dir` is not set, the console listener reuses the certificates loaded from `--certs-dir` (the legacy behaviour).
-- The S3 listener always uses `--certs-dir`; only the console listener honours `--certs-dir`.
+- The S3 listener always uses `--certs-dir`; only the console listener honours `--console-certs-dir`.
 - Both keypairs are watched and hot-reloaded by the same certificate manager used for `--certs-dir`.
 
 ### Firewall
