@@ -2,10 +2,10 @@ name: Container security checks
 on:
   pull_request:
     branches: [main]
-    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+    paths: ['Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
   push:
     branches: [main]
-    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+    paths: ['Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
 permissions:
   contents: read
 jobs:
@@ -39,3 +39,48 @@ jobs:
           mkdir -p "$OTTERIO_DATA_DIR"
           printf '%s\n' test-only-password > "$OTTERIO_ROOT_PASSWORD_PATH"
           docker compose -f docker-compose.secure.yml config --quiet
+      - name: Boot the actual secure Compose profile and check both listeners
+        env:
+          OTTERIO_IMAGE: otterio-secure-smoke:local
+          OTTERIO_ROOT_USER: test-only-admin
+          OTTERIO_UID: '10001'
+          OTTERIO_GID: '10001'
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp "$RUNNER_TEMP/otterio-cli/otterio" dist/otterio-linux-amd64
+          docker build -f Dockerfile.ci --build-arg TARGETARCH=amd64 \
+            --build-arg RELEASE=compose-smoke -t "$OTTERIO_IMAGE" .
+          export OTTERIO_DATA_DIR="$(mktemp -d)"
+          export OTTERIO_ROOT_PASSWORD_PATH="$(mktemp)"
+          compose=(docker compose -p otterio-secure-smoke -f docker-compose.secure.yml)
+          cleanup() {
+            status=$?
+            trap - EXIT
+            "${compose[@]}" logs --no-color || true
+            "${compose[@]}" down --volumes --remove-orphans || true
+            sudo rm -rf -- "$OTTERIO_DATA_DIR" "$OTTERIO_ROOT_PASSWORD_PATH"
+            exit "$status"
+          }
+          trap cleanup EXIT
+          printf '%s\n' test-only-password > "$OTTERIO_ROOT_PASSWORD_PATH"
+          sudo chown 10001:10001 "$OTTERIO_DATA_DIR" "$OTTERIO_ROOT_PASSWORD_PATH"
+          sudo chmod 0700 "$OTTERIO_DATA_DIR"
+          sudo chmod 0400 "$OTTERIO_ROOT_PASSWORD_PATH"
+          "${compose[@]}" up -d --pull never
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl -fsS --max-time 2 http://127.0.0.1:9000/otterio/health/ready >/dev/null 2>&1 && \
+               curl -fsS --max-time 2 http://127.0.0.1:9001/otterio/health/ready >/dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = true || { echo '::error::Secure Compose listeners did not become ready.'; exit 1; }
+          curl -fsS --max-time 5 http://127.0.0.1:9001/otterio/ >/dev/null
+          container_id="$("${compose[@]}" ps -q otterio)"
+          test -n "$container_id"
+          test "$(docker inspect --format '{{.Config.User}}' "$container_id")" = '10001:10001'
+          test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$container_id")" = true
+          test "$(docker inspect --format '{{.RestartCount}}' "$container_id")" = 0
