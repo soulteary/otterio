@@ -15,7 +15,7 @@
  */
 
 import configureStore from "redux-mock-store"
-import thunk from "redux-thunk"
+import { thunk } from "redux-thunk"
 import * as actionsAlert from "../actions"
 
 const middlewares = [thunk]

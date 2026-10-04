@@ -15,9 +15,8 @@ import configureStore from "redux-mock-store"
 // We provide the thunk middleware ourselves so action creators returning
 // functions get invoked (giving us a chance to capture inner dispatches via
 // spies) instead of just being recorded as opaque function actions.
-// redux-thunk's CJS bundle exposes the middleware as the default export; the
-// optional named `thunk` export was added in v3 and not present in v2.
-import thunk from "redux-thunk"
+// Redux Thunk 3 exposes its middleware as the named thunk export.
+import { thunk } from "redux-thunk"
 
 const mockStore = configureStore([thunk])
 

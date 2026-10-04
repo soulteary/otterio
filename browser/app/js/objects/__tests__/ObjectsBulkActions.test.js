@@ -15,6 +15,8 @@ import { renderWithStore, defaultState } from "../../jest/test-utils"
 import { ObjectsBulkActions } from "../ObjectsBulkActions"
 import * as objectsActions from "../actions"
 
+jest.mock("../../navigation", () => ({ navigateTo: jest.fn() }))
+
 const stateWith = checkedList => ({
   ...defaultState,
   objects: { ...defaultState.objects, checkedList },

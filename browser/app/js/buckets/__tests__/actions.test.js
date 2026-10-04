@@ -15,7 +15,7 @@
  */
 
 import configureStore from "redux-mock-store"
-import thunk from "redux-thunk"
+import { thunk } from "redux-thunk"
 import * as actionsBuckets from "../actions"
 import * as objectActions from "../../objects/actions"
 import history from "../../history"

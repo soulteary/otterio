@@ -9,6 +9,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
+import { navigateTo } from "../navigation"
 import web from "../web"
 import history from "../history"
 import {
@@ -301,12 +302,12 @@ export const downloadObject = object => {
         .CreateURLToken()
         .then(res => {
           const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=${res.token}`
-          window.location = url
+          navigateTo(url)
         })
         .catch(err => dispatchAlertError(dispatch, err))
     } else {
       const url = `${window.location.origin}${otterioBrowserPrefix}/download/${currentBucket}/${encObjectName}?token=`
-      window.location = url
+      navigateTo(url)
     }
   }
 }

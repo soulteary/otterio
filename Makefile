@@ -13,8 +13,9 @@ TAG ?= "soulteary/otterio:$(VERSION)"
 # pinned in go.mod, otherwise `make check-gen` will regenerate the *_gen.go
 # files in a slightly different style and CI will fail with
 # "Non-committed changes in auto-generated code is detected".
-MSGP_VERSION ?= v1.6.4
-STRINGER_VERSION ?= v0.45.0
+MSGP_VERSION ?= v1.6.5
+STRINGER_VERSION ?= v0.51.0
+GOLANGCI_LINT_VERSION ?= v2.14.0
 
 all: build
 
@@ -24,7 +25,7 @@ checks:
 
 getdeps:
 	@mkdir -p ${GOPATH}/bin
-	@which golangci-lint 1>/dev/null || (echo "Installing golangci-lint" && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest)
+	@echo "Installing golangci-lint@$(GOLANGCI_LINT_VERSION)" && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	@echo "Installing msgp@$(MSGP_VERSION)" && go install github.com/tinylib/msgp@$(MSGP_VERSION)
 	@echo "Installing stringer@$(STRINGER_VERSION)" && go install golang.org/x/tools/cmd/stringer@$(STRINGER_VERSION)
 

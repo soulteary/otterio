@@ -15,7 +15,7 @@
  */
 
 import configureStore from "redux-mock-store"
-import thunk from "redux-thunk"
+import { thunk } from "redux-thunk"
 import * as actionsObjects from "../actions"
 import * as alertActions from "../../alert/actions"
 import {
@@ -26,6 +26,9 @@ import {
   SORT_ORDER_DESC,
 } from "../../constants"
 import history from "../../history"
+import { navigateTo } from "../../navigation"
+
+jest.mock("../../navigation", () => ({ navigateTo: jest.fn() }))
 
 jest.mock("../../web", () => ({
   LoggedIn: jest
@@ -419,17 +422,7 @@ describe("Objects actions", () => {
 
   describe("Download object", () => {
     it("should download the object non-LoggedIn users", () => {
-      const setLocation = jest.fn()
-      Object.defineProperty(window, "location", {
-        set(url) {
-          setLocation(url)
-        },
-        get() {
-          return {
-            origin: "http://localhost:8080",
-          }
-        },
-      })
+      navigateTo.mockClear()
       const store = mockStore({
         buckets: { currentBucket: "bk1" },
         objects: { currentPrefix: "pre1/" },
@@ -438,21 +431,11 @@ describe("Objects actions", () => {
       const url = `${
         window.location.origin
       }${otterioBrowserPrefix}/download/bk1/${encodeURI("pre1/obj1")}?token=`
-      expect(setLocation).toHaveBeenCalledWith(url)
+      expect(navigateTo).toHaveBeenCalledWith(url)
     })
 
     it("should download the object for LoggedIn users", () => {
-      const setLocation = jest.fn()
-      Object.defineProperty(window, "location", {
-        set(url) {
-          setLocation(url)
-        },
-        get() {
-          return {
-            origin: "http://localhost:8080",
-          }
-        },
-      })
+      navigateTo.mockClear()
       const store = mockStore({
         buckets: { currentBucket: "bk1" },
         objects: { currentPrefix: "pre1/" },
@@ -463,7 +446,7 @@ describe("Objects actions", () => {
         }${otterioBrowserPrefix}/download/bk1/${encodeURI(
           "pre1/obj1"
         )}?token=test`
-        expect(setLocation).toHaveBeenCalledWith(url)
+        expect(navigateTo).toHaveBeenCalledWith(url)
       })
     })
 

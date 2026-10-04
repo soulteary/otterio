@@ -2,10 +2,10 @@ name: Container security checks
 on:
   pull_request:
     branches: [main]
-    paths: ['Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+    paths: ['go.mod', 'go.sum', 'Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
   push:
     branches: [main]
-    paths: ['Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+    paths: ['go.mod', 'go.sum', 'Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
 permissions:
   contents: read
 jobs:
@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
         with:
-          go-version: '1.26.x'
+          go-version: '1.27.1'
           cache: true
       - run: sh -n dockerscripts/docker-entrypoint.sh
       - name: Build the real CLI for help regressions

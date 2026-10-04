@@ -2,10 +2,10 @@ name: Docker source checks
 on:
   pull_request:
     branches: [main]
-    paths: ['Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
+    paths: ['go.mod', 'go.sum', 'Dockerfile', 'Dockerfile.dev.browser', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
   push:
     branches: [main]
-    paths: ['Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
+    paths: ['go.mod', 'go.sum', 'Dockerfile', 'Dockerfile.dev.browser', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
         with:
-          go-version: '1.26.x'
+          go-version: '1.27.1'
           cache: true
       - run: python3 -m unittest discover -s buildscripts -p test_build_metadata.py -v
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@v4.4.1
       - name: Prove uncommitted local code reaches the image
         env:
           VCS_REF: ${{ github.sha }}
@@ -46,3 +46,29 @@ jobs:
           revision="$(docker image inspect otterio-source-test --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
           printf 'Image revision: %s\n' "$revision"
           test "$revision" = "$VCS_REF"
+
+  browser-toolchains:
+    name: Browser development image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the browser development image without publishing
+        run: docker build -f Dockerfile.dev.browser -t otterio-browser-toolchains:test .
+      - name: Verify the bundled Go, Node and Bun versions
+        run: |
+          set -euo pipefail
+          go_version="$(sed -n 's/^go //p' go.mod)"
+          node_version="$(python3 -c 'import json; print(json.load(open("browser/package.json"))["engines"]["node"].removeprefix(">="))')"
+          bun_version="$(python3 -c 'import json; print(json.load(open("browser/package.json"))["packageManager"].split("@", 1)[1])')"
+          docker run --rm --network none otterio-browser-toolchains:test \
+            sh -ec '
+              go version
+              node --version
+              bun --version
+              test "$(go env GOVERSION)" = "go$1"
+              test "$(node --version)" = "v$2"
+              test "$(bun --version)" = "$3"
+            ' sh "$go_version" "$node_version" "$bun_version"
