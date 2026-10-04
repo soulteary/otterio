@@ -1,0 +1,29 @@
+services:
+  otterio:
+    image: ${OTTERIO_IMAGE:?Set OTTERIO_IMAGE to a reviewed release tag or digest}
+    user: "${OTTERIO_UID:-10001}:${OTTERIO_GID:-10001}"
+    command: [server, /data, --console-address, ':9001']
+    environment:
+      HOME: /tmp
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set a non-default administrator name}
+      OTTERIO_ROOT_USER_FILE: ''
+      OTTERIO_ROOT_PASSWORD_FILE: /run/secrets/otterio_root_password
+      OTTERIO_ACCESS_KEY_FILE: ''
+      OTTERIO_SECRET_KEY_FILE: ''
+    secrets:
+      - otterio_root_password
+    volumes:
+      - ${OTTERIO_DATA_DIR:?Set an existing writable data directory}:/data
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    stop_grace_period: 60s
+secrets:
+  otterio_root_password:
+    file: ${OTTERIO_ROOT_PASSWORD_PATH:?Set a readable password file}

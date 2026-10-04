@@ -1,0 +1,28 @@
+name: Container security checks
+on:
+  pull_request:
+    branches: [main]
+    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint.py', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+  push:
+    branches: [main]
+    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint.py', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+permissions:
+  contents: read
+jobs:
+  entrypoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - run: sh -n dockerscripts/docker-entrypoint.sh
+      - run: python3 -m unittest discover -s buildscripts -p test_docker_entrypoint.py -v
+      - name: Validate the secure Compose profile without starting containers
+        env:
+          OTTERIO_IMAGE: ghcr.io/soulteary/otterio:test-only
+          OTTERIO_ROOT_USER: test-only-admin
+          OTTERIO_DATA_DIR: /tmp/otterio-test-data
+          OTTERIO_ROOT_PASSWORD_PATH: /tmp/otterio-test-password
+        run: |
+          mkdir -p "$OTTERIO_DATA_DIR"
+          printf '%s\n' test-only-password > "$OTTERIO_ROOT_PASSWORD_PATH"
+          docker compose -f docker-compose.secure.yml config --quiet
