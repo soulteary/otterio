@@ -1,0 +1,93 @@
+name: Stable release promotion
+
+# This workflow never builds, creates tags, changes version tags, or uploads
+# release assets. Both automatic and manual retries share this global lock.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Already published stable RELEASE tag with release-manifest.json'
+        required: true
+        type: string
+permissions:
+  contents: write
+  packages: write
+concurrency:
+  group: otterio-stable-promotion
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Validate publication, source and monotonic version ordering
+        id: plan
+        run: |
+          set -euo pipefail
+          python3 buildscripts/release-promotion.py "$RELEASE_TAG" --validate-tag
+          git fetch --no-tags origin "refs/tags/$RELEASE_TAG"
+          source_sha="$(git rev-parse 'FETCH_HEAD^{commit}')"
+          manifest_dir="$(mktemp -d)"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern release-manifest.json --dir "$manifest_dir"
+          gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > "$RUNNER_TEMP/published-releases.json"
+          python3 buildscripts/release-promotion.py "$RELEASE_TAG" \
+            --manifest "$manifest_dir/release-manifest.json" \
+            --published "$RUNNER_TEMP/published-releases.json" \
+            --source-sha "$source_sha" --repository "$GITHUB_REPOSITORY" \
+            --dockerhub-user "$DOCKERHUB_USERNAME" > "$RUNNER_TEMP/promotion-plan.json"
+          echo "promote=$(jq -r .promote "$RUNNER_TEMP/promotion-plan.json")" >> "$GITHUB_OUTPUT"
+          if jq -e '.has_dockerhub and .promote' "$RUNNER_TEMP/promotion-plan.json" >/dev/null; then
+            test -n "$DOCKERHUB_USERNAME" && test -n "$DOCKERHUB_TOKEN" || {
+              echo '::error::Docker Hub credentials are required for this release.'; exit 1;
+            }
+          fi
+          jq -r .reason "$RUNNER_TEMP/promotion-plan.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: docker/setup-buildx-action@v4
+        if: steps.plan.outputs.promote == 'true'
+      - name: Login to GHCR
+        if: steps.plan.outputs.promote == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to Docker Hub
+        if: steps.plan.outputs.promote == 'true' && env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v4
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+      - name: Verify all immutable version tags before changing any aliases
+        if: steps.plan.outputs.promote == 'true'
+        run: |
+          set -euo pipefail
+          jq -r '.images[] | [.repository, .digest] | @tsv' "$RUNNER_TEMP/promotion-plan.json" > "$RUNNER_TEMP/promotion-images.tsv"
+          while IFS=$'\t' read -r repository digest; do
+            actual="$(docker buildx imagetools inspect "$repository:$RELEASE_TAG" --format '{{json .Manifest}}' | jq -r .digest)"
+            test "$actual" = "$digest" || { echo '::error::Version tag differs from the recorded release digest.'; exit 1; }
+          done < "$RUNNER_TEMP/promotion-images.tsv"
+      - name: Promote the recorded digests and then the GitHub latest release
+        if: steps.plan.outputs.promote == 'true'
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r repository digest; do
+            docker buildx imagetools create --tag "$repository:latest" "$repository@$digest"
+            actual="$(docker buildx imagetools inspect "$repository:latest" --format '{{json .Manifest}}' | jq -r .digest)"
+            test "$actual" = "$digest" || { echo '::error::Latest digest verification failed.'; exit 1; }
+          done < "$RUNNER_TEMP/promotion-images.tsv"
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --latest

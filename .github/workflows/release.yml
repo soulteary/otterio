@@ -1,7 +1,7 @@
 name: Release
 
-# Publish an existing RELEASE.YYYY-MM-DDTHH-MM-SSZ tag after its main CI passes.
-# See docs/releasing.md. Manual runs never create tags or build the selected branch.
+# Publish fixed-version artifacts first. Only the separately serialized promotion
+# workflow may move latest aliases, using the recorded, smoke-tested digest.
 on:
   push:
     tags:
@@ -13,14 +13,13 @@ on:
         required: true
         type: string
       promote_latest:
-        description: 'Update latest aliases (only for the newest stable release)'
+        description: 'Promote only if this is the newest published stable release'
         required: false
         type: boolean
         default: false
 
 permissions:
   contents: read
-
 concurrency:
   group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
@@ -45,13 +44,11 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
           fetch-depth: 0
-
       - name: Validate tag, source and release notes
         id: meta
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: python3 buildscripts/release-preflight.py --existing "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
-
       - name: Require successful main CI for the exact commit
         env:
           GH_TOKEN: ${{ github.token }}
@@ -66,8 +63,7 @@ jobs:
               exit 1
             fi
           done
-
-      - name: Refuse to overwrite an already published release
+      - name: Refuse to rebuild an already published release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.meta.outputs.tag }}
@@ -76,7 +72,7 @@ jobs:
           gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
             --jq '.[] | select(.draft == false) | .tag_name' > "$RUNNER_TEMP/published-tags"
           if grep -Fxq -- "$RELEASE_TAG" "$RUNNER_TEMP/published-tags"; then
-            echo "::error::This release is already published. Prepare a new tag instead of overwriting it."
+            echo '::error::Already published. Use Stable release promotion to retry latest without rebuilding.'
             exit 1
           fi
 
@@ -89,13 +85,11 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           fetch-depth: 0
-
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
           cache: true
-
       - name: Cross compile
         env:
           CGO_ENABLED: '0'
@@ -116,10 +110,8 @@ jobs:
               -tags kqueue -trimpath -ldflags "$LDFLAGS" -o "$out" .
           done
           (cd dist && sha256sum otterio-* > "otterio-${TAG}-checksums.txt")
-
       - name: Smoke test the release binary
         run: go run buildscripts/verify-s3-startup.go ./dist/otterio-linux-amd64
-
       - uses: actions/upload-artifact@v7
         with:
           name: binaries
@@ -128,12 +120,16 @@ jobs:
           retention-days: 7
 
   docker:
-    name: Build and push image
+    name: Build and verify fixed-version images
     runs-on: ubuntu-latest
     needs: [prepare, binaries]
     permissions:
       contents: read
       packages: write
+    outputs:
+      digest: ${{ steps.image.outputs.digest }}
+      ghcr_repository: ${{ steps.tags.outputs.ghcr_repository }}
+      dockerhub_repository: ${{ steps.tags.outputs.dockerhub_repository }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -141,54 +137,53 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ needs.prepare.outputs.sha }}
-
       - uses: actions/download-artifact@v8
         with:
           name: binaries
           path: dist
-
       - name: Verify binaries and restore executable bits
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           (cd dist && sha256sum -c "otterio-${RELEASE_TAG}-checksums.txt")
           chmod +x dist/otterio-linux-*
-
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
       - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4
-
       - name: Login to GHCR
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Login to Docker Hub
         if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v4
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
-
-      - name: Compute image tags
+      - name: Compute immutable image tags
         id: tags
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-          PROMOTE_LATEST: ${{ needs.prepare.outputs.latest }}
         run: |
           set -euo pipefail
           GHCR_REPO="ghcr.io/${GITHUB_REPOSITORY,,}"
           TAGS="${GHCR_REPO}:${RELEASE_TAG}"
-          if [ "$PROMOTE_LATEST" = true ]; then TAGS="${TAGS},${GHCR_REPO}:latest"; fi
+          echo "ghcr_repository=$GHCR_REPO" >> "$GITHUB_OUTPUT"
           if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
             DH_REPO="${DOCKERHUB_USERNAME}/otterio"
             TAGS="${TAGS},${DH_REPO}:${RELEASE_TAG}"
-            if [ "$PROMOTE_LATEST" = true ]; then TAGS="${TAGS},${DH_REPO}:latest"; fi
+            echo "dockerhub_repository=$DH_REPO" >> "$GITHUB_OUTPUT"
           fi
-          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
-
+          IFS=',' read -ra references <<< "$TAGS"
+          bash buildscripts/check-new-image-tags.sh "${references[@]}"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v7
+        id: image
         with:
           context: .
           file: Dockerfile.ci
@@ -203,54 +198,83 @@ jobs:
           provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: S3 round trip against the pushed image digest
+        env:
+          IMAGE_REF: ${{ steps.tags.outputs.ghcr_repository }}@${{ steps.image.outputs.digest }}
+        run: bash buildscripts/verify-release-image.sh "$IMAGE_REF"
 
   release:
-    name: Publish GitHub Release
+    name: Verify draft assets and publish without moving latest
     runs-on: ubuntu-latest
     needs: [prepare, binaries, docker]
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
     steps:
       - uses: actions/checkout@v6
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           fetch-depth: 0
-
-      - name: Recheck the tag before publishing
-        env:
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: python3 buildscripts/release-preflight.py --existing "$RELEASE_TAG"
-
+      - name: Recheck the remote tag before publishing
+        run: |
+          git fetch --no-tags --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          python3 buildscripts/release-preflight.py --existing "$RELEASE_TAG"
       - uses: actions/download-artifact@v8
         with:
           name: binaries
           path: dist
-
-      - name: Verify release assets
+      - name: Verify release assets and record immutable image identities
         env:
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: cd dist && sha256sum -c "otterio-${RELEASE_TAG}-checksums.txt"
-
-      - name: Recheck publication state before uploading
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          IMAGE_DIGEST: ${{ needs.docker.outputs.digest }}
+          GHCR_REPOSITORY: ${{ needs.docker.outputs.ghcr_repository }}
+          DOCKERHUB_REPOSITORY: ${{ needs.docker.outputs.dockerhub_repository }}
+        run: |
+          set -euo pipefail
+          (cd dist && sha256sum -c "otterio-${RELEASE_TAG}-checksums.txt")
+          python3 - <<'PY'
+          import json, os, re
+          digest = os.environ['IMAGE_DIGEST']
+          if not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
+              raise SystemExit('missing or invalid built image digest')
+          images = [{'repository': os.environ['GHCR_REPOSITORY'], 'digest': digest}]
+          if os.environ['DOCKERHUB_REPOSITORY']:
+              images.append({'repository': os.environ['DOCKERHUB_REPOSITORY'], 'digest': digest})
+          with open('dist/release-manifest.json', 'w') as output:
+              json.dump({'schema_version': 1, 'tag': os.environ['RELEASE_TAG'],
+                         'source_sha': os.environ['RELEASE_SHA'], 'images': images}, output, indent=2)
+              output.write('\n')
+          PY
+      - name: Upload only to a draft and verify downloaded assets
         run: |
           set -euo pipefail
           gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
-            --jq '.[] | select(.draft == false) | .tag_name' > "$RUNNER_TEMP/published-tags"
-          if grep -Fxq -- "$RELEASE_TAG" "$RUNNER_TEMP/published-tags"; then
-            echo "::error::This release is already published; refusing to overwrite it."
-            exit 1
+            | jq --arg tag "$RELEASE_TAG" '.[] | select(.tag_name == $tag)' > "$RUNNER_TEMP/release-state.json"
+          if [ -s "$RUNNER_TEMP/release-state.json" ]; then
+            jq -e '.draft == true' "$RUNNER_TEMP/release-state.json" >/dev/null || {
+              echo '::error::Already published; refusing to overwrite release assets.'; exit 1;
+            }
+          else
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
+              --target "$RELEASE_SHA" --title "Version $RELEASE_TAG" --notes-file RELEASE_NOTES.md --latest=false
           fi
+          gh release upload "$RELEASE_TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          verify_dir="$(mktemp -d)"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir "$verify_dir"
+          diff <(find dist -maxdepth 1 -type f -printf '%f\n' | sort) <(find "$verify_dir" -maxdepth 1 -type f -printf '%f\n' | sort)
+          for asset in dist/*; do cmp "$asset" "$verify_dir/$(basename "$asset")"; done
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest=false
 
-      - uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ needs.prepare.outputs.tag }}
-          target_commitish: ${{ needs.prepare.outputs.sha }}
-          name: Version ${{ needs.prepare.outputs.tag }}
-          body_path: RELEASE_NOTES.md
-          files: dist/*
-          fail_on_unmatched_files: true
-          generate_release_notes: false
-          make_latest: ${{ needs.prepare.outputs.latest }}
+  promote:
+    name: Promote verified stable digests
+    needs: [prepare, release]
+    if: needs.prepare.outputs.latest == 'true'
+    permissions:
+      contents: write
+      packages: write
+    uses: ./.github/workflows/promote-release.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
