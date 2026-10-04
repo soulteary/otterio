@@ -119,7 +119,7 @@ chmod +x otterio
 ./otterio server /data
 ```
 
-构建流水线 ([`.goreleaser.yml`](./.goreleaser.yml)) 当前为 Linux 提供如下架构的产物：
+构建流水线 ([`release.yml`](./.github/workflows/release.yml)) 当前为 Linux 提供如下架构的产物：
 
 | 架构                   | `goarch`   |
 | ---------------------- | ---------- |
@@ -127,7 +127,7 @@ chmod +x otterio
 | 64 位 ARM              | `arm64`    |
 | 64 位 PowerPC LE       | `ppc64le`  |
 
-并同时提供对应架构的 `.deb` 与 `.rpm` 软件包。
+Tag 发布流程提供独立二进制与 SHA-256 校验文件，不提供 `.deb` 或 `.rpm` 软件包。发布步骤见[发布指南](./docs/releases/README.md)。
 
 ### Windows
 
