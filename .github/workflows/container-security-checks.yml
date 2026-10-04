@@ -2,20 +2,33 @@ name: Container security checks
 on:
   pull_request:
     branches: [main]
-    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint.py', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
   push:
     branches: [main]
-    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint.py', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+    paths: ['dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
 permissions:
   contents: read
 jobs:
   entrypoint:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.x'
+          cache: true
       - run: sh -n dockerscripts/docker-entrypoint.sh
-      - run: python3 -m unittest discover -s buildscripts -p test_docker_entrypoint.py -v
+      - name: Build the real CLI for help regressions
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p "$RUNNER_TEMP/otterio-cli"
+          go build -ldflags "$(go run buildscripts/gen-ldflags.go)" -o "$RUNNER_TEMP/otterio-cli/otterio" .
+      - name: Test secrets, argument classification and real CLI help
+        env:
+          OTTERIO_TEST_BINARY: ${{ runner.temp }}/otterio-cli/otterio
+        run: python3 -m unittest discover -s buildscripts -p 'test_docker_entrypoint*.py' -v
       - name: Validate the secure Compose profile without starting containers
         env:
           OTTERIO_IMAGE: ghcr.io/soulteary/otterio:test-only

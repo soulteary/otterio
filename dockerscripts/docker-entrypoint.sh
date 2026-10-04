@@ -89,6 +89,63 @@ docker_switch_user() {
     exec "$@"
 }
 
+# Inspect only leading flags and the command's first positional argument.
+# Never mistake a flag value or a later data path for a request for help.
+# Unknown options remain gated; the Go CLI is authoritative for their validity.
+credential_check_required() (
+    shift # executable
+    command=
+    backend=
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --help|-h) exit 1 ;;
+            --version|-v)
+                [ -z "$command" ] && exit 1
+                exit 0
+                ;;
+            --config-dir|-C|--certs-dir|-S|--address|--console-address|--console-certs-dir)
+                [ "$#" -ge 2 ] || exit 0
+                shift # consume the value, even if it is "help" or "--help"
+                ;;
+            --config-dir=*|--certs-dir=*|--address=*|--console-address=*|--console-certs-dir=*|--quiet|--anonymous|--json|--compat|--no-compat) ;;
+            --)
+                shift
+                if [ -z "$command" ] && [ "$#" -gt 0 ]; then
+                    command="$1"
+                    shift
+                    continue
+                fi
+                break
+                ;;
+            -*) exit 0 ;;
+            *)
+                if [ -z "$command" ]; then
+                    command="$1"
+                    case "$command" in server|gateway) ;; *) exit 1 ;; esac
+                elif [ "$command" = gateway ] && [ -z "$backend" ]; then
+                    backend="$1"
+                    case "$backend" in help|h) exit 1 ;; nas|s3) ;; *) exit 0 ;; esac
+                else
+                    break
+                fi
+                ;;
+        esac
+        shift
+    done
+    case "$command" in
+        server)
+            # serverCmdArgs prefers these environment endpoints over CLI args.
+            [ -z "${OTTERIO_ARGS-}" ] && [ -z "${OTTERIO_ENDPOINTS-}" ] || exit 0
+            if [ "$#" -eq 0 ] || [ "$1" = help ]; then exit 1; fi
+            ;;
+        gateway)
+            if [ -z "$backend" ] && [ "$#" -eq 0 ]; then exit 1; fi
+            ;;
+        *) exit 1 ;;
+    esac
+    exit 0
+)
+
 [ "$#" -gt 0 ] || set -- otterio
 if [ "$1" != otterio ]; then set -- otterio "$@"; fi
 
@@ -99,13 +156,6 @@ file_env OTTERIO_ROOT_PASSWORD secret_key
 file_env OTTERIO_KMS_MASTER_KEY kms_master_key
 file_env OTTERIO_SSE_MASTER_KEY sse_master_key
 
-needs_credentials=false
-for arg in "$@"; do
-    case "$arg" in
-        server|gateway) needs_credentials=true ;;
-        --help|-h|--version|-v) needs_credentials=false; break ;;
-    esac
-done
-if [ "$needs_credentials" = true ]; then validate_credentials; fi
+if credential_check_required "$@"; then validate_credentials; fi
 
 docker_switch_user "$@"

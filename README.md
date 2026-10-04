@@ -39,15 +39,23 @@ OtterIO continues to be distributed under the [Apache License, Version 2.0](./LI
 
 ## Quick Start
 
-Run a single-node OtterIO instance with Docker:
+Set your own credentials, then run a single-node OtterIO instance with Docker. The password generation below requires OpenSSL. Save the generated credentials securely and reuse them when restarting or connecting from another shell; do not generate a different password just to reconnect.
 
 ```sh
-docker run -p 9000:9000 -p 9001:9001 \
+export OTTERIO_ROOT_USER=otterio-admin
+OTTERIO_ROOT_PASSWORD="$(openssl rand -hex 32)"
+export OTTERIO_ROOT_PASSWORD
+
+docker run -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
   -v /mnt/data:/data \
-  soulteary/otterio:latest server /data --console-address ":9001"
+  soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-Default root credentials are `otterioadmin:otterioadmin`. Once running, see [Verify](#verify) to connect via the web console or `mc`.
+The console is at <http://127.0.0.1:9001>; sign in with the credentials you configured, not a default password. See [Verify](#verify) for `mc` setup.
+
+> [!IMPORTANT]
+> Container startup now rejects missing or default credentials. Older no-credential Docker examples must be updated before upgrading. For `_FILE` secrets, a non-root Compose profile, and migration instructions, see [Docker security](./README_DOCKER_SECURITY.md). Only an explicit local-development opt-in, `OTTERIO_ALLOW_DEFAULT_CREDENTIALS=1`, permits default credentials; keep such demos bound to loopback. Production deployments should pin a reviewed release tag or digest instead of `latest`.
 
 > [!NOTE]
 > Standalone OtterIO servers are best suited for development and evaluation. Production deployments should run **distributed mode with Erasure Coding enabled** — at least **4 drives per server**. See [`docs/erasure/README.md`](./docs/erasure/README.md) and [`docs/distributed/README.md`](./docs/distributed/README.md).
@@ -73,16 +81,26 @@ docker pull ghcr.io/soulteary/otterio:latest
 | `latest` | Latest stable release.                                   |
 | `edge`   | Bleeding-edge build from `main` — for testing only.      |
 
-Run a standalone server with an ephemeral volume:
+Run a standalone server with an ephemeral volume, using the credentials configured in [Quick Start](#quick-start):
 
 ```sh
-docker run -p 9000:9000 soulteary/otterio:latest server /data
+: "${OTTERIO_ROOT_USER:?Set your saved username first}"
+: "${OTTERIO_ROOT_PASSWORD:?Set your saved password first}"
+export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
+docker run -p 127.0.0.1:9000:9000 \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
+  soulteary/otterio:latest server /data
 ```
 
 For persistent storage, map a host directory to `/data`:
 
 ```sh
-docker run -p 9000:9000 -v /mnt/data:/data soulteary/otterio:latest server /data
+: "${OTTERIO_ROOT_USER:?Set your saved username first}"
+: "${OTTERIO_ROOT_PASSWORD:?Set your saved password first}"
+export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
+docker run -p 127.0.0.1:9000:9000 \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
+  -v /mnt/data:/data soulteary/otterio:latest server /data
 ```
 
 ### macOS
@@ -203,7 +221,7 @@ The directory pointed to by `--console-certs-dir` must contain `public.crt` and 
 
 - `--console-certs-dir` requires `--console-address`; otherwise startup fails fast.
 - If `--console-certs-dir` is not set, the console listener reuses the certificates loaded from `--certs-dir` (the legacy behaviour).
-- The S3 listener always uses `--certs-dir`; only the console listener honours `--console-certs-dir`.
+- The S3 listener always uses `--certs-dir`; only the console listener honours `--certs-dir`.
 - Both keypairs are watched and hot-reloaded by the same certificate manager used for `--certs-dir`.
 
 ### Firewall
@@ -257,18 +275,20 @@ When deployed on a single drive, OtterIO server lets clients access any pre-exis
 
 ## Verify
 
-Once OtterIO is running, the deployment uses default root credentials `otterioadmin:otterioadmin` (override via `OTTERIO_ROOT_USER` / `OTTERIO_ROOT_PASSWORD` environment variables in production).
+Use the credentials configured at startup. The Docker examples above pass `OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD`; they do not use a default password. In a new shell, restore those same saved values before running the client commands below. Bare-metal binaries are not subject to the container entrypoint check, but should also be configured with non-default credentials before deployment.
 
 ### Web console
 
-Point a browser at <http://127.0.0.1:9000> (or the console port if you split listeners). Log in with the root credentials to create buckets, upload objects, and browse contents.
+For the Quick Start's split listeners, open <http://127.0.0.1:9001>; for a single listener, open <http://127.0.0.1:9000>. Log in with your configured root username and password to create buckets, upload objects, and browse contents.
 
 ### `mc` client
 
 `mc` is a modern command-line client that speaks S3 and local filesystem URIs (similar to `ls`, `cp`, `mirror`, `diff`, etc.). Configure an alias against your OtterIO endpoint:
 
 ```sh
-mc alias set local http://127.0.0.1:9000 otterioadmin otterioadmin
+: "${OTTERIO_ROOT_USER:?Set the username used to start OtterIO}"
+: "${OTTERIO_ROOT_PASSWORD:?Set the password used to start OtterIO}"
+mc alias set local http://127.0.0.1:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD"
 mc mb local/test-bucket
 mc cp ./somefile local/test-bucket/
 mc ls local/test-bucket/
