@@ -194,13 +194,15 @@ func TestDynamicTimeoutAdjustExponential(t *testing.T) {
 
 	timeout := newDynamicTimeout(time.Minute, time.Second)
 
-	rand.Seed(0)
+	// Keep the samples reproducible and independent of the global RNG.
+	// The package-level rand.Seed is a no-op as of Go 1.24.
+	rng := rand.New(rand.NewSource(0))
 
 	initial := timeout.Timeout()
 
 	for try := 0; try < 10; try++ {
 
-		testDynamicTimeoutAdjust(t, timeout, rand.ExpFloat64)
+		testDynamicTimeoutAdjust(t, timeout, rng.ExpFloat64)
 
 	}
 
@@ -214,14 +216,16 @@ func TestDynamicTimeoutAdjustNormalized(t *testing.T) {
 
 	timeout := newDynamicTimeout(time.Minute, time.Second)
 
-	rand.Seed(0)
+	// Keep the samples reproducible and independent of the global RNG.
+	// The package-level rand.Seed is a no-op as of Go 1.24.
+	rng := rand.New(rand.NewSource(0))
 
 	initial := timeout.Timeout()
 
 	for try := 0; try < 10; try++ {
 
 		testDynamicTimeoutAdjust(t, timeout, func() float64 {
-			return 1.0 + rand.NormFloat64()
+			return 1.0 + rng.NormFloat64()
 		})
 
 	}
