@@ -14,7 +14,7 @@ ARG TARGETARCH
 ARG VCS_REF=unknown
 ARG VERSION
 RUN set -eu; \
-    if [ -n "$VERSION" ]; then \
+    if [ -n "${VERSION:-}" ]; then \
       LDFLAGS="$(OTTERIO_BUILD_COMMIT="$VCS_REF" go run buildscripts/gen-ldflags.go "$VERSION")"; \
     else \
       LDFLAGS="$(OTTERIO_BUILD_COMMIT="$VCS_REF" go run buildscripts/gen-ldflags.go)"; \
