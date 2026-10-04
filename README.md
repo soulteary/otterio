@@ -7,7 +7,7 @@
 **S3-Compatible Object Storage** — _Store freely. Scale endlessly._
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.26%2B-00ADD8.svg?logo=go&logoColor=white)](./go.mod)
+[![Go](https://img.shields.io/badge/Go-1.26.6%2B-00ADD8.svg?logo=go&logoColor=white)](./go.mod)
 [![GitHub](https://img.shields.io/badge/GitHub-soulteary%2Fotterio-181717.svg?logo=github)](https://github.com/soulteary/otterio)
 
 English · [简体中文](./README_zh_CN.md)
@@ -30,7 +30,7 @@ OtterIO is a customized fork of the **last Apache License 2.0 release of MinIO**
 - **HTTP layer** — request router built on [`gofiber/fiber/v3`](https://github.com/gofiber/fiber) instead of `gorilla/mux`.
 - **Bucket notification targets** — only `elasticsearch`, `mysql`, `postgresql`, `redis`, and `webhook` are supported. The message-queue targets (Kafka, NATS, NATS Streaming, NSQ, AMQP, MQTT) have been removed.
 - **Gateways** — only `nas` and `s3` remain. The `azure`, `gcs`, and `hdfs` gateways have been removed.
-- **Toolchain** — requires Go `1.26` or newer (see [`go.mod`](./go.mod)).
+- **Toolchain** — requires Go `1.26.6` or newer (see [`go.mod`](./go.mod)); use the latest patch release for security fixes.
 - **Container images** — published at `soulteary/otterio` (Docker Hub) and `ghcr.io/soulteary/otterio` (GitHub Container Registry).
 
 OtterIO continues to be distributed under the [Apache License, Version 2.0](./LICENSE). All original copyright notices are retained — see [`NOTICE`](./NOTICE).
@@ -143,7 +143,7 @@ OtterIO does not currently provide an official FreeBSD package. Build from sourc
 
 ### Build from Source
 
-Source builds are intended for developers and advanced users. Make sure you have a working Go toolchain (Go 1.26 or newer — see [How to install Go](https://go.dev/doc/install)).
+Source builds are intended for developers and advanced users. Make sure you have a working Go toolchain (Go 1.26.6 or newer — see [How to install Go](https://go.dev/doc/install)).
 
 ```sh
 git clone https://github.com/soulteary/otterio.git

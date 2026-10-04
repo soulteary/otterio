@@ -23,7 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.26.4"
+  # Follow patched releases, as the Docker and release workflows do.
+  GO_VERSION: "1.26.x"
   CGO_ENABLED: "0"
   GO111MODULE: "on"
 
@@ -47,6 +48,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: false
 
       - name: Resolve Go cache paths
@@ -117,6 +119,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: false
 
       - name: Resolve Go cache paths
@@ -160,6 +163,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: true
       - name: make verifiers
         run: make verifiers
@@ -173,6 +177,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: true
       - name: make crosscompile
         run: make crosscompile
@@ -202,6 +207,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: true
       - name: make verify-healing
         run: |
@@ -222,6 +228,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: true
       - name: Install & run govulncheck
         run: |
