@@ -1,5 +1,11 @@
 # OtterIO Security Overview
 
+## Internal storage hardening
+
+See [SN-2026-002-related storage hardening](sn-2026-002-storage-hardening.md)
+for the applicable threat model, path/metadata defenses, internal RPC limits,
+upgrade notes and regression tests.
+
 ## Server-Side Encryption
 
 OtterIO supports two different types of server-side encryption ([SSE](#sse)):

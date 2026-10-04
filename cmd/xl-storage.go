@@ -376,6 +376,9 @@ func (s *xlStorage) Healing() *healingTracker {
 }
 
 func (s *xlStorage) NSScanner(ctx context.Context, cache dataUsageCache) (dataUsageCache, error) {
+	if !validStorageScannerCache(cache) {
+		return dataUsageCache{}, errFileAccessDenied
+	}
 	var lc *lifecycle.Lifecycle
 	var err error
 
@@ -496,10 +499,13 @@ func (s *xlStorage) DiskInfo(context.Context) (info DiskInfo, err error) {
 // compatible way for all operating systems. If volume is not found
 // an error is generated.
 func (s *xlStorage) getVolDir(volume string) (string, error) {
-	if volume == "" || volume == "." || volume == ".." {
+	if volume == "" || !validStoragePath(volume) {
 		return "", errVolumeNotFound
 	}
 	volumeDir := pathJoin(s.diskPath, volume)
+	if !storagePathWithin(s.diskPath, volumeDir) || filepath.Clean(volumeDir) == filepath.Clean(s.diskPath) {
+		return "", errVolumeNotFound
+	}
 	return volumeDir, nil
 }
 
@@ -601,6 +607,12 @@ func (s *xlStorage) SetDiskID(_ string) {
 }
 
 func (s *xlStorage) MakeVolBulk(ctx context.Context, volumes ...string) error {
+	// Preflight the entire batch before the first mkdir.
+	for _, volume := range volumes {
+		if _, err := s.getVolDir(volume); err != nil {
+			return err
+		}
+	}
 	for _, volume := range volumes {
 		if err := s.MakeVol(ctx, volume); err != nil {
 			if errors.Is(err, errDiskAccessDenied) {
@@ -732,6 +744,9 @@ func (s *xlStorage) DeleteVol(_ context.Context, volume string, forceDelete bool
 
 //nolint:unused
 func (s *xlStorage) isLeaf(volume string, leafPath string) bool {
+	if !validStoragePath(leafPath) {
+		return false
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return false
@@ -753,6 +768,9 @@ func (s *xlStorage) isLeaf(volume string, leafPath string) bool {
 // ListDir - return all the entries at the given directory path.
 // If an entry is a directory it will be returned with a trailing SlashSeparator.
 func (s *xlStorage) ListDir(_ context.Context, volume, dirPath string, count int) (entries []string, err error) {
+	if !validStoragePath(dirPath) {
+		return nil, errFileAccessDenied
+	}
 	// Verify if volume is valid and it exists.
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
@@ -784,6 +802,18 @@ func (s *xlStorage) ListDir(_ context.Context, volume, dirPath string, count int
 // DeleteVersions deletes slice of versions, it can be same object
 // or multiple objects.
 func (s *xlStorage) DeleteVersions(ctx context.Context, volume string, versions []FileInfo) []error {
+	// Reject a bad late entry without deleting an earlier valid one.
+	_, validationErr := s.getVolDir(volume)
+	if validationErr == nil {
+		validationErr = validateStorageVersions(versions)
+	}
+	if validationErr != nil {
+		errs := make([]error, len(versions))
+		for i := range errs {
+			errs[i] = validationErr
+		}
+		return errs
+	}
 	errs := make([]error, len(versions))
 
 	for i, version := range versions {
@@ -798,6 +828,12 @@ func (s *xlStorage) DeleteVersions(ctx context.Context, volume string, versions 
 // DeleteVersion - deletes FileInfo metadata for path at `xl.meta`. forceDelMarker
 // will force creating a new `xl.meta` to create a new delete marker
 func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi FileInfo, forceDelMarker bool) error {
+	if err := validateStorageFileInfo(fi, false); err != nil {
+		return err
+	}
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	if HasSuffix(path, SlashSeparator) {
 		return s.Delete(ctx, volume, path, false)
 	}
@@ -901,6 +937,12 @@ func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi F
 
 // Updates only metadata for a given version.
 func (s *xlStorage) UpdateMetadata(ctx context.Context, volume, path string, fi FileInfo) error {
+	if err := validateStorageFileInfo(fi, false); err != nil {
+		return err
+	}
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	if len(fi.Metadata) == 0 {
 		return errInvalidArgument
 	}
@@ -939,6 +981,12 @@ func (s *xlStorage) UpdateMetadata(ctx context.Context, volume, path string, fi 
 
 // WriteMetadata - writes FileInfo metadata for path at `xl.meta`
 func (s *xlStorage) WriteMetadata(ctx context.Context, volume, path string, fi FileInfo) error {
+	if err := validateStorageFileInfo(fi, true); err != nil {
+		return err
+	}
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	buf, err := s.ReadAll(ctx, volume, pathJoin(path, xlStorageFormatFile))
 	if err != nil && err != errFileNotFound {
 		return err
@@ -979,6 +1027,9 @@ func (s *xlStorage) WriteMetadata(ctx context.Context, volume, path string, fi F
 }
 
 func (s *xlStorage) renameLegacyMetadata(volumeDir, path string) (err error) {
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	s.RLock()
 	legacy := s.formatLegacy
 	s.RUnlock()
@@ -1032,6 +1083,9 @@ func (s *xlStorage) renameLegacyMetadata(volumeDir, path string) (err error) {
 // for all objects less than `32KiB` this call returns data as well
 // along with metadata.
 func (s *xlStorage) ReadVersion(ctx context.Context, volume, path, versionID string, readData bool) (fi FileInfo, err error) {
+	if !validStoragePath(path) {
+		return FileInfo{}, errFileAccessDenied
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return fi, err
@@ -1074,6 +1128,9 @@ func (s *xlStorage) ReadVersion(ctx context.Context, volume, path, versionID str
 	fi, err = getFileInfo(buf, volume, path, versionID, readData)
 	if err != nil {
 		return fi, err
+	}
+	if err := validateStorageFileInfo(fi, true); err != nil {
+		return FileInfo{}, err
 	}
 
 	if readData {
@@ -1156,6 +1213,9 @@ func (s *xlStorage) readAllData(volumeDir string, filePath string, requireDirect
 // This API is meant to be used on files which have small memory footprint, do
 // not use this on large files as it would cause server to crash.
 func (s *xlStorage) ReadAll(_ context.Context, volume string, path string) (buf []byte, err error) {
+	if !validStoragePath(path) {
+		return nil, errFileAccessDenied
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return nil, err
@@ -1185,6 +1245,12 @@ func (s *xlStorage) ReadAll(_ context.Context, volume string, path string) (buf 
 // Additionally ReadFile also starts reading from an offset. ReadFile
 // semantics are same as io.ReadFull.
 func (s *xlStorage) ReadFile(_ context.Context, volume string, path string, offset int64, buffer []byte, verifier *BitrotVerifier) (int64, error) {
+	if verifier != nil && !verifier.algorithm.Available() {
+		return 0, errFileCorrupt
+	}
+	if !validStoragePath(path) {
+		return 0, errFileAccessDenied
+	}
 	if offset < 0 {
 		return 0, errInvalidArgument
 	}
@@ -1374,6 +1440,12 @@ func (o *odirectReader) Close() error {
 
 // ReadFileStream - Returns the read stream of the file.
 func (s *xlStorage) ReadFileStream(_ context.Context, volume, path string, offset, length int64) (io.ReadCloser, error) {
+	if offset < 0 || length < 0 || offset > int64(^uint64(0)>>1)-length {
+		return nil, errInvalidArgument
+	}
+	if !validStoragePath(path) {
+		return nil, errFileAccessDenied
+	}
 	if offset < 0 {
 		return nil, errInvalidArgument
 	}
@@ -1485,6 +1557,9 @@ func (c closeWrapper) Close() error {
 
 // CreateFile - creates the file.
 func (s *xlStorage) CreateFile(_ context.Context, volume, path string, fileSize int64, r io.Reader) (err error) {
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	if fileSize < -1 {
 		return errInvalidArgument
 	}
@@ -1567,6 +1642,9 @@ func (s *xlStorage) CreateFile(_ context.Context, volume, path string, fileSize 
 }
 
 func (s *xlStorage) WriteAll(_ context.Context, volume string, path string, b []byte) (err error) {
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1598,6 +1676,9 @@ func (s *xlStorage) WriteAll(_ context.Context, volume string, path string, b []
 // AppendFile - append a byte array at path, if file doesn't exist at
 // path this call explicitly creates it.
 func (s *xlStorage) AppendFile(_ context.Context, volume string, path string, buf []byte) (err error) {
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1643,6 +1724,15 @@ func (s *xlStorage) AppendFile(_ context.Context, volume string, path string, bu
 
 // CheckParts check if path has necessary parts available.
 func (s *xlStorage) CheckParts(_ context.Context, volume string, path string, fi FileInfo) error {
+	if fi.Deleted {
+		return errFileCorrupt
+	}
+	if err := validateStorageFileInfo(fi, true); err != nil {
+		return err
+	}
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1686,6 +1776,9 @@ func (s *xlStorage) CheckParts(_ context.Context, volume string, path string, fi
 // - "a/b/"
 // - "a/"
 func (s *xlStorage) CheckFile(_ context.Context, volume string, path string) error {
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1749,7 +1842,10 @@ func (s *xlStorage) deleteFile(basePath, deletePath string, recursive bool) erro
 	isObjectDir := HasSuffix(deletePath, SlashSeparator)
 	basePath = pathutil.Clean(basePath)
 	deletePath = pathutil.Clean(deletePath)
-	if !strings.HasPrefix(deletePath, basePath) || deletePath == basePath {
+	if !storagePathWithin(basePath, deletePath) {
+		return errFileAccessDenied
+	}
+	if deletePath == basePath {
 		return nil
 	}
 
@@ -1793,6 +1889,9 @@ func (s *xlStorage) deleteFile(basePath, deletePath string, recursive bool) erro
 
 // DeleteFile - delete a file at path.
 func (s *xlStorage) Delete(_ context.Context, volume string, path string, recursive bool) (err error) {
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err
@@ -1823,6 +1922,19 @@ func (s *xlStorage) Delete(_ context.Context, volume string, path string, recurs
 
 // RenameData - rename source path to destination path atomically, metadata and data directory.
 func (s *xlStorage) RenameData(ctx context.Context, srcVolume, srcPath string, fi FileInfo, dstVolume, dstPath string) (err error) {
+	if err := validateStorageFileInfo(fi, true); err != nil {
+		return err
+	}
+	if !validStoragePath(srcPath) || !validStoragePath(dstPath) {
+		return errFileAccessDenied
+	}
+	// Check both sides before reading or modifying either side.
+	if _, err := s.getVolDir(srcVolume); err != nil {
+		return err
+	}
+	if _, err := s.getVolDir(dstVolume); err != nil {
+		return err
+	}
 	defer func() {
 		if err == nil {
 			if s.globalSync {
@@ -2071,6 +2183,16 @@ func (s *xlStorage) RenameData(ctx context.Context, srcVolume, srcPath string, f
 
 // RenameFile - rename source path to destination path atomically.
 func (s *xlStorage) RenameFile(_ context.Context, srcVolume, srcPath, dstVolume, dstPath string) (err error) {
+	if !validStoragePath(srcPath) || !validStoragePath(dstPath) {
+		return errFileAccessDenied
+	}
+	// Check both sides before reading or modifying either side.
+	if _, err := s.getVolDir(srcVolume); err != nil {
+		return err
+	}
+	if _, err := s.getVolDir(dstVolume); err != nil {
+		return err
+	}
 	srcVolumeDir, err := s.getVolDir(srcVolume)
 	if err != nil {
 		return err
@@ -2167,6 +2289,12 @@ func (s *xlStorage) bitrotVerify(partPath string, partSize int64, algo BitrotAlg
 }
 
 func (s *xlStorage) VerifyFile(_ context.Context, volume, path string, fi FileInfo) (err error) {
+	if err := validateStorageVerifyInfo(fi); err != nil {
+		return err
+	}
+	if !validStoragePath(path) {
+		return errFileAccessDenied
+	}
 	volumeDir, err := s.getVolDir(volume)
 	if err != nil {
 		return err

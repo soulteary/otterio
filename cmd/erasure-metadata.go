@@ -64,25 +64,45 @@ func (e ErasureInfo) GetChecksumInfo(partNumber int) (ckSum ChecksumInfo) {
 
 // ShardFileSize - returns final erasure size from original size.
 func (e ErasureInfo) ShardFileSize(totalLength int64) int64 {
-	if totalLength == 0 {
-		return 0
+	// -1 remains the unknown-stream sentinel; persisted part sizes are checked
+	// separately. Invalid arithmetic must never panic or wrap into a small size.
+	if totalLength < 0 || e.BlockSize <= 0 || e.DataBlocks <= 0 {
+		return -1
 	}
-	if totalLength == -1 {
+	shardSize := e.ShardSize()
+	if shardSize < 0 {
 		return -1
 	}
 	numShards := totalLength / e.BlockSize
 	lastBlockSize := totalLength % e.BlockSize
-	lastShardSize := ceilFrac(lastBlockSize, int64(e.DataBlocks))
-	return numShards*e.ShardSize() + lastShardSize
+	lastShardSize := lastBlockSize / int64(e.DataBlocks)
+	if lastBlockSize%int64(e.DataBlocks) != 0 {
+		lastShardSize++
+	}
+	const maxInt64 = int64(^uint64(0) >> 1)
+	if numShards > (maxInt64-lastShardSize)/shardSize {
+		return -1
+	}
+	return numShards*shardSize + lastShardSize
 }
 
-// ShardSize - returns actual shared size from erasure blockSize.
+// ShardSize returns -1 for invalid parameters rather than dividing by zero.
 func (e ErasureInfo) ShardSize() int64 {
-	return ceilFrac(e.BlockSize, int64(e.DataBlocks))
+	if e.BlockSize <= 0 || e.DataBlocks <= 0 {
+		return -1
+	}
+	n := e.BlockSize / int64(e.DataBlocks)
+	if e.BlockSize%int64(e.DataBlocks) != 0 {
+		n++
+	}
+	return n
 }
 
 // IsValid - tells if erasure info fields are valid.
 func (fi FileInfo) IsValid() bool {
+	if !validStorageFileInfoPaths(fi) || !validStorageFileInfoData(fi) {
+		return false
+	}
 	if fi.Deleted {
 		// Delete marker has no data, no need to check
 		// for erasure coding information

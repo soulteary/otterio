@@ -140,14 +140,34 @@ func bitrotWriterSum(w io.Writer) []byte {
 
 // Returns the size of the file with bitrot protection
 func bitrotShardFileSize(size int64, shardSize int64, algo BitrotAlgorithm) int64 {
+	if size < 0 || !algo.Available() {
+		return -1
+	}
 	if algo != HighwayHash256S {
 		return size
 	}
-	return ceilFrac(size, shardSize)*int64(algo.New().Size()) + size
+	if shardSize <= 0 || shardSize > blockSizeV1 {
+		return -1
+	}
+	n := size / shardSize
+	if size%shardSize != 0 {
+		n++
+	}
+	hashSize := int64(algo.New().Size())
+	if n > (int64(^uint64(0)>>1)-size)/hashSize {
+		return -1
+	}
+	return n*hashSize + size
 }
 
 // bitrotVerify a single stream of data.
 func bitrotVerify(r io.Reader, wantSize, partSize int64, algo BitrotAlgorithm, want []byte, shardSize int64) error {
+	if wantSize < 0 || partSize < 0 || !algo.Available() {
+		return errFileCorrupt
+	}
+	if algo == HighwayHash256S && (shardSize <= 0 || shardSize > blockSizeV1) {
+		return errFileCorrupt
+	}
 	if algo != HighwayHash256S {
 		h := algo.New()
 		if n, err := io.Copy(h, r); err != nil || n != wantSize {
@@ -162,7 +182,7 @@ func bitrotVerify(r io.Reader, wantSize, partSize int64, algo BitrotAlgorithm, w
 
 	h := algo.New()
 	hashBuf := make([]byte, h.Size())
-	buf := make([]byte, shardSize)
+	buf := make([]byte, 32<<10) // independent of peer-supplied shard size
 	left := wantSize
 
 	// Calculate the size of the bitrot file and compare
@@ -188,6 +208,9 @@ func bitrotVerify(r io.Reader, wantSize, partSize int64, algo BitrotAlgorithm, w
 		if err != nil {
 			// Read's failed for object with right size, at different offsets.
 			return err
+		}
+		if read != shardSize {
+			return errFileCorrupt
 		}
 		left -= read
 		if !bytes.Equal(h.Sum(nil), hashBuf) {
