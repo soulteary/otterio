@@ -1,37 +1,26 @@
 name: Release
 
-# Build and publish a versioned release whenever a tag is pushed.
-#
-# Triggers on tags like:
-#   - v1.2.3            (semver)
-#   - RELEASE.2026-...  (MinIO-style release tags)
-#
-# Produces:
-#   1. Cross-platform binaries (Linux/macOS/Windows, multiple arches) + checksums
-#   2. Multi-arch Docker images pushed to GHCR (always) and Docker Hub (if secrets set)
-#   3. A GitHub Release with the binaries attached
-#
-# Required configuration:
-#   - GHCR: works out of the box using the built-in GITHUB_TOKEN.
-#   - Docker Hub (optional): set repository secrets DOCKERHUB_USERNAME and
-#     DOCKERHUB_TOKEN to also push to docker.io/<username>/otterio.
-
+# Publish an existing RELEASE.YYYY-MM-DDTHH-MM-SSZ tag after its main CI passes.
+# See docs/releasing.md. Manual runs never create tags or build the selected branch.
 on:
   push:
     tags:
-      - 'v*'
       - 'RELEASE.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Version/tag to build (e.g. v1.0.0)'
+        description: 'Existing RELEASE.YYYY-MM-DDTHH-MM-SSZ tag'
         required: true
+        type: string
+      promote_latest:
+        description: 'Update latest aliases (only for the newest stable release)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
-# A given tag should only be released once at a time.
 concurrency:
   group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
@@ -40,18 +29,66 @@ env:
   GO_VERSION: '1.26.x'
 
 jobs:
-  binaries:
-    name: Build binaries
+  prepare:
+    name: Validate release source and CI
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     outputs:
-      version: ${{ steps.ver.outputs.version }}
-      tag: ${{ steps.ver.outputs.tag }}
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      sha: ${{ steps.meta.outputs.sha }}
+      latest: ${{ github.event_name == 'push' || inputs.promote_latest }}
     steps:
       - uses: actions/checkout@v6
         with:
-          # gen-ldflags.go reads git history to derive commit/version info.
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
           fetch-depth: 0
-          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Validate tag, source and release notes
+        id: meta
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: python3 buildscripts/release-preflight.py --existing "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Require successful main CI for the exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.meta.outputs.sha }}
+        run: |
+          set -euo pipefail
+          for workflow in go.yml lint.yml release-checks.yml; do
+            result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${RELEASE_SHA}&branch=main&event=push&per_page=1" \
+              --jq '.workflow_runs[0] | [.status, .conclusion] | @tsv')"
+            if [ "$result" != $'completed\tsuccess' ]; then
+              echo "::error::${workflow} must succeed on main at ${RELEASE_SHA}; rerun this release after CI passes."
+              exit 1
+            fi
+          done
+
+      - name: Refuse to overwrite an already published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+            --jq '.[] | select(.draft == false) | .tag_name' > "$RUNNER_TEMP/published-tags"
+          if grep -Fxq -- "$RELEASE_TAG" "$RUNNER_TEMP/published-tags"; then
+            echo "::error::This release is already published. Prepare a new tag instead of overwriting it."
+            exit 1
+          fi
+
+  binaries:
+    name: Build binaries
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
 
       - uses: actions/setup-go@v6
         with:
@@ -59,78 +96,41 @@ jobs:
           check-latest: true
           cache: true
 
-      - name: Resolve version
-        id: ver
-        env:
-          REQUESTED_TAG: ${{ inputs.tag || github.ref_name }}
-        run: |
-          set -euo pipefail
-          TAG="${REQUESTED_TAG}"
-          if [[ ! "${TAG}" =~ ^RELEASE\.[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z$ && ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Unsupported release tag: ${TAG}" >&2
-            exit 1
-          fi
-          TAG_COMMIT="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
-          test "${TAG_COMMIT}" = "$(git rev-parse HEAD)"
-
-          # TAG is what we publish images/releases under (the git tag itself).
-          # VERSION is what gets passed to gen-ldflags.go as cmd.Version.
-          #
-          # For MinIO-style tags (RELEASE.2026-06-04T10-53-00Z) gen-ldflags.go
-          # re-adds the "RELEASE." prefix and converts ':' -> '-', so we must
-          # hand it the plain RFC3339 timestamp (2026-06-04T10:53:00Z) instead
-          # of the already-prefixed tag, otherwise the prefix is applied twice.
-          case "${TAG}" in
-            RELEASE.*)
-              VERSION="$(echo "${TAG}" | \
-                sed 's#RELEASE\.\([0-9]\+\)-\([0-9]\+\)-\([0-9]\+\)T\([0-9]\+\)-\([0-9]\+\)-\([0-9]\+\)Z#\1-\2-\3T\4:\5:\6Z#')"
-              ;;
-            *)
-              VERSION="${TAG}"
-              ;;
-          esac
-
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Git tag:        ${TAG}"
-          echo "Build version:  ${VERSION}"
-
       - name: Cross compile
         env:
           CGO_ENABLED: '0'
           GO111MODULE: 'on'
           OTTERIO_RELEASE: RELEASE
+          VERSION: ${{ needs.prepare.outputs.version }}
+          TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.ver.outputs.version }}"
-          TAG="${{ steps.ver.outputs.tag }}"
-          LDFLAGS="$(go run buildscripts/gen-ldflags.go "${VERSION}")"
+          LDFLAGS="$(go run buildscripts/gen-ldflags.go "$VERSION")"
           mkdir -p dist
-          platforms="linux/amd64 linux/arm64 linux/ppc64le darwin/amd64 darwin/arm64 windows/amd64"
-          for p in ${platforms}; do
+          for p in linux/amd64 linux/arm64 linux/ppc64le darwin/amd64 darwin/arm64 windows/amd64; do
             os="${p%/*}"
             arch="${p#*/}"
             out="dist/otterio-${os}-${arch}"
-            if [ "${os}" = "windows" ]; then
-              out="${out}.exe"
-            fi
-            echo "==> Building ${out}"
-            GOOS="${os}" GOARCH="${arch}" go build \
-              -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o "${out}" .
+            if [ "$os" = windows ]; then out="${out}.exe"; fi
+            GOOS="$os" GOARCH="$arch" go build \
+              -tags kqueue -trimpath -ldflags "$LDFLAGS" -o "$out" .
           done
-          ( cd dist && sha256sum * > "otterio-${TAG}-checksums.txt" )
-          ls -lh dist
+          (cd dist && sha256sum otterio-* > "otterio-${TAG}-checksums.txt")
+
+      - name: Smoke test the release binary
+        run: go run buildscripts/verify-s3-startup.go ./dist/otterio-linux-amd64
 
       - uses: actions/upload-artifact@v7
         with:
           name: binaries
           path: dist/
+          if-no-files-found: error
           retention-days: 7
 
   docker:
     name: Build and push image
     runs-on: ubuntu-latest
-    needs: binaries
+    needs: [prepare, binaries]
     permissions:
       contents: read
       packages: write
@@ -140,18 +140,21 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ needs.binaries.outputs.tag }}
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - uses: actions/download-artifact@v8
         with:
           name: binaries
           path: dist
 
-      - name: Make Linux binaries executable
-        run: chmod +x dist/otterio-linux-*
+      - name: Verify binaries and restore executable bits
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          (cd dist && sha256sum -c "otterio-${RELEASE_TAG}-checksums.txt")
+          chmod +x dist/otterio-linux-*
 
       - uses: docker/setup-qemu-action@v4
-
       - uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR
@@ -170,18 +173,20 @@ jobs:
 
       - name: Compute image tags
         id: tags
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          PROMOTE_LATEST: ${{ needs.prepare.outputs.latest }}
         run: |
           set -euo pipefail
-          VERSION="${{ needs.binaries.outputs.tag }}"
-          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
-          GHCR_REPO="ghcr.io/${OWNER}/otterio"
-          TAGS="${GHCR_REPO}:${VERSION},${GHCR_REPO}:latest"
-          if [ -n "${DOCKERHUB_USERNAME}" ] && [ -n "${DOCKERHUB_TOKEN}" ]; then
+          GHCR_REPO="ghcr.io/${GITHUB_REPOSITORY,,}"
+          TAGS="${GHCR_REPO}:${RELEASE_TAG}"
+          if [ "$PROMOTE_LATEST" = true ]; then TAGS="${TAGS},${GHCR_REPO}:latest"; fi
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
             DH_REPO="${DOCKERHUB_USERNAME}/otterio"
-            TAGS="${TAGS},${DH_REPO}:${VERSION},${DH_REPO}:latest"
+            TAGS="${TAGS},${DH_REPO}:${RELEASE_TAG}"
+            if [ "$PROMOTE_LATEST" = true ]; then TAGS="${TAGS},${DH_REPO}:latest"; fi
           fi
           echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
-          echo "Image tags: ${TAGS}"
 
       - uses: docker/build-push-action@v7
         with:
@@ -190,8 +195,11 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/ppc64le
           push: true
           build-args: |
-            RELEASE=${{ needs.binaries.outputs.tag }}
+            RELEASE=${{ needs.prepare.outputs.tag }}
           tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.sha }}
           provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -199,33 +207,50 @@ jobs:
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
-    needs: [binaries, docker]
+    needs: [prepare, binaries, docker]
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ needs.binaries.outputs.tag }}
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Recheck the tag before publishing
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: python3 buildscripts/release-preflight.py --existing "$RELEASE_TAG"
 
       - uses: actions/download-artifact@v8
         with:
           name: binaries
           path: dist
 
-      - name: Locate curated release notes
-        id: notes
+      - name: Verify release assets
         env:
-          TAG: ${{ needs.binaries.outputs.tag }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: cd dist && sha256sum -c "otterio-${RELEASE_TAG}-checksums.txt"
+
+      - name: Recheck publication state before uploading
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
-          if [ -f "docs/releases/${TAG}.md" ]; then
-            echo "path=docs/releases/${TAG}.md" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+            --jq '.[] | select(.draft == false) | .tag_name' > "$RUNNER_TEMP/published-tags"
+          if grep -Fxq -- "$RELEASE_TAG" "$RUNNER_TEMP/published-tags"; then
+            echo "::error::This release is already published; refusing to overwrite it."
+            exit 1
           fi
 
       - uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ needs.binaries.outputs.tag }}
-          name: Version ${{ needs.binaries.outputs.tag }}
-          body_path: ${{ steps.notes.outputs.path }}
-          fail_on_unmatched_files: true
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
+          name: Version ${{ needs.prepare.outputs.tag }}
+          body_path: RELEASE_NOTES.md
           files: dist/*
-          generate_release_notes: true
+          fail_on_unmatched_files: true
+          generate_release_notes: false
+          make_latest: ${{ needs.prepare.outputs.latest }}
