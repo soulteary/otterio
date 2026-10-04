@@ -1,7 +1,9 @@
 name: Stable release promotion
 
 # This workflow never builds, creates tags, changes version tags, or uploads
-# release assets. Both automatic and manual retries share this global lock.
+# release assets. Automatic/manual promotion and Release's publication job
+# share this lock from release-list validation through the final alias update.
+# A newer release cannot be published while an older promotion plan is in use.
 on:
   workflow_call:
     inputs:
@@ -20,6 +22,7 @@ permissions:
 concurrency:
   group: otterio-stable-promotion
   cancel-in-progress: false
+  queue: max
 jobs:
   promote:
     runs-on: ubuntu-latest

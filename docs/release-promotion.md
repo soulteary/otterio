@@ -20,6 +20,30 @@ stages:
    and promotes the recorded digests only when no newer stable release exists.
    The GitHub latest marker is updated after the registry aliases verify.
 
+## Publication and promotion share one critical section
+
+The `Release` workflow's **release job** and the entire `Stable release promotion`
+workflow use the literal concurrency group `otterio-stable-promotion`. The lock
+covers publication even when `promote_latest=false`. Promotion holds it before
+reading the published-release list and keeps it through version-digest checks,
+registry alias writes, and the GitHub latest update. A mere extra read immediately
+before writing would still leave a check-to-use race; the shared lock prevents
+these workflows from publishing a newer release during that interval.
+
+If the newer release publishes first, a delayed old promotion sees it and skips.
+If the older promotion acquires the lock first, its alias updates finish before
+the newer release becomes published. Disabling promotion for that newer release
+intentionally leaves aliases unchanged; it does not let a delayed old job write
+aliases after the new publication. A failed newer promotion likewise cannot make
+a later old job eligible. Builds and fixed-version image pushes remain parallel.
+
+Do not put this global lock on the whole `Release` workflow or its `promote`
+caller job: they would hold the same lock that the called workflow needs.
+Publication releases its job-level lock before the caller requests promotion.
+Both lock users set `cancel-in-progress: false` and `queue: max`, so up to 100
+pending jobs/workflow runs can queue without replacing each other. Timestamp
+validation, not queue order, decides which version may become latest.
+
 ## Retry without rebuilding
 
 After publication, use Actions -> **Stable release promotion** -> **Run workflow**
@@ -43,7 +67,9 @@ GitHub and multiple registries do not provide a cross-service atomic transaction
 A transient failure can leave aliases temporarily inconsistent; retry promotion
 for the newest verified release instead of rebuilding or rolling back. The
 concurrency group serializes these workflows, not out-of-band administrator
-writes. GitHub may replace a pending concurrency job; rerun promotion when needed.
+writes. Drain workflows started with the old, publication-unlocked definition
+before adopting this protocol. A full concurrency queue or a manually cancelled
+job still requires an explicit retry; check the run status before proceeding.
 Legacy releases without a manifest are refused, not silently adopted. Historical
 non-timestamp tags are not included in the timestamp version-order comparison.
 The manifest is an identity record, not a signature or supply-chain attestation.

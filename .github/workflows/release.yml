@@ -207,6 +207,13 @@ jobs:
     name: Verify draft assets and publish without moving latest
     runs-on: ubuntu-latest
     needs: [prepare, binaries, docker]
+    # A new published release invalidates an older promotion plan. Serialize
+    # publication with the ENTIRE promotion workflow, even when latest=false.
+    # Keep this at job scope: the caller must release the lock before promotion.
+    concurrency:
+      group: otterio-stable-promotion
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: write
     env:
