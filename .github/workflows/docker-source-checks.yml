@@ -2,10 +2,10 @@ name: Docker source checks
 on:
   pull_request:
     branches: [main]
-    paths: ['Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'browser/**', '.github/workflows/docker-source-checks.yml']
+    paths: ['Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
   push:
     branches: [main]
-    paths: ['Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'browser/**', '.github/workflows/docker-source-checks.yml']
+    paths: ['Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,10 +26,23 @@ jobs:
           VCS_REF: ${{ github.sha }}
         run: |
           set -euo pipefail
-          cat > cmd/zz_docker_source_probe.go <<'GO'
+          probe=cmd/zz_docker_source_probe.go
+          test ! -e "$probe"
+          trap 'rm -f "$probe"' EXIT
+          # --version reports ReleaseTag, not Version (see cmd/newApp).
+          # Set both through uncommitted source, not a build-arg: a remote
+          # checkout build must NOT pass this source-provenance regression.
+          cat > "$probe" <<'GO'
           package cmd
-          func init() { Version = "1999-01-02T03:04:05Z" }
+          func init() {
+              Version = "1999-01-02T03:04:05Z"
+              ReleaseTag = "DEVELOPMENT.1999-01-02T03-04-05Z"
+          }
           GO
           docker buildx build --load --build-arg "VCS_REF=$VCS_REF" -t otterio-source-test .
-          docker run --rm otterio-source-test --version | grep -F '1999-01-02T03:04:05Z'
-          test "$(docker image inspect otterio-source-test --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')" = "$VCS_REF"
+          # Keep stdout/stderr visible even when the assertion fails.
+          docker run --rm otterio-source-test --version 2>&1 | tee "$RUNNER_TEMP/otterio-version.txt"
+          grep -F -- 'DEVELOPMENT.1999-01-02T03-04-05Z' "$RUNNER_TEMP/otterio-version.txt"
+          revision="$(docker image inspect otterio-source-test --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+          printf 'Image revision: %s\n' "$revision"
+          test "$revision" = "$VCS_REF"
