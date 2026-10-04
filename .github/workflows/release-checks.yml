@@ -16,11 +16,15 @@ concurrency:
 
 jobs:
   preflight:
-    name: Release preflight regression tests
+    name: Release preflight and promotion regression tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Test release validation without network or credentials
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 -m unittest discover -s buildscripts -p 'test_release_preflight.py' -v
+        run: python3 -m unittest discover -s buildscripts -p 'test_release_*.py' -v
+      - name: Check release helper shell syntax
+        run: |
+          bash -n buildscripts/check-new-image-tags.sh
+          bash -n buildscripts/verify-release-image.sh
