@@ -119,7 +119,7 @@ chmod +x otterio
 ./otterio server /data
 ```
 
-The release pipeline ([`.goreleaser.yml`](./.goreleaser.yml)) currently produces Linux binaries for the following architectures:
+The release pipeline ([`release.yml`](./.github/workflows/release.yml)) currently produces Linux binaries for the following architectures:
 
 | Architecture                | `goarch`   |
 | --------------------------- | ---------- |
@@ -127,7 +127,7 @@ The release pipeline ([`.goreleaser.yml`](./.goreleaser.yml)) currently produces
 | 64-bit ARM                  | `arm64`    |
 | 64-bit PowerPC LE           | `ppc64le`  |
 
-`.deb` and `.rpm` packages are also produced for the supported architectures.
+The tag-driven workflow publishes raw binaries and SHA-256 checksums; it does not publish `.deb` or `.rpm` packages. See the [release guide](./docs/releases/README.md).
 
 ### Windows
 

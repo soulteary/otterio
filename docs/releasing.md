@@ -29,16 +29,15 @@ GoReleaser, Go, Docker and GitHub CLI are not required to push a release tag.
 From a clean clone, after the preparation PR is merged:
 
 ```sh
-git switch main
-git fetch origin main --tags
-git pull --ff-only origin main
-
-TAG="RELEASE.$(date -u +%Y-%m-%dT%H-%M-%SZ)"
-python3 buildscripts/release-preflight.py "$TAG"
-
+# The && chain stops immediately if any prerequisite or signature check fails.
 # Recommended: use your already configured signing key.
-git tag -s "$TAG" -m "OtterIO $TAG"
-git verify-tag "$TAG"
+git switch main &&
+git fetch origin main --tags &&
+git pull --ff-only origin main &&
+TAG="RELEASE.$(date -u +%Y-%m-%dT%H-%M-%SZ)" &&
+python3 buildscripts/release-preflight.py "$TAG" &&
+git tag -s "$TAG" -m "OtterIO $TAG" &&
+git verify-tag "$TAG" &&
 git push origin "refs/tags/$TAG"
 ```
 
