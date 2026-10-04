@@ -314,6 +314,8 @@ OtterIO 与 AWS S3 API 协议兼容，因此 `aws-cli`、`s3cmd` 以及各语言
 
 ## 如何参与到 OtterIO 项目
 
+感谢帮助项目发现问题、提供分析和提交补丁的贡献者，具体贡献见[项目致谢记录](ACKNOWLEDGMENTS.md)。
+
 欢迎通过仓库 <https://github.com/soulteary/otterio> 参与贡献。继承自上游基线的编码规范请参考原始 [Contributor's Guide](https://github.com/minio/minio/blob/master/CONTRIBUTING.md)。
 
 ---
