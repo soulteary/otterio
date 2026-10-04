@@ -1,6 +1,6 @@
 PWD := $(shell pwd)
 GOPATH := $(shell go env GOPATH)
-LDFLAGS := $(shell go run buildscripts/gen-ldflags.go)
+LDFLAGS = $(shell go run buildscripts/gen-ldflags.go)
 
 GOARCH := $(shell go env GOARCH)
 GOOS := $(shell go env GOOS)
@@ -49,7 +49,8 @@ test: verifiers build
 	@echo "Running unit tests"
 	@GOGC=25 GO111MODULE=on CGO_ENABLED=0 go test -tags kqueue ./... 1>/dev/null
 
-test-race: build
+.PHONY: test-race
+test-race:
 	@echo "Running unit tests under -race"
 	@(env bash $(PWD)/buildscripts/race.sh)
 

@@ -39,10 +39,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      # setup-go ships its own module cache helper, but it does not cover the
-      # build cache (GOCACHE) and uses different keys per platform. We disable
-      # it here and manage both caches explicitly below so Windows benefits as
-      # much as Linux on subsequent runs.
+      # setup-go can cache both modules and build outputs. Manage them here
+      # separately so build snapshots can advance with source commits without
+      # re-uploading the module download cache for every change.
       - uses: actions/setup-go@v7.0.0
         id: go
         with:
@@ -57,14 +56,24 @@ jobs:
           echo "modcache=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
           echo "buildcache=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v6.1.0
+      - name: Cache Go modules
+        uses: actions/cache@v6.1.0
         with:
-          path: |
-            ${{ steps.gocache.outputs.modcache }}
-            ${{ steps.gocache.outputs.buildcache }}
-          key: ${{ runner.os }}-go-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
+          path: ${{ steps.gocache.outputs.modcache }}
+          key: gomod-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.mod', 'go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-${{ steps.go.outputs.go-version }}-
+            gomod-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-
+
+      # Actions caches are immutable. Save a new build snapshot per commit,
+      # restore the nearest compatible one, and let Go validate individual entries.
+      - name: Cache plain build outputs
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ steps.gocache.outputs.buildcache }}
+          key: gobuild-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-plain-cgo0-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gobuild-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-plain-cgo0-${{ hashFiles('go.mod', 'go.sum') }}-
+            gobuild-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-plain-cgo0-
 
       # Pull modules in a dedicated step so the (potentially noisy) download
       # output is clearly separated from the build/test output in the UI.
@@ -123,8 +132,13 @@ jobs:
   test-race:
     name: Race detector
     runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: '1'
+      GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Test race CI helpers
+        run: python3 -m unittest discover -s buildscripts -p 'test_race_*.py' -v
       - uses: actions/setup-go@v7.0.0
         id: go
         with:
@@ -139,27 +153,63 @@ jobs:
           echo "modcache=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
           echo "buildcache=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
 
-      # Use a race-specific cache key: the race-instrumented standard library
-      # and test binaries live in GOCACHE under different entries than the
-      # plain build, and sharing a key would cause constant evictions.
-      - uses: actions/cache@v6.1.0
+      # Keep race and plain build snapshots separate. Go already distinguishes
+      # their entries; separate Actions keys avoid competing incomplete snapshots.
+      - name: Cache Go modules
+        uses: actions/cache@v6.1.0
         with:
-          path: |
-            ${{ steps.gocache.outputs.modcache }}
-            ${{ steps.gocache.outputs.buildcache }}
-          key: ${{ runner.os }}-go-race-${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
+          path: ${{ steps.gocache.outputs.modcache }}
+          key: gomod-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.mod', 'go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-race-${{ steps.go.outputs.go-version }}-
+            gomod-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-
+
+      # Actions caches are immutable. Save a new build snapshot per commit,
+      # restore the nearest compatible one, and let Go validate individual entries.
+      - name: Cache race build outputs
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ steps.gocache.outputs.buildcache }}
+          key: gobuild-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-race-kqueue-cgo1-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gobuild-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-race-kqueue-cgo1-${{ hashFiles('go.mod', 'go.sum') }}-
+            gobuild-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-race-kqueue-cgo1-
 
       - name: Download modules
         shell: bash
         run: go mod download
 
-      - name: make test-race
+      - name: Race tests (full suite)
+        id: race
+        shell: bash
         run: |
+          set -euo pipefail
           sudo sysctl net.ipv6.conf.all.disable_ipv6=0
           sudo sysctl net.ipv6.conf.default.disable_ipv6=0
-          make test-race
+          mkdir -p "$RUNNER_TEMP/otterio-race"
+          {
+            go version
+            go env GOOS GOARCH CGO_ENABLED GOTOOLCHAIN
+            printf 'CPU count: '; nproc
+          } > "$RUNNER_TEMP/otterio-race/environment.txt"
+          # Use the same launcher as make test-race; stdout stays pure JSON.
+          # pipefail ensures tee cannot turn failed tests into a successful step.
+          /usr/bin/time -v -o "$RUNNER_TEMP/otterio-race/resources.txt" \
+            bash buildscripts/race.sh -json \
+            | tee "$RUNNER_TEMP/otterio-race/race.jsonl"
+
+      - name: Summarize race diagnostics
+        if: always()
+        shell: bash
+        run: python3 buildscripts/summarize_race.py "$RUNNER_TEMP/otterio-race/race.jsonl" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload race diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: race-diagnostics-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/otterio-race/
+          if-no-files-found: warn
+          retention-days: 7
 
   # Lint and code-generation freshness check. Previously these ran implicitly
   # as part of `make test-race` (via the `verifiers` prerequisite), which
