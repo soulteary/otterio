@@ -414,16 +414,13 @@ func (api objectAPIHandlers) GetObjectHandler(w http.ResponseWriter, r *http.Req
 
 		// SECURITY: GHSA-95fr-cm4m-q5p9 / CVE-2024-36107.
 		// Re-evaluate authorization with the existing object's tags now
-		// injected into the request, so policies that gate on
+		// supplied through request context, so policies that gate on
 		// s3:ExistingObjectTag/<k> can deny access *before* checkPreconditions
 		// has a chance to write Last-Modified / ETag (or any other object
 		// metadata) on a 304 / 412 response. Without this second check, an
 		// "If-None-Match: *" probe could leak whether the object exists / its
 		// ETag even though the per-tag policy would otherwise deny GetObject.
-		if oi.UserTags != "" {
-			r.Header.Set(xhttp.AmzObjectTagging, oi.UserTags)
-		}
-		if s3Error := checkRequestAuthType(ctx, r, policy.GetObjectAction, bucket, object); s3Error != ErrNone {
+		if s3Error := checkRequestAuthType(ctx, withObjectTags(r, oi.UserTags), policy.GetObjectAction, bucket, object); s3Error != ErrNone {
 			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL, guessIsBrowserReq(r))
 			return true
 		}
@@ -685,15 +682,12 @@ func (api objectAPIHandlers) HeadObjectHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// SECURITY: GHSA-95fr-cm4m-q5p9 / CVE-2024-36107.
-	// Inject the existing object's tags into the request and re-evaluate
+	// Supply the existing object's tags through request context and re-evaluate
 	// authorization before checkPreconditions runs, so policies that gate on
 	// s3:ExistingObjectTag/<k> can deny the request *before* any object
 	// metadata (Last-Modified / ETag / version-id) is written to the
 	// response. See the matching block in GetObjectHandler.
-	if objInfo.UserTags != "" {
-		r.Header.Set(xhttp.AmzObjectTagging, objInfo.UserTags)
-	}
-	if s3Error := checkRequestAuthType(ctx, r, policy.GetObjectAction, bucket, object); s3Error != ErrNone {
+	if s3Error := checkRequestAuthType(ctx, withObjectTags(r, objInfo.UserTags), policy.GetObjectAction, bucket, object); s3Error != ErrNone {
 		writeErrorResponseHeadersOnly(w, errorCodes.ToAPIErr(s3Error))
 		return
 	}

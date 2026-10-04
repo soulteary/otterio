@@ -208,7 +208,7 @@ func TestDoesPresignedSignatureMatch(t *testing.T) {
 				"X-Amz-Content-Sha256": payloadSHA256,
 			},
 			headers: map[string]string{
-				"X-Amz-Date":           now.Format(iso8601Format),
+				"X-Amz-Date":           now.Add(1 * time.Hour).Format(iso8601Format),
 				"X-Amz-Content-Sha256": payloadSHA256,
 			},
 			region:   region,

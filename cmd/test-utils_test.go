@@ -938,13 +938,20 @@ func preSignV4(req *http.Request, accessKeyID, secretAccessKey string, expires i
 	query.Set("X-Amz-Algorithm", signV4Algorithm)
 	query.Set("X-Amz-Date", date.Format(iso8601Format))
 	query.Set("X-Amz-Expires", strconv.FormatInt(expires, 10))
-	query.Set("X-Amz-SignedHeaders", "host")
 	query.Set("X-Amz-Credential", credential)
 	query.Set("X-Amz-Content-Sha256", unsignedPayload)
+	req.Header.Set(xhttp.AmzContentSha256, unsignedPayload)
 
-	// "host" is the only header required to be signed for Presigned URLs.
+	// Sign the S3 headers present at issuance, just as a real SDK does.
 	extractedSignedHeaders := make(http.Header)
 	extractedSignedHeaders.Set("host", req.Host)
+	for name, values := range req.Header {
+		lower := strings.ToLower(name)
+		if (strings.HasPrefix(lower, "x-amz-") || strings.HasPrefix(lower, "x-otterio-")) && lower != "x-amz-content-sha256" {
+			extractedSignedHeaders[name] = values
+		}
+	}
+	query.Set("X-Amz-SignedHeaders", getSignedHeaders(extractedSignedHeaders))
 
 	queryStr := strings.Replace(query.Encode(), "+", "%20", -1)
 	canonicalRequest := getCanonicalRequest(extractedSignedHeaders, unsignedPayload, queryStr, req.URL.Path, req.Method)

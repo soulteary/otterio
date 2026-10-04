@@ -33,8 +33,8 @@ import (
 // SECURITY: GHSA-95fr-cm4m-q5p9 / CVE-2024-36107 regression coverage.
 //
 // These tests pin the contract that GetObjectHandler / HeadObjectHandler
-// re-evaluate IAM authorization with the existing object's tags injected
-// into r.Header[X-Amz-Tagging] *before* checkPreconditions runs. If the
+// re-evaluate IAM authorization with the existing object's tags supplied
+// through request context *before* checkPreconditions runs. If the
 // second authorization check denies the request, the handler must return
 // 403 with no Last-Modified / ETag / X-Amz-Version-Id leaked.
 
@@ -152,7 +152,7 @@ func installAllowPolicy(t *testing.T, bucketName, objectName string) {
 
 // putTaggedObject puts a small object whose X-Amz-Tagging header value is
 // persisted as the object's UserTags. This is what the handler later
-// injects into r.Header so per-tag policies can be evaluated.
+// supplies through request context so per-tag policies can be evaluated.
 func putTaggedObject(t *testing.T, obj ObjectLayer, bucket, object, tagging string, body []byte) ObjectInfo {
 	t.Helper()
 	meta := map[string]string{}

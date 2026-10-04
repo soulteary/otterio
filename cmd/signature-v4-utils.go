@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -151,6 +152,40 @@ func extractSignedHeaders(signedHeaders []string, r *http.Request) (http.Header,
 	// if not return ErrUnsignedHeaders. "host" is mandatory.
 	if !contains(signedHeaders, "host") {
 		return nil, ErrUnsignedHeaders
+	}
+	// SignedHeaders is supplied by the client. Checking only that list lets
+	// a valid PUT signature acquire CopyObject (or other S3) semantics through
+	// an additional, unsigned header. Validate the received headers as well.
+	// Fork-specific replication headers carry privileges too.
+	presigned := isRequestPresignedSignatureV4(r)
+	for name, values := range reqHeaders {
+		name = strings.ToLower(name)
+		if !strings.HasPrefix(name, "x-amz-") && !strings.HasPrefix(name, "x-otterio-") {
+			continue
+		}
+		// SDKs may hoist headers into the signed query string. A repeated
+		// header must have exactly the same values; merely finding its name
+		// in the query would allow the unsigned header to override it.
+		querySigned := false
+		if presigned {
+			for queryName, queryValues := range reqQueries {
+				if strings.EqualFold(queryName, name) {
+					if !slices.Equal(values, queryValues) {
+						return nil, ErrInvalidRequest
+					}
+					querySigned = true
+				}
+			}
+		}
+		// S3 includes this value in HashedPayload, so it need not also be
+		// listed in SignedHeaders. Do not extend this exception to other
+		// x-amz-* headers (in particular copy-source or security-token).
+		if name == "x-amz-content-sha256" {
+			continue
+		}
+		if !contains(signedHeaders, name) && !querySigned {
+			return nil, ErrUnsignedHeaders
+		}
 	}
 	extractedSignedHeaders := make(http.Header)
 	for _, header := range signedHeaders {
