@@ -63,16 +63,16 @@ jobs:
               exit 1
             fi
           done
-      - name: Refuse to rebuild an already published release
+      - name: Reject published releases and prerelease drafts before building
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.meta.outputs.tag }}
         run: |
           set -euo pipefail
           gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
-            --jq '.[] | select(.draft == false) | .tag_name' > "$RUNNER_TEMP/published-tags"
-          if grep -Fxq -- "$RELEASE_TAG" "$RUNNER_TEMP/published-tags"; then
-            echo '::error::Already published. Use Stable release promotion to retry latest without rebuilding.'
+            --jq '.[] | select(.draft != true or .prerelease != false) | .tag_name' > "$RUNNER_TEMP/unavailable-tags"
+          if grep -Fxq -- "$RELEASE_TAG" "$RUNNER_TEMP/unavailable-tags"; then
+            echo '::error::Release is already published or is not a stable draft. Resolve draft state before building; use Stable release promotion for published stable releases.'
             exit 1
           fi
 
@@ -260,8 +260,8 @@ jobs:
           gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
             | jq --arg tag "$RELEASE_TAG" '.[] | select(.tag_name == $tag)' > "$RUNNER_TEMP/release-state.json"
           if [ -s "$RUNNER_TEMP/release-state.json" ]; then
-            jq -e '.draft == true' "$RUNNER_TEMP/release-state.json" >/dev/null || {
-              echo '::error::Already published; refusing to overwrite release assets.'; exit 1;
+            jq -se 'length == 1 and .[0].draft == true and .[0].prerelease == false' "$RUNNER_TEMP/release-state.json" >/dev/null || {
+              echo '::error::Expected one non-prerelease draft; refusing to change release assets or publication state.'; exit 1;
             }
           else
             gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
