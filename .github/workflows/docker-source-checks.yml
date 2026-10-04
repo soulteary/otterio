@@ -2,10 +2,10 @@ name: Docker source checks
 on:
   pull_request:
     branches: [main]
-    paths: ['Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
+    paths: ['go.mod', 'go.sum', 'Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
   push:
     branches: [main]
-    paths: ['Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
+    paths: ['go.mod', 'go.sum', 'Dockerfile', '.dockerignore', 'buildscripts/gen-ldflags.go', 'buildscripts/test_build_metadata.py', 'cmd/main.go', 'dockerscripts/docker-entrypoint.sh', 'browser/**', '.github/workflows/docker-source-checks.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
         with:
-          go-version: '1.26.x'
+          go-version: '1.27.1'
           cache: true
       - run: python3 -m unittest discover -s buildscripts -p test_build_metadata.py -v
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@v4.4.1
       - name: Prove uncommitted local code reaches the image
         env:
           VCS_REF: ${{ github.sha }}

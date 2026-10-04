@@ -15,7 +15,7 @@
  */
 
 import configureStore from "redux-mock-store"
-import thunk from "redux-thunk"
+import { thunk } from "redux-thunk"
 import * as actionsCommon from "../actions"
 
 jest.mock("../../web", () => ({

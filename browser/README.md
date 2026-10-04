@@ -1,172 +1,48 @@
 # OtterIO File Browser
 
-``OtterIO Browser`` provides minimal set of UI to manage buckets and objects on ``otterio`` server. ``OtterIO Browser`` is written in javascript and released under the [Apache 2.0 License](../LICENSE).
+The browser is part of the independent Apache-2.0 OtterIO project. It is not
+affiliated with or endorsed by MinIO, Inc.
 
-> NOTE: This is part of OtterIO, an independent, community-maintained fork of OtterIO
-> (https://github.com/soulteary/otterio). It is not affiliated with, endorsed by,
-> or sponsored by MinIO, Inc. "MinIO" is a trademark of MinIO, Inc.
+## Toolchain
 
+Use Node.js 24.21.0 or newer and Bun 1.4.2. Building the Go server additionally
+requires Go 1.27.1 or newer. CI pins these toolchain versions so the committed
+lockfile and embedded production assets can be verified together.
 
-## Installation
+## Install, test and build
 
-### Install bun
-```sh
-curl -fsSL https://bun.sh/install | bash
-exec -l $SHELL
-```
-
-### Install dependencies
-```sh
-bun install
-```
-
-## Generating Assets
+Run from `browser/`:
 
 ```sh
+bun install --frozen-lockfile
+bun run test --runInBand
 bun run release
 ```
 
-This generates `production` in the current directory. 
+Commit `bun.lock`, `package.json` and the regenerated `production/` files
+together. Go embeds these assets; updating package versions without rebuilding
+them does not update the shipped console. CI rebuilds and rejects stale assets.
+Use `bun update --latest` only when intentionally refreshing dependencies.
 
-
-## Run OtterIO Browser with live reload
-
-### Run OtterIO Browser with live reload
-
-```sh
-bun run dev
-```
-
-Open [http://localhost:8080/otterio/](http://localhost:8080/otterio/) in your browser to play with the application.
-
-### Run OtterIO Browser with live reload on custom port
-
-Edit `browser/webpack.config.js`
-
-```diff
-diff --git a/browser/webpack.config.js b/browser/webpack.config.js
-index 3ccdaba..9496c56 100644
---- a/browser/webpack.config.js
-+++ b/browser/webpack.config.js
-@@ -58,6 +58,7 @@ var exports = {
-     historyApiFallback: {
-       index: '/otterio/'
-     },
-+    port: 8888,
-     proxy: {
-       '/otterio/webrpc': {
-         target: 'http://localhost:9000',
-@@ -97,7 +98,7 @@ var exports = {
- if (process.env.NODE_ENV === 'dev') {
-   exports.entry = [
-     'webpack/hot/dev-server',
--    'webpack-dev-server/client?http://localhost:8080',
-+    'webpack-dev-server/client?http://localhost:8888',
-     path.resolve(__dirname, 'app/index.js')
-   ]
- }
-```
+## Development server
 
 ```sh
-bun run dev
+bun run dev --host 127.0.0.1 --port 8080
 ```
 
-Open [http://localhost:8888/otterio/](http://localhost:8888/otterio/) in your browser to play with the application.
+Open `http://localhost:8080/otterio/`. Development configuration lives in
+`webpack.dev.js`; production configuration lives in `webpack.prod.js`.
+Configure the API proxy for your locally running OtterIO instance. Do not
+expose the development server or default credentials on a public interface.
 
-### Run OtterIO Browser with live reload on any IP
+## Container toolchain
 
-Edit `browser/webpack.config.js`
-
-```diff
-diff --git a/browser/webpack.config.js b/browser/webpack.config.js
-index 8bdbba53..139f6049 100644
---- a/browser/webpack.config.js
-+++ b/browser/webpack.config.js
-@@ -71,6 +71,7 @@ var exports = {
-     historyApiFallback: {
-       index: '/otterio/'
-     },
-+    host: '0.0.0.0',
-     proxy: {
-       '/otterio/webrpc': {
-         target: 'http://localhost:9000',
-```
+From the repository root:
 
 ```sh
-bun run dev
+docker build -f Dockerfile.dev.browser -t otterio-browser-dev .
+docker run --rm -it -v "$PWD:/otterio" otterio-browser-dev bash
 ```
 
-Open [http://IP:8080/otterio/](http://IP:8080/otterio/) in your browser to play with the application.
-
-
-## Run tests
-
-    bun run test
-
-
-## Docker development environment
-
-This approach will download the sources on your machine such that you are able to use your IDE or editor of choice.
-A Docker container will be used in order to provide a controlled build environment without messing with your host system.
-
-### Prepare host system
-
-Install [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker](https://docs.docker.com/get-docker/).
-
-### Development within container
-
-Prepare and build container
-```
-git clone git@github.com:soulteary/otterio.git
-cd otterio
-docker build -t otterio-dev -f Dockerfile.dev.browser .
-```
-
-Run container, build and run core
-```sh
-docker run -it --rm --name otterio-dev -v "$PWD":/otterio otterio-dev
-
-cd /otterio/browser
-bun install
-bun run release
-cd /otterio
-make
-./otterio server /data
-```
-Note `Endpoint` IP (the one which is _not_ `127.0.0.1`), `AccessKey` and `SecretKey` (both default to `otterioadmin`) in order to enter them in the browser later.
-
-
-Open another terminal.
-Connect to container
-```sh
-docker exec -it otterio-dev bash
-```
-
-Apply patch to allow access from outside container
-```sh
-cd /otterio
-git apply --ignore-whitespace <<EOF
-diff --git a/browser/webpack.config.js b/browser/webpack.config.js
-index 8bdbba53..139f6049 100644
---- a/browser/webpack.config.js
-+++ b/browser/webpack.config.js
-@@ -71,6 +71,7 @@ var exports = {
-     historyApiFallback: {
-       index: '/otterio/'
-     },
-+    host: '0.0.0.0',
-     proxy: {
-       '/otterio/webrpc': {
-         target: 'http://localhost:9000',
-EOF
-```
-
-Build and run frontend with auto-reload
-```sh
-cd /otterio/browser
-bun install
-bun run dev
-```
-
-Open [http://IP:8080/otterio/](http://IP:8080/otterio/) in your browser to play with the application.
-
+The development image includes the same Go, Node and Bun versions. It no
+longer installs obsolete bindata generators: the server uses Go embedding.

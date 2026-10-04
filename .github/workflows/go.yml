@@ -23,8 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Follow patched releases, as the Docker and release workflows do.
-  GO_VERSION: "1.26.x"
+  # Pin the toolchain used by go.mod, containers and release builds.
+  GO_VERSION: "1.27.1"
   CGO_ENABLED: "0"
   GO111MODULE: "on"
 
@@ -39,13 +39,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
 
       # setup-go ships its own module cache helper, but it does not cover the
       # build cache (GOCACHE) and uses different keys per platform. We disable
       # it here and manage both caches explicitly below so Windows benefits as
       # much as Linux on subsequent runs.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
@@ -58,7 +58,7 @@ jobs:
           echo "modcache=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
           echo "buildcache=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6.1.0
         with:
           path: |
             ${{ steps.gocache.outputs.modcache }}
@@ -69,6 +69,10 @@ jobs:
 
       # Pull modules in a dedicated step so the (potentially noisy) download
       # output is clearly separated from the build/test output in the UI.
+      - name: Check dependency and toolchain version consistency
+        shell: bash
+        run: python3 -m unittest discover -s buildscripts -p test_dependency_versions.py -v
+
       - name: Download modules
         shell: bash
         run: go mod download
@@ -121,8 +125,8 @@ jobs:
     name: Race detector
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
@@ -138,7 +142,7 @@ jobs:
       # Use a race-specific cache key: the race-instrumented standard library
       # and test binaries live in GOCACHE under different entries than the
       # plain build, and sharing a key would cause constant evictions.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6.1.0
         with:
           path: |
             ${{ steps.gocache.outputs.modcache }}
@@ -165,8 +169,8 @@ jobs:
     name: Lint & generated code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
@@ -179,8 +183,8 @@ jobs:
     name: Cross compile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
@@ -193,8 +197,8 @@ jobs:
   #   name: Verify build
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v6
-  #     - uses: actions/setup-go@v6
+  #     - uses: actions/checkout@v7.0.1
+  #     - uses: actions/setup-go@v7.0.0
   #       with:
   #         go-version: ${{ env.GO_VERSION }}
   #         cache: true
@@ -209,8 +213,8 @@ jobs:
     name: Verify healing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
@@ -230,8 +234,8 @@ jobs:
     name: govulncheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ env.GO_VERSION }}
           check-latest: true
@@ -246,22 +250,28 @@ jobs:
     name: Browser tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
         with:
-          bun-version: latest
+          node-version: '24.21.0'
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: '1.4.2'
       - name: bun test
         working-directory: browser
         run: |
-          bun install
-          bun run test
+          bun install --frozen-lockfile
+          bun run test --runInBand
+          bun run release
+          git diff --exit-code -- production
+          test -z "$(git ls-files --others --exclude-standard production)"
 
   # Lightweight static checks: shellcheck on mint scripts.
   shellcheck:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y devscripts shellcheck
       - name: Run shellcheck

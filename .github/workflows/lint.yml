@@ -29,24 +29,23 @@ jobs:
     name: golangci-lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with:
           # full history so revive/file-specific exclusions resolve correctly
           fetch-depth: 0
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7.0.0
         with:
-          go-version: '1.26.x'
+          go-version: '1.27.1'
           check-latest: true
           cache: true
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v9
+        uses: golangci/golangci-lint-action@v9.3.0
         with:
           # golangci-lint must be built with a Go version >= the one declared
-          # in go.mod (currently 1.26). Support for Go 1.26 landed in v2.9.0,
-          # so we pin to a recent v2.x release that has it.
-          version: v2.12
+          # in go.mod. Keep this version aligned with Makefile.
+          version: v2.14.0
           args: --config ./.golangci.yml --timeout 10m --build-tags kqueue
           # Only annotate new issues on PRs to keep the noise low while we
           # incrementally clean up legacy findings.

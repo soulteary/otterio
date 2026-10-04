@@ -9,6 +9,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
+import { navigateTo } from "../navigation"
 import React from "react"
 import storage from "local-storage-fallback"
 import { getRandomString } from "../utils"
@@ -38,7 +39,7 @@ export const OpenIDLoginButton = ({
       clientId,
       nonce
     )
-    window.location = authURL
+    navigateTo(authURL)
   }
 
   return (

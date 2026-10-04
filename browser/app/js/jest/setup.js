@@ -10,13 +10,18 @@
  */
 
 import "@testing-library/jest-dom"
+import { TextDecoder, TextEncoder } from "node:util"
+
+// jsdom omits these Web APIs used by React Router and QR encoding.
+global.TextEncoder ??= TextEncoder
+global.TextDecoder ??= TextDecoder
 
 // jsdom (jest 29+) no longer exposes setImmediate, which some tests rely on.
 if (typeof global.setImmediate === "undefined") {
   global.setImmediate = (fn, ...args) => global.setTimeout(fn, 0, ...args)
 }
 
-// React 18 + Testing Library expect this flag to be set in development/test
+// React + Testing Library expect this flag to be set in development/test
 // environments to silence a warning about not using IS_REACT_ACT_ENVIRONMENT.
 if (typeof global.IS_REACT_ACT_ENVIRONMENT === "undefined") {
   global.IS_REACT_ACT_ENVIRONMENT = true

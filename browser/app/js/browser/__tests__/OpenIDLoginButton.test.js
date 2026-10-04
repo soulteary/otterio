@@ -13,6 +13,9 @@ import React from "react"
 import { render } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { OpenIDLoginButton } from "../OpenIDLoginButton"
+import { navigateTo } from "../../navigation"
+
+jest.mock("../../navigation", () => ({ navigateTo: jest.fn() }))
 
 jest.mock("../utils", () => ({
   buildOpenIDAuthURL: jest.fn(() => "https://idp.invalid/auth"),
@@ -26,16 +29,7 @@ jest.mock("../../utils", () => ({
 const { buildOpenIDAuthURL } = require("../utils")
 
 describe("OpenIDLoginButton", () => {
-  let originalLocation
-  beforeEach(() => {
-    jest.clearAllMocks()
-    originalLocation = window.location
-    delete window.location
-    window.location = { href: "https://localhost/", host: "localhost" }
-  })
-  afterEach(() => {
-    window.location = originalLocation
-  })
+  beforeEach(() => jest.clearAllMocks())
 
   it("renders the children inside the clickable wrapper", () => {
     const { container } = render(
@@ -65,6 +59,6 @@ describe("OpenIDLoginButton", () => {
     )
     await user.click(container.firstChild)
     expect(buildOpenIDAuthURL).toHaveBeenCalled()
-    expect(window.location).toBe("https://idp.invalid/auth")
+    expect(navigateTo).toHaveBeenCalledWith("https://idp.invalid/auth")
   })
 })
