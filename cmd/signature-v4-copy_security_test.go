@@ -18,6 +18,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	s3signer "github.com/minio/minio-go/v7/pkg/signer"
@@ -45,7 +46,7 @@ func testAPISignedHeaderCopyIsolation(obj ObjectLayer, instanceType, bucket stri
 	putTaggedObject(t, obj, sourceBucket, "secret", "", []byte(secret))
 	installAllowPolicy(t, bucket, "target")
 
-	request := func(mode, method, path, body string, headers http.Header, signer auth.Credentials) *http.Request {
+	request := func(t *testing.T, mode, method, path, body string, headers http.Header, signer auth.Credentials) *http.Request {
 		t.Helper()
 		r, err := http.NewRequest(method, "http://otterio.test/"+path, bytes.NewReader([]byte(body)))
 		if err != nil {
@@ -65,7 +66,7 @@ func testAPISignedHeaderCopyIsolation(obj ObjectLayer, instanceType, bucket stri
 		}
 		return r
 	}
-	send := func(r *http.Request, status int, code string) *httptest.ResponseRecorder {
+	send := func(t *testing.T, r *http.Request, status int, code string) *httptest.ResponseRecorder {
 		t.Helper()
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, r)
@@ -80,33 +81,33 @@ func testAPISignedHeaderCopyIsolation(obj ObjectLayer, instanceType, bucket stri
 		}
 		return w
 	}
-	readPublic := func(want string) {
+	readPublic := func(t *testing.T, want string) {
 		t.Helper()
 		r := httptest.NewRequest(http.MethodGet, "http://otterio.test/"+bucket+"/target", nil)
-		if w := send(r, http.StatusOK, ""); w.Body.String() != want {
+		if w := send(t, r, http.StatusOK, ""); w.Body.String() != want {
 			t.Fatalf("anonymous read-back got %q, want %q", w.Body.String(), want)
 		}
 	}
-	send(httptest.NewRequest(http.MethodGet, "http://otterio.test/"+sourceBucket+"/secret", nil), http.StatusForbidden, "AccessDenied")
+	send(t, httptest.NewRequest(http.MethodGet, "http://otterio.test/"+sourceBucket+"/secret", nil), http.StatusForbidden, "AccessDenied")
 	copyHeaders := http.Header{xhttp.AmzCopySource: {"/" + sourceBucket + "/secret"}}
 
 	for _, mode := range []string{"presigned", "authorization"} {
 		t.Run(instanceType+"/"+mode, func(t *testing.T) {
-			send(request(mode, http.MethodPut, bucket+"/target", original, nil, cred), http.StatusOK, "")
-			readPublic(original)
-			injected := request(mode, http.MethodPut, bucket+"/target", "", nil, cred)
+			send(t, request(t, mode, http.MethodPut, bucket+"/target", original, nil, cred), http.StatusOK, "")
+			readPublic(t, original)
+			injected := request(t, mode, http.MethodPut, bucket+"/target", "", nil, cred)
 			injected.Header.Set(xhttp.AmzCopySource, copyHeaders.Get(xhttp.AmzCopySource))
-			send(injected, http.StatusForbidden, "AccessDenied")
-			readPublic(original)
+			send(t, injected, http.StatusForbidden, "AccessDenied")
+			readPublic(t, original)
 
 			// A genuinely signed CopyObject must still work, and changing an
 			// already-signed source must fail without modifying the target.
-			tampered := request(mode, http.MethodPut, bucket+"/target", "", copyHeaders, cred)
+			tampered := request(t, mode, http.MethodPut, bucket+"/target", "", copyHeaders, cred)
 			tampered.Header.Set(xhttp.AmzCopySource, "/"+sourceBucket+"/other")
-			send(tampered, http.StatusForbidden, "SignatureDoesNotMatch")
-			readPublic(original)
-			send(request(mode, http.MethodPut, bucket+"/target", "", copyHeaders, cred), http.StatusOK, "")
-			readPublic(secret)
+			send(t, tampered, http.StatusForbidden, "SignatureDoesNotMatch")
+			readPublic(t, original)
+			send(t, request(t, mode, http.MethodPut, bucket+"/target", "", copyHeaders, cred), http.StatusOK, "")
+			readPublic(t, secret)
 
 			// An UploadPart URL must not acquire UploadPartCopy semantics.
 			uploadID, err := obj.NewMultipartUpload(ctx, bucket, "multipart", ObjectOptions{})
@@ -114,11 +115,21 @@ func testAPISignedHeaderCopyIsolation(obj ObjectLayer, instanceType, bucket stri
 				t.Fatal(err)
 			}
 			partPath := bucket + "/multipart?partNumber=1&uploadId=" + uploadID
-			w := send(request(mode, http.MethodPut, partPath, original, nil, cred), http.StatusOK, "")
-			etag := canonicalizeETag(w.Header().Get(xhttp.ETag))
-			injected = request(mode, http.MethodPut, partPath, "", nil, cred)
+			w := send(t, request(t, mode, http.MethodPut, partPath, original, nil, cred), http.StatusOK, "")
+			// The Fiber test bridge preserves wire header casing, so read
+			// ETag case-insensitively instead of using Header.Get's Etag key.
+			var etag string
+			for name, values := range w.Header() {
+				if strings.EqualFold(name, xhttp.ETag) && len(values) == 1 {
+					etag = canonicalizeETag(values[0])
+				}
+			}
+			if etag == "" {
+				t.Fatal("successful part upload did not return an ETag")
+			}
+			injected = request(t, mode, http.MethodPut, partPath, "", nil, cred)
 			injected.Header.Set(xhttp.AmzCopySource, copyHeaders.Get(xhttp.AmzCopySource))
-			send(injected, http.StatusForbidden, "AccessDenied")
+			send(t, injected, http.StatusForbidden, "AccessDenied")
 			if _, err := obj.CompleteMultipartUpload(ctx, bucket, "multipart", uploadID, []CompletePart{{PartNumber: 1, ETag: etag}}, ObjectOptions{}); err != nil {
 				t.Fatal(err)
 			}
@@ -135,6 +146,8 @@ func testAPISignedHeaderCopyIsolation(obj ObjectLayer, instanceType, bucket stri
 	}
 
 	// Properly signing a copy must not bypass the source IAM check either.
+	// The API test harness creates IAMSys without initializing its storage.
+	globalIAMSys.InitStore(obj)
 	const user = "upload-only-user"
 	const password = "upload-only-secret"
 	if err := globalIAMSys.CreateUser(user, madmin.UserInfo{SecretKey: password, Status: madmin.AccountEnabled}); err != nil {
@@ -153,9 +166,9 @@ func testAPISignedHeaderCopyIsolation(obj ObjectLayer, instanceType, bucket stri
 	}
 	limited := auth.Credentials{AccessKey: user, SecretKey: password}
 	for _, mode := range []string{"presigned", "authorization"} {
-		send(request(mode, http.MethodPut, bucket+"/target", original, nil, limited), http.StatusOK, "")
-		send(request(mode, http.MethodPut, bucket+"/target", "", copyHeaders, limited), http.StatusForbidden, "AccessDenied")
-		readPublic(original)
+		send(t, request(t, mode, http.MethodPut, bucket+"/target", original, nil, limited), http.StatusOK, "")
+		send(t, request(t, mode, http.MethodPut, bucket+"/target", "", copyHeaders, limited), http.StatusForbidden, "AccessDenied")
+		readPublic(t, original)
 	}
 
 	// Stored tags are internal policy inputs, not extra client headers. Both
@@ -163,7 +176,7 @@ func testAPISignedHeaderCopyIsolation(obj ObjectLayer, instanceType, bucket stri
 	putTaggedObject(t, obj, bucket, "tagged", "dept=engineering", []byte(original))
 	for _, mode := range []string{"presigned", "authorization"} {
 		for _, method := range []string{http.MethodGet, http.MethodHead} {
-			send(request(mode, method, bucket+"/tagged", "", nil, cred), http.StatusOK, "")
+			send(t, request(t, mode, method, bucket+"/tagged", "", nil, cred), http.StatusOK, "")
 		}
 	}
 }
