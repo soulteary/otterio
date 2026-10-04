@@ -23,7 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.26.4"
+  # Follow patched releases, as the Docker and release workflows do.
+  GO_VERSION: "1.26.x"
   CGO_ENABLED: "0"
   GO111MODULE: "on"
 
@@ -47,6 +48,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: false
 
       - name: Resolve Go cache paths
@@ -75,10 +77,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: bash
         run: |
-          # Windows is intentionally limited to a compile-only check: it
-          # guarantees the tree builds cleanly on windows/amd64 (matching
-          # the binaries we ship via goreleaser) without paying for the full
-          # ./cmd/... test suite, which inherits MinIO's POSIX-only test
+          # Build the binary we ship on windows/amd64. Keep the full
+          # ./cmd/... test suite on Linux: it inherits MinIO's POSIX-only test
           # assumptions (e.g. erasure format/healing paths, data-usage
           # scanner) and either deadlocks or fails on Windows file system
           # semantics. Upstream MinIO itself runs its Go tests only on
@@ -90,6 +90,19 @@ jobs:
           # RFC3339 version instead of the "DEVELOPMENT.GOGET" default,
           # matching the Makefile/Docker builds.
           go build --ldflags="$(go run buildscripts/gen-ldflags.go)" -o otterio.exe
+
+      - name: Directory regression tests (windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          # Exercise Windows directory handles, EOF/count semantics, reparse
+          # points and early stop without running the POSIX-dependent suite.
+          go test -count=1 -timeout 5m ./cmd -run '^(TestReadDir|TestReadDirFail|TestReadDirN|TestXLStorageIsDirEmpty|TestWindowsReadDir.*)$'
+
+      - name: Server startup and S3 smoke test (windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: go run buildscripts/verify-s3-startup.go ./otterio.exe
 
       - name: Build & test (linux)
         if: matrix.os == 'ubuntu-latest'
@@ -106,6 +119,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: false
 
       - name: Resolve Go cache paths
@@ -149,6 +163,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: true
       - name: make verifiers
         run: make verifiers
@@ -162,6 +177,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: true
       - name: make crosscompile
         run: make crosscompile
@@ -191,6 +207,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: true
       - name: make verify-healing
         run: |
@@ -211,6 +228,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
+          check-latest: true
           cache: true
       - name: Install & run govulncheck
         run: |

@@ -7,7 +7,7 @@
 **S3 兼容对象存储** — _自由存储，无限扩展。_
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.26%2B-00ADD8.svg?logo=go&logoColor=white)](./go.mod)
+[![Go](https://img.shields.io/badge/Go-1.26.6%2B-00ADD8.svg?logo=go&logoColor=white)](./go.mod)
 [![GitHub](https://img.shields.io/badge/GitHub-soulteary%2Fotterio-181717.svg?logo=github)](https://github.com/soulteary/otterio)
 
 [English](./README.md) · 简体中文
@@ -30,7 +30,7 @@ OtterIO 是 MinIO **最后一个 Apache License 2.0 版本**（约 `RELEASE.2021
 - **HTTP 层** —— 请求路由基于 [`gofiber/fiber/v3`](https://github.com/gofiber/fiber)，不再使用 `gorilla/mux`。
 - **桶通知目标** —— 仅保留 `elasticsearch`、`mysql`、`postgresql`、`redis`、`webhook`，已移除消息队列类目标（Kafka、NATS、NATS Streaming、NSQ、AMQP、MQTT）。
 - **网关** —— 仅保留 `nas` 与 `s3`，已移除 `azure`、`gcs`、`hdfs`。
-- **构建工具链** —— 要求 Go `1.26` 及以上版本（详见 [`go.mod`](./go.mod)）。
+- **构建工具链** —— 要求 Go `1.26.6` 及以上版本（详见 [`go.mod`](./go.mod)）；请使用最新补丁版本以获取安全修复。
 - **容器镜像** —— 发布在 `soulteary/otterio`（Docker Hub）和 `ghcr.io/soulteary/otterio`（GitHub 容器镜像仓库）。
 
 OtterIO 继续以 [Apache License, Version 2.0](./LICENSE) 分发，所有原始版权声明予以保留 —— 详见 [`NOTICE`](./NOTICE)。
@@ -143,7 +143,7 @@ OtterIO 当前没有官方发布的 FreeBSD 软件包。请按下文[源码构�
 
 ### 源码构建
 
-源码安装仅供开发者与高级用户使用。请确认本机已具备可用的 Go 工具链（Go 1.26 及以上 —— 参见 [Go 安装文档](https://go.dev/doc/install)）。
+源码安装仅供开发者与高级用户使用。请确认本机已具备可用的 Go 工具链（Go 1.26.6 及以上 —— 参见 [Go 安装文档](https://go.dev/doc/install)）。
 
 ```sh
 git clone https://github.com/soulteary/otterio.git
