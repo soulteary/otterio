@@ -2,8 +2,13 @@
 .github
 docs
 default.etcd
-browser
+browser/node_modules
+browser/.cache
+.env
+.env.*
 *.gz
 *.tar.gz
 *.bzip2
 *.zip
+# The Go browser package and committed assets are part of the local build.
+!browser/production/**
