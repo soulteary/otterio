@@ -172,52 +172,6 @@ func toOtterioHandler(h func(http.ResponseWriter, *http.Request)) OtterioHandler
 	}
 }
 
-// fiberStreamResponseWriter bridges a legacy net/http handler to a streamed
-// Fiber response. The handler runs in its own goroutine and writes flow through
-// an io.Pipe; the body is sent to the client via fasthttp's SetBodyStream so the
-// full payload is never buffered in memory (important for large GetObject reads).
-type fiberStreamResponseWriter struct {
-	header      http.Header
-	status      int
-	pw          *io.PipeWriter
-	ready       chan struct{}
-	once        sync.Once
-	wroteHeader bool
-	panicVal    interface{}
-}
-
-func (w *fiberStreamResponseWriter) Header() http.Header { return w.header }
-
-func (w *fiberStreamResponseWriter) WriteHeader(statusCode int) {
-	if w.wroteHeader {
-		return
-	}
-	w.wroteHeader = true
-	w.status = statusCode
-	w.signalReady()
-}
-
-func (w *fiberStreamResponseWriter) Write(b []byte) (int, error) {
-	if !w.wroteHeader {
-		w.WriteHeader(http.StatusOK)
-	}
-	return w.pw.Write(b)
-}
-
-// Flush is intentionally a no-op. Streamed responses are delivered through an
-// io.Pipe consumed by fasthttp's chunked body writer (writeBodyChunked), which
-// flushes the connection after every chunk (writeChunk -> w.Flush). Because the
-// pipe hands off each Write synchronously to that loop, by the time a handler's
-// Write returns the bytes have already been chunk-encoded and flushed to the
-// client. There is therefore no buffered data left to flush here, so this
-// faithfully provides net/http http.Flusher semantics for the streaming path.
-func (w *fiberStreamResponseWriter) Flush() {}
-
-// signalReady unblocks the dispatcher once status and headers are final.
-func (w *fiberStreamResponseWriter) signalReady() {
-	w.once.Do(func() { close(w.ready) })
-}
-
 // toOtterioStreamHandler adapts a legacy net/http handler to a streaming
 // OtterioHandler. Headers/status are captured from the first write and applied to
 // the response, then the body is streamed from the handler goroutine.
@@ -237,37 +191,21 @@ func toOtterioStreamHandler(h func(http.ResponseWriter, *http.Request)) OtterioH
 			ready:  make(chan struct{}),
 		}
 
-		go func() {
-			defer func() {
-				if rec := recover(); rec != nil {
-					// Do NOT re-panic here: this is a child goroutine and a panic
-					// would bypass criticalErrorHandlerFiber and crash the process.
-					// Record it and let the dispatcher re-raise it on the request
-					// goroutine (when no response has been committed yet).
-					w.panicVal = rec
-					_ = pw.CloseWithError(io.ErrClosedPipe)
-					w.signalReady()
-					return
-				}
-				w.signalReady()
-				_ = pw.Close()
-			}()
-			h(w, r)
-		}()
-
+		go w.run(h, r)
 		<-w.ready
+		result := w.result
 
-		// If the handler panicked before producing any output, re-raise on this
-		// (request) goroutine so criticalErrorHandlerFiber / the server recover
-		// can turn it into a proper error response, matching the buffered path.
-		if w.panicVal != nil && !w.wroteHeader {
-			panic(w.panicVal)
+		// Only the immutable initial result crosses the goroutine boundary.
+		// Later panics terminate the pipe without rewriting committed state.
+		if result.panicVal != nil {
+			_ = pr.Close()
+			panic(result.panicVal)
 		}
 
 		// Apply captured headers (preserving casing) before sending the body.
 		c.Response().Header.DisableNormalizing()
 		contentLength := int64(-1)
-		for k, vv := range w.header {
+		for k, vv := range result.header {
 			if http.CanonicalHeaderKey(k) == "Content-Length" {
 				if len(vv) > 0 {
 					if n, perr := strconv.ParseInt(vv[0], 10, 64); perr == nil {
@@ -281,7 +219,7 @@ func toOtterioStreamHandler(h func(http.ResponseWriter, *http.Request)) OtterioH
 				c.Response().Header.Add(k, v)
 			}
 		}
-		c.Status(w.status)
+		c.Status(result.status)
 
 		// Register a stream-completion barrier so wrappers (maxClients, stats)
 		// can hold their slot / defer measurement until the body has been fully
@@ -515,7 +453,7 @@ type httpStatsInputKey struct{}
 type requestBodyCounter struct{ n int64 }
 
 // requestInputBodyCounter returns the per-request body byte counter, creating
-// and caching it on the fasthttp ctx on first use.
+// and caching it on first use.
 func requestInputBodyCounter(c fiber.Ctx) *requestBodyCounter {
 	if v := c.RequestCtx().UserValue(httpStatsInputKey{}); v != nil {
 		if rc, ok := v.(*requestBodyCounter); ok {
