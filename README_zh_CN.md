@@ -39,15 +39,23 @@ OtterIO 继续以 [Apache License, Version 2.0](./LICENSE) 分发，所有原始
 
 ## 快速开始
 
-使用 Docker 启动单节点 OtterIO：
+先设置自定义凭据，再使用 Docker 启动单节点 OtterIO。下面的密码生成命令需要 OpenSSL。请妥善保存生成的凭据，重启或在新终端连接时使用同一组值，不要为了重新连接而重新生成密码。
 
 ```sh
-docker run -p 9000:9000 -p 9001:9001 \
+export OTTERIO_ROOT_USER=otterio-admin
+OTTERIO_ROOT_PASSWORD="$(openssl rand -hex 32)"
+export OTTERIO_ROOT_PASSWORD
+
+docker run -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
   -v /mnt/data:/data \
-  soulteary/otterio:latest server /data --console-address ":9001"
+  soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-默认 root 凭据为 `otterioadmin:otterioadmin`。启动成功后，请参见[验证部署](#验证部署)章节通过 Web 控制台或 `mc` 客户端连接。
+控制台地址为 <http://127.0.0.1:9001>，请使用刚才配置的用户名和密码登录，不要使用默认密码。`mc` 连接方式见[验证部署](#验证部署)。
+
+> [!IMPORTANT]
+> 容器启动现在会拒绝缺失凭据或默认密码。升级前请修正旧的不带凭据的 Docker 启动命令。`_FILE` Secret、非 root Compose 配置和迁移步骤见 [Docker 安全指南](./README_DOCKER_SECURITY.md)。仅本地开发演示可显式设置 `OTTERIO_ALLOW_DEFAULT_CREDENTIALS=1` 允许默认凭据，并应将端口绑定到回环地址。生产部署请固定经过验证的版本标签或镜像 digest，而不是使用 `latest`。
 
 > [!NOTE]
 > 单节点 OtterIO 仅适合开发与评估场景。生产部署应使用**启用纠删码的分布式模式**，每节点至少 **4 块磁盘**。详见 [`docs/erasure/README.md`](./docs/erasure/README.md) 与 [`docs/distributed/README.md`](./docs/distributed/README.md)。
@@ -73,16 +81,26 @@ docker pull ghcr.io/soulteary/otterio:latest
 | `latest` | 最新稳定版。                                      |
 | `edge`   | 来自 `main` 分支的尝鲜构建，仅供测试使用。        |
 
-使用临时数据卷启动单节点服务：
+使用[快速开始](#快速开始)中配置的凭据，以临时数据卷启动单节点服务：
 
 ```sh
-docker run -p 9000:9000 soulteary/otterio:latest server /data
+: "${OTTERIO_ROOT_USER:?请先设置已保存的用户名}"
+: "${OTTERIO_ROOT_PASSWORD:?请先设置已保存的密码}"
+export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
+docker run -p 127.0.0.1:9000:9000 \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
+  soulteary/otterio:latest server /data
 ```
 
 挂载宿主机目录以使用持久化存储：
 
 ```sh
-docker run -p 9000:9000 -v /mnt/data:/data soulteary/otterio:latest server /data
+: "${OTTERIO_ROOT_USER:?请先设置已保存的用户名}"
+: "${OTTERIO_ROOT_PASSWORD:?请先设置已保存的密码}"
+export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
+docker run -p 127.0.0.1:9000:9000 \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
+  -v /mnt/data:/data soulteary/otterio:latest server /data
 ```
 
 ### macOS
@@ -259,18 +277,20 @@ service iptables restart
 
 ## 验证部署
 
-OtterIO 启动后默认 root 凭据为 `otterioadmin:otterioadmin`（生产环境请务必通过 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` 环境变量覆盖默认值）。
+请使用启动时配置的凭据。上面的 Docker 示例传入 `OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD`，不使用默认密码。在新终端执行下面的客户端命令前，请恢复同一组已保存的值。裸金属二进制不受容器入口脚本检查约束，但部署前也应通过这两个环境变量设置非默认凭据。
 
 ### Web 控制台
 
-在浏览器中访问 <http://127.0.0.1:9000>（如已拆分控制台监听，则使用控制台端口），用 root 凭据登录后即可创建桶、上传对象、浏览内容。
+快速开始示例已拆分监听器，请访问 <http://127.0.0.1:9001>；单端口部署则访问 <http://127.0.0.1:9000>。使用自己配置的 root 用户名和密码登录，即可创建桶、上传对象、浏览内容。
 
 ### `mc` 客户端
 
 `mc` 是一个支持 S3 与本地文件系统 URI 的现代命令行客户端（功能类似 `ls`、`cp`、`mirror`、`diff` 等）。配置一个指向你 OtterIO 实例的别名：
 
 ```sh
-mc alias set local http://127.0.0.1:9000 otterioadmin otterioadmin
+: "${OTTERIO_ROOT_USER:?请设置启动 OtterIO 时使用的用户名}"
+: "${OTTERIO_ROOT_PASSWORD:?请设置启动 OtterIO 时使用的密码}"
+mc alias set local http://127.0.0.1:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD"
 mc mb local/test-bucket
 mc cp ./somefile local/test-bucket/
 mc ls local/test-bucket/

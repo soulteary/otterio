@@ -34,7 +34,7 @@ The drives should all be of approximately the same size.
 
 ### 1. Prerequisites
 
-Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
+Install OtterIO - [OtterIO Quickstart Guide](../../README.md#quick-start)
 
 ### 2. Run OtterIO Server with Erasure Code
 
@@ -44,10 +44,20 @@ Example: Start OtterIO server in a 12 drives setup, using OtterIO binary.
 otterio server /data{1...12}
 ```
 
-Example: Start OtterIO server in a 8 drives setup, using OtterIO Docker image.
+Example: Start OtterIO server in an 8-drive setup, using the OtterIO Docker image.
+First configure and securely save a non-default username and password as described
+in the [Quick Start](../../README.md#quick-start). Reuse the same credentials on
+restart; the example below refuses to run until both values are set. See
+[Docker security](../../README_DOCKER_SECURITY.md) for `_FILE` secrets and non-root
+volume permissions. Production deployments should pin a reviewed release tag or
+digest instead of `latest`.
 
 ```sh
-docker run -p 9000:9000 --name otterio \
+: "${OTTERIO_ROOT_USER:?Set your saved username first}"
+: "${OTTERIO_ROOT_PASSWORD:?Set your saved password first}"
+export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
+docker run -p 127.0.0.1:9000:9000 --name otterio \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
   -v /mnt/data1:/data1 \
   -v /mnt/data2:/data2 \
   -v /mnt/data3:/data3 \
@@ -56,8 +66,13 @@ docker run -p 9000:9000 --name otterio \
   -v /mnt/data6:/data6 \
   -v /mnt/data7:/data7 \
   -v /mnt/data8:/data8 \
-  soulteary/otterio:latest server /data{1...8}
+  soulteary/otterio:latest server '/data{1...8}'
 ```
+
+The published port is available only on the Docker host. For remote access, use
+an authenticated, TLS-protected reverse proxy or a controlled network rather than
+exposing the console directly. Mount each `/mnt/dataN` on the intended drive;
+eight directories on one disk do not provide eight independent failure domains.
 
 ### 3. Test your setup
 

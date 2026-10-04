@@ -1,0 +1,89 @@
+name: Container security checks
+on:
+  pull_request:
+    branches: [main]
+    paths: ['Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+  push:
+    branches: [main]
+    paths: ['Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
+permissions:
+  contents: read
+jobs:
+  entrypoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.x'
+          cache: true
+      - run: sh -n dockerscripts/docker-entrypoint.sh
+      - name: Build the real CLI for help regressions
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p "$RUNNER_TEMP/otterio-cli"
+          go build -ldflags "$(go run buildscripts/gen-ldflags.go)" -o "$RUNNER_TEMP/otterio-cli/otterio" .
+      - name: Test secrets, argument classification and real CLI help
+        env:
+          OTTERIO_TEST_BINARY: ${{ runner.temp }}/otterio-cli/otterio
+        run: python3 -m unittest discover -s buildscripts -p 'test_docker_entrypoint*.py' -v
+      - name: Validate the secure Compose profile without starting containers
+        env:
+          OTTERIO_IMAGE: ghcr.io/soulteary/otterio:test-only
+          OTTERIO_ROOT_USER: test-only-admin
+          OTTERIO_DATA_DIR: /tmp/otterio-test-data
+          OTTERIO_ROOT_PASSWORD_PATH: /tmp/otterio-test-password
+        run: |
+          mkdir -p "$OTTERIO_DATA_DIR"
+          printf '%s\n' test-only-password > "$OTTERIO_ROOT_PASSWORD_PATH"
+          docker compose -f docker-compose.secure.yml config --quiet
+      - name: Boot the actual secure Compose profile and check both listeners
+        env:
+          OTTERIO_IMAGE: otterio-secure-smoke:local
+          OTTERIO_ROOT_USER: test-only-admin
+          OTTERIO_UID: '10001'
+          OTTERIO_GID: '10001'
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp "$RUNNER_TEMP/otterio-cli/otterio" dist/otterio-linux-amd64
+          docker build -f Dockerfile.ci --build-arg TARGETARCH=amd64 \
+            --build-arg RELEASE=compose-smoke -t "$OTTERIO_IMAGE" .
+          export OTTERIO_DATA_DIR="$(mktemp -d)"
+          export OTTERIO_ROOT_PASSWORD_PATH="$(mktemp)"
+          compose=(docker compose -p otterio-secure-smoke -f docker-compose.secure.yml)
+          cleanup() {
+            status=$?
+            trap - EXIT
+            "${compose[@]}" logs --no-color || true
+            "${compose[@]}" down --volumes --remove-orphans || true
+            sudo rm -rf -- "$OTTERIO_DATA_DIR" "$OTTERIO_ROOT_PASSWORD_PATH"
+            exit "$status"
+          }
+          trap cleanup EXIT
+          printf '%s\n' test-only-password > "$OTTERIO_ROOT_PASSWORD_PATH"
+          sudo chown 10001:10001 "$OTTERIO_DATA_DIR" "$OTTERIO_ROOT_PASSWORD_PATH"
+          sudo chmod 0700 "$OTTERIO_DATA_DIR"
+          sudo chmod 0400 "$OTTERIO_ROOT_PASSWORD_PATH"
+          "${compose[@]}" up -d --pull never
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl -fsS --max-time 2 http://127.0.0.1:9000/otterio/health/ready >/dev/null 2>&1 && \
+               curl -fsS --max-time 2 http://127.0.0.1:9001/otterio/health/ready >/dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = true || { echo '::error::Secure Compose listeners did not become ready.'; exit 1; }
+          # Static console routes intentionally distinguish browsers from S3 clients.
+          curl -fsS --max-time 5 -A 'Mozilla/5.0 (OtterIO Compose smoke test)' \
+            http://127.0.0.1:9001/otterio/ > "$RUNNER_TEMP/otterio-console.html"
+          grep -qi '<html' "$RUNNER_TEMP/otterio-console.html"
+          container_id="$("${compose[@]}" ps -q otterio)"
+          test -n "$container_id"
+          test "$(docker inspect --format '{{.Config.User}}' "$container_id")" = '10001:10001'
+          test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$container_id")" = true
+          test "$(docker inspect --format '{{.RestartCount}}' "$container_id")" = 0

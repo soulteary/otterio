@@ -1,128 +1,161 @@
 #!/bin/sh
 #
 # MinIO Cloud Storage, (C) 2019 MinIO, Inc.
-#
+# Modifications and additions (C) 2026 soulteary, https://github.com/soulteary/otterio
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
 #     http://www.apache.org/licenses/LICENSE-2.0
-#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-# If command starts with an option, prepend otterio.
-if [ "${1}" != "otterio" ]; then
-    if [ -n "${1}" ]; then
-        set -- otterio "$@"
-    fi
-fi
+set -eu
 
-## Look for docker secrets at given absolute path or in default documented location.
-docker_secrets_env_old() {
-    if [ -f "$OTTERIO_ACCESS_KEY_FILE" ]; then
-        ACCESS_KEY_FILE="$OTTERIO_ACCESS_KEY_FILE"
-    else
-        ACCESS_KEY_FILE="/run/secrets/$OTTERIO_ACCESS_KEY_FILE"
-    fi
-    if [ -f "$OTTERIO_SECRET_KEY_FILE" ]; then
-        SECRET_KEY_FILE="$OTTERIO_SECRET_KEY_FILE"
-    else
-        SECRET_KEY_FILE="/run/secrets/$OTTERIO_SECRET_KEY_FILE"
-    fi
-
-    if [ -f "$ACCESS_KEY_FILE" ] && [ -f "$SECRET_KEY_FILE" ]; then
-        if [ -f "$ACCESS_KEY_FILE" ]; then
-            OTTERIO_ACCESS_KEY="$(cat "$ACCESS_KEY_FILE")"
-            export OTTERIO_ACCESS_KEY
-        fi
-        if [ -f "$SECRET_KEY_FILE" ]; then
-            OTTERIO_SECRET_KEY="$(cat "$SECRET_KEY_FILE")"
-            export OTTERIO_SECRET_KEY
-        fi
-    fi
+fail() {
+    printf 'OtterIO entrypoint: %s\n' "$*" >&2
+    exit 1
 }
 
-docker_secrets_env() {
-    if [ -f "$OTTERIO_ROOT_USER_FILE" ]; then
-        ROOT_USER_FILE="$OTTERIO_ROOT_USER_FILE"
-    else
-        ROOT_USER_FILE="/run/secrets/$OTTERIO_ROOT_USER_FILE"
+# Names are fixed at the call sites. Values are never evaluated as shell code.
+# Historical image-default filenames remain optional when absent. Every other
+# nonempty _FILE setting is required; an existing default file is validated too.
+file_env() {
+    var="$1"
+    default_file="$2"
+    eval "value=\${${var}-}"
+    eval "file=\${${var}_FILE-}"
+    [ -n "$file" ] || return 0
+    case "$file" in
+        /*) path="$file" ;;
+        *)
+            if [ -f "$file" ]; then path="$file"; else path="/run/secrets/$file"; fi
+            ;;
+    esac
+    if [ ! -e "$path" ] && [ "$file" = "$default_file" ]; then
+        return 0
     fi
-    if [ -f "$OTTERIO_ROOT_PASSWORD_FILE" ]; then
-        SECRET_KEY_FILE="$OTTERIO_ROOT_PASSWORD_FILE"
-    else
-        SECRET_KEY_FILE="/run/secrets/$OTTERIO_ROOT_PASSWORD_FILE"
-    fi
-
-    if [ -f "$ROOT_USER_FILE" ] && [ -f "$SECRET_KEY_FILE" ]; then
-        if [ -f "$ROOT_USER_FILE" ]; then
-            OTTERIO_ROOT_USER="$(cat "$ROOT_USER_FILE")"
-            export OTTERIO_ROOT_USER
-        fi
-        if [ -f "$SECRET_KEY_FILE" ]; then
-            OTTERIO_ROOT_PASSWORD="$(cat "$SECRET_KEY_FILE")"
-            export OTTERIO_ROOT_PASSWORD
-        fi
-    fi
+    [ -f "$path" ] && [ -r "$path" ] || fail "${var}_FILE must name a readable regular file"
+    [ -z "$value" ] || fail "set either $var or ${var}_FILE, not both"
+    value="$(cat -- "$path")" || fail "cannot read ${var}_FILE"
+    [ -n "$value" ] || fail "${var}_FILE must not be empty"
+    export "$var=$value"
+    unset "${var}_FILE"
 }
 
-## Set KMS_MASTER_KEY from docker secrets if provided
-docker_kms_encryption_env() {
-    if [ -f "$OTTERIO_KMS_MASTER_KEY_FILE" ]; then
-        KMS_MASTER_KEY_FILE="$OTTERIO_KMS_MASTER_KEY_FILE"
+validate_credentials() {
+    # Match cmd/common-main.go: the modern pair wins when either is set.
+    if [ "${OTTERIO_ROOT_USER+x}" = x ] || [ "${OTTERIO_ROOT_PASSWORD+x}" = x ]; then
+        root_user="${OTTERIO_ROOT_USER-}"
+        root_password="${OTTERIO_ROOT_PASSWORD-}"
     else
-        KMS_MASTER_KEY_FILE="/run/secrets/$OTTERIO_KMS_MASTER_KEY_FILE"
+        root_user="${OTTERIO_ACCESS_KEY-}"
+        root_password="${OTTERIO_SECRET_KEY-}"
     fi
-
-    if [ -f "$KMS_MASTER_KEY_FILE" ]; then
-        OTTERIO_KMS_MASTER_KEY="$(cat "$KMS_MASTER_KEY_FILE")"
-        export OTTERIO_KMS_MASTER_KEY
+    if [ -z "$root_user" ] && [ -z "$root_password" ]; then
+        [ "${OTTERIO_ALLOW_DEFAULT_CREDENTIALS-}" = 1 ] || fail "configure OTTERIO_ROOT_USER and OTTERIO_ROOT_PASSWORD (or _FILE); see README_DOCKER_SECURITY.md"
+    elif [ -z "$root_user" ] || [ -z "$root_password" ]; then
+        fail "both username and password are required; do not mix incomplete modern and legacy pairs"
+    elif [ "$root_password" != otterioadmin ]; then
+        return 0
+    else
+        [ "${OTTERIO_ALLOW_DEFAULT_CREDENTIALS-}" = 1 ] || fail "default credentials are disabled; configure a non-default password"
     fi
+    printf '%s\n' 'WARNING: default credentials explicitly enabled for local development only.' >&2
 }
 
-## Legacy
-## Set SSE_MASTER_KEY from docker secrets if provided
-docker_sse_encryption_env() {
-    SSE_MASTER_KEY_FILE="/run/secrets/$OTTERIO_SSE_MASTER_KEY_FILE"
-
-    if [ -f "$SSE_MASTER_KEY_FILE" ]; then
-        OTTERIO_SSE_MASTER_KEY="$(cat "$SSE_MASTER_KEY_FILE")"
-        export OTTERIO_SSE_MASTER_KEY
-    fi
-}
-
-# su-exec to requested user, if service cannot run exec will fail.
 docker_switch_user() {
-    if [ ! -z "${OTTERIO_USERNAME}" ] && [ ! -z "${OTTERIO_GROUPNAME}" ]; then
-        if [ ! -z "${OTTERIO_UID}" ] && [ ! -z "${OTTERIO_GID}" ]; then
-            groupadd -g "$OTTERIO_GID" "$OTTERIO_GROUPNAME" && \
-                useradd -u "$OTTERIO_UID" -g "$OTTERIO_GROUPNAME" "$OTTERIO_USERNAME"
-        else
-            groupadd "$OTTERIO_GROUPNAME" && \
-                useradd -g "$OTTERIO_GROUPNAME" "$OTTERIO_USERNAME"
+    if [ -n "${OTTERIO_USERNAME-}${OTTERIO_GROUPNAME-}${OTTERIO_UID-}${OTTERIO_GID-}" ]; then
+        [ -n "${OTTERIO_USERNAME-}" ] && [ -n "${OTTERIO_GROUPNAME-}" ] || fail "OTTERIO_USERNAME and OTTERIO_GROUPNAME must be set together; alternatively use docker --user"
+        if [ -n "${OTTERIO_UID-}${OTTERIO_GID-}" ]; then
+            [ -n "${OTTERIO_UID-}" ] && [ -n "${OTTERIO_GID-}" ] || fail "OTTERIO_UID and OTTERIO_GID must be set together"
         fi
-        exec setpriv --reuid="${OTTERIO_USERNAME}" --regid="${OTTERIO_GROUPNAME}" --keep-groups "$@"
-    else
-        exec "$@"
+        if ! getent group "$OTTERIO_GROUPNAME" >/dev/null; then
+            if [ -n "${OTTERIO_GID-}" ]; then groupadd -g "$OTTERIO_GID" "$OTTERIO_GROUPNAME"; else groupadd "$OTTERIO_GROUPNAME"; fi
+        fi
+        if ! getent passwd "$OTTERIO_USERNAME" >/dev/null; then
+            if [ -n "${OTTERIO_UID-}" ]; then
+                useradd -M -u "$OTTERIO_UID" -g "$OTTERIO_GROUPNAME" "$OTTERIO_USERNAME"
+            else
+                useradd -M -g "$OTTERIO_GROUPNAME" "$OTTERIO_USERNAME"
+            fi
+        fi
+        [ -z "${OTTERIO_UID-}" ] || [ "$(id -u "$OTTERIO_USERNAME")" = "$OTTERIO_UID" ] || fail "existing user has a different UID"
+        [ -z "${OTTERIO_GID-}" ] || [ "$(getent group "$OTTERIO_GROUPNAME" | cut -d: -f3)" = "$OTTERIO_GID" ] || fail "existing group has a different GID"
+        exec setpriv --reuid="$OTTERIO_USERNAME" --regid="$OTTERIO_GROUPNAME" --clear-groups "$@"
     fi
+    exec "$@"
 }
 
-## Set access env from secrets if necessary.
-docker_secrets_env_old
+# Inspect only leading flags and the command's first positional argument.
+# Never mistake a flag value or a later data path for a request for help.
+# Unknown options remain gated; the Go CLI is authoritative for their validity.
+credential_check_required() (
+    shift # executable
+    command=
+    backend=
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --help|-h) exit 1 ;;
+            --version|-v)
+                [ -z "$command" ] && exit 1
+                exit 0
+                ;;
+            --config-dir|-C|--certs-dir|-S|--address|--console-address|--console-certs-dir)
+                [ "$#" -ge 2 ] || exit 0
+                shift # consume the value, even if it is "help" or "--help"
+                ;;
+            --config-dir=*|--certs-dir=*|--address=*|--console-address=*|--console-certs-dir=*|--quiet|--anonymous|--json|--compat|--no-compat) ;;
+            --)
+                shift
+                if [ -z "$command" ] && [ "$#" -gt 0 ]; then
+                    command="$1"
+                    shift
+                    continue
+                fi
+                break
+                ;;
+            -*) exit 0 ;;
+            *)
+                if [ -z "$command" ]; then
+                    command="$1"
+                    case "$command" in server|gateway) ;; *) exit 1 ;; esac
+                elif [ "$command" = gateway ] && [ -z "$backend" ]; then
+                    backend="$1"
+                    case "$backend" in help|h) exit 1 ;; nas|s3) ;; *) exit 0 ;; esac
+                else
+                    break
+                fi
+                ;;
+        esac
+        shift
+    done
+    case "$command" in
+        server)
+            # serverCmdArgs prefers these environment endpoints over CLI args.
+            [ -z "${OTTERIO_ARGS-}" ] && [ -z "${OTTERIO_ENDPOINTS-}" ] || exit 0
+            if [ "$#" -eq 0 ] || [ "$1" = help ]; then exit 1; fi
+            ;;
+        gateway)
+            if [ -z "$backend" ] && [ "$#" -eq 0 ]; then exit 1; fi
+            ;;
+        *) exit 1 ;;
+    esac
+    exit 0
+)
 
-## Set access env from secrets if necessary.
-docker_secrets_env
+[ "$#" -gt 0 ] || set -- otterio
+if [ "$1" != otterio ]; then set -- otterio "$@"; fi
 
-## Set kms encryption from secrets if necessary.
-docker_kms_encryption_env
+file_env OTTERIO_ACCESS_KEY access_key
+file_env OTTERIO_SECRET_KEY secret_key
+file_env OTTERIO_ROOT_USER access_key
+file_env OTTERIO_ROOT_PASSWORD secret_key
+file_env OTTERIO_KMS_MASTER_KEY kms_master_key
+file_env OTTERIO_SSE_MASTER_KEY sse_master_key
 
-## Set sse encryption from secrets if necessary. Legacy
-docker_sse_encryption_env
+if credential_check_required "$@"; then validate_credentials; fi
 
-## Switch to user if applicable.
 docker_switch_user "$@"
