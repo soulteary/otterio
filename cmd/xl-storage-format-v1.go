@@ -35,6 +35,14 @@ const (
 // Valid - tells us if the format is sane by validating
 // format version and erasure coding information.
 func (m *xlMetaV1Object) valid() bool {
+	if m.Stat.Size < 0 || !validStoragePath(m.DataDir) || !validStorageErasureInfo(m.Erasure) {
+		return false
+	}
+	for _, part := range m.Parts {
+		if part.Number <= 0 || part.Number > globalMaxPartID || part.Size < 0 {
+			return false
+		}
+	}
 	return isXLMetaFormatValid(m.Version, m.Format) &&
 		isXLMetaErasureInfoValid(m.Erasure.DataBlocks, m.Erasure.ParityBlocks)
 }
@@ -50,7 +58,7 @@ func isXLMetaFormatValid(version, format string) bool {
 // Verifies if the backend format metadata is sane by validating
 // the ErasureInfo, i.e. data and parity blocks.
 func isXLMetaErasureInfoValid(data, parity int) bool {
-	return ((data >= parity) && (data != 0) && (parity != 0))
+	return data > 0 && parity > 0 && data >= parity && data <= 256 && parity <= 256-data
 }
 
 //go:generate msgp -file=$GOFILE -unexported

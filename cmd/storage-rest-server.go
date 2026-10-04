@@ -253,6 +253,10 @@ func (s *storageRESTServer) AppendFileHandler(w http.ResponseWriter, r *http.Req
 	volume := r.URL.Query().Get(storageRESTVolume)
 	filePath := r.URL.Query().Get(storageRESTFilePath)
 
+	if !validStorageRESTBufferSize(r.ContentLength) {
+		s.writeErrorResponse(w, errInvalidArgument)
+		return
+	}
 	buf := make([]byte, r.ContentLength)
 	_, err := io.ReadFull(r.Body, buf)
 	if err != nil {
@@ -303,7 +307,7 @@ func (s *storageRESTServer) DeleteVersionHandler(w http.ResponseWriter, r *http.
 	}
 
 	var fi FileInfo
-	if err := msgp.Decode(r.Body, &fi); err != nil {
+	if err := decodeStorageFileInfo(r, &fi); err != nil {
 		s.writeErrorResponse(w, err)
 		return
 	}
@@ -351,7 +355,7 @@ func (s *storageRESTServer) WriteMetadataHandler(w http.ResponseWriter, r *http.
 	}
 
 	var fi FileInfo
-	if err := msgp.Decode(r.Body, &fi); err != nil {
+	if err := decodeStorageFileInfo(r, &fi); err != nil {
 		s.writeErrorResponse(w, err)
 		return
 	}
@@ -376,7 +380,7 @@ func (s *storageRESTServer) UpdateMetadataHandler(w http.ResponseWriter, r *http
 	}
 
 	var fi FileInfo
-	if err := msgp.Decode(r.Body, &fi); err != nil {
+	if err := decodeStorageFileInfo(r, &fi); err != nil {
 		s.writeErrorResponse(w, err)
 		return
 	}
@@ -396,6 +400,10 @@ func (s *storageRESTServer) WriteAllHandler(w http.ResponseWriter, r *http.Reque
 	filePath := r.URL.Query().Get(storageRESTFilePath)
 
 	if r.ContentLength < 0 {
+		s.writeErrorResponse(w, errInvalidArgument)
+		return
+	}
+	if !validStorageRESTBufferSize(r.ContentLength) {
 		s.writeErrorResponse(w, errInvalidArgument)
 		return
 	}
@@ -425,7 +433,7 @@ func (s *storageRESTServer) CheckPartsHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	var fi FileInfo
-	if err := msgp.Decode(r.Body, &fi); err != nil {
+	if err := decodeStorageFileInfo(r, &fi); err != nil {
 		s.writeErrorResponse(w, err)
 		return
 	}
@@ -483,7 +491,7 @@ func (s *storageRESTServer) ReadFileHandler(w http.ResponseWriter, r *http.Reque
 		s.writeErrorResponse(w, err)
 		return
 	}
-	if offset < 0 || length < 0 {
+	if offset < 0 || !validStorageRESTBufferSize(int64(length)) || int64(offset) > int64(^uint64(0)>>1)-int64(length) {
 		s.writeErrorResponse(w, errInvalidArgument)
 		return
 	}
@@ -494,6 +502,10 @@ func (s *storageRESTServer) ReadFileHandler(w http.ResponseWriter, r *http.Reque
 		hash, err = hex.DecodeString(hashStr)
 		if err != nil {
 			s.writeErrorResponse(w, err)
+			return
+		}
+		if !BitrotAlgorithmFromString(r.URL.Query().Get(storageRESTBitrotAlgo)).Available() {
+			s.writeErrorResponse(w, errFileCorrupt)
 			return
 		}
 		verifier = NewBitrotVerifier(BitrotAlgorithmFromString(r.URL.Query().Get(storageRESTBitrotAlgo)), hash)
@@ -606,14 +618,22 @@ func (s *storageRESTServer) DeleteVersionsHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	versions := make([]FileInfo, totalVersions)
-	decoder := msgp.NewReader(r.Body)
-	for i := 0; i < totalVersions; i++ {
-		dst := &versions[i]
-		if err := dst.DecodeMsg(decoder); err != nil {
-			s.writeErrorResponse(w, err)
-			return
-		}
+	if !validStorageRESTVersionCount(totalVersions) {
+		s.writeErrorResponse(w, errInvalidArgument)
+		return
+	}
+	versions, err := decodeStorageFileInfos(r, totalVersions)
+	if err != nil {
+		s.writeErrorResponse(w, err)
+		return
+	}
+	if _, err = s.storage.getVolDir(volume); err != nil {
+		s.writeErrorResponse(w, err)
+		return
+	}
+	if err = validateStorageVersions(versions); err != nil {
+		s.writeErrorResponse(w, err)
+		return
 	}
 
 	dErrsResp := &DeleteVersionsErrsResp{Errs: make([]error, totalVersions)}
@@ -649,7 +669,7 @@ func (s *storageRESTServer) RenameDataHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	var fi FileInfo
-	if err := msgp.Decode(r.Body, &fi); err != nil {
+	if err := decodeStorageFileInfo(r, &fi); err != nil {
 		s.writeErrorResponse(w, err)
 		return
 	}
@@ -925,7 +945,20 @@ func (s *storageRESTServer) VerifyFileHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	var fi FileInfo
-	if err := msgp.Decode(r.Body, &fi); err != nil {
+	if err := decodeStorageFileInfo(r, &fi); err != nil {
+		s.writeErrorResponse(w, err)
+		return
+	}
+
+	if !validStoragePath(filePath) {
+		s.writeErrorResponse(w, errFileAccessDenied)
+		return
+	}
+	if _, err := s.storage.getVolDir(volume); err != nil {
+		s.writeErrorResponse(w, err)
+		return
+	}
+	if err := validateStorageVerifyInfo(fi); err != nil {
 		s.writeErrorResponse(w, err)
 		return
 	}

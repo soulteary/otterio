@@ -217,7 +217,7 @@ func (j xlMetaV2Version) Valid() bool {
 		return j.ObjectV2 != nil &&
 			j.ObjectV2.ErasureAlgorithm.valid() &&
 			j.ObjectV2.BitrotChecksumAlgo.valid() &&
-			isXLMetaErasureInfoValid(j.ObjectV2.ErasureM, j.ObjectV2.ErasureN) &&
+			j.ObjectV2.validData() &&
 			j.ObjectV2.ModTime > 0
 	case DeleteType:
 		return j.DeleteMarker != nil &&
@@ -761,6 +761,9 @@ func (z *xlMetaV2) UpdateObjectVersion(fi FileInfo) error {
 
 // AddVersion adds a new version
 func (z *xlMetaV2) AddVersion(fi FileInfo) error {
+	if err := validateStorageFileInfo(fi, true); err != nil {
+		return err
+	}
 	if fi.VersionID == "" {
 		// this means versioning is not yet
 		// enabled or suspend i.e all versions
@@ -911,6 +914,9 @@ func (j xlMetaV2DeleteMarker) ToFileInfo(volume, path string) (FileInfo, error) 
 }
 
 func (j xlMetaV2Object) ToFileInfo(volume, path string) (FileInfo, error) {
+	if !j.validData() {
+		return FileInfo{}, errFileCorrupt
+	}
 	versionID := ""
 	var uv uuid.UUID
 	// check if the version is not "null"
@@ -1317,4 +1323,22 @@ func (z xlMetaV2) ToFileInfo(volume, path, versionID string) (fi FileInfo, err e
 	}
 
 	return FileInfo{}, errFileVersionNotFound
+}
+
+// validData also protects consumers from mismatched parallel part arrays in
+// persisted metadata. Validate before indexing or allocating derived slices.
+func (j xlMetaV2Object) validData() bool {
+	if j.Size < 0 || !validStorageErasureInfo(ErasureInfo{DataBlocks: j.ErasureM, ParityBlocks: j.ErasureN, BlockSize: j.ErasureBlockSize}) {
+		return false
+	}
+	n := len(j.PartNumbers)
+	if n > globalMaxPartID || len(j.PartSizes) != n || len(j.PartETags) != n || len(j.PartActualSizes) != n {
+		return false
+	}
+	for i, number := range j.PartNumbers {
+		if number <= 0 || number > globalMaxPartID || j.PartSizes[i] < 0 {
+			return false
+		}
+	}
+	return true
 }

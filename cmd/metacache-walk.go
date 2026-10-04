@@ -57,6 +57,9 @@ type WalkDirOptions struct {
 // On success a sorted meta cache stream will be returned.
 // Metadata has data stripped, if any.
 func (s *xlStorage) WalkDir(ctx context.Context, opts WalkDirOptions, wr io.Writer) error {
+	if !validStoragePath(opts.BaseDir) {
+		return errFileAccessDenied
+	}
 	// Verify if volume is valid and it exists.
 	volumeDir, err := s.getVolDir(opts.Bucket)
 	if err != nil {

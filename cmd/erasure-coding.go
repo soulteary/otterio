@@ -39,12 +39,15 @@ type Erasure struct {
 
 // NewErasure creates a new ErasureStorage.
 func NewErasure(_ context.Context, dataBlocks, parityBlocks int, blockSize int64) (e Erasure, err error) {
+	if blockSize <= 0 || blockSize > blockSizeV1 {
+		return e, errInvalidArgument
+	}
 	// Check the parameters for sanity now.
 	if dataBlocks <= 0 || parityBlocks <= 0 {
 		return e, reedsolomon.ErrInvShardNum
 	}
 
-	if dataBlocks+parityBlocks > 256 {
+	if dataBlocks > 256 || parityBlocks > 256-dataBlocks {
 		return e, reedsolomon.ErrMaxShardNum
 	}
 
