@@ -298,7 +298,7 @@ func adminRule(method string, h func(http.ResponseWriter, *http.Request), traceH
 	return routeRule{
 		methods:      []string{method},
 		queries:      queries,
-		handler:      toOtterioHandler(h),
+		handler:      toOtterioHandler(bridgeAdminQueryVars(h, queries)),
 		traceHeaders: traceHdrs,
 	}
 }
@@ -312,7 +312,23 @@ func adminStreamRule(method string, h func(http.ResponseWriter, *http.Request), 
 	return routeRule{
 		methods:   []string{method},
 		queries:   queries,
-		handler:   toOtterioStreamHandler(h),
+		handler:   toOtterioStreamHandler(bridgeAdminQueryVars(h, queries)),
 		skipTrace: true,
+	}
+}
+
+// Legacy mux handlers read route-declared query captures through urlVar.
+// Fiber validates those query rules but does not expose them as path params.
+// Bridge only the declared keys, without overriding a captured path variable.
+func bridgeAdminQueryVars(h func(http.ResponseWriter, *http.Request), queries map[string]string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := urlVars(r)
+		values := r.URL.Query()
+		for key := range queries {
+			if _, exists := vars[key]; !exists {
+				vars[key] = values.Get(key)
+			}
+		}
+		h(w, setURLVarsOnRequest(r, vars))
 	}
 }
