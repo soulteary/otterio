@@ -120,7 +120,9 @@ func (srv *Server) Shutdown() error {
 		return http.ErrServerClosed
 	}
 
-	if err := srv.App.Shutdown(); err != nil {
+	// Bound the Fiber drain itself: a stalled stream must not bypass the
+	// configured shutdown deadline before our request-count check is reached.
+	if err := srv.App.ShutdownWithTimeout(srv.ShutdownTimeout); err != nil {
 		return err
 	}
 

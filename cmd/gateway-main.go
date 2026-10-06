@@ -155,6 +155,7 @@ func ValidateGatewayArguments(serverAddr, endpointAddr string) error {
 
 // StartGateway - handler for 'otterio gateway <name>'.
 func StartGateway(ctx *cli.Context, gw Gateway) {
+	runServerSupervisor()
 	defer globalDNSCache.Stop()
 
 	// This is only to uniquely identify each gateway deployments.

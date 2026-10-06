@@ -456,6 +456,7 @@ func initAllSubsystems(ctx context.Context, newObject ObjectLayer) (err error) {
 
 // serverMain handler called for 'otterio server' command.
 func serverMain(ctx *cli.Context) {
+	runServerSupervisor()
 	defer globalDNSCache.Stop()
 
 	signal.Notify(globalOSSignalCh, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
