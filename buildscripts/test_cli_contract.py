@@ -135,8 +135,47 @@ class CLIContractRunnerTests(unittest.TestCase):
             self.assertEqual(len(ids), len(set(ids)))
         self.assertEqual(baseline["source"]["cli"]["version"], "v1.24.2")
         self.assertEqual(len(baseline["source"]["commit"]), 40)
-        self.assertEqual(baseline["manifest_sha256"], hashlib.sha256(
-            (cli_contract.CONTRACT_DIR / "cases.json").read_bytes()).hexdigest())
+        self.assertEqual(baseline["manifest_sha256"], cli_contract.catalog_sha256(
+            cli_contract.CONTRACT_DIR / "cases.json"))
+
+    def test_catalog_digest_ignores_only_crlf_checkout_conversion(self):
+        content = b'{"case": "--help"}\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_bytes(content)
+            reviewed = cli_contract.catalog_sha256(path)
+            self.assertEqual(reviewed, hashlib.sha256(content).hexdigest())
+            path.write_bytes(content.replace(b"\n", b"\r\n"))
+            self.assertEqual(cli_contract.catalog_sha256(path), reviewed)
+            for changed in (content.replace(b"--help", b"--version"), content + b" ",
+                            content.replace(b"\n", b"\r")):
+                with self.subTest(changed=changed):
+                    path.write_bytes(changed)
+                    self.assertNotEqual(cli_contract.catalog_sha256(path), reviewed)
+
+    def test_check_accepts_crlf_catalog_and_rejects_real_catalog_change(self):
+        content = (cli_contract.CONTRACT_DIR / "cases.json").read_bytes().replace(b"\r\n", b"\n")
+        baseline = cli_contract.load(cli_contract.CONTRACT_DIR / "baseline.json")
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory)
+            (contract / "baseline.json").write_text(json.dumps(baseline))
+            path = contract / "cases.json"
+            path.write_bytes(content.replace(b"\n", b"\r\n"))
+            argv = ["cli_contract", "check", "--binary", "unused"]
+            with patch.object(cli_contract, "CONTRACT_DIR", contract), patch.object(sys, "argv", argv), \
+                    patch.object(cli_contract, "capture", return_value=baseline) as capture, \
+                    patch.object(sys, "stdout", io.StringIO()):
+                self.assertEqual(cli_contract.main(), 0)
+                capture.assert_called_once_with("unused")
+            path.write_bytes(content + b" ")
+            stderr = io.StringIO()
+            with patch.object(cli_contract, "CONTRACT_DIR", contract), patch.object(sys, "argv", argv), \
+                    patch.object(cli_contract, "capture") as capture, patch.object(sys, "stderr", stderr), \
+                    self.assertRaises(SystemExit) as raised:
+                cli_contract.main()
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn("case catalog differs from the reviewed baseline", stderr.getvalue())
+            capture.assert_not_called()
 
     def test_snapshot_case_has_isolated_home_and_captures_files(self):
         if os.name == "nt":

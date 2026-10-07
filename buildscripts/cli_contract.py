@@ -25,6 +25,12 @@ def load(path):
     return json.loads(Path(path).read_text())
 
 
+def catalog_sha256(path):
+    # Git can check out text as CRLF on Windows. Only that line-ending
+    # conversion is ignored; all other catalog bytes remain review-sensitive.
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def environment(home):
     prefixes = ("OC_", "MC_", "OTTERIO_", "MINIO_", "AWS_", "COMP_")
     env = {key: value for key, value in os.environ.items()
@@ -221,7 +227,7 @@ def capture(binary):
             "build_info": subprocess.run(["go", "version", "-m", str(Path(binary).resolve())],
                                           text=True, capture_output=True, check=True).stdout,
             "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-            "manifest_sha256": hashlib.sha256((CONTRACT_DIR / "cases.json").read_bytes()).hexdigest(),
+            "manifest_sha256": catalog_sha256(CONTRACT_DIR / "cases.json"),
             "platform_family": "windows" if os.name == "nt" else "unix",
             "cases": discover_help(binary, project) +
                      [run_case(binary, project, case) for case in manifest["cases"]]}
@@ -321,7 +327,7 @@ def main():
         print(f"Recorded {len(actual['cases'])} isolated cases from archived {actual['project']} source")
         return 0
     expected = load(baseline_path)
-    manifest_hash = hashlib.sha256((CONTRACT_DIR / "cases.json").read_bytes()).hexdigest()
+    manifest_hash = catalog_sha256(CONTRACT_DIR / "cases.json")
     if manifest_hash != expected.get("manifest_sha256"):
         parser.error("case catalog differs from the reviewed baseline")
     if options.baseline_binary:
