@@ -1614,6 +1614,12 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
+	var conditionalError APIErrorCode
+	opts.RequireNewObject, conditionalError = conditionalWriteOptions(r)
+	if conditionalError != ErrNone {
+		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(conditionalError), r.URL, guessIsBrowserReq(r))
+		return
+	}
 
 	if api.CacheAPI() != nil {
 		putObject = api.CacheAPI().PutObject
@@ -3074,6 +3080,11 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 	}
 
 	completeMultiPartUpload := objectAPI.CompleteMultipartUpload
+	requireNew, conditionalError := conditionalWriteOptions(r)
+	if conditionalError != ErrNone {
+		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(conditionalError), r.URL, guessIsBrowserReq(r))
+		return
+	}
 
 	// This code is specifically to handle the requirements for slow
 	// complete multipart upload operations on FS mode.
@@ -3099,7 +3110,11 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 
 	w = &whiteSpaceWriter{ResponseWriter: w, Flusher: w.(http.Flusher)}
 	completeDoneCh := sendWhiteSpace(w)
-	objInfo, err := completeMultiPartUpload(ctx, bucket, object, uploadID, completeParts, ObjectOptions{})
+	objInfo, err := completeMultiPartUpload(ctx, bucket, object, uploadID, completeParts, ObjectOptions{
+		RequireNewObject: requireNew,
+		Versioned:        globalBucketVersioningSys.Enabled(bucket),
+		VersionSuspended: globalBucketVersioningSys.Suspended(bucket),
+	})
 	// Stop writing white spaces to the client. Note that close(doneCh) style is not used as it
 	// can cause white space to be written after we send XML response in a race condition.
 	headerWritten := <-completeDoneCh

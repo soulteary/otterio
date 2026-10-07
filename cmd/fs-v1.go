@@ -1108,6 +1108,11 @@ func (fs *FSObjects) PutObject(ctx context.Context, bucket string, object string
 	}
 	defer lk.Unlock()
 	defer ObjectPathUpdated(path.Join(bucket, object))
+	if opts.RequireNewObject {
+		if err = requireNewObject(ctx, bucket, object, fs.getObjectInfo); err != nil {
+			return objInfo, toObjectErr(err, bucket, object)
+		}
+	}
 
 	atomic.AddInt64(&fs.activeIOCount, 1)
 	defer func() {

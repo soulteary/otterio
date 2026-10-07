@@ -541,7 +541,7 @@ func (fs *FSObjects) ListObjectParts(ctx context.Context, bucket, object, upload
 // md5sums of all the parts.
 //
 // Implements S3 compatible Complete multipart API.
-func (fs *FSObjects) CompleteMultipartUpload(ctx context.Context, bucket string, object string, uploadID string, parts []CompletePart, _ ObjectOptions) (oi ObjectInfo, e error) {
+func (fs *FSObjects) CompleteMultipartUpload(ctx context.Context, bucket string, object string, uploadID string, parts []CompletePart, opts ObjectOptions) (oi ObjectInfo, e error) {
 
 	var actualSize int64
 
@@ -714,6 +714,11 @@ func (fs *FSObjects) CompleteMultipartUpload(ctx context.Context, bucket string,
 		return oi, err
 	}
 	defer destLock.Unlock()
+	if opts.RequireNewObject {
+		if err = requireNewObject(ctx, bucket, object, fs.getObjectInfo); err != nil {
+			return oi, toObjectErr(err, bucket, object)
+		}
+	}
 
 	bucketMetaDir := pathJoin(fs.fsPath, otterioMetaBucket, bucketMetaPrefix)
 	fsMetaPath := pathJoin(bucketMetaDir, bucket, object, fs.metaJSONFile)

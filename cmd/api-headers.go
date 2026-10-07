@@ -49,6 +49,9 @@ func setEventStreamHeaders(w http.ResponseWriter) {
 func setCommonHeaders(w http.ResponseWriter) {
 	// Set the "Server" http header.
 	w.Header().Set(xhttp.ServerInfo, "OtterIO")
+	if conditionalWritesSupported() {
+		w.Header().Set(conditionalWritesHeader, "v1")
+	}
 
 	// Set `x-amz-bucket-region` only if region is set on the server
 	// by default otterio uses an empty region.

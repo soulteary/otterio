@@ -747,6 +747,11 @@ func (er erasureObjects) putObject(ctx context.Context, bucket string, object st
 		}
 		defer lk.Unlock()
 	}
+	if opts.RequireNewObject {
+		if err := requireNewErasureObject(ctx, bucket, object, opts, er.getObjectInfo); err != nil {
+			return ObjectInfo{}, err
+		}
+	}
 
 	for i, w := range writers {
 		if w == nil {

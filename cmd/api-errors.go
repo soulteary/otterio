@@ -1935,6 +1935,8 @@ func toAPIErrorCode(ctx context.Context, err error) (apiErr APIErrorCode) {
 		apiErr = ErrBucketAlreadyOwnedByYou
 	case ObjectNotFound:
 		apiErr = ErrNoSuchKey
+	case PreConditionFailed:
+		apiErr = ErrPreconditionFailed
 	case MethodNotAllowed:
 		apiErr = ErrMethodNotAllowed
 	case InvalidVersionID:

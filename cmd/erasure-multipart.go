@@ -900,6 +900,11 @@ func (er erasureObjects) CompleteMultipartUpload(ctx context.Context, bucket str
 	defer lk.Unlock()
 
 	// Rename the multipart object to final location.
+	if opts.RequireNewObject {
+		if err = requireNewErasureObject(ctx, bucket, object, opts, er.getObjectInfo); err != nil {
+			return oi, err
+		}
+	}
 	if onlineDisks, err = renameData(ctx, onlineDisks, otterioMetaMultipartBucket, uploadIDPath,
 		partsMetadata, bucket, object, writeQuorum); err != nil {
 		return oi, toObjectErr(err, bucket, object)

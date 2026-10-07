@@ -1058,28 +1058,36 @@ func (a adminAPIHandlers) AccountInfoHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	accountName := cred.AccessKey
-	var policies []string
-	switch globalIAMSys.usersSysType {
-	case OtterIOUsersSysType:
-		policies, err = globalIAMSys.PolicyDBGet(accountName, false)
-	case LDAPUsersSysType:
-		parentUser := accountName
-		if cred.ParentUser != "" {
-			parentUser = cred.ParentUser
+	var accountPolicy iampolicy.Policy
+	if owner {
+		// Root credentials are deliberately not stored in IAM. Use the built-in
+		// owner policy instead of looking up an IAM user (or an LDAP DN).
+		accountPolicy = iampolicy.Admin
+	} else {
+		var policies []string
+		switch globalIAMSys.usersSysType {
+		case OtterIOUsersSysType:
+			policies, err = globalIAMSys.PolicyDBGet(accountName, false)
+		case LDAPUsersSysType:
+			parentUser := accountName
+			if cred.ParentUser != "" {
+				parentUser = cred.ParentUser
+			}
+			policies, err = globalIAMSys.PolicyDBGet(parentUser, false, cred.Groups...)
+		default:
+			err = errors.New("should not happen")
 		}
-		policies, err = globalIAMSys.PolicyDBGet(parentUser, false, cred.Groups...)
-	default:
-		err = errors.New("should not happen")
-	}
-	if err != nil {
-		logger.LogIf(ctx, err)
-		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
-		return
+		if err != nil {
+			logger.LogIf(ctx, err)
+			writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
+			return
+		}
+		accountPolicy = globalIAMSys.GetCombinedPolicy(policies...)
 	}
 
 	acctInfo := madmin.AccountInfo{
 		AccountName: accountName,
-		Policy:      globalIAMSys.GetCombinedPolicy(policies...),
+		Policy:      accountPolicy,
 	}
 
 	for _, bucket := range buckets {

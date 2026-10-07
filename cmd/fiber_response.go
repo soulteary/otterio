@@ -104,6 +104,9 @@ func writeErrorResponseJSONFiber(ctx context.Context, c fiber.Ctx, err APIError)
 
 func setCommonHeadersFiber(c fiber.Ctx) {
 	c.Set(xhttp.ServerInfo, "OtterIO")
+	if conditionalWritesSupported() {
+		c.Set(conditionalWritesHeader, "v1")
+	}
 	if region := globalServerRegion; region != "" {
 		c.Set(xhttp.AmzBucketRegion, region)
 	}

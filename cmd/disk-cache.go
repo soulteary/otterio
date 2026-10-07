@@ -622,6 +622,10 @@ func (c *cacheObjects) migrateCacheFromV1toV2(ctx context.Context) {
 // PutObject - caches the uploaded object for single Put operations
 func (c *cacheObjects) PutObject(ctx context.Context, bucket, object string, r *PutObjReader, opts ObjectOptions) (objInfo ObjectInfo, err error) {
 	putObjectFn := c.InnerPutObjectFn
+	// Write-back cache cannot acknowledge an atomic destination precondition.
+	if opts.RequireNewObject {
+		return putObjectFn(ctx, bucket, object, r, opts)
+	}
 	dcache, err := c.getCacheToLoc(ctx, bucket, object)
 	if err != nil {
 		// disk cache could not be located,execute backend call.
