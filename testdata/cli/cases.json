@@ -427,6 +427,8 @@
       "id": "negative-value-position",
       "argv": [
         "server",
+        "--address",
+        "127.0.0.1:notaport",
         "--",
         "-1"
       ]
@@ -683,6 +685,331 @@
         "{sandbox}/certs-a",
         "-S",
         "{sandbox}/certs-b"
+      ]
+    },
+    {
+      "id": "position-root-unknown-before-version",
+      "argv": [
+        "unknown",
+        "--version"
+      ]
+    },
+    {
+      "id": "position-root-unknown-before-help",
+      "argv": [
+        "unknown",
+        "--help"
+      ]
+    },
+    {
+      "id": "position-root-help-before-unknown-error",
+      "argv": [
+        "--help",
+        "unknown",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "position-root-version-before-unknown-error",
+      "argv": [
+        "--version",
+        "unknown",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "position-root-error-before-unknown-help",
+      "argv": [
+        "--contract-unknown",
+        "unknown",
+        "--help"
+      ]
+    },
+    {
+      "id": "position-root-help-error-before-unknown",
+      "argv": [
+        "--help",
+        "--contract-unknown",
+        "unknown"
+      ]
+    },
+    {
+      "id": "separator-root-before-unknown-help",
+      "argv": [
+        "--",
+        "unknown",
+        "--help"
+      ]
+    },
+    {
+      "id": "separator-root-help-before-unknown-error",
+      "argv": [
+        "--help",
+        "--",
+        "unknown",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "lexical-root-help-before-negative",
+      "argv": [
+        "--help",
+        "-1"
+      ]
+    },
+    {
+      "id": "lexical-root-negative-before-help",
+      "argv": [
+        "-1",
+        "--help"
+      ]
+    },
+    {
+      "id": "separator-root-help-before-negative",
+      "argv": [
+        "--help",
+        "--",
+        "-1"
+      ]
+    },
+    {
+      "id": "separator-root-negative-before-help",
+      "argv": [
+        "--",
+        "-1",
+        "--help"
+      ]
+    },
+    {
+      "id": "lexical-root-help-trailing-space",
+      "argv": [
+        "--help "
+      ]
+    },
+    {
+      "id": "lexical-root-help-leading-space",
+      "argv": [
+        " --help"
+      ]
+    },
+    {
+      "id": "lexical-root-unknown-leading-space",
+      "argv": [
+        " unknown"
+      ]
+    },
+    {
+      "id": "lexical-root-triple-dash",
+      "argv": [
+        "---x"
+      ]
+    },
+    {
+      "id": "lexical-root-short-equals",
+      "argv": [
+        "-=x"
+      ]
+    },
+    {
+      "id": "lexical-root-long-equals",
+      "argv": [
+        "--=x"
+      ]
+    },
+    {
+      "id": "bool-root-quiet-empty",
+      "argv": [
+        "--quiet="
+      ]
+    },
+    {
+      "id": "bool-root-help-empty",
+      "argv": [
+        "--help="
+      ]
+    },
+    {
+      "id": "bool-root-version-empty",
+      "argv": [
+        "--version="
+      ]
+    },
+    {
+      "id": "bool-root-help-before-quiet-empty",
+      "argv": [
+        "--help",
+        "--quiet="
+      ]
+    },
+    {
+      "id": "lexical-leaf-help-before-negative",
+      "argv": [
+        "server",
+        "--help",
+        "-1"
+      ]
+    },
+    {
+      "id": "lexical-leaf-negative-before-help",
+      "argv": [
+        "server",
+        "-1",
+        "--help"
+      ]
+    },
+    {
+      "id": "separator-leaf-help-before-negative",
+      "argv": [
+        "server",
+        "--help",
+        "--",
+        "-1"
+      ]
+    },
+    {
+      "id": "separator-leaf-negative-before-help",
+      "argv": [
+        "server",
+        "-1",
+        "--",
+        "--help"
+      ]
+    },
+    {
+      "id": "lexical-leaf-help-trailing-space",
+      "argv": [
+        "server",
+        "--help "
+      ]
+    },
+    {
+      "id": "lexical-leaf-help-leading-space",
+      "argv": [
+        "server",
+        "--address",
+        "127.0.0.1:notaport",
+        " --help"
+      ]
+    },
+    {
+      "id": "lexical-leaf-triple-dash",
+      "argv": [
+        "server",
+        "---x"
+      ]
+    },
+    {
+      "id": "lexical-leaf-short-equals",
+      "argv": [
+        "server",
+        "-=x"
+      ]
+    },
+    {
+      "id": "lexical-leaf-long-equals",
+      "argv": [
+        "server",
+        "--=x"
+      ]
+    },
+    {
+      "id": "lexical-parent-help-before-negative",
+      "argv": [
+        "gateway",
+        "--help",
+        "-1"
+      ]
+    },
+    {
+      "id": "lexical-parent-negative-before-help",
+      "argv": [
+        "gateway",
+        "-1",
+        "--help"
+      ]
+    },
+    {
+      "id": "lexical-deep-help-before-negative",
+      "argv": [
+        "gateway",
+        "nas",
+        "--help",
+        "-1"
+      ]
+    },
+    {
+      "id": "lexical-deep-negative-before-help",
+      "argv": [
+        "gateway",
+        "nas",
+        "-1",
+        "--help"
+      ]
+    },
+    {
+      "id": "separator-deep-help-before-negative",
+      "argv": [
+        "gateway",
+        "nas",
+        "--help",
+        "--",
+        "-1"
+      ]
+    },
+    {
+      "id": "bool-leaf-help-empty",
+      "argv": [
+        "server",
+        "--help="
+      ]
+    },
+    {
+      "id": "bool-leaf-quiet-empty",
+      "argv": [
+        "server",
+        "--quiet="
+      ]
+    },
+    {
+      "id": "bool-parent-help-empty",
+      "argv": [
+        "gateway",
+        "--help="
+      ]
+    },
+    {
+      "id": "bool-deep-help-empty",
+      "argv": [
+        "gateway",
+        "nas",
+        "--help="
+      ]
+    },
+    {
+      "id": "negative-string-root-value",
+      "argv": [
+        "--certs-dir",
+        "-1",
+        "--help"
+      ]
+    },
+    {
+      "id": "negative-string-leaf-value",
+      "argv": [
+        "server",
+        "--address",
+        "-1",
+        "--help"
+      ]
+    },
+    {
+      "id": "negative-string-deep-value",
+      "argv": [
+        "gateway",
+        "nas",
+        "--address",
+        "-1",
+        "--help"
       ]
     }
   ]

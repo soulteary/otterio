@@ -55,6 +55,12 @@ local at each root, gateway, and backend scope.
 
 No compatibility facade or vendored CLI fork is maintained. Custom help
 example fields and legacy flag presentation live in `internal/clisupport`.
+Its `Run` entrypoint performs only token classification from declared command
+and flag metadata before calling the native runner. It preserves the first
+positional stopping point of root/group commands, interspersed leaf flags,
+quoted whitespace, `--` per command scope, and the previous diagnostics for
+non-letter or malformed options and explicitly empty boolean values. Flag
+value parsing and the startup lifecycle remain owned by upstream v3.
 
 ## Deliberate compatibility boundaries
 

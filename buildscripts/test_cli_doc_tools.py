@@ -98,7 +98,10 @@ class DocumentationCLI(unittest.TestCase):
                  ["--ndjson=invalid"], ["invalid.meta"], ["missing.meta"],
                  ["xl.meta"], ["--ndjson", "xl.meta", "xl.meta"],
                  ["xl.meta", "--ndjson"], ["--ndjson=false", "xl.meta"],
-                 ["-"], ["--", "--help"])
+                 ["-"], ["--", "--help"], ["--help", "-1"], ["-1", "--help"],
+                 ["--help", "--", "-1"], [" --help"], ["--help "],
+                 ["---x"], ["-=x"], ["--=x"], ["--help="], ["--ndjson="],
+                 ["--help", "-h="], ["--help", "-h", "-1"])
 
         def normalize(data, binary):
             # Go's diagnostic log prefix contains wall-clock time. Preserve

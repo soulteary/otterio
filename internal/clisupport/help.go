@@ -50,6 +50,10 @@ func Install() {
 // objects and built-in flags are local so repeated options keep distinct scope.
 func Configure(command *cli.Command) {
 	command.DisableSliceFlagSeparator = true
+	if len(command.Commands) > 0 && command.StopOnNthArg == nil {
+		stopAfterFirstArgument := 1
+		command.StopOnNthArg = &stopAfterFirstArgument
+	}
 	command.OnUsageError = func(_ context.Context, cmd *cli.Command, err error, _ bool) error {
 		if aliasError := checkAliases(cmd); aliasError != nil {
 			return aliasError

@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/urfave/cli/v3"
+
+	"github.com/soulteary/otterio/internal/clisupport"
 )
 
 // Test RegisterGatewayCommand
@@ -66,7 +68,7 @@ func TestRunRegisteredGatewayCommand(t *testing.T) {
 		t.Errorf("RegisterGatewayCommand got unexpected error: %s", err)
 	}
 
-	if err = newApp("otterio").Run(context.Background(),
+	if err = clisupport.Run(context.Background(), newApp("otterio"),
 		[]string{"otterio", "gateway", factory().Name, fmt.Sprintf("--%s", flagName), flagValue}); err != nil {
 		t.Errorf("running registered gateway command got unexpected error: %s", err)
 	}

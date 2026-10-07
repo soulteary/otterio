@@ -158,15 +158,54 @@ def discover_help(binary, project):
     return results
 
 
-def binary_identity(binary):
-    result = subprocess.run(["go", "version", "-m", str(Path(binary).resolve())],
-                            text=True, capture_output=True, check=True)
-    dependencies = {}
-    for line in result.stdout.splitlines():
+def parse_build_info(build_info):
+    identity = {"dependencies": {}, "settings": {}, "main_path": None, "main_module": None}
+    for line in build_info.splitlines():
         fields = line.strip().split()
         if len(fields) >= 3 and fields[0] in ("dep", "mod"):
-            dependencies[fields[1]] = fields[2]
-    return dependencies
+            identity["dependencies"][fields[1]] = fields[2]
+            if fields[0] == "mod":
+                identity["main_module"] = fields[1]
+        elif len(fields) == 2 and fields[0] == "path":
+            identity["main_path"] = fields[1]
+        elif len(fields) == 2 and fields[0] == "build" and "=" in fields[1]:
+            name, value = fields[1].split("=", 1)
+            identity["settings"][name] = value
+    return identity
+
+
+def binary_build_info(binary):
+    return subprocess.run(["go", "version", "-m", str(Path(binary).resolve())],
+                          text=True, capture_output=True, check=True).stdout
+
+
+def binary_identity(binary):
+    return parse_build_info(binary_build_info(binary))["dependencies"]
+
+
+def validate_baseline_identity(expected, build_info, binary_sha256):
+    """Validate a clean fixed checkout or the exact saved archive binary.
+
+    Go may stamp the main module with a pseudo-version when .git is present;
+    archive builds report (devel). Neither is an SDK dependency version.
+    """
+    source = expected["source"]
+    actual = parse_build_info(build_info)
+    archived = parse_build_info(source["build_info"])
+    if actual["dependencies"].get("github.com/minio/cli") != "v1.24.2":
+        raise ValueError("--baseline-binary requires the archived minio/cli v1.24.2 binary")
+    if (actual["main_path"], actual["main_module"]) != (archived["main_path"], archived["main_module"]):
+        raise ValueError("--baseline-binary main package/module differs from the reviewed source identity")
+    if expected["project"] == "oc" and actual["dependencies"].get("github.com/soulteary/otterio") != source["sdk_server_module"]:
+        raise ValueError("--baseline-binary SDK dependency differs from the reviewed source identity")
+    settings = actual["settings"]
+    vcs_fields = {key: value for key, value in settings.items() if key.startswith("vcs")}
+    if vcs_fields:
+        if (settings.get("vcs") != "git" or settings.get("vcs.revision") != source["commit"]
+                or settings.get("vcs.modified") != "false"):
+            raise ValueError("--baseline-binary must come from the exact clean reviewed source commit")
+    elif binary_sha256 != source["binary_sha256"]:
+        raise ValueError("--baseline-binary without VCS identity must match the saved archive binary SHA256")
 
 
 def capture(binary):
@@ -278,11 +317,11 @@ def main():
     if manifest_hash != expected.get("manifest_sha256"):
         parser.error("case catalog differs from the reviewed baseline")
     if options.baseline_binary:
-        dependencies = binary_identity(options.baseline_binary)
-        if dependencies.get("github.com/minio/cli") != "v1.24.2":
-            parser.error("--baseline-binary requires the archived minio/cli v1.24.2 binary")
-        if dependencies.get("github.com/soulteary/otterio") != expected["source"]["sdk_server_module"]:
-            parser.error("--baseline-binary SDK/server module differs from the reviewed source identity")
+        try:
+            validate_baseline_identity(expected, binary_build_info(options.baseline_binary),
+                                       hashlib.sha256(Path(options.baseline_binary).read_bytes()).hexdigest())
+        except ValueError as error:
+            parser.error(str(error))
         expected = capture(options.baseline_binary)
     actual = capture(options.binary)
     if options.output:

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/soulteary/otterio/cmd/config"
+	"github.com/soulteary/otterio/internal/clisupport"
 	"github.com/urfave/cli/v3"
 )
 
@@ -21,7 +22,7 @@ func TestCLICommandStateIsolation(t *testing.T) {
 			}
 			return nil
 		}
-		if err := app.Run(context.Background(), []string{"otterio", "server", "--address", value, "disk"}); err != nil {
+		if err := clisupport.Run(context.Background(), app, []string{"otterio", "server", "--address", value, "disk"}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -32,7 +33,7 @@ func TestCLICommandStateIsolation(t *testing.T) {
 		}
 		return nil
 	}
-	if err := app.Run(context.Background(), []string{"otterio", "server", "disk"}); err != nil {
+	if err := clisupport.Run(context.Background(), app, []string{"otterio", "server", "disk"}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -66,7 +67,7 @@ func TestCLIGatewayScope(t *testing.T) {
 			}); err != nil {
 				t.Fatal(err)
 			}
-			if err := newApp("otterio").Run(context.Background(), append([]string{"otterio"}, test.args...)); err != nil {
+			if err := clisupport.Run(context.Background(), newApp("otterio"), append([]string{"otterio"}, test.args...)); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -88,7 +89,7 @@ func TestCLIConfigDirectoryScope(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := newApp("otterio").Run(context.Background(), []string{"otterio", "--config-dir", rootDir, "gateway", "config-scope-test", "--config-dir", leafDir}); err != nil {
+	if err := clisupport.Run(context.Background(), newApp("otterio"), []string{"otterio", "--config-dir", rootDir, "gateway", "config-scope-test", "--config-dir", leafDir}); err != nil {
 		t.Fatal(err)
 	}
 	// The intermediate gateway default must not hide the root explicit directory.
@@ -100,7 +101,7 @@ func TestCLIConfigDirectoryScope(t *testing.T) {
 		}
 		return nil
 	}
-	if err := app.Run(context.Background(), []string{"otterio", "--config-dir", rootDir, "gateway", "config-scope-test"}); err != nil {
+	if err := clisupport.Run(context.Background(), app, []string{"otterio", "--config-dir", rootDir, "gateway", "config-scope-test"}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -125,7 +126,7 @@ func TestCLIServerEndpointSources(t *testing.T) {
 				}
 				return nil
 			}
-			if err := app.Run(context.Background(), []string{"otterio", "server", "disk1", "disk2"}); err != nil {
+			if err := clisupport.Run(context.Background(), app, []string{"otterio", "server", "disk1", "disk2"}); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -136,7 +137,7 @@ func TestCLIHelpAndUsageStreams(t *testing.T) {
 	app := newApp("otterio")
 	var output, errorOutput bytes.Buffer
 	app.Writer, app.ErrWriter = &output, &errorOutput
-	if err := app.Run(context.Background(), []string{"otterio", "server", "--help"}); err != nil {
+	if err := clisupport.Run(context.Background(), app, []string{"otterio", "server", "--help"}); err != nil {
 		var exit cli.ExitCoder
 		if !errors.As(err, &exit) || exit.ExitCode() != 0 {
 			t.Fatal(err)
@@ -148,7 +149,7 @@ func TestCLIHelpAndUsageStreams(t *testing.T) {
 	output.Reset()
 	app = newApp("otterio")
 	app.Writer, app.ErrWriter = &output, &errorOutput
-	if err := app.Run(context.Background(), []string{"otterio", "server", "--unknown"}); err == nil {
+	if err := clisupport.Run(context.Background(), app, []string{"otterio", "server", "--unknown"}); err == nil {
 		t.Fatal("unknown flag accepted")
 	}
 	if !strings.HasPrefix(output.String(), "Incorrect Usage:") || strings.Contains(output.String(), "EXAMPLES:") || errorOutput.Len() != 0 {
@@ -176,7 +177,7 @@ func TestCLIVersionValueAndChildParsing(t *testing.T) {
 				childCalled = true
 				return nil
 			}
-			err := app.Run(context.Background(), append([]string{"otterio"}, test.args...))
+			err := clisupport.Run(context.Background(), app, append([]string{"otterio"}, test.args...))
 			if test.version {
 				var exit cli.ExitCoder
 				if !errors.As(err, &exit) || exit.ExitCode() != 0 || output.String() != "otterio version "+ReleaseTag+"\n" {
@@ -225,7 +226,7 @@ func TestCLIHelpDoesNotMaskInvalidArguments(t *testing.T) {
 				t.Fatal("invalid invocation reached server startup")
 				return nil
 			}
-			err := app.Run(context.Background(), append([]string{"otterio"}, test.args...))
+			err := clisupport.Run(context.Background(), app, append([]string{"otterio"}, test.args...))
 			if err == nil {
 				t.Fatal("invalid arguments succeeded")
 			}

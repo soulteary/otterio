@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/soulteary/otterio/internal/clisupport"
 	"io"
 	"log"
 	"os"
@@ -30,6 +29,8 @@ import (
 
 	"github.com/tinylib/msgp/msgp"
 	"github.com/urfave/cli/v3"
+
+	"github.com/soulteary/otterio/internal/clisupport"
 )
 
 var xlHeader = [4]byte{'X', 'L', '2', ' '}
@@ -121,7 +122,7 @@ GLOBAL FLAGS:
 		}
 		return nil
 	}
-	err := app.Run(context.Background(), os.Args)
+	err := clisupport.Run(context.Background(), app, os.Args)
 	if err != nil {
 		var exit cli.ExitCoder
 		if errors.As(err, &exit) && exit.ExitCode() == 0 {

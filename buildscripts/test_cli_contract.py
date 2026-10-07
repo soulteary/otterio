@@ -12,6 +12,47 @@ import cli_contract
 
 
 class CLIContractRunnerTests(unittest.TestCase):
+    def baseline_identity_fixture(self, project="otterio"):
+        module = "github.com/soulteary/otterio" if project == "otterio" else "github.com/soulteary/mc"
+        sdk = "v0.0.0-20261004215341-be8596f0d69d"
+        info = f"probe: go1.27.1\n\tpath\t{module}\n\tmod\t{module}\t(devel)\n\tdep\tgithub.com/minio/cli\tv1.24.2\n"
+        if project == "oc":
+            info += f"\tdep\tgithub.com/soulteary/otterio\t{sdk}\n"
+        expected = {"project": project, "source": {"build_info": info, "commit": "a" * 40,
+                    "binary_sha256": "saved-binary", "sdk_server_module": sdk if project == "oc" else "(devel)"}}
+        vcs = "\tbuild\tvcs=git\n\tbuild\tvcs.revision=" + "a" * 40 + "\n\tbuild\tvcs.modified=false\n"
+        return expected, info, vcs
+
+    def test_clean_checkout_main_module_pseudoversion_matches_fixed_source(self):
+        for project in ("otterio", "oc"):
+            with self.subTest(project=project):
+                expected, info, vcs = self.baseline_identity_fixture(project)
+                info = info.replace("(devel)", "v0.0.0-20261008000000-aaaaaaaaaaaa")
+                cli_contract.validate_baseline_identity(expected, info + vcs, "different-platform-binary")
+
+    def test_baseline_rejects_dirty_or_wrong_revision_and_wrong_cli(self):
+        expected, info, vcs = self.baseline_identity_fixture()
+        for changed in (vcs.replace("false", "true"), vcs.replace("a" * 40, "b" * 40),
+                        vcs.replace("vcs=git", "vcs=hg"), vcs.replace("\tbuild\tvcs.modified=false\n", "")):
+            with self.subTest(vcs=changed), self.assertRaises(ValueError):
+                cli_contract.validate_baseline_identity(expected, info + changed, "different-binary")
+        with self.assertRaises(ValueError):
+            cli_contract.validate_baseline_identity(expected, info.replace("v1.24.2", "v1.24.1") + vcs, "different-binary")
+
+    def test_baseline_without_vcs_requires_the_saved_archive_binary(self):
+        expected, info, _ = self.baseline_identity_fixture()
+        cli_contract.validate_baseline_identity(expected, info, "saved-binary")
+        with self.assertRaises(ValueError):
+            cli_contract.validate_baseline_identity(expected, info, "unverified-binary")
+        with self.assertRaises(ValueError):
+            cli_contract.validate_baseline_identity(expected, info.replace("github.com/soulteary/otterio", "example.com/other"), "saved-binary")
+
+    def test_oc_sdk_pin_is_strict_even_when_source_commit_matches(self):
+        expected, info, vcs = self.baseline_identity_fixture("oc")
+        with self.assertRaises(ValueError):
+            cli_contract.validate_baseline_identity(expected, info.replace(expected["source"]["sdk_server_module"], "v0.0.0-new") + vcs,
+                                                   "different-platform-binary")
+
     def test_commands_are_read_only_from_the_visible_commands_section(self):
         help_text = "NAME:\n  fake\nCOMMANDS:\n  list, ls  list objects\n  help, h  help\n  admin     administration\nFLAGS:\n  accidental  not a command\n"
         self.assertEqual(cli_contract.command_names(help_text), ["list", "admin"])

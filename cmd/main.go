@@ -142,6 +142,8 @@ func newApp(name string) *cli.Command {
 	// Set up an isolated command tree for every invocation.
 	clisupport.Install()
 	app := &cli.Command{}
+	stopAfterFirstArgument := 1
+	app.StopOnNthArg = &stopAfterFirstArgument
 	app.Name = name
 	app.Authors = []any{"MinIO, Inc."}
 	app.Version = ReleaseTag
@@ -175,7 +177,7 @@ func Main(args []string) {
 	appName := filepath.Base(args[0])
 
 	// Run the app - exit on error.
-	if err := newApp(appName).Run(context.Background(), args); err != nil {
+	if err := clisupport.Run(context.Background(), newApp(appName), args); err != nil {
 		var exit cli.ExitCoder
 		if errors.As(err, &exit) {
 			os.Exit(exit.ExitCode())
