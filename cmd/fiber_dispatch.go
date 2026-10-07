@@ -44,10 +44,10 @@ func compiledQueryRegex(pattern string) *regexp.Regexp {
 	if ok {
 		return re
 	}
-	// Anchor the full value, matching the previous "^pattern$" semantics. A bad
+	// Group alternatives before anchoring so every branch matches the full value. A bad
 	// pattern compiles to nil and is treated as a non-match (mirrors the old
 	// behavior where regexp.MatchString returned an error and matched=false).
-	compiled, err := regexp.Compile("^" + pattern + "$")
+	compiled, err := regexp.Compile("^(?:" + pattern + ")$")
 	if err != nil {
 		compiled = nil
 	}

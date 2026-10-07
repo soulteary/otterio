@@ -178,7 +178,7 @@ func registerAdminRouterFiber(app *fiber.App, enableConfigOps, enableIAMOps bool
 
 func registerAdminHealRoutes(app *fiber.App, verPrefix string, adminAPI adminAPIHandlers) {
 	healRule := []routeRule{
-		adminRule(http.MethodPost, adminAPI.HealHandler, false, nil),
+		adminStreamRule(http.MethodPost, adminAPI.HealHandler, nil),
 	}
 	registerAdminRoute(app, verPrefix+"/heal/", healRule)
 	app.All(verPrefix+"/heal/:bucket", func(c fiber.Ctx) error {

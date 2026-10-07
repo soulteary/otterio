@@ -108,12 +108,26 @@ func (listener *httpListener) start() {
 
 // Accept - reads from httpListener.acceptCh for one of previously accepted TCP connection and returns the same.
 func (listener *httpListener) Accept() (conn net.Conn, err error) {
-	result, ok := <-listener.acceptCh
-	if ok {
-		return result.conn, result.err
+	listener.mutex.Lock()
+	doneCh := listener.doneCh
+	listener.mutex.Unlock()
+	if doneCh == nil {
+		return nil, net.ErrClosed
 	}
-
-	return nil, syscall.EINVAL
+	select {
+	case result := <-listener.acceptCh:
+		select {
+		case <-doneCh:
+			if result.conn != nil {
+				_ = result.conn.Close()
+			}
+			return nil, net.ErrClosed
+		default:
+			return result.conn, result.err
+		}
+	case <-doneCh:
+		return nil, net.ErrClosed
+	}
 }
 
 // Close - closes underneath all TCP listeners.
@@ -147,12 +161,14 @@ func (listener *httpListener) Addr() (addr net.Addr) {
 		return addr
 	}
 
-	tcpAddr := addr.(*net.TCPAddr)
+	// TCPListener.Addr returns its stored address. Copy it before constructing
+	// the aggregate address so Addrs keeps reporting each actual listener.
+	tcpAddr := *addr.(*net.TCPAddr)
 	if ip := net.ParseIP("0.0.0.0"); ip != nil {
 		tcpAddr.IP = ip
 	}
 
-	addr = tcpAddr
+	addr = &tcpAddr
 	return addr
 }
 

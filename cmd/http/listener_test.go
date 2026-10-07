@@ -99,6 +99,7 @@ func getNextPort() string {
 }
 
 func getNonLoopBackIP(t *testing.T) string {
+	t.Helper()
 	localIP4 := set.NewStringSet()
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -123,11 +124,22 @@ func getNonLoopBackIP(t *testing.T) string {
 	nonLoopBackIPs := localIP4.FuncMatch(func(ip string, _ string) bool {
 		return !strings.HasPrefix(ip, "127.")
 	}, "")
-	if len(nonLoopBackIPs) == 0 {
-		t.Fatalf("No non-loop back IP address found for this host")
+	for _, ip := range nonLoopBackIPs.ToSlice() {
+		// VPN and virtual interfaces can be bindable but unreachable from the
+		// same host. Probe each candidate instead of blocking on the first one.
+		listener, err := net.Listen("tcp4", net.JoinHostPort(ip, "0"))
+		if err != nil {
+			continue
+		}
+		conn, err := net.DialTimeout("tcp4", listener.Addr().String(), time.Second)
+		listener.Close()
+		if err == nil {
+			conn.Close()
+			return ip
+		}
 	}
-	nonLoopBackIP := nonLoopBackIPs.ToSlice()[0]
-	return nonLoopBackIP
+	t.Skip("no locally reachable non-loopback IPv4 interface")
+	return ""
 }
 
 func TestNewHTTPListener(t *testing.T) {
@@ -194,7 +206,7 @@ func TestHTTPListenerStartClose(t *testing.T) {
 		}
 
 		for _, serverAddr := range listener.Addrs() {
-			conn, err := net.Dial("tcp", serverAddr.String())
+			conn, err := net.DialTimeout("tcp", serverAddr.String(), 5*time.Second)
 			if err != nil {
 				t.Fatalf("Test %d: error: expected = <nil>, got = %v", i+1, err)
 			}

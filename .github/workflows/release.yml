@@ -176,7 +176,7 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           set -euo pipefail
-          GHCR_REPO="ghcr.io/${GITHUB_REPOSITORY,,}"
+          GHCR_REPO="ghcr.io/$(printf '%s' "$GITHUB_REPOSITORY" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
           TAGS="${GHCR_REPO}:${RELEASE_TAG}"
           echo "ghcr_repository=$GHCR_REPO" >> "$GITHUB_OUTPUT"
           dockerhub_published=false

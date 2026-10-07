@@ -48,7 +48,7 @@ func TestAdminQueryBridgePreservesPathAndValidation(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}
 	registerAdminRoute(app, "/admin-test/:bucket", []routeRule{adminRule(http.MethodPut, handler, true, map[string]string{"bucket": ".*", "isGroup": "true|false"})})
-	for _, value := range []string{"false", "invalid"} {
+	for _, value := range []string{"false", "invalid", "trueevil", "evilfalse", "truefalse"} {
 		response, err := app.Test(httptest.NewRequest(http.MethodPut, "/admin-test/path-bucket?bucket=query-bucket&isGroup="+value, nil))
 		if err != nil {
 			t.Fatal(err)
@@ -57,7 +57,7 @@ func TestAdminQueryBridgePreservesPathAndValidation(t *testing.T) {
 		if value == "false" && response.StatusCode != http.StatusOK {
 			t.Fatal(response.StatusCode)
 		}
-		if value == "invalid" && response.StatusCode == http.StatusOK {
+		if value != "false" && response.StatusCode == http.StatusOK {
 			t.Fatal("invalid query reached handler")
 		}
 	}

@@ -772,7 +772,7 @@ func likelyUnescapeGeneric(p string, escapeFn func(string) (string, error)) stri
 func newContext(r *http.Request, w http.ResponseWriter, api string) context.Context {
 	bucket := urlVar(r, "bucket")
 	object := likelyUnescapeGeneric(urlVar(r, "object"), url.PathUnescape)
-	prefix := likelyUnescapeGeneric(urlVar(r, "prefix"), url.QueryUnescape)
+	prefix := likelyUnescapeGeneric(urlVar(r, "prefix"), url.PathUnescape)
 	if prefix != "" {
 		object = prefix
 	}

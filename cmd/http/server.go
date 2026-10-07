@@ -20,11 +20,8 @@ package http
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"net"
 	"net/http"
-	"os"
-	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -38,11 +35,10 @@ import (
 	"github.com/soulteary/otterio/pkg/certs"
 	"github.com/soulteary/otterio/pkg/env"
 	"github.com/soulteary/otterio/pkg/fips"
+	"github.com/valyala/fasthttp"
 )
 
 const (
-	serverShutdownPoll = 500 * time.Millisecond
-
 	// DefaultShutdownTimeout - default shutdown timeout used for graceful http server shutdown.
 	DefaultShutdownTimeout = 5 * time.Second
 
@@ -61,6 +57,7 @@ type Server struct {
 	listener        *httpListener
 	inShutdown      uint32
 	requestCount    int32
+	activeConns     sync.Map
 }
 
 // GetRequestCount - returns number of request in progress.
@@ -83,15 +80,36 @@ func (srv *Server) Start() (err error) {
 		return err
 	}
 
-	srv.App.Use(func(c fiber.Ctx) error {
+	// Wrap the transport handler: middleware appended here would follow all
+	// registered routes, whose terminal handlers do not call Next.
+	transport := srv.App.Server()
+	handler := transport.Handler
+	transport.Handler = func(c *fasthttp.RequestCtx) {
 		if atomic.LoadUint32(&srv.inShutdown) != 0 {
-			c.Set("Connection", "close")
-			return c.Status(fiber.StatusForbidden).SendString(http.ErrServerClosed.Error())
+			c.SetConnectionClose()
+			c.Error(http.ErrServerClosed.Error(), http.StatusForbidden)
+			return
 		}
-		atomic.AddInt32(&srv.requestCount, 1)
-		defer atomic.AddInt32(&srv.requestCount, -1)
-		return c.Next()
-	})
+		handler(c)
+	}
+	previousConnState := transport.ConnState
+	transport.ConnState = func(conn net.Conn, state fasthttp.ConnState) {
+		// StateActive covers the handler and the subsequent streamed response.
+		// Keep-alive idle connections and failed/new connections are not counted.
+		switch state {
+		case fasthttp.StateActive:
+			if _, loaded := srv.activeConns.LoadOrStore(conn, struct{}{}); !loaded {
+				atomic.AddInt32(&srv.requestCount, 1)
+			}
+		case fasthttp.StateIdle, fasthttp.StateClosed, fasthttp.StateHijacked:
+			if _, loaded := srv.activeConns.LoadAndDelete(conn); loaded {
+				atomic.AddInt32(&srv.requestCount, -1)
+			}
+		}
+		if previousConnState != nil {
+			previousConnState(conn, state)
+		}
+	}
 
 	srv.listenerMutex.Lock()
 	srv.listener = listener
@@ -120,39 +138,10 @@ func (srv *Server) Shutdown() error {
 		return http.ErrServerClosed
 	}
 
-	// Bound the Fiber drain itself: a stalled stream must not bypass the
-	// configured shutdown deadline before our request-count check is reached.
-	if err := srv.App.ShutdownWithTimeout(srv.ShutdownTimeout); err != nil {
-		return err
-	}
-
-	srv.listenerMutex.Lock()
-	err := srv.listener.Close()
-	srv.listenerMutex.Unlock()
-	if err != nil {
-		return err
-	}
-
-	shutdownTimeout := srv.ShutdownTimeout
-	shutdownTimer := time.NewTimer(shutdownTimeout)
-	ticker := time.NewTicker(serverShutdownPoll)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-shutdownTimer.C:
-			tmp, err := os.CreateTemp("", "otterio-goroutines-*.txt")
-			if err == nil {
-				_ = pprof.Lookup("goroutine").WriteTo(tmp, 1)
-				tmp.Close()
-				return errors.New("timed out. some connections are still active. goroutines written to " + tmp.Name())
-			}
-			return errors.New("timed out. some connections are still active")
-		case <-ticker.C:
-			if atomic.LoadInt32(&srv.requestCount) <= 0 {
-				return nil
-			}
-		}
-	}
+	// Fiber already waits for handlers and response streams to finish. Use
+	// one deadline, without a second polling window after a successful drain.
+	defer srv.listener.Close()
+	return srv.App.ShutdownWithTimeout(srv.ShutdownTimeout)
 }
 
 // NewServer - creates new Fiber server using given arguments.
@@ -164,8 +153,10 @@ func NewServer(addrs []string, app *fiber.App, getCert certs.GetCertificateFunc)
 		tlsConfig = &tls.Config{
 			PreferServerCipherSuites: true,
 			MinVersion:               tls.VersionTLS12,
-			NextProtos:               []string{"http/1.1", "h2"},
-			GetCertificate:           getCert,
+			// fasthttp serves HTTP/1.1; advertising h2 makes capable clients send
+			// HTTP/2 frames to an HTTP/1.1 parser after the TLS handshake.
+			NextProtos:     []string{"http/1.1"},
+			GetCertificate: getCert,
 		}
 		if secureCiphers || fips.Enabled() {
 			tlsConfig.CipherSuites = fips.CipherSuitesTLS()

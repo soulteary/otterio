@@ -505,7 +505,11 @@ type healInitParams struct {
 // extractHealInitParams - Validates params for heal init API.
 func extractHealInitParams(vars map[string]string, qParams url.Values, r io.Reader) (hip healInitParams, err APIErrorCode) {
 	hip.bucket = vars[mgmtBucket]
-	hip.objPrefix = vars[mgmtPrefix]
+	var decodeErr error
+	hip.objPrefix, decodeErr = unescapePath(vars[mgmtPrefix])
+	if decodeErr != nil {
+		return hip, ErrInvalidObjectName
+	}
 
 	if hip.bucket == "" {
 		if hip.objPrefix != "" {
@@ -708,7 +712,9 @@ func (a adminAPIHandlers) HealHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respCh := make(chan healResp)
+	// A client may disconnect while the heal start/stop operation finishes.
+	// Its single result must not leave the producer blocked without a reader.
+	respCh := make(chan healResp, 1)
 	switch {
 	case hip.forceStop:
 		go func() {
@@ -1212,10 +1218,6 @@ func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Reque
 	healthInfoCh := make(chan madmin.HealthInfo)
 
 	enc := json.NewEncoder(w)
-	partialWrite := func(oinfo madmin.HealthInfo) {
-		healthInfoCh <- oinfo
-	}
-
 	setCommonHeaders(w)
 
 	setEventStreamHeaders(w)
@@ -1242,6 +1244,12 @@ func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Reque
 
 	deadlinedCtx, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
+	partialWrite := func(oinfo madmin.HealthInfo) {
+		select {
+		case healthInfoCh <- oinfo:
+		case <-deadlinedCtx.Done():
+		}
+	}
 
 	var err error
 	nsLock := objectAPI.NewNSLock(otterioMetaBucket, "health-check-in-progress")
@@ -1359,7 +1367,10 @@ func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Reque
 			if !ok {
 				return
 			}
-			logger.LogIf(ctx, enc.Encode(oinfo))
+			if err := enc.Encode(oinfo); err != nil {
+				logger.LogIf(ctx, err)
+				return
+			}
 			w.(http.Flusher).Flush()
 		case <-ticker.C:
 			if _, err := w.Write([]byte(" ")); err != nil {

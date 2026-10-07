@@ -26,7 +26,9 @@ import (
 )
 
 func TestNewServer(t *testing.T) {
-	nonLoopBackIP := getNonLoopBackIP(t)
+	// Construction stores addresses without binding them; no host interface
+	// is needed to verify that behavior.
+	nonLoopBackIP := "192.0.2.1"
 	app := fiber.New()
 	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello, world")

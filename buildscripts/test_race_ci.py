@@ -19,7 +19,7 @@ class RaceLauncherTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         (self.root / "buildscripts").mkdir()
         shutil.copy(ROOT / "buildscripts/race.sh", self.root / "buildscripts/race.sh")
         shutil.copy(ROOT / "Makefile", self.root / "Makefile")

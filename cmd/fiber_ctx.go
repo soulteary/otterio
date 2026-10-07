@@ -58,11 +58,10 @@ import (
 // touching ctx.s, so propagateCancel goroutines that outlive the request
 // observe a stable, race-free view.
 //
-// Value() still delegates to the *fasthttp.RequestCtx for request-scoped
-// values; callers that read values from a recycled ctx is a separate pre-
-// existing concern (already mitigated upstream by strings.Clone, etc.).
+// Snapshot values too: subscription cleanup can read context values after
+// the response closes and fasthttp recycles its request context.
 type fiberRequestCtx struct {
-	reqCtx *fasthttp.RequestCtx
+	values map[any]any
 	// done is a snapshot of reqCtx.Done() captured at construction time.
 	// fasthttp closes this channel only on Server.Shutdown, so legacy
 	// handlers that loop on r.Context().Done() still unblock on graceful
@@ -74,7 +73,14 @@ type fiberRequestCtx struct {
 func newFiberRequestCtx(reqCtx *fasthttp.RequestCtx) *fiberRequestCtx {
 	// Capture Done() once, in the request goroutine, while reqCtx.s is
 	// stable. After this point we never call reqCtx.Done() again.
-	return &fiberRequestCtx{reqCtx: reqCtx, done: reqCtx.Done()}
+	values := make(map[any]any)
+	reqCtx.VisitUserValuesAll(func(key, value any) {
+		if name, ok := key.(string); ok {
+			key = strings.Clone(name)
+		}
+		values[key] = value
+	})
+	return &fiberRequestCtx{values: values, done: reqCtx.Done()}
 }
 
 func (c *fiberRequestCtx) Deadline() (time.Time, bool) { return time.Time{}, false }
@@ -87,7 +93,12 @@ func (c *fiberRequestCtx) Err() error {
 		return nil
 	}
 }
-func (c *fiberRequestCtx) Value(key any) any { return c.reqCtx.Value(key) }
+func (c *fiberRequestCtx) Value(key any) any {
+	if name, ok := key.([]byte); ok {
+		key = string(name)
+	}
+	return c.values[key]
+}
 
 // OtterioHandler is the standard Fiber handler signature for OtterIO APIs.
 type OtterioHandler = fiber.Handler
@@ -126,10 +137,12 @@ func allPathParams(c fiber.Ctx) map[string]string {
 	if b := pathParamBucket(c); b != "" {
 		m["bucket"] = b
 	}
-	if o := pathParamObject(c); o != "" {
+	// Legacy handlers call unescapePath themselves. Preserve the encoded
+	// capture so literal percent escapes in object names are decoded once.
+	if o := rawPathParamObject(c); o != "" {
 		m["object"] = o
 	}
-	if p := pathParamPrefix(c); p != "" {
+	if p := rawPathParamPrefix(c); p != "" {
 		m["prefix"] = p
 	}
 	_ = c.Route()
@@ -144,13 +157,15 @@ func allPathParams(c fiber.Ctx) map[string]string {
 		// backgroundAppend, metacache writers) would otherwise race with the
 		// next request's ctx.Reset and read corrupted bytes.
 		if v := c.Params(name); v != "" {
-			m[name] = strings.Clone(v)
+			if _, exists := m[name]; !exists {
+				m[name] = strings.Clone(v)
+			}
 		}
 	}
 	if routeHasPathWildcard(c) {
 		if wild := strings.TrimPrefix(c.Params("*"), "/"); wild != "" {
 			if _, ok := m["object"]; !ok {
-				m["object"] = strings.Clone(likelyUnescapeGeneric(wild, url.PathUnescape))
+				m["object"] = strings.Clone(wild)
 			}
 		}
 	}
@@ -182,6 +197,8 @@ func toOtterioStreamHandler(h func(http.ResponseWriter, *http.Request)) OtterioH
 			return err
 		}
 		r = setURLVarsOnRequest(r, allPathParams(c))
+		ctx, cancel := context.WithCancel(r.Context())
+		r = r.WithContext(ctx)
 
 		pr, pw := io.Pipe()
 		w := &fiberStreamResponseWriter{
@@ -191,7 +208,10 @@ func toOtterioStreamHandler(h func(http.ResponseWriter, *http.Request)) OtterioH
 			ready:  make(chan struct{}),
 		}
 
-		go w.run(h, r)
+		go func() {
+			defer cancel()
+			w.run(h, r)
+		}()
 		<-w.ready
 		result := w.result
 
@@ -228,7 +248,7 @@ func toOtterioStreamHandler(h func(http.ResponseWriter, *http.Request)) OtterioH
 		// inline and only returned once the transfer completed.
 		sc := &streamCompletion{}
 		c.RequestCtx().SetUserValue(streamCompletionKey{}, sc)
-		body := streamCompletionReader{r: pr, sc: sc}
+		body := streamCompletionReader{r: pr, sc: sc, cancel: cancel}
 		if contentLength >= 0 {
 			c.Response().SetBodyStream(body, int(contentLength))
 		} else {
@@ -290,13 +310,17 @@ func streamCompletionOf(c fiber.Ctx) *streamCompletion {
 // streamCompletionReader wraps the pipe reader handed to fasthttp so that the
 // completion hooks fire when fasthttp closes the stream (end of body or abort).
 type streamCompletionReader struct {
-	r  *io.PipeReader
-	sc *streamCompletion
+	r      *io.PipeReader
+	sc     *streamCompletion
+	cancel context.CancelFunc
 }
 
 func (r streamCompletionReader) Read(p []byte) (int, error) { return r.r.Read(p) }
 
 func (r streamCompletionReader) Close() error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	err := r.r.Close()
 	r.sc.run()
 	return err
@@ -340,14 +364,18 @@ func requestHost(c fiber.Ctx) string {
 // writers, request contexts, etc.) must be detached to avoid a use-after-reset
 // data race.
 func pathParamObject(c fiber.Ctx) string {
+	return likelyUnescapeGeneric(rawPathParamObject(c), url.PathUnescape)
+}
+
+func rawPathParamObject(c fiber.Ctx) string {
 	if object, ok := c.Locals(fiberObjectParam).(string); ok && object != "" {
-		return strings.Clone(likelyUnescapeGeneric(object, url.PathUnescape))
+		return strings.Clone(object)
 	}
 	obj := c.Params(fiberObjectParam)
 	if obj == "" && routeHasPathWildcard(c) {
 		obj = strings.TrimPrefix(c.Params("*"), "/")
 	}
-	return strings.Clone(likelyUnescapeGeneric(obj, url.PathUnescape))
+	return strings.Clone(obj)
 }
 
 // pathParamBucket returns the bucket name from Fiber path params or vhost locals.
@@ -361,9 +389,12 @@ func pathParamBucket(c fiber.Ctx) string {
 	return strings.Clone(c.Params(fiberBucketParam))
 }
 
-// pathParamPrefix returns the prefix param used by admin heal routes.
-func pathParamPrefix(c fiber.Ctx) string {
-	return strings.Clone(likelyUnescapeGeneric(c.Params(fiberPrefixParam), url.QueryUnescape))
+// rawPathParamPrefix returns the encoded prefix captured by admin heal routes.
+func rawPathParamPrefix(c fiber.Ctx) string {
+	if prefix, ok := c.Locals(fiberPrefixParam).(string); ok && prefix != "" {
+		return strings.Clone(prefix)
+	}
+	return strings.Clone(c.Params(fiberPrefixParam))
 }
 
 // setPathVars stores bucket/object on the context for helpers that read mux-style vars.
@@ -382,7 +413,7 @@ func setPathVars(c fiber.Ctx, bucket, object string) {
 func newContextFiber(c fiber.Ctx, api string) context.Context {
 	bucket := pathParamBucket(c)
 	object := pathParamObject(c)
-	prefix := pathParamPrefix(c)
+	prefix := likelyUnescapeGeneric(rawPathParamPrefix(c), url.PathUnescape)
 	if prefix != "" {
 		object = prefix
 	}
