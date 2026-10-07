@@ -8,6 +8,7 @@ from pathlib import Path, PureWindowsPath
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from unittest.mock import Mock
@@ -84,9 +85,10 @@ class CLIContractRunnerTests(unittest.TestCase):
         self.assertEqual(cli_contract.command_names(help_text), ["list", "admin"])
 
     def test_normalization_preserves_output_and_replaces_only_controlled_root(self):
-        value = " error -flag=/tmp/fixture/certs\n  :9000 version-invalid\n"
-        self.assertEqual(cli_contract.normalize(value, Path("/tmp/fixture")),
-                         " error -flag={sandbox}/certs\n  :9000 version-invalid\n")
+        root = Path(tempfile.gettempdir()) / "cli-fixture"
+        value = f" error -flag={root / 'certs'}\n  :9000 version-invalid\n"
+        self.assertEqual(cli_contract.normalize(value, root),
+                         f" error -flag={{sandbox}}{os.sep}certs\n  :9000 version-invalid\n")
 
     def test_quoted_windows_home_default_uses_controlled_path_only(self):
         root = PureWindowsPath(r"C:\cli-fixture")
@@ -160,7 +162,7 @@ class CLIContractRunnerTests(unittest.TestCase):
         baseline = cli_contract.load(cli_contract.CONTRACT_DIR / "baseline.json")
         with tempfile.TemporaryDirectory() as directory:
             contract = Path(directory)
-            (contract / "baseline.json").write_text(json.dumps(baseline))
+            (contract / "baseline.json").write_text(json.dumps(baseline), encoding="utf-8")
             path = contract / "cases.json"
             path.write_bytes(content.replace(b"\n", b"\r\n"))
             argv = ["cli_contract", "check", "--binary", "unused"]
@@ -178,6 +180,83 @@ class CLIContractRunnerTests(unittest.TestCase):
             self.assertEqual(raised.exception.code, 2)
             self.assertIn("case catalog differs from the reviewed baseline", stderr.getvalue())
             capture.assert_not_called()
+
+    def test_unicode_catalog_and_report_use_utf8_under_legacy_locale(self):
+        baseline = cli_contract.load(cli_contract.CONTRACT_DIR / "baseline.json")
+        baseline["cases"][0]["stdout"] += "中文说明：保留原始输出\n"
+        original_open = io.open
+        def legacy_open(file, mode="r", buffering=-1, encoding=None, errors=None,
+                        newline=None, closefd=True, opener=None):
+            if "b" not in mode and encoding in (None, "locale"):
+                encoding = "cp1252"
+            return original_open(file, mode, buffering, encoding, errors, newline, closefd, opener)
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory)
+            (contract / "cases.json").write_bytes((cli_contract.CONTRACT_DIR / "cases.json").read_bytes())
+            (contract / "baseline.json").write_text(json.dumps(baseline, ensure_ascii=False), encoding="utf-8")
+            output = contract / "中文报告.json"
+            argv = ["cli_contract", "check", "--binary", "unused", "--output", str(output)]
+            with patch.object(cli_contract, "CONTRACT_DIR", contract), patch.object(sys, "argv", argv), \
+                    patch.object(cli_contract, "capture", return_value=baseline), \
+                    patch.object(sys, "stdout", io.StringIO()), patch.object(io, "open", side_effect=legacy_open):
+                self.assertEqual(cli_contract.main(), 0)
+            self.assertEqual(json.loads(output.read_text(encoding="utf-8")), baseline)
+
+    def test_windows_termination_waits_for_process_handles_despite_zero_accounting(self):
+        for result in (0, 258, 0xFFFFFFFF):
+            with self.subTest(wait_result=result):
+                job = cli_contract.WindowsJob.__new__(cli_contract.WindowsJob)
+                job.handle = 9
+                job.kernel = Mock()
+                job.kernel.TerminateJobObject.return_value = True
+                job.kernel.WaitForSingleObject.return_value = result
+                job.ctypes = SimpleNamespace(get_last_error=lambda: 5, WinError=lambda code: OSError(f"WinError {code}"))
+                job.process_handles = Mock(return_value=[(11, 101), (12, 102)])
+                job.active = Mock(return_value=0)
+                with patch.object(cli_contract.time, "monotonic", side_effect=[0, 1, 2]):
+                    if result == 0:
+                        job.terminate()
+                        self.assertEqual(job.kernel.WaitForSingleObject.call_args_list,
+                                         [unittest.mock.call(101, 4000), unittest.mock.call(102, 3000)])
+                        job.active.assert_called_once()
+                    elif result == 258:
+                        with self.assertRaisesRegex(RuntimeError, "process 11 did not terminate"):
+                            job.terminate()
+                    else:
+                        with self.assertRaisesRegex(OSError, "WinError 5"):
+                            job.terminate()
+                job.process_handles.assert_called_once_with(5)
+                self.assertEqual(job.kernel.CloseHandle.call_args_list,
+                                 [unittest.mock.call(101), unittest.mock.call(102)])
+
+    def test_windows_process_list_retries_more_data_and_partial_success(self):
+        import ctypes
+        job = cli_contract.WindowsJob.__new__(cli_contract.WindowsJob)
+        job.handle = 9
+        job.kernel = Mock()
+        job.ctypes = SimpleNamespace(Structure=ctypes.Structure, c_uint32=ctypes.c_uint32,
+                                     c_size_t=ctypes.c_size_t, byref=ctypes.byref, sizeof=ctypes.sizeof,
+                                     get_last_error=lambda: 234, WinError=lambda code: OSError(f"WinError {code}"))
+        capacities = []
+        def query(handle, kind, pointer, size, length):
+            self.assertEqual((handle, kind), (9, 3))
+            processes = pointer._obj
+            capacities.append(len(processes.ids))
+            if len(capacities) == 1:
+                return False  # ERROR_MORE_DATA can leave the header unfilled.
+            if len(capacities) == 2:
+                processes.assigned, processes.count = 33, 1
+                return True  # Successful but incomplete lists also require a retry.
+            processes.assigned, processes.count = 2, 2
+            processes.ids[0], processes.ids[1] = 11, 12
+            return True
+        job.kernel.QueryInformationJobObject.side_effect = query
+        job.kernel.OpenProcess.side_effect = [101, 102]
+        with patch.object(cli_contract.time, "monotonic", return_value=0):
+            self.assertEqual(job.process_handles(5), [(11, 101), (12, 102)])
+        self.assertEqual(capacities, [16, 32, 64])
+        self.assertEqual(job.kernel.OpenProcess.call_args_list,
+                         [unittest.mock.call(0x100000, False, 11), unittest.mock.call(0x100000, False, 12)])
 
     def test_worker_preserves_bytes_exit_code_and_closed_stdin(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -315,12 +394,12 @@ class CLIContractRunnerTests(unittest.TestCase):
             script = "import subprocess,sys,time; from pathlib import Path; " \
                      "child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(30)'], " \
                      "stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); " \
-                     "Path('child.pid').write_text(str(child.pid)); " + ("time.sleep(30)" if timeout else "print('root exited')")
+                     "Path('child.pid').write_text(str(child.pid),encoding='utf-8'); " + ("time.sleep(30)" if timeout else "print('root exited')")
             expected = "timed out" if timeout else "left running child processes"
             with self.assertRaisesRegex(RuntimeError, expected):
                 cli_contract.bounded_run([sys.executable, "-c", script], cli_contract.environment(Path(directory)),
                                           directory, 2 if timeout else 10)
-            pid = int((Path(directory) / "child.pid").read_text())
+            pid = int((Path(directory) / "child.pid").read_text(encoding="utf-8"))
             kernel = ctypes.WinDLL("kernel32", use_last_error=True)
             kernel.OpenProcess.argtypes, kernel.OpenProcess.restype = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE
             kernel.WaitForSingleObject.argtypes, kernel.WaitForSingleObject.restype = [wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD
@@ -339,7 +418,7 @@ class CLIContractRunnerTests(unittest.TestCase):
             self.skipTest("shell probe is Unix-only; real binary comparison runs on all platforms")
         with tempfile.TemporaryDirectory() as directory:
             binary = Path(directory) / "probe"
-            binary.write_text('#!/bin/sh\nprintf "home=%s\\n" "$HOME"\nprintf "failure\\n" >&2\nprintf data > created.txt\nexit 7\n')
+            binary.write_text('#!/bin/sh\nprintf "home=%s\\n" "$HOME"\nprintf "failure\\n" >&2\nprintf data > created.txt\nexit 7\n', encoding="utf-8")
             binary.chmod(0o755)
             result = cli_contract.run_case(binary, "probe", {"id": "isolation", "argv": []})
         self.assertEqual(result["exit_code"], 7)
@@ -362,7 +441,7 @@ class CLIContractCandidateTests(unittest.TestCase):
         if os.environ.get("CLI_BASELINE_BINARY"):
             command += ["--baseline-binary", str(Path(os.environ["CLI_BASELINE_BINARY"]).resolve())]
         result = subprocess.run(command,
-                                text=True, capture_output=True, timeout=300)
+                                text=True, encoding="utf-8", capture_output=True, timeout=300)
         self.assertEqual(baseline.read_bytes(), before, "comparison must never accept candidate snapshots")
         self.assertEqual(result.returncode, 0, result.stderr[:16000])
 

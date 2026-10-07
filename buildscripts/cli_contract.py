@@ -24,7 +24,7 @@ CONTRACT_DIR = ROOT / "testdata" / "cli"
 
 
 def load(path):
-    return json.loads(Path(path).read_text())
+    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def catalog_sha256(path):
@@ -94,6 +94,8 @@ class WindowsJob:
             "AssignProcessToJobObject": ([wintypes.HANDLE, wintypes.HANDLE], wintypes.BOOL),
             "QueryInformationJobObject": ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p], wintypes.BOOL),
             "TerminateJobObject": ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
+            "OpenProcess": ([wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE),
+            "WaitForSingleObject": ([wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD),
             "CloseHandle": ([wintypes.HANDLE], wintypes.BOOL),
         }
         for name, (arguments, result) in signatures.items():
@@ -120,14 +122,65 @@ class WindowsJob:
             raise self.ctypes.WinError(self.ctypes.get_last_error())
         return accounting.active_processes
 
-    def terminate(self):
-        if not self.kernel.TerminateJobObject(self.handle, 1):
-            raise self.ctypes.WinError(self.ctypes.get_last_error())
-        deadline = time.monotonic() + 5
-        while self.active():
+    def process_handles(self, deadline):
+        capacity = 16
+        while True:
+            class ProcessIds(self.ctypes.Structure):
+                _fields_ = [("assigned", self.ctypes.c_uint32), ("count", self.ctypes.c_uint32),
+                            ("ids", self.ctypes.c_size_t * capacity)]
+            processes = ProcessIds()
+            complete = self.kernel.QueryInformationJobObject(self.handle, 3, self.ctypes.byref(processes),
+                                                             self.ctypes.sizeof(processes), None)
+            error = 0 if complete else self.ctypes.get_last_error()
+            if not complete and error != 234:  # ERROR_MORE_DATA
+                raise self.ctypes.WinError(error)
+            if complete and processes.count > capacity:
+                raise RuntimeError("Windows CLI process list exceeded its buffer")
+            if complete and processes.count == processes.assigned:
+                break
             if time.monotonic() >= deadline:
-                raise RuntimeError("Windows CLI process tree did not terminate")
-            time.sleep(0.01)
+                raise RuntimeError("Windows CLI process list did not stabilize")
+            capacity = max(capacity * 2, processes.assigned)
+        handles = []
+        try:
+            for pid in processes.ids[:processes.count]:
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Windows CLI process handles exceeded the deadline")
+                handle = self.kernel.OpenProcess(0x100000, False, pid)  # SYNCHRONIZE
+                if handle:
+                    handles.append((pid, handle))
+                else:
+                    error = self.ctypes.get_last_error()
+                    if error != 87:  # ERROR_INVALID_PARAMETER: the listed PID became invalid.
+                        raise self.ctypes.WinError(error)
+            return handles
+        except BaseException:
+            for _, handle in handles:
+                self.kernel.CloseHandle(handle)
+            raise
+
+    def terminate(self):
+        deadline = time.monotonic() + 5
+        handles = self.process_handles(deadline)
+        try:
+            if not self.kernel.TerminateJobObject(self.handle, 1):
+                raise self.ctypes.WinError(self.ctypes.get_last_error())
+            # TerminateJobObject initiates asynchronous TerminateProcess calls.
+            # Accounting can reach zero before process objects become signaled.
+            for pid, handle in handles:
+                remaining = max(0, int((deadline - time.monotonic()) * 1000))
+                result = self.kernel.WaitForSingleObject(handle, remaining)
+                if result == 0xFFFFFFFF:  # WAIT_FAILED
+                    raise self.ctypes.WinError(self.ctypes.get_last_error())
+                if result != 0:  # WAIT_OBJECT_0 is the only successful process wait.
+                    raise RuntimeError(f"Windows CLI process {pid} did not terminate before the deadline")
+            while self.active():
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Windows CLI process tree did not terminate")
+                time.sleep(0.01)
+        finally:
+            for _, handle in handles:
+                self.kernel.CloseHandle(handle)
 
     def close(self):
         if self.handle:
@@ -258,7 +311,7 @@ def run_case(binary, project, case):
         for name, contents in case.get("files", {}).items():
             path = directory / name
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(contents)
+            path.write_text(contents, encoding="utf-8")
             inputs.add(name)
         env = environment(home)
         expand = lambda value: value.replace("{sandbox}", str(directory))
@@ -337,7 +390,7 @@ def parse_build_info(build_info):
 
 def binary_build_info(binary):
     return subprocess.run(["go", "version", "-m", str(Path(binary).resolve())],
-                          text=True, capture_output=True, check=True).stdout
+                          text=True, encoding="utf-8", capture_output=True, check=True).stdout
 
 
 def binary_identity(binary):
@@ -377,7 +430,7 @@ def capture(binary):
     return {"schema": 1, "project": project,
             "binary_sha256": hashlib.sha256(Path(binary).read_bytes()).hexdigest(),
             "build_info": subprocess.run(["go", "version", "-m", str(Path(binary).resolve())],
-                                          text=True, capture_output=True, check=True).stdout,
+                                          text=True, encoding="utf-8", capture_output=True, check=True).stdout,
             "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             "manifest_sha256": catalog_sha256(CONTRACT_DIR / "cases.json"),
             "platform_family": "windows" if os.name == "nt" else "unix",
@@ -472,10 +525,10 @@ def main():
                             "server_started_by_contract": False,
                             "binary_sha256": hashlib.sha256(Path(options.binary).read_bytes()).hexdigest(),
                             "build_info": subprocess.run(["go", "version", "-m", str(Path(options.binary).resolve())],
-                                                          text=True, capture_output=True, check=True).stdout,
+                                                          text=True, encoding="utf-8", capture_output=True, check=True).stdout,
                             "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                             "binary_dependencies": dependencies}
-        baseline_path.write_text(json.dumps(actual, indent=2, ensure_ascii=False) + "\n")
+        baseline_path.write_text(json.dumps(actual, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"Recorded {len(actual['cases'])} isolated cases from archived {actual['project']} source")
         return 0
     expected = load(baseline_path)
@@ -491,7 +544,7 @@ def main():
         expected = capture(options.baseline_binary)
     actual = capture(options.binary)
     if options.output:
-        Path(options.output).write_text(json.dumps(actual, indent=2, ensure_ascii=False) + "\n")
+        Path(options.output).write_text(json.dumps(actual, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     approved_path = CONTRACT_DIR / "approved-deltas.json"
     approved_changes = {}
     if approved_path.exists():
