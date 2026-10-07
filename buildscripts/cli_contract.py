@@ -122,6 +122,16 @@ class WindowsJob:
             raise self.ctypes.WinError(self.ctypes.get_last_error())
         return accounting.active_processes
 
+    def wait_empty(self, timeout):
+        # Worker wait can complete just before the job's exit accounting updates.
+        # Allow only bounded natural exit; callers still reject and reap survivors.
+        deadline = time.monotonic() + timeout
+        while self.active():
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.01)
+        return True
+
     def process_handles(self, deadline):
         capacity = 16
         while True:
@@ -215,7 +225,7 @@ def windows_run(command, env, cwd, timeout):
             job.terminate()
             worker.communicate(timeout=5)
             raise RuntimeError(f"CLI case timed out after {timeout}s: {command[1:]}") from None
-        if job.active():
+        if not job.wait_empty(timeout=1):
             job.terminate()
             raise RuntimeError(f"CLI case left running child processes: {command[1:]}")
         if worker.returncode:

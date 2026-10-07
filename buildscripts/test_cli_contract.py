@@ -229,6 +229,42 @@ class CLIContractRunnerTests(unittest.TestCase):
                 self.assertEqual(job.kernel.CloseHandle.call_args_list,
                                  [unittest.mock.call(101), unittest.mock.call(102)])
 
+    def test_windows_accounting_grace_requires_bounded_natural_exit(self):
+        job = cli_contract.WindowsJob.__new__(cli_contract.WindowsJob)
+        job.active = Mock(side_effect=[1, 1, 0])
+        with patch.object(cli_contract.time, "monotonic", side_effect=[0, 0.1, 0.2]), \
+                patch.object(cli_contract.time, "sleep") as sleep:
+            self.assertTrue(job.wait_empty(timeout=1))
+        self.assertEqual(sleep.call_count, 2)
+        job.active = Mock(return_value=1)
+        with patch.object(cli_contract.time, "monotonic", side_effect=[0, 0.1, 1]), \
+                patch.object(cli_contract.time, "sleep") as sleep:
+            self.assertFalse(job.wait_empty(timeout=1))
+        sleep.assert_called_once()
+
+    def test_windows_worker_accepts_natural_exit_and_rejects_survivors(self):
+        payload = json.dumps({"exit_code": 7, "stdout": base64.b64encode(b"out\n").decode(),
+                              "stderr": base64.b64encode(b"err\n").decode()}).encode()
+        for empty in (True, False):
+            with self.subTest(natural_exit=empty):
+                job = Mock()
+                job.wait_empty.return_value = empty
+                worker = Mock()
+                worker.communicate.return_value = (payload, b"")
+                worker.poll.return_value = worker.returncode = 0
+                with patch.object(cli_contract, "WindowsJob", return_value=job), \
+                        patch.object(cli_contract.subprocess, "Popen", return_value=worker):
+                    if empty:
+                        self.assertEqual(cli_contract.windows_run(["unused"], {}, ".", 10),
+                                         (7, "out\n", "err\n"))
+                        job.terminate.assert_not_called()
+                    else:
+                        with self.assertRaisesRegex(RuntimeError, "left running child processes"):
+                            cli_contract.windows_run(["unused"], {}, ".", 10)
+                        job.terminate.assert_called_once()
+                job.wait_empty.assert_called_once_with(timeout=1)
+                job.close.assert_called_once()
+
     def test_windows_process_list_retries_more_data_and_partial_success(self):
         import ctypes
         job = cli_contract.WindowsJob.__new__(cli_contract.WindowsJob)
