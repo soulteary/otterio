@@ -299,7 +299,10 @@ def main():
             parser.error("record requires the full archived source commit")
         if not options.source_tree:
             parser.error("record requires --source-tree for reproducible source identities")
-        dependencies = binary_identity(options.binary)
+        identity = parse_build_info(binary_build_info(options.binary))
+        if identity["replacements"]:
+            parser.error("baseline recording must not contain dependency replacements")
+        dependencies = identity["dependencies"]
         if dependencies.get("github.com/minio/cli") != "v1.24.2":
             parser.error("baseline recording requires the archived minio/cli v1.24.2 binary")
         actual = capture(options.binary)

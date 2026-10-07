@@ -1,12 +1,14 @@
 """Runner unit tests plus an opt-in real candidate/baseline comparison."""
 import json
 import hashlib
+import io
 import os
 from pathlib import Path, PureWindowsPath
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import cli_contract
 
@@ -59,6 +61,21 @@ class CLIContractRunnerTests(unittest.TestCase):
                             "\t=>\t../otterio-local\t(devel)\n"):
             with self.subTest(replacement=replacement), self.assertRaisesRegex(ValueError, "replacements"):
                 cli_contract.validate_baseline_identity(expected, info + replacement + vcs, "different-platform-binary")
+
+    def test_initial_recording_rejects_replaced_cli_before_creating_expected_results(self):
+        _, info, _ = self.baseline_identity_fixture()
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory)
+            stderr = io.StringIO()
+            argv = ["cli_contract", "record", "--binary", "unused", "--source-ref", "a" * 40,
+                    "--source-tree", str(contract)]
+            with patch.object(cli_contract, "CONTRACT_DIR", contract), patch.object(sys, "argv", argv), \
+                    patch.object(cli_contract, "binary_build_info", return_value=info + "\t=>\t../cli-local\t(devel)\n"), \
+                    patch.object(sys, "stderr", stderr), self.assertRaises(SystemExit) as raised:
+                cli_contract.main()
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn("must not contain dependency replacements", stderr.getvalue())
+            self.assertFalse((contract / "baseline.json").exists())
 
     def test_commands_are_read_only_from_the_visible_commands_section(self):
         help_text = "NAME:\n  fake\nCOMMANDS:\n  list, ls  list objects\n  help, h  help\n  admin     administration\nFLAGS:\n  accidental  not a command\n"
