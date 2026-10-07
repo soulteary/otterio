@@ -159,7 +159,8 @@ def discover_help(binary, project):
 
 
 def parse_build_info(build_info):
-    identity = {"dependencies": {}, "settings": {}, "main_path": None, "main_module": None}
+    identity = {"dependencies": {}, "settings": {}, "main_path": None, "main_module": None,
+                "replacements": []}
     for line in build_info.splitlines():
         fields = line.strip().split()
         if len(fields) >= 3 and fields[0] in ("dep", "mod"):
@@ -168,6 +169,8 @@ def parse_build_info(build_info):
                 identity["main_module"] = fields[1]
         elif len(fields) == 2 and fields[0] == "path":
             identity["main_path"] = fields[1]
+        elif fields and fields[0] == "=>":
+            identity["replacements"].append(fields[1:])
         elif len(fields) == 2 and fields[0] == "build" and "=" in fields[1]:
             name, value = fields[1].split("=", 1)
             identity["settings"][name] = value
@@ -192,6 +195,8 @@ def validate_baseline_identity(expected, build_info, binary_sha256):
     source = expected["source"]
     actual = parse_build_info(build_info)
     archived = parse_build_info(source["build_info"])
+    if actual["replacements"]:
+        raise ValueError("--baseline-binary must not contain dependency replacements")
     if actual["dependencies"].get("github.com/minio/cli") != "v1.24.2":
         raise ValueError("--baseline-binary requires the archived minio/cli v1.24.2 binary")
     if (actual["main_path"], actual["main_module"]) != (archived["main_path"], archived["main_module"]):

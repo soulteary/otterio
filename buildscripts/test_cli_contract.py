@@ -53,6 +53,13 @@ class CLIContractRunnerTests(unittest.TestCase):
             cli_contract.validate_baseline_identity(expected, info.replace(expected["source"]["sdk_server_module"], "v0.0.0-new") + vcs,
                                                    "different-platform-binary")
 
+    def test_baseline_rejects_replacements_even_with_original_versions_and_clean_vcs(self):
+        expected, info, vcs = self.baseline_identity_fixture("oc")
+        for replacement in ("\t=>\texample.com/cli-fork\tv1.24.2\th1:changed\n",
+                            "\t=>\t../otterio-local\t(devel)\n"):
+            with self.subTest(replacement=replacement), self.assertRaisesRegex(ValueError, "replacements"):
+                cli_contract.validate_baseline_identity(expected, info + replacement + vcs, "different-platform-binary")
+
     def test_commands_are_read_only_from_the_visible_commands_section(self):
         help_text = "NAME:\n  fake\nCOMMANDS:\n  list, ls  list objects\n  help, h  help\n  admin     administration\nFLAGS:\n  accidental  not a command\n"
         self.assertEqual(cli_contract.command_names(help_text), ["list", "admin"])
