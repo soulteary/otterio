@@ -13,8 +13,9 @@ An article or date-named file under `docs/releases/` is supporting material,
 not an automatically selected release body or proof that its version exists.
 Choose a fresh UTC tag after merge and verification, not while drafting notes.
 For the current preparation, review the [baseline-to-main change inventory and
-release checklist](releases/2026-10-05-release-review.md), including the storage
-hardening and manifest fix merged after #25. Reconcile any later main commits
+release checklist](releases/2026-10-07-release-review.md), including the HTTP
+lifecycle, administration and macOS service fixes merged after the previous
+published version. Reconcile any later main commits
 before tagging; a fixed review cutoff is not permission to omit later changes.
 
 Keep reporter acknowledgements anonymous unless public attribution has been
