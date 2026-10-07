@@ -2,6 +2,7 @@
 import json
 import hashlib
 import io
+import base64
 import os
 from pathlib import Path, PureWindowsPath
 import subprocess
@@ -9,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from unittest.mock import Mock
 
 import cli_contract
 
@@ -176,6 +178,161 @@ class CLIContractRunnerTests(unittest.TestCase):
             self.assertEqual(raised.exception.code, 2)
             self.assertIn("case catalog differs from the reviewed baseline", stderr.getvalue())
             capture.assert_not_called()
+
+    def test_worker_preserves_bytes_exit_code_and_closed_stdin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            command = [sys.executable, "-c", "import sys; assert not sys.stdin.read(); "
+                       "sys.stdout.buffer.write(b'output\\n'); sys.stderr.buffer.write(b'error\\xff\\n'); sys.exit(7)"]
+            request = {"command": command, "env": cli_contract.environment(Path(directory)), "cwd": directory}
+            result = subprocess.run([sys.executable, str(cli_contract.ROOT / "buildscripts/cli_contract.py"), "--process-worker"],
+                                    input=json.dumps(request).encode(), capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            actual = json.loads(result.stdout)
+            self.assertEqual(actual["exit_code"], 7)
+            self.assertEqual(base64.b64decode(actual["stdout"]), b"output\n")
+            self.assertEqual(base64.b64decode(actual["stderr"]), b"error\xff\n")
+
+    def test_cleanup_retries_only_transient_windows_sharing_violation(self):
+        error = OSError("locked image")
+        error.winerror = 32
+        temporary = Mock()
+        temporary.cleanup.side_effect = [error, None]
+        with patch.object(cli_contract.time, "monotonic", side_effect=[0, 0.1]), patch.object(cli_contract.time, "sleep") as sleep:
+            cli_contract.cleanup_case(temporary, "sharing-case", windows=True)
+        self.assertEqual(temporary.cleanup.call_count, 2)
+        sleep.assert_called_once()
+        for windows, failure in ((False, error), (True, PermissionError("real permission failure"))):
+            temporary = Mock()
+            temporary.cleanup.side_effect = failure
+            with self.subTest(windows=windows), self.assertRaisesRegex(RuntimeError, "sharing-case cleanup failed"):
+                cli_contract.cleanup_case(temporary, "sharing-case", windows=windows)
+            temporary.cleanup.assert_called_once()
+
+    def test_cleanup_permanent_lock_fails_with_case_identity(self):
+        error = OSError("locked image")
+        error.winerror = 32
+        temporary = Mock()
+        temporary.cleanup.side_effect = error
+        with patch.object(cli_contract.time, "monotonic", side_effect=[0, 0.1, 2.1]), \
+                patch.object(cli_contract.time, "sleep"), self.assertRaisesRegex(RuntimeError, "locked-case cleanup failed"):
+            cli_contract.cleanup_case(temporary, "locked-case", windows=True)
+        self.assertEqual(temporary.cleanup.call_count, 2)
+
+    def test_windows_assignment_failure_reaps_actual_blocked_worker(self):
+        job = Mock()
+        job.assign.side_effect = OSError("assignment refused")
+        original = subprocess.Popen
+        workers = []
+        def spawn(*args, **kwargs):
+            worker = original(*args, **kwargs)
+            workers.append(worker)
+            return worker
+        with tempfile.TemporaryDirectory() as directory, patch.object(cli_contract, "WindowsJob", return_value=job), \
+                patch.object(cli_contract.subprocess, "Popen", side_effect=spawn):
+            with self.assertRaisesRegex(OSError, "assignment refused"):
+                cli_contract.windows_run([sys.executable, "-c", "raise AssertionError('must not run')"], {}, directory, 5)
+        job.close.assert_called_once()
+        self.assertEqual(len(workers), 1)
+        self.assertIsNotNone(workers[0].poll(), "blocked worker leaked after failed assignment")
+        self.assertTrue(all(pipe.closed for pipe in (workers[0].stdin, workers[0].stdout, workers[0].stderr)))
+
+    def test_windows_terminate_failure_closes_job_before_bounded_worker_wait(self):
+        events = []
+        job = Mock()
+        job.terminate.side_effect = OSError("termination refused")
+        job.close.side_effect = lambda: events.append("job closed")
+        worker = Mock()
+        worker.communicate.side_effect = subprocess.TimeoutExpired("worker", 1)
+        worker.poll.return_value = None
+        worker.wait.side_effect = lambda timeout: events.append(("worker waited", timeout))
+        with patch.object(cli_contract, "WindowsJob", return_value=job), \
+                patch.object(cli_contract.subprocess, "Popen", return_value=worker), \
+                self.assertRaisesRegex(OSError, "termination refused"):
+            cli_contract.windows_run(["unused"], {}, ".", 1)
+        self.assertEqual(events, ["job closed", ("worker waited", 5)])
+        worker.kill.assert_called_once()
+        for pipe in (worker.stdin, worker.stdout, worker.stderr):
+            pipe.close.assert_called_once()
+
+    @unittest.skipUnless(os.name == "nt", "native Windows process tree regression")
+    def test_windows_job_preserves_streams_and_normal_exit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for iteration in range(20):
+                with self.subTest(iteration=iteration):
+                    result = cli_contract.bounded_run([sys.executable, "-c", "import sys; print('out'); print('err', file=sys.stderr); sys.exit(7)"],
+                                                       cli_contract.environment(Path(directory)), directory, 10)
+                    self.assertEqual(result, (7, "out\r\n", "err\r\n"))
+
+    @unittest.skipUnless(os.name == "nt", "native Windows process tree regression")
+    def test_windows_job_detects_and_reaps_background_child(self):
+        self.windows_child_regression(timeout=False)
+
+    @unittest.skipUnless(os.name == "nt", "native Windows process tree regression")
+    def test_windows_timeout_reaps_the_entire_process_tree(self):
+        self.windows_child_regression(timeout=True)
+
+    @unittest.skipUnless(os.name == "nt", "native Windows sharing violation regression")
+    def test_windows_cleanup_waits_for_released_file_handle(self):
+        import ctypes
+        import threading
+        from ctypes import wintypes
+        temporary = tempfile.TemporaryDirectory()
+        path = Path(temporary.name) / "locked.exe"
+        path.write_bytes(b"fixture")
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                                      wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+        kernel.CreateFileW.restype = wintypes.HANDLE
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        handle = kernel.CreateFileW(str(path), 0x80000000, 1, None, 3, 0x80, None)
+        self.assertNotEqual(handle, ctypes.c_void_p(-1).value)
+        released = threading.Event()
+        try:
+            with self.assertRaises(OSError) as raised:
+                path.unlink()
+            self.assertEqual(raised.exception.winerror, 32)
+            def release():
+                cli_contract.time.sleep(0.15)
+                kernel.CloseHandle(handle)
+                released.set()
+            worker = threading.Thread(target=release)
+            worker.start()
+            try:
+                cli_contract.cleanup_case(temporary, "native-sharing-case")
+            finally:
+                worker.join(timeout=3)
+            self.assertFalse(worker.is_alive())
+            self.assertFalse(Path(temporary.name).exists())
+        finally:
+            if not released.is_set():
+                kernel.CloseHandle(handle)
+            temporary.cleanup()
+
+    def windows_child_regression(self, timeout):
+        import ctypes
+        from ctypes import wintypes
+        with tempfile.TemporaryDirectory() as directory:
+            script = "import subprocess,sys,time; from pathlib import Path; " \
+                     "child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(30)'], " \
+                     "stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); " \
+                     "Path('child.pid').write_text(str(child.pid)); " + ("time.sleep(30)" if timeout else "print('root exited')")
+            expected = "timed out" if timeout else "left running child processes"
+            with self.assertRaisesRegex(RuntimeError, expected):
+                cli_contract.bounded_run([sys.executable, "-c", script], cli_contract.environment(Path(directory)),
+                                          directory, 2 if timeout else 10)
+            pid = int((Path(directory) / "child.pid").read_text())
+            kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+            kernel.OpenProcess.argtypes, kernel.OpenProcess.restype = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE
+            kernel.WaitForSingleObject.argtypes, kernel.WaitForSingleObject.restype = [wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD
+            kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+            handle = kernel.OpenProcess(0x100000, False, pid)  # SYNCHRONIZE
+            if handle:
+                try:
+                    self.assertEqual(kernel.WaitForSingleObject(handle, 0), 0, "leaked child remained alive")
+                finally:
+                    kernel.CloseHandle(handle)
+            else:
+                self.assertEqual(ctypes.get_last_error(), 87, "could not inspect leaked child termination")
 
     def test_snapshot_case_has_isolated_home_and_captures_files(self):
         if os.name == "nt":

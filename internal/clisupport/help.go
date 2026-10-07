@@ -88,9 +88,7 @@ func Configure(command *cli.Command) {
 	// must not exit before its owner's cleanup has run.
 	command.ExitErrHandler = func(context.Context, *cli.Command, error) {}
 	for i, flag := range command.Flags {
-		if value, ok := flag.(*cli.StringFlag); ok && len(flag.Names()) > 1 {
-			command.Flags[i] = &scopedStringFlag{StringFlag: value, command: command}
-		}
+		command.Flags[i] = configureAliases(flag, command)
 	}
 	command.Flags = append(command.Flags, &presentationFlag{
 		BoolFlag: &cli.BoolFlag{Name: "help", Aliases: []string{"h"}, Usage: "show help", Local: true},

@@ -5,6 +5,7 @@ All subprocesses use isolated HOME/cwd/configuration, separate output streams an
 bounded process groups. Only controlled paths and build identities are normalized.
 """
 import argparse
+import base64
 import difflib
 import hashlib
 import json
@@ -16,6 +17,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_DIR = ROOT / "testdata" / "cli"
@@ -55,21 +57,165 @@ def normalize(value, directory):
     return value
 
 
+class WindowsJob:
+    """A native job owns each case's complete process tree, including orphans."""
+    def __init__(self):
+        import ctypes
+        from ctypes import wintypes
+        self.ctypes = ctypes
+        self.kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+
+        class BasicLimits(ctypes.Structure):
+            _fields_ = [("process_time", ctypes.c_int64), ("job_time", ctypes.c_int64),
+                        ("flags", wintypes.DWORD), ("min_working_set", ctypes.c_size_t),
+                        ("max_working_set", ctypes.c_size_t), ("active_limit", wintypes.DWORD),
+                        ("affinity", ctypes.c_size_t), ("priority", wintypes.DWORD),
+                        ("scheduling", wintypes.DWORD)]
+
+        class IOCounters(ctypes.Structure):
+            _fields_ = [(name, ctypes.c_uint64) for name in
+                        ("read_count", "write_count", "other_count", "read_bytes", "write_bytes", "other_bytes")]
+
+        class ExtendedLimits(ctypes.Structure):
+            _fields_ = [("basic", BasicLimits), ("io", IOCounters),
+                        ("process_memory", ctypes.c_size_t), ("job_memory", ctypes.c_size_t),
+                        ("peak_process_memory", ctypes.c_size_t), ("peak_job_memory", ctypes.c_size_t)]
+
+        class Accounting(ctypes.Structure):
+            _fields_ = [(name, ctypes.c_int64) for name in
+                        ("user_time", "kernel_time", "period_user_time", "period_kernel_time")] + \
+                       [(name, wintypes.DWORD) for name in
+                        ("page_faults", "total_processes", "active_processes", "terminated_processes")]
+
+        self.Accounting = Accounting
+        signatures = {
+            "CreateJobObjectW": ([ctypes.c_void_p, wintypes.LPCWSTR], wintypes.HANDLE),
+            "SetInformationJobObject": ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD], wintypes.BOOL),
+            "AssignProcessToJobObject": ([wintypes.HANDLE, wintypes.HANDLE], wintypes.BOOL),
+            "QueryInformationJobObject": ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p], wintypes.BOOL),
+            "TerminateJobObject": ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
+            "CloseHandle": ([wintypes.HANDLE], wintypes.BOOL),
+        }
+        for name, (arguments, result) in signatures.items():
+            function = getattr(self.kernel, name)
+            function.argtypes, function.restype = arguments, result
+        self.handle = self.kernel.CreateJobObjectW(None, None)
+        if not self.handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+        limits = ExtendedLimits()
+        limits.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE; no breakaway.
+        if not self.kernel.SetInformationJobObject(self.handle, 9, ctypes.byref(limits), ctypes.sizeof(limits)):
+            error = ctypes.WinError(ctypes.get_last_error())
+            self.close()
+            raise error
+
+    def assign(self, process):
+        if not self.kernel.AssignProcessToJobObject(self.handle, int(process._handle)):
+            raise self.ctypes.WinError(self.ctypes.get_last_error())
+
+    def active(self):
+        accounting = self.Accounting()
+        if not self.kernel.QueryInformationJobObject(self.handle, 1, self.ctypes.byref(accounting),
+                                                     self.ctypes.sizeof(accounting), None):
+            raise self.ctypes.WinError(self.ctypes.get_last_error())
+        return accounting.active_processes
+
+    def terminate(self):
+        if not self.kernel.TerminateJobObject(self.handle, 1):
+            raise self.ctypes.WinError(self.ctypes.get_last_error())
+        deadline = time.monotonic() + 5
+        while self.active():
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Windows CLI process tree did not terminate")
+            time.sleep(0.01)
+
+    def close(self):
+        if self.handle:
+            self.kernel.CloseHandle(self.handle)
+            self.handle = None
+
+
+def process_worker():
+    # The worker blocks on stdin until its parent has assigned it to the job.
+    # Only then may it launch the CLI, so children cannot escape an assign race.
+    request = json.load(sys.stdin)
+    with subprocess.Popen(request["command"], env=request["env"], cwd=request["cwd"],
+                          stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
+        stdout, stderr = process.communicate()
+        result = {"exit_code": process.returncode,
+                  "stdout": base64.b64encode(stdout).decode("ascii"),
+                  "stderr": base64.b64encode(stderr).decode("ascii")}
+    print(json.dumps(result))
+
+
+def windows_run(command, env, cwd, timeout):
+    job = WindowsJob()
+    worker = None
+    try:
+        worker = subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "--process-worker"],
+                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        job.assign(worker)
+        request = json.dumps({"command": command, "env": env, "cwd": str(cwd)}).encode("utf-8")
+        try:
+            output, error = worker.communicate(request, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            job.terminate()
+            worker.communicate(timeout=5)
+            raise RuntimeError(f"CLI case timed out after {timeout}s: {command[1:]}") from None
+        if job.active():
+            job.terminate()
+            raise RuntimeError(f"CLI case left running child processes: {command[1:]}")
+        if worker.returncode:
+            raise RuntimeError("Windows CLI worker failed: " + error.decode("utf-8", "replace"))
+        result = json.loads(output)
+        return (result["exit_code"], base64.b64decode(result["stdout"]).decode("utf-8", "replace"),
+                base64.b64decode(result["stderr"]).decode("utf-8", "replace"))
+    finally:
+        # Close the kill-on-close job before waiting, even if a native API failed.
+        # Popen.__exit__ would otherwise wait without a deadline before this guard.
+        try:
+            job.close()
+        finally:
+            if worker is not None:
+                try:
+                    if worker.poll() is None:
+                        worker.kill()
+                    worker.wait(timeout=5)
+                finally:
+                    for pipe in (worker.stdin, worker.stdout, worker.stderr):
+                        if pipe is not None:
+                            pipe.close()
+
+
 def bounded_run(command, env, cwd, timeout):
+    if os.name == "nt":
+        return windows_run(command, env, cwd, timeout)
     process = subprocess.Popen(command, env=env, cwd=cwd, stdin=subprocess.DEVNULL,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                start_new_session=True)
     try:
         stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        if os.name == "nt":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(process.pid)],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-        else:
-            os.killpg(process.pid, signal.SIGKILL)
+        os.killpg(process.pid, signal.SIGKILL)
         process.communicate()
         raise RuntimeError(f"CLI case timed out after {timeout}s: {command[1:]}")
     return process.returncode, stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace")
+
+
+def cleanup_case(temporary, case_id, windows=None):
+    windows = os.name == "nt" if windows is None else windows
+    deadline = time.monotonic() + 2
+    while True:
+        try:
+            temporary.cleanup()
+            return
+        except OSError as error:
+            # All job members have exited before cleanup. Windows image/scanner
+            # handles can still release briefly afterward; retry only that exact
+            # sharing violation, never permissions, leaked processes or all errors.
+            if not windows or getattr(error, "winerror", None) != 32 or time.monotonic() >= deadline:
+                raise RuntimeError(f"CLI case {case_id} cleanup failed: {error}") from error
+            time.sleep(0.05)
 
 
 def side_effects(directory, inputs):
@@ -94,9 +240,10 @@ def side_effects(directory, inputs):
 
 
 def run_case(binary, project, case):
-    with tempfile.TemporaryDirectory(prefix=f"{project}-cli-contract-",
-                                     dir=os.environ.get("RUNNER_TEMP")) as temporary:
-        directory = Path(temporary)
+    temporary = tempfile.TemporaryDirectory(prefix=f"{project}-cli-contract-",
+                                            dir=os.environ.get("RUNNER_TEMP"))
+    try:
+        directory = Path(temporary.name)
         home = directory / "home"
         home.mkdir()
         executable = directory / (project + (".exe" if os.name == "nt" else ""))
@@ -117,13 +264,18 @@ def run_case(binary, project, case):
         expand = lambda value: value.replace("{sandbox}", str(directory))
         env.update({name: expand(value) for name, value in case.get("env", {}).items()})
         argv = [expand(arg) for arg in case["argv"]]
-        code, stdout, stderr = bounded_run([str(executable), *argv], env, directory,
-                                          case.get("timeout", 15))
+        try:
+            code, stdout, stderr = bounded_run([str(executable), *argv], env, directory,
+                                              case.get("timeout", 15))
+        except RuntimeError as error:
+            raise RuntimeError(f"CLI case {case['id']} failed: {error}") from error
         return {"id": case["id"], "argv": case["argv"], "env": case.get("env", {}),
                 "comparison": case.get("comparison", "exact"),
                 "exit_code": code, "stdout": normalize(stdout, directory),
                 "stderr": normalize(stderr, directory),
                 "side_effects": side_effects(directory, inputs)}
+    finally:
+        cleanup_case(temporary, case["id"])
 
 
 def command_names(help_text):
@@ -357,4 +509,7 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    if sys.argv[1:] == ["--process-worker"]:
+        process_worker()
+    else:
+        sys.exit(main())

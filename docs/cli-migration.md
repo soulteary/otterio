@@ -53,6 +53,31 @@ scope. A backend intentionally exposing flags to its own children can retain
 the upstream persistent behavior. The flags added by OtterIO are explicitly
 local at each root, gateway, and backend scope.
 
+When porting an old `IntSliceFlag` or `Int64SliceFlag`, the factory must set
+`Config: cli.IntegerConfig{Base: 10}` explicitly:
+
+```go
+Flags: []cli.Flag{
+    &cli.IntSliceFlag{
+        Name: "numbers", Aliases: []string{"N"}, Local: true,
+        Config: cli.IntegerConfig{Base: 10},
+    },
+    &cli.Int64SliceFlag{
+        Name: "large-numbers", Aliases: []string{"L"}, Local: true,
+        Config: cli.IntegerConfig{Base: 10},
+    },
+}
+```
+
+The old framework parsed these lists in decimal: `010` means ten and `0x10`
+is rejected. Native v3 defaults to `Base: 0`, which accepts base prefixes
+and interprets those values as eight and sixteen. OtterIO preserves the
+factory's explicit native configuration, so it does not rewrite `Base: 0`.
+Its built-in server and gateway commands do not declare integer list flags.
+Repeated list flags retain the native separator configuration. Long and short
+spellings of an existing scalar or legacy list flag must not be mixed at one
+command scope; repeating one spelling remains valid.
+
 No compatibility facade or vendored CLI fork is maintained. Custom help
 example fields and legacy flag presentation live in `internal/clisupport`.
 Its `Run` entrypoint performs only token classification from declared command
