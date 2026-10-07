@@ -6,6 +6,10 @@ range and release checklist are in [the release review](https://github.com/soult
 
 ## Changes
 
+- Migrate command parsing to the maintained `urfave/cli/v3 v3.14.0`, preserving
+  existing flag scope, help output, startup configuration and signal handling.
+  Custom Go gateways must use the new command factory API; see
+  [CLI migration](https://github.com/soulteary/otterio/blob/main/docs/cli-migration.md).
 - Bridge validated, route-declared query parameters to legacy administration
   handlers while preserving path parameter precedence. Standard and streaming
   administration routes now receive their expected inputs.
@@ -58,6 +62,9 @@ HTTP 生命周期及 macOS 服务修复。范围与发布验收步骤见[发布�
 
 ## 本次变化
 
+- 命令解析迁移到 `urfave/cli/v3 v3.14.0`，保持参数作用域、帮助输出、
+  启动配置和信号处理。自定义 Go gateway 需要迁移到命令工厂接口，
+  见 [CLI 迁移说明](https://github.com/soulteary/otterio/blob/main/docs/cli-migration.md)。
 - 将路由声明并验证过的查询参数传给旧管理处理函数，保持路径参数优先级，
   修正普通及流式管理接口的参数传递。
 - 修正编码对象路径的单次解码，正确保留字面百分号与编码分隔符，并修复管理查询和修复流。

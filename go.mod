@@ -35,7 +35,6 @@ require (
 	github.com/mattn/go-colorable v0.1.15
 	github.com/mattn/go-isatty v0.0.24
 	github.com/miekg/dns v1.1.73
-	github.com/minio/cli v1.24.2
 	github.com/minio/highwayhash v1.0.4
 	github.com/minio/minio-go/v7 v7.3.0
 	github.com/minio/sha256-simd v1.0.1
@@ -57,6 +56,7 @@ require (
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/tinylib/msgp v1.6.5
+	github.com/urfave/cli/v3 v3.14.0
 	github.com/valyala/fasthttp v1.74.0
 	github.com/valyala/tcplisten v1.0.0
 	go.etcd.io/etcd/api/v3 v3.7.2

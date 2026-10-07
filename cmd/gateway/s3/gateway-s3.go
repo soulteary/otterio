@@ -27,7 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/minio/cli"
 	otteriogo "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
@@ -39,6 +38,7 @@ import (
 	"github.com/soulteary/otterio/pkg/auth"
 	"github.com/soulteary/otterio/pkg/bucket/policy"
 	"github.com/soulteary/otterio/pkg/madmin"
+	"github.com/urfave/cli/v3"
 )
 
 func init() {
@@ -72,31 +72,30 @@ EXAMPLES:
      {{.Prompt}} {{.HelpName}}
 `
 
-	otterio.RegisterGatewayCommand(cli.Command{
-		Name:               otterio.S3BackendGateway,
-		Usage:              "Amazon Simple Storage Service (S3)",
-		Action:             s3GatewayMain,
-		CustomHelpTemplate: s3GatewayTemplate,
-		HideHelpCommand:    true,
+	otterio.RegisterGatewayCommand(func() *cli.Command {
+		return &cli.Command{
+			Name:               otterio.S3BackendGateway,
+			Usage:              "Amazon Simple Storage Service (S3)",
+			Action:             s3GatewayMain,
+			CustomHelpTemplate: s3GatewayTemplate,
+			HideHelpCommand:    true,
+		}
 	})
 }
 
 // Handler for 'otterio gateway s3' command line.
-func s3GatewayMain(ctx *cli.Context) {
-	args := ctx.Args()
-	if !ctx.Args().Present() {
-		args = cli.Args{"https://s3.amazonaws.com"}
+func s3GatewayMain(runCtx context.Context, ctx *cli.Command) error {
+	endpoint := ctx.Args().First()
+	if ctx.Args().Len() == 0 {
+		endpoint = "https://s3.amazonaws.com"
 	}
 
-	serverAddr := ctx.GlobalString("address")
-	if serverAddr == "" || serverAddr == ":"+otterio.GlobalOtterioDefaultPort {
-		serverAddr = ctx.String("address")
-	}
+	serverAddr := otterio.GatewayServerAddress(ctx)
 	// Validate gateway arguments.
-	logger.FatalIf(otterio.ValidateGatewayArguments(serverAddr, args.First()), "Invalid argument")
+	logger.FatalIf(otterio.ValidateGatewayArguments(serverAddr, endpoint), "Invalid argument")
 
 	// Start the gateway..
-	otterio.StartGateway(ctx, &S3{args.First()})
+	return otterio.StartGateway(runCtx, ctx, &S3{endpoint})
 }
 
 // S3 implements Gateway.

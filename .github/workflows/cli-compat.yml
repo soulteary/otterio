@@ -1,0 +1,76 @@
+name: CLI compatibility
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cli-contract:
+    name: CLI contract (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: 52e2d95b7d4fb58fb212f4a2ce3f351b891e0343
+          path: cli-baseline
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build fixed baseline and candidate on the same platform
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          CGO_ENABLED: '0'
+        run: |
+          suffix=""
+          if [[ "$RUNNER_OS" == "Windows" ]]; then suffix=".exe"; fi
+          baseline="$RUNNER_TEMP/otterio-baseline$suffix"
+          candidate="$RUNNER_TEMP/otterio-candidate$suffix"
+          (cd cli-baseline && go build -mod=readonly -trimpath -o "$baseline" .)
+          go build -mod=readonly -trimpath -o "$candidate" .
+          python3 buildscripts/cli_contract.py check --binary "$candidate" --baseline-binary "$baseline" --output "$RUNNER_TEMP/cli-contract.json"
+      - name: Check standalone documentation tools against the fixed baseline
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          CGO_ENABLED: '0'
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          suffix=""
+          if [[ "$RUNNER_OS" == "Windows" ]]; then suffix=".exe"; fi
+          english_old="$RUNNER_TEMP/xl-meta-baseline$suffix"
+          chinese_old="$RUNNER_TEMP/xl-meta-zh-baseline$suffix"
+          english_new="$RUNNER_TEMP/xl-meta-candidate$suffix"
+          chinese_new="$RUNNER_TEMP/xl-meta-zh-candidate$suffix"
+          (cd cli-baseline && go build -mod=readonly -trimpath -o "$english_old" docs/bucket/versioning/xl-meta.go)
+          (cd cli-baseline && go build -mod=readonly -trimpath -o "$chinese_old" docs/zh_CN/bucket/versioning/xl-meta-to-json.go)
+          go build -mod=readonly -trimpath -o "$english_new" docs/bucket/versioning/xl-meta.go
+          go build -mod=readonly -trimpath -o "$chinese_new" docs/zh_CN/bucket/versioning/xl-meta-to-json.go
+          python3 buildscripts/test_cli_doc_tools.py --english "$english_new" --chinese "$chinese_new" --baseline-english "$english_old" --baseline-chinese "$chinese_old"
+      - name: Test contract runner regressions
+        shell: bash
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s buildscripts -p test_cli_contract.py -v
+      - name: Check exported gateway API from an external consumer
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+          CGO_ENABLED: '0'
+        run: go run -mod=readonly ./testdata/gateway-api
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: otterio-cli-contract-${{ matrix.os }}
+          path: ${{ runner.temp }}/cli-contract*.json

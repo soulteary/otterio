@@ -1,0 +1,689 @@
+{
+  "schema": 1,
+  "project": "otterio",
+  "cases": [
+    {
+      "id": "no-arguments",
+      "argv": []
+    },
+    {
+      "id": "version",
+      "argv": [
+        "--version"
+      ]
+    },
+    {
+      "id": "help-short",
+      "argv": [
+        "-h"
+      ]
+    },
+    {
+      "id": "unknown-command",
+      "argv": [
+        "srver"
+      ]
+    },
+    {
+      "id": "unknown-root-flag",
+      "argv": [
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "missing-config-value",
+      "argv": [
+        "--config-dir"
+      ]
+    },
+    {
+      "id": "server-no-endpoint",
+      "argv": [
+        "server"
+      ]
+    },
+    {
+      "id": "server-positional-help",
+      "argv": [
+        "server",
+        "help"
+      ]
+    },
+    {
+      "id": "server-unknown-flag",
+      "argv": [
+        "server",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "gateway-unknown-flag",
+      "argv": [
+        "gateway",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "gateway-unknown-backend",
+      "argv": [
+        "gateway",
+        "contract-unknown"
+      ]
+    },
+    {
+      "id": "nas-no-path",
+      "argv": [
+        "gateway",
+        "nas"
+      ]
+    },
+    {
+      "id": "nas-positional-help",
+      "argv": [
+        "gateway",
+        "nas",
+        "help"
+      ]
+    },
+    {
+      "id": "config-root",
+      "argv": [
+        "--config-dir",
+        "{sandbox}/config-root",
+        "server"
+      ]
+    },
+    {
+      "id": "config-server",
+      "argv": [
+        "server",
+        "--config-dir",
+        "{sandbox}/config-server"
+      ]
+    },
+    {
+      "id": "config-root-leaf-conflict",
+      "argv": [
+        "--config-dir",
+        "{sandbox}/config-root",
+        "server",
+        "--config-dir",
+        "{sandbox}/config-server"
+      ]
+    },
+    {
+      "id": "config-short",
+      "argv": [
+        "-C",
+        "{sandbox}/config-short",
+        "server"
+      ]
+    },
+    {
+      "id": "config-empty",
+      "argv": [
+        "server",
+        "--config-dir="
+      ]
+    },
+    {
+      "id": "certs-config-derived",
+      "argv": [
+        "--config-dir",
+        "{sandbox}/config-root",
+        "server"
+      ]
+    },
+    {
+      "id": "certs-explicit",
+      "argv": [
+        "--config-dir",
+        "{sandbox}/config-root",
+        "server",
+        "--certs-dir",
+        "{sandbox}/certs"
+      ]
+    },
+    {
+      "id": "certs-relative",
+      "argv": [
+        "server",
+        "--certs-dir",
+        "relative-certs"
+      ]
+    },
+    {
+      "id": "server-address-invalid",
+      "argv": [
+        "server",
+        "--address",
+        "invalid-address",
+        "{sandbox}/data"
+      ]
+    },
+    {
+      "id": "server-root-address-unsupported",
+      "argv": [
+        "--address",
+        "127.0.0.1:0",
+        "server"
+      ]
+    },
+    {
+      "id": "gateway-parent-address",
+      "argv": [
+        "gateway",
+        "--address",
+        "invalid-address",
+        "s3",
+        "http://127.0.0.1:0"
+      ]
+    },
+    {
+      "id": "gateway-leaf-address",
+      "argv": [
+        "gateway",
+        "s3",
+        "--address",
+        "invalid-address",
+        "http://127.0.0.1:0"
+      ]
+    },
+    {
+      "id": "gateway-conflict-address",
+      "argv": [
+        "gateway",
+        "--address",
+        "invalid-parent",
+        "s3",
+        "--address",
+        "invalid-leaf",
+        "http://127.0.0.1:0"
+      ]
+    },
+    {
+      "id": "server-quiet-false",
+      "argv": [
+        "server",
+        "--quiet=false"
+      ]
+    },
+    {
+      "id": "server-json-false",
+      "argv": [
+        "server",
+        "--json=false"
+      ]
+    },
+    {
+      "id": "server-anonymous-false",
+      "argv": [
+        "server",
+        "--anonymous=false"
+      ]
+    },
+    {
+      "id": "server-no-compat-false",
+      "argv": [
+        "server",
+        "--no-compat=false"
+      ]
+    },
+    {
+      "id": "server-console-certs-missing-address",
+      "argv": [
+        "server",
+        "--console-certs-dir",
+        "{sandbox}/console-certs",
+        "{sandbox}/data"
+      ]
+    },
+    {
+      "id": "server-console-certs-missing-files",
+      "argv": [
+        "server",
+        "--console-address",
+        "127.0.0.1:0",
+        "--console-certs-dir",
+        "{sandbox}/console-certs",
+        "{sandbox}/data"
+      ]
+    },
+    {
+      "id": "server-console-env-certs",
+      "argv": [
+        "server",
+        "{sandbox}/data"
+      ],
+      "env": {
+        "OTTERIO_BROWSER_CERTS_DIR": "{sandbox}/console-certs"
+      }
+    },
+    {
+      "id": "server-env-args-precedence",
+      "argv": [
+        "server",
+        "{sandbox}/data"
+      ],
+      "env": {
+        "OTTERIO_ARGS": "invalid://contract",
+        "OTTERIO_ENDPOINTS": "other-invalid://contract"
+      }
+    },
+    {
+      "id": "server-env-endpoints-fallback",
+      "argv": [
+        "server",
+        "{sandbox}/data"
+      ],
+      "env": {
+        "OTTERIO_ENDPOINTS": "invalid://contract"
+      }
+    },
+    {
+      "id": "server-env-empty-fallback",
+      "argv": [
+        "server"
+      ],
+      "env": {
+        "OTTERIO_ARGS": "",
+        "OTTERIO_ENDPOINTS": ""
+      }
+    },
+    {
+      "id": "server-env-whitespace",
+      "argv": [
+        "server"
+      ],
+      "env": {
+        "OTTERIO_ARGS": "  "
+      }
+    },
+    {
+      "id": "server-end-of-options",
+      "argv": [
+        "server",
+        "--",
+        "help"
+      ]
+    },
+    {
+      "id": "version-true",
+      "argv": [
+        "--version=true"
+      ]
+    },
+    {
+      "id": "version-false",
+      "argv": [
+        "--version=false"
+      ]
+    },
+    {
+      "id": "version-false-subcommand-help",
+      "argv": [
+        "--version=false",
+        "server",
+        "--help"
+      ]
+    },
+    {
+      "id": "version-before-subcommand-error",
+      "argv": [
+        "--version",
+        "server",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "version-and-help",
+      "argv": [
+        "--version",
+        "--help"
+      ]
+    },
+    {
+      "id": "version-false-root-error",
+      "argv": [
+        "--version=false",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "help-true",
+      "argv": [
+        "--help=true"
+      ]
+    },
+    {
+      "id": "help-false",
+      "argv": [
+        "--help=false"
+      ]
+    },
+    {
+      "id": "help-false-subcommand-help",
+      "argv": [
+        "--help=false",
+        "server",
+        "--help"
+      ]
+    },
+    {
+      "id": "help-false-action",
+      "argv": [
+        "--help=false",
+        "server"
+      ]
+    },
+    {
+      "id": "help-leaf-false",
+      "argv": [
+        "server",
+        "--help=false"
+      ]
+    },
+    {
+      "id": "help-leaf-true",
+      "argv": [
+        "server",
+        "--help=true"
+      ]
+    },
+    {
+      "id": "help-false-root-error",
+      "argv": [
+        "--help=false",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "help-false-leaf-error",
+      "argv": [
+        "server",
+        "--help=false",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "config-value-help",
+      "argv": [
+        "--config-dir",
+        "help",
+        "server",
+        "--help"
+      ]
+    },
+    {
+      "id": "config-value-help-flag",
+      "argv": [
+        "--config-dir",
+        "--help",
+        "server",
+        "--help"
+      ]
+    },
+    {
+      "id": "negative-value-position",
+      "argv": [
+        "server",
+        "--",
+        "-1"
+      ]
+    },
+    {
+      "id": "config-both-spellings",
+      "argv": [
+        "--config-dir",
+        "{sandbox}/config-a",
+        "-C",
+        "{sandbox}/config-b",
+        "server"
+      ]
+    },
+    {
+      "id": "config-both-spellings-equal",
+      "argv": [
+        "--config-dir",
+        "{sandbox}/config-a",
+        "-C",
+        "{sandbox}/config-a",
+        "server"
+      ]
+    },
+    {
+      "id": "config-repeat-same-spelling",
+      "argv": [
+        "--config-dir",
+        "{sandbox}/config-a",
+        "--config-dir",
+        "{sandbox}/config-b",
+        "server"
+      ]
+    },
+    {
+      "id": "config-alias-cross-scope",
+      "argv": [
+        "-C",
+        "{sandbox}/config-a",
+        "server",
+        "--config-dir",
+        "{sandbox}/config-b",
+        "--help"
+      ]
+    },
+    {
+      "id": "certs-both-spellings",
+      "argv": [
+        "--certs-dir",
+        "{sandbox}/certs-a",
+        "-S",
+        "{sandbox}/certs-b",
+        "server"
+      ]
+    },
+    {
+      "id": "certs-repeat-same-spelling",
+      "argv": [
+        "--certs-dir",
+        "{sandbox}/certs-a",
+        "--certs-dir",
+        "{sandbox}/certs-b",
+        "server"
+      ]
+    },
+    {
+      "id": "bool-root-invalid",
+      "argv": [
+        "--quiet=invalid"
+      ]
+    },
+    {
+      "id": "bool-leaf-invalid",
+      "argv": [
+        "server",
+        "--json=invalid"
+      ]
+    },
+    {
+      "id": "bool-deep-invalid",
+      "argv": [
+        "gateway",
+        "nas",
+        "--anonymous=invalid"
+      ]
+    },
+    {
+      "id": "help-both-spellings",
+      "argv": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "id": "help-leaf-both-spellings",
+      "argv": [
+        "gateway",
+        "nas",
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "id": "help-both-spellings-false",
+      "argv": [
+        "--help=false",
+        "-h=false"
+      ]
+    },
+    {
+      "id": "version-both-spellings",
+      "argv": [
+        "--version",
+        "-v"
+      ]
+    },
+    {
+      "id": "version-both-spellings-conflict",
+      "argv": [
+        "--version=false",
+        "-v=true"
+      ]
+    },
+    {
+      "id": "help-then-error-root-unknown-flag",
+      "argv": [
+        "--help",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "help-then-error-root-missing-value",
+      "argv": [
+        "--help",
+        "--config-dir"
+      ]
+    },
+    {
+      "id": "help-then-error-root-invalid-bool",
+      "argv": [
+        "--help",
+        "--quiet=invalid"
+      ]
+    },
+    {
+      "id": "help-then-error-parent-unknown-flag",
+      "argv": [
+        "gateway",
+        "--help",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "help-then-error-parent-missing-value",
+      "argv": [
+        "gateway",
+        "--help",
+        "--config-dir"
+      ]
+    },
+    {
+      "id": "help-then-error-parent-invalid-bool",
+      "argv": [
+        "gateway",
+        "--help",
+        "--quiet=invalid"
+      ]
+    },
+    {
+      "id": "help-then-error-leaf-unknown-flag",
+      "argv": [
+        "gateway",
+        "nas",
+        "--help",
+        "--contract-unknown"
+      ]
+    },
+    {
+      "id": "help-then-error-leaf-missing-value",
+      "argv": [
+        "gateway",
+        "nas",
+        "--help",
+        "--config-dir"
+      ]
+    },
+    {
+      "id": "help-then-error-leaf-invalid-bool",
+      "argv": [
+        "gateway",
+        "nas",
+        "--help",
+        "--quiet=invalid"
+      ]
+    },
+    {
+      "id": "combined-help-version-alias",
+      "argv": [
+        "--help",
+        "--version",
+        "-v"
+      ]
+    },
+    {
+      "id": "combined-version-help-alias",
+      "argv": [
+        "--version",
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "id": "combined-help-version-alias-false",
+      "argv": [
+        "--help",
+        "--version=false",
+        "-v=false"
+      ]
+    },
+    {
+      "id": "combined-version-help-alias-false",
+      "argv": [
+        "--version",
+        "--help=false",
+        "-h=false"
+      ]
+    },
+    {
+      "id": "help-config-alias-conflict",
+      "argv": [
+        "--help",
+        "--config-dir",
+        "{sandbox}/config-a",
+        "-C",
+        "{sandbox}/config-b"
+      ]
+    },
+    {
+      "id": "help-other-alias-conflict",
+      "argv": [
+        "--help",
+        "--certs-dir",
+        "{sandbox}/certs-a",
+        "-S",
+        "{sandbox}/certs-b"
+      ]
+    },
+    {
+      "id": "help-other-alias-conflict-leaf",
+      "argv": [
+        "server",
+        "--help",
+        "--certs-dir",
+        "{sandbox}/certs-a",
+        "-S",
+        "{sandbox}/certs-b"
+      ]
+    }
+  ]
+}

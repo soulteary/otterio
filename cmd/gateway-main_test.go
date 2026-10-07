@@ -17,19 +17,21 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/minio/cli"
+	"github.com/urfave/cli/v3"
 )
 
 // Test RegisterGatewayCommand
 func TestRegisterGatewayCommand(t *testing.T) {
 	var err error
 
-	cmd := cli.Command{Name: "test"}
-	err = RegisterGatewayCommand(cmd)
+	original := gatewayCommandFactories
+	t.Cleanup(func() { gatewayCommandFactories = original })
+	err = RegisterGatewayCommand(func() *cli.Command { return &cli.Command{Name: "test"} })
 	if err != nil {
 		t.Errorf("RegisterGatewayCommand got unexpected error: %s", err)
 	}
@@ -42,25 +44,30 @@ func TestRunRegisteredGatewayCommand(t *testing.T) {
 	flagName := "test-flag"
 	flagValue := "foo"
 
-	cmd := cli.Command{
-		Name: "test-run-with-flag",
-		Flags: []cli.Flag{
-			cli.StringFlag{Name: flagName},
-		},
-		Action: func(ctx *cli.Context) {
-			if actual := ctx.String(flagName); actual != flagValue {
-				t.Errorf("value of %s expects %s, but got %s", flagName, flagValue, actual)
-			}
-		},
+	original := gatewayCommandFactories
+	t.Cleanup(func() { gatewayCommandFactories = original })
+	factory := func() *cli.Command {
+		return &cli.Command{
+			Name: "test-run-with-flag",
+			Flags: []cli.Flag{
+				&cli.StringFlag{Name: flagName},
+			},
+			Action: func(_ context.Context, ctx *cli.Command) error {
+				if actual := ctx.String(flagName); actual != flagValue {
+					t.Errorf("value of %s expects %s, but got %s", flagName, flagValue, actual)
+				}
+				return nil
+			},
+		}
 	}
 
-	err = RegisterGatewayCommand(cmd)
+	err = RegisterGatewayCommand(factory)
 	if err != nil {
 		t.Errorf("RegisterGatewayCommand got unexpected error: %s", err)
 	}
 
-	if err = newApp("otterio").Run(
-		[]string{"otterio", "gateway", cmd.Name, fmt.Sprintf("--%s", flagName), flagValue}); err != nil {
+	if err = newApp("otterio").Run(context.Background(),
+		[]string{"otterio", "gateway", factory().Name, fmt.Sprintf("--%s", flagName), flagValue}); err != nil {
 		t.Errorf("running registered gateway command got unexpected error: %s", err)
 	}
 }

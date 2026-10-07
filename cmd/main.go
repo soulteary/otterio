@@ -17,54 +17,68 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
 
-	"github.com/minio/cli"
+	"github.com/soulteary/otterio/internal/clisupport"
 	"github.com/soulteary/otterio/pkg/console"
 	"github.com/soulteary/otterio/pkg/trie"
 	"github.com/soulteary/otterio/pkg/words"
+	"github.com/urfave/cli/v3"
 )
 
-// GlobalFlags - global flags for otterio.
-var GlobalFlags = []cli.Flag{
-	// Deprecated flag, so its hidden now - existing deployments will keep working.
-	cli.StringFlag{
-		Name:   "config-dir, C",
-		Value:  defaultConfigDir.Get(),
-		Usage:  "[DEPRECATED] path to legacy configuration directory",
-		Hidden: true,
-	},
-	cli.StringFlag{
-		Name:  "certs-dir, S",
-		Value: defaultCertsDir.Get(),
-		Usage: "path to certs directory",
-	},
-	cli.BoolFlag{
-		Name:  "quiet",
-		Usage: "disable startup information",
-	},
-	cli.BoolFlag{
-		Name:  "anonymous",
-		Usage: "hide sensitive information from logging",
-	},
-	cli.BoolFlag{
-		Name:  "json",
-		Usage: "output server logs and startup information in json format",
-	},
-	// Deprecated flag, so its hidden now, existing deployments will keep working.
-	cli.BoolFlag{
-		Name:   "compat",
-		Usage:  "enable strict S3 compatibility by turning off certain performance optimizations",
-		Hidden: true,
-	},
-	// This flag is hidden and to be used only during certain performance testing.
-	cli.BoolFlag{
-		Name:   "no-compat",
-		Usage:  "disable strict S3 compatibility by turning on certain performance optimizations",
-		Hidden: true,
-	},
+// GlobalFlags returns fresh global flag definitions for each command.
+func GlobalFlags() []cli.Flag {
+	return []cli.Flag{
+		// Deprecated flag, so its hidden now - existing deployments will keep working.
+		&cli.StringFlag{
+			Local:   true,
+			Name:    "config-dir",
+			Aliases: []string{"C"},
+			Value:   defaultConfigDir.Get(),
+			Usage:   "[DEPRECATED] path to legacy configuration directory",
+			Hidden:  true,
+		},
+		&cli.StringFlag{
+			Local:   true,
+			Name:    "certs-dir",
+			Aliases: []string{"S"},
+			Value:   defaultCertsDir.Get(),
+			Usage:   "path to certs directory",
+		},
+		&cli.BoolFlag{
+			Local: true,
+			Name:  "quiet",
+			Usage: "disable startup information",
+		},
+		&cli.BoolFlag{
+			Local: true,
+			Name:  "anonymous",
+			Usage: "hide sensitive information from logging",
+		},
+		&cli.BoolFlag{
+			Local: true,
+			Name:  "json",
+			Usage: "output server logs and startup information in json format",
+		},
+		// Deprecated flag, so its hidden now, existing deployments will keep working.
+		&cli.BoolFlag{
+			Local:  true,
+			Name:   "compat",
+			Usage:  "enable strict S3 compatibility by turning off certain performance optimizations",
+			Hidden: true,
+		},
+		// This flag is hidden and to be used only during certain performance testing.
+		&cli.BoolFlag{
+			Local:  true,
+			Name:   "no-compat",
+			Usage:  "disable strict S3 compatibility by turning on certain performance optimizations",
+			Hidden: true,
+		},
+	}
 }
 
 // Help template for otterio.
@@ -87,15 +101,15 @@ VERSION:
   {{.Version}}
 `
 
-func newApp(name string) *cli.App {
+func newApp(name string) *cli.Command {
 	// Collection of otterio commands currently supported are.
-	commands := []cli.Command{}
+	commands := []*cli.Command{}
 
 	// Collection of otterio commands currently supported in a trie tree.
 	commandsTree := trie.NewTrie()
 
 	// registerCommand registers a cli command.
-	registerCommand := func(command cli.Command) {
+	registerCommand := func(command *cli.Command) {
 		commands = append(commands, command)
 		commandsTree.Insert(command.Name)
 	}
@@ -122,26 +136,22 @@ func newApp(name string) *cli.App {
 	}
 
 	// Register all commands.
-	registerCommand(serverCmd)
-	registerCommand(gatewayCmd)
+	registerCommand(newServerCommand())
+	registerCommand(newGatewayCommand())
 
-	// Set up app.
-	cli.HelpFlag = cli.BoolFlag{
-		Name:  "help, h",
-		Usage: "show help",
-	}
-
-	app := cli.NewApp()
+	// Set up an isolated command tree for every invocation.
+	clisupport.Install()
+	app := &cli.Command{}
 	app.Name = name
-	app.Author = "MinIO, Inc."
+	app.Authors = []any{"MinIO, Inc."}
 	app.Version = ReleaseTag
 	app.Usage = "High Performance Object Storage"
 	app.Description = `Build high performance data infrastructure for machine learning, analytics and application data workloads with OtterIO`
-	app.Flags = GlobalFlags
+	app.Flags = GlobalFlags()
 	app.HideHelpCommand = true // Hide `help, h` command, we already have `otterio --help`.
 	app.Commands = commands
-	app.CustomAppHelpTemplate = otterioHelpTemplate
-	app.CommandNotFound = func(_ *cli.Context, command string) {
+	app.CustomRootCommandHelpTemplate = otterioHelpTemplate
+	app.CommandNotFound = func(_ context.Context, _ *cli.Command, command string) {
 		console.Printf("‘%s’ is not a otterio sub-command. See ‘otterio --help’.\n", command)
 		closestCommands := findClosestCommands(command)
 		if len(closestCommands) > 0 {
@@ -155,6 +165,7 @@ func newApp(name string) *cli.App {
 		os.Exit(1)
 	}
 
+	configureCommandTree(app)
 	return app
 }
 
@@ -164,7 +175,11 @@ func Main(args []string) {
 	appName := filepath.Base(args[0])
 
 	// Run the app - exit on error.
-	if err := newApp(appName).Run(args); err != nil {
+	if err := newApp(appName).Run(context.Background(), args); err != nil {
+		var exit cli.ExitCoder
+		if errors.As(err, &exit) {
+			os.Exit(exit.ExitCode())
+		}
 		os.Exit(1)
 	}
 }
