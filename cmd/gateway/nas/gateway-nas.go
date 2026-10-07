@@ -19,10 +19,10 @@ package nas
 import (
 	"context"
 
-	"github.com/minio/cli"
 	otterio "github.com/soulteary/otterio/cmd"
 	"github.com/soulteary/otterio/pkg/auth"
 	"github.com/soulteary/otterio/pkg/madmin"
+	"github.com/urfave/cli/v3"
 )
 
 func init() {
@@ -56,23 +56,25 @@ EXAMPLES:
      {{.Prompt}} {{.HelpName}} /shared/nasvol
 `
 
-	otterio.RegisterGatewayCommand(cli.Command{
-		Name:               otterio.NASBackendGateway,
-		Usage:              "Network-attached storage (NAS)",
-		Action:             nasGatewayMain,
-		CustomHelpTemplate: nasGatewayTemplate,
-		HideHelpCommand:    true,
+	otterio.RegisterGatewayCommand(func() *cli.Command {
+		return &cli.Command{
+			Name:               otterio.NASBackendGateway,
+			Usage:              "Network-attached storage (NAS)",
+			Action:             nasGatewayMain,
+			CustomHelpTemplate: nasGatewayTemplate,
+			HideHelpCommand:    true,
+		}
 	})
 }
 
 // Handler for 'otterio gateway nas' command line.
-func nasGatewayMain(ctx *cli.Context) {
+func nasGatewayMain(runCtx context.Context, ctx *cli.Command) error {
 	// Validate gateway arguments.
-	if !ctx.Args().Present() || ctx.Args().First() == "help" {
-		cli.ShowCommandHelpAndExit(ctx, otterio.NASBackendGateway, 1)
+	if ctx.Args().Len() == 0 || ctx.Args().First() == "help" {
+		cli.ShowCommandHelpAndExit(runCtx, ctx.Lineage()[1], otterio.NASBackendGateway, 1)
 	}
 
-	otterio.StartGateway(ctx, &NAS{ctx.Args().First()})
+	return otterio.StartGateway(runCtx, ctx, &NAS{ctx.Args().First()})
 }
 
 // NAS implements Gateway.

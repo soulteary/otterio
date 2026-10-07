@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -25,17 +26,22 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
-	"github.com/minio/cli"
 	"github.com/tinylib/msgp/msgp"
+	"github.com/urfave/cli/v3"
+
+	"github.com/soulteary/otterio/internal/clisupport"
 )
 
 func main() {
-	app := cli.NewApp()
+	clisupport.Install()
+	stopAfterFirstArgument := 1
+	app := &cli.Command{Name: filepath.Base(os.Args[0]), StopOnNthArg: &stopAfterFirstArgument}
 	app.Copyright = "MinIO, Inc."
 	app.Usage = "xl.meta to JSON"
 	app.HideVersion = true
-	app.CustomAppHelpTemplate = `NAME:
+	app.CustomRootCommandHelpTemplate = `NAME:
   {{.Name}} - {{.Usage}}
 
 USAGE:
@@ -49,18 +55,19 @@ GLOBAL FLAGS:
 	app.HideHelpCommand = true
 
 	app.Flags = []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Usage: "Print each file as a separate line without formatting",
 			Name:  "ndjson",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Usage: "Display inline data keys and sizes",
 			Name:  "data",
 		},
 	}
 
-	app.Action = func(c *cli.Context) error {
-		files := c.Args()
+	clisupport.Configure(app)
+	app.Action = func(_ context.Context, c *cli.Command) error {
+		files := c.Args().Slice()
 		if len(files) == 0 {
 			// If no args, assume xl.meta
 			files = []string{"xl.meta"}
@@ -142,8 +149,12 @@ GLOBAL FLAGS:
 		}
 		return nil
 	}
-	err := app.Run(os.Args)
+	err := clisupport.Run(context.Background(), app, os.Args)
 	if err != nil {
+		var exit cli.ExitCoder
+		if errors.As(err, &exit) && exit.ExitCode() == 0 {
+			return
+		}
 		log.Fatal(err)
 	}
 }

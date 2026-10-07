@@ -31,7 +31,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/minio/cli"
 	"github.com/soulteary/otterio/cmd/config"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
@@ -44,35 +43,42 @@ import (
 	"github.com/soulteary/otterio/pkg/fips"
 	"github.com/soulteary/otterio/pkg/madmin"
 	"github.com/soulteary/otterio/pkg/sync/errgroup"
+	"github.com/urfave/cli/v3"
 )
 
-// ServerFlags - server command specific flags
-var ServerFlags = []cli.Flag{
-	cli.StringFlag{
-		Name:  "address",
-		Value: ":" + GlobalOtterioDefaultPort,
-		Usage: "bind to a specific ADDRESS:PORT, ADDRESS can be an IP or hostname",
-	},
-	cli.StringFlag{
-		Name:   "console-address",
-		Value:  "",
-		Usage:  "bind the web console + admin API to a separate ADDRESS:PORT (default: same as --address)",
-		EnvVar: "OTTERIO_BROWSER_ADDRESS",
-	},
-	cli.StringFlag{
-		Name:   "console-certs-dir",
-		Value:  "",
-		Usage:  "path to a separate certs directory for the console listener (requires --console-address)",
-		EnvVar: "OTTERIO_BROWSER_CERTS_DIR",
-	},
+// ServerFlags returns fresh server-specific flag definitions.
+func ServerFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Local: true,
+			Name:  "address",
+			Value: ":" + GlobalOtterioDefaultPort,
+			Usage: "bind to a specific ADDRESS:PORT, ADDRESS can be an IP or hostname",
+		},
+		&cli.StringFlag{
+			Local:   true,
+			Name:    "console-address",
+			Value:   "",
+			Usage:   "bind the web console + admin API to a separate ADDRESS:PORT (default: same as --address)",
+			Sources: cli.EnvVars("OTTERIO_BROWSER_ADDRESS"),
+		},
+		&cli.StringFlag{
+			Local:   true,
+			Name:    "console-certs-dir",
+			Value:   "",
+			Usage:   "path to a separate certs directory for the console listener (requires --console-address)",
+			Sources: cli.EnvVars("OTTERIO_BROWSER_CERTS_DIR"),
+		},
+	}
 }
 
-var serverCmd = cli.Command{
-	Name:   "server",
-	Usage:  "start object storage server",
-	Flags:  append(ServerFlags, GlobalFlags...),
-	Action: serverMain,
-	CustomHelpTemplate: `NAME:
+func newServerCommand() *cli.Command {
+	return &cli.Command{
+		Name:   "server",
+		Usage:  "start object storage server",
+		Flags:  append(ServerFlags(), GlobalFlags()...),
+		Action: serverMain,
+		CustomHelpTemplate: `NAME:
   {{.HelpName}} - {{.Usage}}
 
 USAGE:
@@ -116,24 +122,25 @@ EXAMPLES:
             --certs-dir /etc/otterio/certs/s3 \
             --console-certs-dir /etc/otterio/certs/console /home/shared
 `,
+	}
 }
 
-func serverCmdArgs(ctx *cli.Context) []string {
+func serverCmdArgs(ctx *cli.Command) []string {
 	v := env.Get(config.EnvArgs, "")
 	if v == "" {
 		// Fall back to older ENV OTTERIO_ENDPOINTS
 		v = env.Get(config.EnvEndpoints, "")
 	}
 	if v == "" {
-		if !ctx.Args().Present() || ctx.Args().First() == "help" {
-			cli.ShowCommandHelpAndExit(ctx, ctx.Command.Name, 1)
+		if ctx.Args().Len() == 0 || ctx.Args().First() == "help" {
+			cli.ShowCommandHelpAndExit(context.Background(), ctx.Root(), ctx.Name, 1)
 		}
-		return ctx.Args()
+		return ctx.Args().Slice()
 	}
 	return strings.Fields(v)
 }
 
-func serverHandleCmdArgs(ctx *cli.Context) {
+func serverHandleCmdArgs(ctx *cli.Command) {
 	// Handle common command args.
 	handleCommonCmdArgs(ctx)
 
@@ -455,7 +462,7 @@ func initAllSubsystems(ctx context.Context, newObject ObjectLayer) (err error) {
 }
 
 // serverMain handler called for 'otterio server' command.
-func serverMain(ctx *cli.Context) {
+func serverMain(_ context.Context, ctx *cli.Command) error {
 	runServerSupervisor()
 	defer globalDNSCache.Stop()
 
@@ -574,7 +581,7 @@ func serverMain(ctx *cli.Context) {
 			logger.LogIf(GlobalContext, err, "Unable to initialize distributed setup, retrying.. after 5 seconds")
 			select {
 			case <-GlobalContext.Done():
-				return
+				return nil
 			case <-time.After(500 * time.Millisecond):
 			}
 		}
@@ -634,6 +641,7 @@ func serverMain(ctx *cli.Context) {
 	}
 
 	<-globalOSSignalCh
+	return nil
 }
 
 // Initialize object layer with the supplied disks, objectLayer is nil upon any error.

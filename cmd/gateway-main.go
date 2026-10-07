@@ -28,23 +28,46 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/minio/cli"
 	"github.com/soulteary/otterio/cmd/config"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/certs"
 	"github.com/soulteary/otterio/pkg/color"
 	"github.com/soulteary/otterio/pkg/env"
+	"github.com/urfave/cli/v3"
 )
 
-var (
-	gatewayCmd = cli.Command{
-		Name:            "gateway",
-		Usage:           "start object storage gateway",
-		Flags:           append(ServerFlags, GlobalFlags...),
-		HideHelpCommand: true,
+// Gateway command factories are registered before Main. Factories must return
+// fresh commands and flags because urfave/cli flags carry parsed state.
+var gatewayCommandFactories []func() *cli.Command
+
+func newGatewayCommand() *cli.Command {
+	command := &cli.Command{
+		Name: "gateway", Usage: "start object storage gateway",
+		Flags: append(ServerFlags(), GlobalFlags()...), HideHelpCommand: true,
+		CustomHelpTemplate: gatewayHelpTemplate,
 	}
-)
+	for _, factory := range gatewayCommandFactories {
+		child := factory()
+		child.Flags = append(append(child.Flags, ServerFlags()...), GlobalFlags()...)
+		command.Commands = append(command.Commands, child)
+	}
+	return command
+}
+
+const gatewayHelpTemplate = `NAME:
+  {{.HelpName}} - {{if .Description}}{{.Description}}{{else}}{{.Usage}}{{end}}
+
+USAGE:
+  {{.HelpName}} COMMAND{{if .VisibleFlags}} [COMMAND FLAGS | -h]{{end}} [ARGUMENTS...]
+
+COMMANDS:
+  {{range .VisibleCommands}}{{join .Names ", "}}{{ "\t" }}{{.Usage}}
+  {{end}}{{if .VisibleFlags}}
+FLAGS:
+  {{range .VisibleFlags}}{{.}}
+  {{end}}{{end}}
+`
 
 // GatewayLocker implements custom NewNSLock implementation
 type GatewayLocker struct {
@@ -105,9 +128,20 @@ func NewGatewayLayerWithLocker(gwLayer ObjectLayer) ObjectLayer {
 }
 
 // RegisterGatewayCommand registers a new command for gateway.
-func RegisterGatewayCommand(cmd cli.Command) error {
-	cmd.Flags = append(append(cmd.Flags, ServerFlags...), GlobalFlags...)
-	gatewayCmd.Subcommands = append(gatewayCmd.Subcommands, cmd)
+func RegisterGatewayCommand(factory func() *cli.Command) error {
+	if factory == nil {
+		return errors.New("gateway command factory is nil")
+	}
+	command := factory()
+	if command == nil || command.Name == "" {
+		return errors.New("gateway command name is required")
+	}
+	for _, registered := range gatewayCommandFactories {
+		if registered().Name == command.Name {
+			return fmt.Errorf("gateway command %q is already registered", command.Name)
+		}
+	}
+	gatewayCommandFactories = append(gatewayCommandFactories, factory)
 	return nil
 }
 
@@ -154,7 +188,7 @@ func ValidateGatewayArguments(serverAddr, endpointAddr string) error {
 }
 
 // StartGateway - handler for 'otterio gateway <name>'.
-func StartGateway(ctx *cli.Context, gw Gateway) {
+func StartGateway(runCtx context.Context, ctx *cli.Command, gw Gateway) error {
 	runServerSupervisor()
 	defer globalDNSCache.Stop()
 
@@ -170,7 +204,7 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	globalGatewayName = gw.Name()
 	gatewayName := gw.Name()
 	if ctx.Args().First() == "help" {
-		cli.ShowCommandHelpAndExit(ctx, gatewayName, 1)
+		cli.ShowCommandHelpAndExit(runCtx, ctx.Lineage()[1], gatewayName, 1)
 	}
 
 	// Initialize globalConsoleSys system
@@ -388,4 +422,5 @@ func StartGateway(ctx *cli.Context, gw Gateway) {
 	}
 
 	handleSignals()
+	return nil
 }

@@ -33,7 +33,6 @@ import (
 
 	"github.com/fatih/color"
 	dns2 "github.com/miekg/dns"
-	"github.com/minio/cli"
 	"github.com/minio/minio-go/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/config"
 	xhttp "github.com/soulteary/otterio/cmd/http"
@@ -43,6 +42,7 @@ import (
 	"github.com/soulteary/otterio/pkg/console"
 	"github.com/soulteary/otterio/pkg/env"
 	"github.com/soulteary/otterio/pkg/handlers"
+	"github.com/urfave/cli/v3"
 )
 
 // serverDebugLog will enable debug printing
@@ -108,7 +108,7 @@ func verifyObjectLayerFeatures(name string, objAPI ObjectLayer) {
 	globalCompressConfigMu.Unlock()
 }
 
-func newConfigDirFromCtx(ctx *cli.Context, option string, getDefaultDir func() string) (*ConfigDir, bool) {
+func newConfigDirFromCtx(ctx *cli.Command, option string, getDefaultDir func() string) (*ConfigDir, bool) {
 	var dir string
 	var dirSet bool
 
@@ -116,14 +116,14 @@ func newConfigDirFromCtx(ctx *cli.Context, option string, getDefaultDir func() s
 	case ctx.IsSet(option):
 		dir = ctx.String(option)
 		dirSet = true
-	case ctx.GlobalIsSet(option):
-		dir = ctx.GlobalString(option)
+	case cliParentIsSet(ctx, option):
+		dir = cliParentString(ctx, option)
 		dirSet = true
-		// cli package does not expose parent's option option.  Below code is workaround.
+		// Preserve the legacy directory fallback across the gateway parent.
 		if dir == "" || dir == getDefaultDir() {
-			dirSet = false // Unset to false since GlobalIsSet() true is a false positive.
-			if ctx.Parent().GlobalIsSet(option) {
-				dir = ctx.Parent().GlobalString(option)
+			dirSet = false // An intermediate default must not hide an explicit root option.
+			if cliAncestorIsSet(ctx, option, 2) {
+				dir = cliAncestorString(ctx, option, 2)
 				dirSet = true
 			}
 		}
@@ -140,7 +140,7 @@ func newConfigDirFromCtx(ctx *cli.Context, option string, getDefaultDir func() s
 		logger.FatalIf(errors.New("empty directory"), "%s directory cannot be empty", option)
 	}
 
-	// Disallow relative paths, figure out absolute paths.
+	// Resolve relative directories against the working directory.
 	dirAbs, err := filepath.Abs(dir)
 	logger.FatalIf(err, "Unable to fetch absolute path for %s=%s", option, dir)
 
@@ -149,48 +149,48 @@ func newConfigDirFromCtx(ctx *cli.Context, option string, getDefaultDir func() s
 	return &ConfigDir{path: dirAbs}, dirSet
 }
 
-func handleCommonCmdArgs(ctx *cli.Context) {
+func handleCommonCmdArgs(ctx *cli.Command) {
 
 	// Get "json" flag from command line argument and
 	// enable json and quite modes if json flag is turned on.
-	globalCLIContext.JSON = ctx.IsSet("json") || ctx.GlobalIsSet("json")
+	globalCLIContext.JSON = ctx.IsSet("json") || cliParentIsSet(ctx, "json")
 	if globalCLIContext.JSON {
 		logger.EnableJSON()
 	}
 
 	// Get quiet flag from command line argument.
-	globalCLIContext.Quiet = ctx.IsSet("quiet") || ctx.GlobalIsSet("quiet")
+	globalCLIContext.Quiet = ctx.IsSet("quiet") || cliParentIsSet(ctx, "quiet")
 	if globalCLIContext.Quiet {
 		logger.EnableQuiet()
 	}
 
 	// Get anonymous flag from command line argument.
-	globalCLIContext.Anonymous = ctx.IsSet("anonymous") || ctx.GlobalIsSet("anonymous")
+	globalCLIContext.Anonymous = ctx.IsSet("anonymous") || cliParentIsSet(ctx, "anonymous")
 	if globalCLIContext.Anonymous {
 		logger.EnableAnonymous()
 	}
 
 	// Fetch address option
-	globalCLIContext.Addr = ctx.GlobalString("address")
+	globalCLIContext.Addr = cliParentString(ctx, "address")
 	if globalCLIContext.Addr == "" || globalCLIContext.Addr == ":"+GlobalOtterioDefaultPort {
 		globalCLIContext.Addr = ctx.String("address")
 	}
 
 	// Fetch optional console-address option (server command only).
-	globalCLIContext.ConsoleAddr = ctx.GlobalString("console-address")
+	globalCLIContext.ConsoleAddr = cliParentString(ctx, "console-address")
 	if globalCLIContext.ConsoleAddr == "" {
 		globalCLIContext.ConsoleAddr = ctx.String("console-address")
 	}
 
 	// Fetch optional console-certs-dir option (server command only).
-	globalCLIContext.ConsoleCertsDir = ctx.GlobalString("console-certs-dir")
+	globalCLIContext.ConsoleCertsDir = cliParentString(ctx, "console-certs-dir")
 	if globalCLIContext.ConsoleCertsDir == "" {
 		globalCLIContext.ConsoleCertsDir = ctx.String("console-certs-dir")
 	}
 
 	// Check "no-compat" flag from command line argument.
 	globalCLIContext.StrictS3Compat = true
-	if ctx.IsSet("no-compat") || ctx.GlobalIsSet("no-compat") {
+	if ctx.IsSet("no-compat") || cliParentIsSet(ctx, "no-compat") {
 		globalCLIContext.StrictS3Compat = false
 	}
 

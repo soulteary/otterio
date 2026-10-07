@@ -89,7 +89,7 @@ func TestDarwinRestartSupervisor(t *testing.T) {
 				}
 				deadline = time.Now().Add(5 * time.Second)
 				for {
-					if _, err := os.Stat(filepath.Join(root, "signal")); err == nil {
+					if data, err := os.ReadFile(filepath.Join(root, "signal")); err == nil && len(data) > 0 {
 						break
 					}
 					if time.Now().After(deadline) {

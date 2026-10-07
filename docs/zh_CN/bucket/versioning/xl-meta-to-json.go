@@ -18,24 +18,31 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
-	"github.com/minio/cli"
 	"github.com/tinylib/msgp/msgp"
+	"github.com/urfave/cli/v3"
+
+	"github.com/soulteary/otterio/internal/clisupport"
 )
 
 var xlHeader = [4]byte{'X', 'L', '2', ' '}
 
 func main() {
-	app := cli.NewApp()
+	clisupport.Install()
+	stopAfterFirstArgument := 1
+	app := &cli.Command{Name: filepath.Base(os.Args[0]), StopOnNthArg: &stopAfterFirstArgument}
 	app.Copyright = "MinIO, Inc."
 	app.Usage = "xl.meta to JSON"
 	app.HideVersion = true
-	app.CustomAppHelpTemplate = `NAME:
+	app.CustomRootCommandHelpTemplate = `NAME:
   {{.Name}} - {{.Usage}}
 
 USAGE:
@@ -49,18 +56,19 @@ GLOBAL FLAGS:
 	app.HideHelpCommand = true
 
 	app.Flags = []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Usage: "Print each file as a separate line without formatting",
 			Name:  "ndjson",
 		},
 	}
 
-	app.Action = func(c *cli.Context) error {
-		if !c.Args().Present() {
+	clisupport.Configure(app)
+	app.Action = func(_ context.Context, c *cli.Command) error {
+		if c.Args().Len() == 0 {
 			cli.ShowAppHelp(c)
 			return nil
 		}
-		for _, file := range c.Args() {
+		for _, file := range c.Args().Slice() {
 			var r io.Reader
 			switch file {
 			case "-":
@@ -114,8 +122,12 @@ GLOBAL FLAGS:
 		}
 		return nil
 	}
-	err := app.Run(os.Args)
+	err := clisupport.Run(context.Background(), app, os.Args)
 	if err != nil {
+		var exit cli.ExitCoder
+		if errors.As(err, &exit) && exit.ExitCode() == 0 {
+			return
+		}
 		log.Fatal(err)
 	}
 }
