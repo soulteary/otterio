@@ -31,6 +31,12 @@ class DependencyVersionTests(unittest.TestCase):
         self.assertIn("bun install --frozen-lockfile", workflow)
         self.assertIn("git diff --exit-code -- production", workflow)
 
+    def test_mint_sdk_pin_matches_server(self):
+        sdk = "github.com/soulteary/otterio-sdk/v7"
+        server = re.search(re.escape(sdk) + r" (v\S+)", self.mod)[1]
+        mint = (ROOT / "mint/run/core/minio-go/go.mod").read_text(encoding="utf-8")
+        self.assertEqual(re.search(re.escape(sdk) + r" (v\S+)", mint)[1], server)
+
 
 def validate_go_workflow(text):
     """Check the repository's block-style setup-go steps without extra packages.
