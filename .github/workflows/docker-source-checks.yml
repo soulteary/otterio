@@ -9,6 +9,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: docker-source-checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   local-context:
     runs-on: ubuntu-latest
