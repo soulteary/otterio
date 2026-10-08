@@ -18,7 +18,7 @@ Otterio使用纠删码`erasure code`和`checksum`来保护数据免受硬件故�
 
 ## 什么是位衰减`bit rot`保护?
 
-位衰减又被称为数据腐化`Data Rot`、无声数据损坏`Silent Data Corruption`,是目前硬盘数据的一种严重数据丢失问题。硬盘上的数据可能会神不知鬼不觉就损坏了，也没有什么错误日志。正所谓明枪易躲，暗箭难防，这种背地里犯的错比硬盘直接咔咔宕了还危险。 不过不用怕，Otterio纠删码采用了高速 [HighwayHash](https://github.com/minio/highwayhash) 基于哈希的校验和来防范位衰减。
+位衰减又被称为数据腐化`Data Rot`、无声数据损坏`Silent Data Corruption`,是目前硬盘数据的一种严重数据丢失问题。硬盘上的数据可能会神不知鬼不觉就损坏了，也没有什么错误日志。正所谓明枪易躲，暗箭难防，这种背地里犯的错比硬盘直接咔咔宕了还危险。 不过不用怕，Otterio纠删码采用了高速 [HighwayHash](https://github.com/soulteary/otterio-kits/highwayhash) 基于哈希的校验和来防范位衰减。
 
 ## 驱动器（盘）如何使用纠删码?
 

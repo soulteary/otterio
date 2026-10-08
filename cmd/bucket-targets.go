@@ -27,9 +27,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	otterio "github.com/minio/minio-go/v7"
-	otteriogo "github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	otterio "github.com/soulteary/otterio-sdk/v7"
+	otteriogo "github.com/soulteary/otterio-sdk/v7"
+	"github.com/soulteary/otterio-sdk/v7/pkg/credentials"
 	"github.com/soulteary/otterio/cmd/crypto"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/bucket/versioning"

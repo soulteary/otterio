@@ -24,7 +24,7 @@ import (
 	"sync/atomic"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/config/dns"
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"

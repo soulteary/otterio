@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/bcicen/jstream"
-	"github.com/minio/simdjson-go"
+	"github.com/soulteary/otterio-kits/simdjson-go"
 )
 
 var (

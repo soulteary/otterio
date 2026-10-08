@@ -24,7 +24,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	parquet "github.com/soulteary/otterio/pkg/s3select/internal/parquet-go"
 )
 

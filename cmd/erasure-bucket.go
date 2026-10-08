@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/minio/minio-go/v7/pkg/s3utils"
+	"github.com/soulteary/otterio-sdk/v7/pkg/s3utils"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/sync/errgroup"
 )

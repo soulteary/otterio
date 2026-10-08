@@ -29,7 +29,7 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/config"
 	"github.com/soulteary/otterio/cmd/config/api"
 	"github.com/soulteary/otterio/pkg/certs"

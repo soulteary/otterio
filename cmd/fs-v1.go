@@ -33,8 +33,8 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/minio/minio-go/v7/pkg/s3utils"
-	"github.com/minio/minio-go/v7/pkg/tags"
+	"github.com/soulteary/otterio-sdk/v7/pkg/s3utils"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	"github.com/soulteary/otterio/cmd/config"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	otteriogo "github.com/minio/minio-go/v7"
+	otteriogo "github.com/soulteary/otterio-sdk/v7"
 	"github.com/soulteary/otterio/pkg/hash"
 
 	otterio "github.com/soulteary/otterio/cmd"

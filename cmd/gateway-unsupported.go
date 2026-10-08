@@ -22,7 +22,7 @@ import (
 
 	"github.com/soulteary/otterio/cmd/logger"
 
-	"github.com/minio/minio-go/v7/pkg/tags"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	bucketsse "github.com/soulteary/otterio/pkg/bucket/encryption"
 	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
 	"github.com/soulteary/otterio/pkg/bucket/policy"

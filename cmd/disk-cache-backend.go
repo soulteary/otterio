@@ -33,7 +33,7 @@ import (
 	"time"
 
 	"github.com/djherbis/atime"
-	"github.com/minio/sio"
+	"github.com/soulteary/otterio-kits/sio"
 	"github.com/soulteary/otterio/cmd/config/cache"
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"

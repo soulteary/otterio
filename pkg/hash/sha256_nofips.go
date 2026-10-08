@@ -21,7 +21,7 @@ package hash
 import (
 	"hash"
 
-	sha256 "github.com/minio/sha256-simd"
+	sha256 "github.com/soulteary/otterio-kits/sha256-simd"
 )
 
 // newSHA256 returns a new hash.Hash computing the SHA256 checksum.

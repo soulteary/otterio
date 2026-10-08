@@ -31,7 +31,7 @@ import (
 	"unicode/utf8"
 
 	jwtgo "github.com/dgrijalva/jwt-go"
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/config/identity/ldap"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/auth"

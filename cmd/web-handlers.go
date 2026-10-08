@@ -35,10 +35,10 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zip"
-	otterio "github.com/minio/minio-go/v7"
-	otteriogo "github.com/minio/minio-go/v7"
-	otteriogopolicy "github.com/minio/minio-go/v7/pkg/policy"
-	"github.com/minio/minio-go/v7/pkg/s3utils"
+	otterio "github.com/soulteary/otterio-sdk/v7"
+	otteriogo "github.com/soulteary/otterio-sdk/v7"
+	otteriogopolicy "github.com/soulteary/otterio-sdk/v7/pkg/policy"
+	"github.com/soulteary/otterio-sdk/v7/pkg/s3utils"
 
 	"github.com/soulteary/otterio/cmd/config/dns"
 	"github.com/soulteary/otterio/cmd/config/identity/openid"

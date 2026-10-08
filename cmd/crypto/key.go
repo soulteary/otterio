@@ -25,7 +25,7 @@ import (
 	"io"
 	"path"
 
-	"github.com/minio/sio"
+	"github.com/soulteary/otterio-kits/sio"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/fips"
 )

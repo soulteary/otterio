@@ -25,7 +25,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/config"
 	"github.com/soulteary/otterio/cmd/logger"
 	xnet "github.com/soulteary/otterio/pkg/net"

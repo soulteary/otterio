@@ -22,7 +22,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/minio/sio"
+	"github.com/soulteary/otterio-kits/sio"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/fips"
 	"github.com/soulteary/otterio/pkg/ioutil"

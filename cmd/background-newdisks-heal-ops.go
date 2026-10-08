@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/color"
 	"github.com/soulteary/otterio/pkg/console"

@@ -30,7 +30,7 @@ import (
 	"github.com/soulteary/otterio/pkg/hash"
 	xnet "github.com/soulteary/otterio/pkg/net"
 
-	otterio "github.com/minio/minio-go/v7"
+	otterio "github.com/soulteary/otterio-sdk/v7"
 )
 
 var (

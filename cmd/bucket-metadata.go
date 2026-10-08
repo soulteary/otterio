@@ -28,8 +28,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/minio/minio-go/v7/pkg/tags"
-	"github.com/minio/sio"
+	"github.com/soulteary/otterio-kits/sio"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	"github.com/soulteary/otterio/cmd/crypto"
 	"github.com/soulteary/otterio/cmd/logger"
 	bucketsse "github.com/soulteary/otterio/pkg/bucket/encryption"

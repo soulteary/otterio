@@ -34,7 +34,7 @@ import (
 	"github.com/bits-and-blooms/bloom/v3"
 	"github.com/cespare/xxhash/v2"
 	"github.com/klauspost/compress/zip"
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"

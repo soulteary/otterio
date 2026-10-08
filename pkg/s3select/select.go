@@ -29,7 +29,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/minio/simdjson-go"
+	"github.com/soulteary/otterio-kits/simdjson-go"
 	"github.com/soulteary/otterio/pkg/s3select/csv"
 	"github.com/soulteary/otterio/pkg/s3select/json"
 	"github.com/soulteary/otterio/pkg/s3select/parquet"
