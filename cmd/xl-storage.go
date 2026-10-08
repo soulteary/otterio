@@ -866,6 +866,11 @@ func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi F
 	}
 
 	if !isXL2V1Format(buf) {
+		if fi.TransitionStatus != "" {
+			// A legacy directory cannot be removed to mark a transition. Its
+			// metadata must first be migrated by the normal object read path.
+			return errMethodNotAllowed
+		}
 		// Delete the meta file, if there are no more versions the
 		// top level parent is automatically removed.
 		return s.deleteFile(volumeDir, pathJoin(volumeDir, path), true)
@@ -884,6 +889,7 @@ func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi F
 	// transitioned objects maintains metadata on the source cluster. When transition
 	// status is set, update the metadata to disk.
 	if !lastVersion || fi.TransitionStatus != "" {
+		var dataPath string
 		// when data-dir is specified. Transition leverages existing DeleteObject
 		// api call to mark object as deleted. When object is pending transition,
 		// just update the metadata and avoid deleting data dir.
@@ -898,16 +904,9 @@ func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi F
 			// branch
 			xlMeta.data.remove(dataDir)
 
-			filePath := pathJoin(volumeDir, path, dataDir)
-			if err = checkPathLength(filePath); err != nil {
+			dataPath = pathJoin(volumeDir, path, dataDir)
+			if err = checkPathLength(dataPath); err != nil {
 				return err
-			}
-
-			tmpuuid := mustGetUUID()
-			if err = renameAll(filePath, pathutil.Join(s.diskPath, otterioMetaTmpDeletedBucket, tmpuuid)); err != nil {
-				if err != errFileNotFound {
-					return err
-				}
 			}
 		}
 
@@ -916,7 +915,22 @@ func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi F
 			return err
 		}
 
-		return s.WriteAll(ctx, volume, pathJoin(path, xlStorageFormatFile), buf)
+		if fi.TransitionStatus != "" {
+			err = s.writeTransitionMetadata(ctx, volume, path, buf)
+		} else {
+			err = s.WriteAll(ctx, volume, pathJoin(path, xlStorageFormatFile), buf)
+		}
+		if err != nil {
+			return err
+		}
+		// The durable reference is committed before local data is removed.
+		// A failed cleanup leaves a readable remote object and can be retried.
+		if dataPath != "" {
+			if err = renameAll(dataPath, pathutil.Join(s.diskPath, otterioMetaTmpDeletedBucket, mustGetUUID())); err != nil && err != errFileNotFound {
+				return err
+			}
+		}
+		return nil
 	}
 
 	// Move everything to trash.
@@ -933,6 +947,24 @@ func (s *xlStorage) DeleteVersion(ctx context.Context, volume, path string, fi F
 	}
 	s.deleteFile(volumeDir, filePath, false)
 	return err
+}
+
+// writeTransitionMetadata preserves the old metadata (including inline data)
+// when a transition write fails. A truncated xl.meta must never discard the
+// only local copy before the remote reference has been committed.
+func (s *xlStorage) writeTransitionMetadata(ctx context.Context, volume, object string, data []byte) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	temporary := pathJoin(object, ".transition-"+mustGetUUID()+".meta")
+	defer s.Delete(context.Background(), volume, temporary, false)
+	if err := s.WriteAll(ctx, volume, temporary, data); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return s.RenameFile(ctx, volume, temporary, volume, pathJoin(object, xlStorageFormatFile))
 }
 
 // Updates only metadata for a given version.
@@ -976,6 +1008,9 @@ func (s *xlStorage) UpdateMetadata(ctx context.Context, volume, path string, fi 
 		return err
 	}
 
+	if fi.TransitionStatus != "" {
+		return s.writeTransitionMetadata(ctx, volume, path, buf)
+	}
 	return s.WriteAll(ctx, volume, pathJoin(path, xlStorageFormatFile), buf)
 }
 
@@ -1023,6 +1058,9 @@ func (s *xlStorage) WriteMetadata(ctx context.Context, volume, path string, fi F
 		}
 	}
 
+	if fi.TransitionStatus != "" {
+		return s.writeTransitionMetadata(ctx, volume, path, buf)
+	}
 	return s.WriteAll(ctx, volume, pathJoin(path, xlStorageFormatFile), buf)
 }
 

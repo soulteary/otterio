@@ -207,6 +207,12 @@ func registerAdminIAMRoutes(app *fiber.App, verPrefix, adminVersion string, admi
 	registerAdminRoute(app, verPrefix+"/accountinfo", []routeRule{
 		adminRule(http.MethodGet, adminAPI.AccountInfoHandler, false, nil),
 	})
+	if adminVersion == adminAPIVersionPrefix {
+		registerAdminRoute(app, verPrefix+"/self-credentials", []routeRule{
+			adminRule(http.MethodGet, adminAPI.SelfCredentials, false, nil),
+			adminRule(http.MethodPut, adminAPI.SelfCredentials, false, nil),
+		})
+	}
 	registerAdminRoute(app, verPrefix+"/add-user", []routeRule{
 		adminRule(http.MethodPut, adminAPI.AddUser, true, map[string]string{"accessKey": ".*"}),
 	})

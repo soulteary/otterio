@@ -160,10 +160,7 @@ func (a adminAPIHandlers) SetRemoteTargetHandler(w http.ResponseWriter, r *http.
 	}
 
 	target.SourceBucket = bucket
-	if !update {
-		target.Arn = globalBucketTargetSys.getRemoteARN(bucket, &target)
-	}
-	if target.Arn == "" {
+	if update && target.Arn == "" {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErrWithErr(ErrAdminConfigBadJSON, err), r.URL)
 		return
 	}
@@ -175,20 +172,6 @@ func (a adminAPIHandlers) SetRemoteTargetHandler(w http.ResponseWriter, r *http.
 		default:
 			writeErrorResponseJSON(ctx, w, toAPIError(ctx, err), r.URL)
 		}
-		return
-	}
-	targets, err := globalBucketTargetSys.ListBucketTargets(ctx, bucket)
-	if err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
-		return
-	}
-	tgtBytes, err := json.Marshal(&targets)
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErrWithErr(ErrAdminConfigBadJSON, err), r.URL)
-		return
-	}
-	if err = globalBucketMetadataSys.Update(bucket, bucketTargetsFile, tgtBytes); err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
 
@@ -224,6 +207,11 @@ func (a adminAPIHandlers) ListRemoteTargetsHandler(w http.ResponseWriter, r *htt
 		if _, err := objectAPI.GetBucketInfo(ctx, bucket); err != nil {
 			writeErrorResponseJSON(ctx, w, toAPIError(ctx, err), r.URL)
 			return
+		}
+		// Advertise only after authentication and bucket validation. A newly
+		// created bucket may have no target configuration yet.
+		if lifecycleTransitionSupported(objectAPI) {
+			w.Header().Set("X-Otterio-Lifecycle-Transition", "v1")
 		}
 		if _, err := globalBucketMetadataSys.GetBucketTargetsConfig(bucket); err != nil {
 			writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
@@ -267,20 +255,6 @@ func (a adminAPIHandlers) RemoveRemoteTargetHandler(w http.ResponseWriter, r *ht
 
 	if err := globalBucketTargetSys.RemoveTarget(ctx, bucket, arn); err != nil {
 		writeErrorResponseJSON(ctx, w, toAPIError(ctx, err), r.URL)
-		return
-	}
-	targets, err := globalBucketTargetSys.ListBucketTargets(ctx, bucket)
-	if err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
-		return
-	}
-	tgtBytes, err := json.Marshal(&targets)
-	if err != nil {
-		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErrWithErr(ErrAdminConfigBadJSON, err), r.URL)
-		return
-	}
-	if err = globalBucketMetadataSys.Update(bucket, bucketTargetsFile, tgtBytes); err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
 

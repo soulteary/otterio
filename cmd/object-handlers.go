@@ -19,13 +19,13 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"os"
 	"sort"
@@ -3271,15 +3271,12 @@ func (api objectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		deleteObject = api.CacheAPI().DeleteObject
 	}
 
-	// http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectDELETE.html
+	// The backend removes remote data before releasing its durable source
+	// reference. Propagate remote failures so clients can retry safely.
 	objInfo, err := deleteObject(ctx, bucket, object, opts)
-	if err != nil {
-		switch err.(type) {
-		case BucketNotFound:
-			// When bucket doesn't exist specially handle it.
-			writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
-			return
-		}
+	if err != nil && !isErrObjectNotFound(err) && !isErrVersionNotFound(err) {
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
 	}
 
 	if objInfo.Name == "" {
@@ -3329,16 +3326,6 @@ func (api objectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		scheduleReplicationDelete(ctx, dobj, objectAPI, replicateSync)
 	}
 
-	if goi.TransitionStatus == lifecycle.TransitionComplete { // clean up transitioned tier
-		deleteTransitionedObject(ctx, objectAPI, bucket, object, lifecycle.ObjectOpts{
-			Name:             object,
-			UserTags:         goi.UserTags,
-			VersionID:        goi.VersionID,
-			DeleteMarker:     goi.DeleteMarker,
-			TransitionStatus: goi.TransitionStatus,
-			IsLatest:         goi.IsLatest,
-		}, false, true)
-	}
 }
 
 // PutObjectLegalHoldHandler - set legal hold configuration to object,
@@ -3916,7 +3903,12 @@ func (api objectAPIHandlers) PostRestoreObjectHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	objInfo, err := getObjectInfo(ctx, bucket, object, ObjectOptions{})
+	opts, err := getOpts(ctx, r, bucket, object)
+	if err != nil {
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+	objInfo, err := getObjectInfo(ctx, bucket, object, opts)
 	if err != nil {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
@@ -3927,7 +3919,12 @@ func (api objectAPIHandlers) PostRestoreObjectHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	rreq, err := parseRestoreRequest(io.LimitReader(r.Body, r.ContentLength))
+	restoreData, err := readConfigurationBody(ctx, r, maxRestoreObjectRequestSize)
+	if err != nil {
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+	rreq, err := parseRestoreRequest(bytes.NewReader(restoreData))
 	if err != nil {
 		apiErr := errorCodes.ToAPIErr(ErrMalformedXML)
 		apiErr.Description = err.Error()
@@ -3935,129 +3932,48 @@ func (api objectAPIHandlers) PostRestoreObjectHandler(w http.ResponseWriter, r *
 		return
 	}
 	// validate the request
+	if rreq.Type == SelectRestoreRequest {
+		writeErrorResponse(ctx, w, toAPIError(ctx, NotImplemented{Message: "SELECT restore output persistence is not implemented"}), r.URL, guessIsBrowserReq(r))
+		return
+	}
 	if err := rreq.validate(ctx, objectAPI); err != nil {
 		apiErr := errorCodes.ToAPIErr(ErrMalformedXML)
 		apiErr.Description = err.Error()
 		writeErrorResponse(ctx, w, apiErr, r.URL, guessIsBrowserReq(r))
 		return
 	}
-	statusCode := http.StatusOK
-	alreadyRestored := false
-	if err == nil {
-		if objInfo.RestoreOngoing && rreq.Type != SelectRestoreRequest {
-			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrObjectRestoreAlreadyInProgress), r.URL, guessIsBrowserReq(r))
-			return
-		}
-		if !objInfo.RestoreOngoing && !objInfo.RestoreExpires.IsZero() {
-			statusCode = http.StatusAccepted
-			alreadyRestored = true
-		}
-	}
-	// set or upgrade restore expiry
+	statusCode := http.StatusAccepted
 	restoreExpiry := lifecycle.ExpectedExpiryTime(time.Now(), rreq.Days)
-	metadata := cloneMSS(objInfo.UserDefined)
-
-	// update self with restore metadata
-	if rreq.Type != SelectRestoreRequest {
-		objInfo.metadataOnly = true // Perform only metadata updates.
-		ongoingReq := true
-		if alreadyRestored {
-			ongoingReq = false
-		}
-		metadata[xhttp.AmzRestoreExpiryDays] = strconv.Itoa(rreq.Days)
-		metadata[xhttp.AmzRestoreRequestDate] = time.Now().UTC().Format(http.TimeFormat)
-		if alreadyRestored {
-			metadata[xhttp.AmzRestore] = fmt.Sprintf("ongoing-request=%t, expiry-date=%s", ongoingReq, restoreExpiry.Format(http.TimeFormat))
-		} else {
-			metadata[xhttp.AmzRestore] = fmt.Sprintf("ongoing-request=%t", ongoingReq)
-		}
-		objInfo.UserDefined = metadata
-		if _, err := objectAPI.CopyObject(GlobalContext, bucket, object, bucket, object, objInfo, ObjectOptions{
-			VersionID: objInfo.VersionID,
-		}, ObjectOptions{
-			VersionID: objInfo.VersionID,
-		}); err != nil {
-			logger.LogIf(ctx, fmt.Errorf("Unable to update replication metadata for %s: %s", objInfo.VersionID, err))
-			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrInvalidObjectState), r.URL, guessIsBrowserReq(r))
+	{
+		var alreadyRestored bool
+		objInfo, alreadyRestored, err = beginTransitionRestore(ctx, objectAPI, bucket, object, objInfo, rreq.Days)
+		if err != nil {
+			if err == errTransitionRestoreInProgress {
+				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrObjectRestoreAlreadyInProgress), r.URL, guessIsBrowserReq(r))
+			} else {
+				writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+			}
 			return
 		}
-		// for previously restored object, just update the restore expiry
 		if alreadyRestored {
+			writeSuccessResponseHeadersOnly(w)
 			return
 		}
 	}
 
-	restoreObject := mustGetUUID()
-	if rreq.OutputLocation.S3.BucketName != "" {
-		w.Header()[xhttp.AmzRestoreOutputPath] = []string{pathJoin(rreq.OutputLocation.S3.BucketName, rreq.OutputLocation.S3.Prefix, restoreObject)}
+	restoreEvent := eventArgs{
+		BucketName: bucket, ReqParams: extractReqParams(r), RespElements: extractRespElements(w),
+		UserAgent: r.UserAgent(), Host: handlers.GetSourceIP(r),
 	}
+	restoreContext := withTransitionRestoreEvent(GlobalContext, restoreEvent)
 	w.WriteHeader(statusCode)
 	// Notify object restore started via a POST request.
-	sendEvent(eventArgs{
-		EventName:  event.ObjectRestorePostInitiated,
-		BucketName: bucket,
-		Object:     objInfo,
-		ReqParams:  extractReqParams(r),
-		UserAgent:  r.UserAgent(),
-		Host:       handlers.GetSourceIP(r),
-	})
+	restoreEvent.EventName, restoreEvent.Object = event.ObjectRestorePostInitiated, objInfo
+	sendEvent(restoreEvent)
 	// now process the restore in background
 	go func() {
-		rctx := GlobalContext
-		if !rreq.SelectParameters.IsEmpty() {
-			getObject := func(offset, length int64) (rc io.ReadCloser, err error) {
-				isSuffixLength := false
-				if offset < 0 {
-					isSuffixLength = true
-				}
-
-				rs := &HTTPRangeSpec{
-					IsSuffixLength: isSuffixLength,
-					Start:          offset,
-					End:            offset + length,
-				}
-
-				return getTransitionedObjectReader(rctx, bucket, object, rs, r.Header, objInfo, ObjectOptions{
-					VersionID: objInfo.VersionID,
-				})
-			}
-			if err = rreq.SelectParameters.Open(getObject); err != nil {
-				if serr, ok := err.(s3select.SelectError); ok {
-					encodedErrorResponse := encodeResponse(APIErrorResponse{
-						Code:       serr.ErrorCode(),
-						Message:    serr.ErrorMessage(),
-						BucketName: bucket,
-						Key:        object,
-						Resource:   r.URL.Path,
-						RequestID:  w.Header().Get(xhttp.AmzRequestID),
-						HostID:     globalDeploymentID,
-					})
-					writeResponse(w, serr.HTTPStatusCode(), encodedErrorResponse, mimeXML)
-				} else {
-					writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
-				}
-				return
-			}
-			nr := httptest.NewRecorder()
-			rw := logger.NewResponseWriter(nr)
-			rw.LogErrBody = true
-			rw.LogAllBody = true
-			rreq.SelectParameters.Evaluate(rw)
-			rreq.SelectParameters.Close()
-			return
+		if err := restoreTransitionedObject(restoreContext, bucket, object, objectAPI, objInfo, rreq, restoreExpiry); err != nil {
+			logger.LogIf(restoreContext, err)
 		}
-		if err := restoreTransitionedObject(rctx, bucket, object, objectAPI, objInfo, rreq, restoreExpiry); err != nil {
-			return
-		}
-
-		// Notify object restore completed via a POST request.
-		sendEvent(eventArgs{
-			EventName:  event.ObjectRestorePostCompleted,
-			BucketName: bucket,
-			Object:     objInfo,
-			ReqParams:  extractReqParams(r),
-			UserAgent:  r.UserAgent(),
-			Host:       handlers.GetSourceIP(r),
-		})
 	}()
 }

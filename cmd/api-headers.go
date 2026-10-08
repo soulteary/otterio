@@ -203,9 +203,10 @@ func setObjectHeaders(w http.ResponseWriter, objInfo ObjectInfo, rs *HTTPRangeSp
 				}
 			}
 		}
-		if objInfo.TransitionStatus == lifecycle.TransitionComplete {
-			w.Header()[xhttp.AmzStorageClass] = []string{objInfo.StorageClass}
-		}
+	}
+	// A persisted tier survives the rule that originally selected it.
+	if objInfo.TransitionStatus == lifecycle.TransitionComplete {
+		w.Header().Set(xhttp.AmzStorageClass, objInfo.StorageClass)
 	}
 
 	return nil

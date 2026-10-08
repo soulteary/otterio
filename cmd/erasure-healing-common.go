@@ -22,6 +22,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
 	"github.com/soulteary/otterio/pkg/madmin"
 )
 
@@ -257,6 +258,13 @@ func disksWithAllParts(ctx context.Context, onlineDisks []StorageAPI, partsMetad
 				dataErrs[i] = errFileCorrupt
 				continue
 			}
+		}
+
+		if meta.TransitionStatus == lifecycle.TransitionComplete && !transitionHasLocalData(meta) {
+			// The local shards were deliberately removed after a durable tier
+			// commit. Their absence is not corruption or a dangling object.
+			availableDisks[i] = onlineDisk
+			continue
 		}
 
 		// Always check data, if we got it.

@@ -65,6 +65,9 @@ func (api objectAPIHandlers) PutBucketLifecycleHandler(w http.ResponseWriter, r 
 		return
 	}
 
+	if !prepareConditionalBucketConfiguration(ctx, w, r, bucketLifecycleConfig) {
+		return
+	}
 	bucketLifecycle, err := lifecycle.ParseLifecycleConfig(io.LimitReader(r.Body, r.ContentLength))
 	if err != nil {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
@@ -78,6 +81,13 @@ func (api objectAPIHandlers) PutBucketLifecycleHandler(w http.ResponseWriter, r 
 	}
 
 	// Validate the transition storage ARNs
+	targetLock := lifecycleTargetLock(objAPI, bucket)
+	ctx, err = targetLock.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+	defer targetLock.Unlock()
 	if err = validateLifecycleTransition(ctx, bucket, bucketLifecycle); err != nil {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
@@ -89,8 +99,7 @@ func (api objectAPIHandlers) PutBucketLifecycleHandler(w http.ResponseWriter, r 
 		return
 	}
 
-	if err = globalBucketMetadataSys.Update(bucket, bucketLifecycleConfig, configData); err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+	if !updateBucketConfiguration(ctx, w, r, bucket, bucketLifecycleConfig, configData) {
 		return
 	}
 
@@ -120,6 +129,10 @@ func (api objectAPIHandlers) GetBucketLifecycleHandler(w http.ResponseWriter, r 
 	// Check if bucket exists.
 	if _, err := objAPI.GetBucketInfo(ctx, bucket); err != nil {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+
+	if writeFreshBucketConfiguration(ctx, w, r, bucket, bucketLifecycleConfig) {
 		return
 	}
 
@@ -164,8 +177,17 @@ func (api objectAPIHandlers) DeleteBucketLifecycleHandler(w http.ResponseWriter,
 		return
 	}
 
-	if err := globalBucketMetadataSys.Update(bucket, bucketLifecycleConfig, nil); err != nil {
+	if !prepareConditionalBucketConfiguration(ctx, w, r, bucketLifecycleConfig) {
+		return
+	}
+	targetLock := lifecycleTargetLock(objAPI, bucket)
+	ctx, err := targetLock.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+	defer targetLock.Unlock()
+	if !updateBucketConfiguration(ctx, w, r, bucket, bucketLifecycleConfig, nil) {
 		return
 	}
 

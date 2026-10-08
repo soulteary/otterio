@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -27,6 +28,7 @@ import (
 
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
 	"github.com/soulteary/otterio/pkg/bucket/replication"
 	"github.com/soulteary/otterio/pkg/sync/errgroup"
 )
@@ -170,6 +172,7 @@ func (fi FileInfo) ToObjectInfo(bucket, object string) ObjectInfo {
 	}
 
 	objInfo.TransitionStatus = fi.TransitionStatus
+	objInfo.TransitionedObject = parseTransitionedObject(fi.Metadata)
 
 	// etag/md5Sum has already been extracted. We need to
 	// remove to avoid it from appearing as part of
@@ -179,12 +182,22 @@ func (fi FileInfo) ToObjectInfo(bucket, object string) ObjectInfo {
 
 	// All the parts per object.
 	objInfo.Parts = fi.Parts
+	if fi.TransitionStatus == lifecycle.TransitionComplete {
+		if parts := parseTransitionRestoreParts(fi.Metadata); parts != nil {
+			objInfo.Parts = parts
+		}
+	}
 
 	// Update storage class
 	if sc, ok := fi.Metadata[xhttp.AmzStorageClass]; ok {
 		objInfo.StorageClass = sc
 	} else {
 		objInfo.StorageClass = globalOtterioDefaultStorageClass
+	}
+	// GET readers and metadata-only callers must both use the class bound to
+	// this completed transition, even after its lifecycle rule is removed.
+	if !fi.Deleted && fi.TransitionStatus == lifecycle.TransitionComplete && objInfo.TransitionedObject != nil && objInfo.TransitionedObject.StorageClass != "" {
+		objInfo.StorageClass = objInfo.TransitionedObject.StorageClass
 	}
 	objInfo.VersionPurgeStatus = fi.VersionPurgeStatus
 	// set restore status for transitioned object
@@ -261,8 +274,24 @@ func findFileInfoInQuorum(_ context.Context, metaArr []FileInfo, modTime time.Ti
 				h.Write([]byte(fmt.Sprintf("part.%d", part.Number)))
 			}
 			h.Write([]byte(fmt.Sprintf("%v", meta.Erasure.Distribution)))
-			// make sure that length of Data is same
-			h.Write([]byte(fmt.Sprintf("%v", len(meta.Data))))
+			// Local readers require matching inline shard sizes. A completed
+			// remote version remains readable while per-disk cleanup removes
+			// those obsolete bytes at different times.
+			if transitionHasLocalData(meta) {
+				h.Write([]byte(fmt.Sprintf("%v", len(meta.Data))))
+			}
+			// Metadata-only updates retain the source modtime and data directory.
+			// Tags, encryption keys and the tier destination must nevertheless
+			// describe the same snapshot at read quorum. JSON sorts map keys and
+			// unambiguously frames their values, independent of iteration order.
+			h.Write([]byte(meta.TransitionStatus))
+			h.Write([]byte{0})
+			metadata, err := json.Marshal(meta.Metadata)
+			if err != nil {
+				h.Reset()
+				continue
+			}
+			h.Write(metadata)
 			metaHashes[i] = hex.EncodeToString(h.Sum(nil))
 			h.Reset()
 		}

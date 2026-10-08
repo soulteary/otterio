@@ -265,13 +265,31 @@ func setPutObjHeaders(w http.ResponseWriter, objInfo ObjectInfo, isDelete bool) 
 
 	if objInfo.Bucket != "" && objInfo.Name != "" {
 		if lc, err := globalLifecycleSys.Get(objInfo.Bucket); err == nil && !isDelete {
+			if objInfo.VersionID != "" && !objInfo.IsLatest && objInfo.SuccessorModTime.IsZero() {
+				// Write results may omit their position in the version history.
+				// Read the exact committed version before predicting expiration;
+				// a missing successor is not evidence that it is noncurrent.
+				objAPI := newObjectLayerFn()
+				if objAPI == nil {
+					return
+				}
+				ctx, cancel := context.WithTimeout(GlobalContext, 5*time.Second)
+				fresh, err := objAPI.GetObjectInfo(ctx, objInfo.Bucket, objInfo.Name, ObjectOptions{VersionID: objInfo.VersionID})
+				cancel()
+				if err != nil || !sameTransitionSource(fresh, &objInfo) {
+					return
+				}
+				objInfo.IsLatest, objInfo.NumVersions, objInfo.SuccessorModTime = fresh.IsLatest, fresh.NumVersions, fresh.SuccessorModTime
+			}
 			ruleID, expiryTime := lc.PredictExpiryTime(lifecycle.ObjectOpts{
-				Name:         objInfo.Name,
-				UserTags:     objInfo.UserTags,
-				VersionID:    objInfo.VersionID,
-				ModTime:      objInfo.ModTime,
-				IsLatest:     objInfo.IsLatest,
-				DeleteMarker: objInfo.DeleteMarker,
+				Name:             objInfo.Name,
+				UserTags:         objInfo.UserTags,
+				VersionID:        objInfo.VersionID,
+				ModTime:          objInfo.ModTime,
+				IsLatest:         objInfo.IsLatest,
+				DeleteMarker:     objInfo.DeleteMarker,
+				NumVersions:      objInfo.NumVersions,
+				SuccessorModTime: objInfo.SuccessorModTime,
 			})
 			if !expiryTime.IsZero() {
 				w.Header()[xhttp.AmzExpiration] = []string{

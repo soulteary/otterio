@@ -51,6 +51,9 @@ type ObjectOptions struct {
 	DeleteMarkerReplicationStatus string                                                // Is only set in DELETE operations
 	VersionPurgeStatus            VersionPurgeStatusType                                // Is only set in DELETE operations for delete marker version to be permanently deleted.
 	TransitionStatus              string                                                // status of the transition
+	TransitionedObject            *TransitionedObject                                   // persisted identity of the object on the transition tier
+	TransitionExpected            *ObjectInfo                                           // source identity checked while holding the object write lock
+	TransitionRestore             *ObjectInfo                                           // original logical parts when restoring raw transitioned data
 	NoLock                        bool                                                  // indicates to lower layers if the caller is expecting to hold locks.
 	RequireNewObject              bool                                                  // If-None-Match: *; evaluated while holding the destination write lock.
 	ProxyRequest                  bool                                                  // only set for GET/HEAD in active-active replication scenario

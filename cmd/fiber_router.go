@@ -184,6 +184,8 @@ func newFiberApp() *fiber.App {
 		// wires the body to this stream when available.
 		StreamRequestBody: true,
 	})
+	app.Server().HeaderReceived = configurationRequestConfig
+	app.Use(configurationReadDeadlineFiber)
 	return app
 }
 

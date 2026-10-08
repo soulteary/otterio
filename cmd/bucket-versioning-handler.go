@@ -55,11 +55,21 @@ func (api objectAPIHandlers) PutBucketVersioningHandler(w http.ResponseWriter, r
 		return
 	}
 
+	if !prepareConditionalBucketConfiguration(ctx, w, r, bucketVersioningConfig) {
+		return
+	}
 	v, err := versioning.ParseConfig(io.LimitReader(r.Body, maxBucketVersioningConfigSize))
 	if err != nil {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}
+	targetLock := lifecycleTargetLock(objectAPI, bucket)
+	ctx, err = targetLock.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+	defer targetLock.Unlock()
 
 	if rcfg, _ := globalBucketObjectLockSys.Get(bucket); rcfg.LockEnabled && v.Suspended() {
 		writeErrorResponse(ctx, w, APIError{
@@ -84,8 +94,7 @@ func (api objectAPIHandlers) PutBucketVersioningHandler(w http.ResponseWriter, r
 		return
 	}
 
-	if err = globalBucketMetadataSys.Update(bucket, bucketVersioningConfig, configData); err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+	if !updateBucketConfiguration(ctx, w, r, bucket, bucketVersioningConfig, configData) {
 		return
 	}
 
@@ -115,6 +124,10 @@ func (api objectAPIHandlers) GetBucketVersioningHandler(w http.ResponseWriter, r
 	// Check if bucket exists.
 	if _, err := objectAPI.GetBucketInfo(ctx, bucket); err != nil {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+
+	if writeFreshBucketConfiguration(ctx, w, r, bucket, bucketVersioningConfig) {
 		return
 	}
 

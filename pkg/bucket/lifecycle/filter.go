@@ -19,6 +19,9 @@ package lifecycle
 import (
 	"encoding/xml"
 	"io"
+	"net/url"
+	"strings"
+	"unicode/utf8"
 )
 
 var (
@@ -37,8 +40,6 @@ type Filter struct {
 
 	Tag    Tag
 	tagSet bool
-	// Caching tags, only once
-	cachedTags []string
 }
 
 // MarshalXML - produces the xml representation of the Filter struct
@@ -152,26 +153,37 @@ func (f Filter) Validate() error {
 // TestTags tests if the object tags satisfy the Filter tags requirement,
 // it returns true if there is no tags in the underlying Filter.
 func (f Filter) TestTags(tags []string) bool {
-	if f.cachedTags == nil {
-		tags := make([]string, 0)
-		for _, t := range append(f.And.Tags, f.Tag) {
-			if !t.IsEmpty() {
-				tags = append(tags, t.String())
-			}
-		}
-		f.cachedTags = tags
+	if len(f.And.Tags) == 0 && f.Tag.IsEmpty() {
+		return true
 	}
-	for _, ct := range f.cachedTags {
-		foundTag := false
-		for _, t := range tags {
-			if ct == t {
-				foundTag = true
-				break
-			}
-		}
-		if !foundTag {
+	for _, tag := range tags {
+		if !strings.Contains(tag, "=") {
 			return false
 		}
 	}
-	return true
+	// Object tags use the URL-encoded x-amz-tagging representation. Decode
+	// keys/values instead of comparing an encoded pair with a raw XML value.
+	// Refuse malformed or ambiguous input rather than broadening a filter.
+	values, err := url.ParseQuery(strings.Join(tags, "&"))
+	if err != nil {
+		return false
+	}
+	for key, value := range values {
+		if key == "" || !utf8.ValidString(key) || len(value) != 1 || !utf8.ValidString(value[0]) {
+			return false
+		}
+	}
+	matches := func(tag Tag) bool {
+		if tag.IsEmpty() {
+			return true
+		}
+		value, found := values[tag.Key]
+		return found && value[0] == tag.Value
+	}
+	for _, tag := range f.And.Tags {
+		if !matches(tag) {
+			return false
+		}
+	}
+	return matches(f.Tag)
 }

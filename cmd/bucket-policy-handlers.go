@@ -73,6 +73,9 @@ func (api objectAPIHandlers) PutBucketPolicyHandler(w http.ResponseWriter, r *ht
 		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPolicyTooLarge), r.URL, guessIsBrowserReq(r))
 		return
 	}
+	if !prepareConditionalBucketConfiguration(ctx, w, r, bucketPolicyConfig) {
+		return
+	}
 
 	bucketPolicy, err := policy.ParseConfig(io.LimitReader(r.Body, r.ContentLength), bucket)
 	if err != nil {
@@ -92,8 +95,7 @@ func (api objectAPIHandlers) PutBucketPolicyHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if err = globalBucketMetadataSys.Update(bucket, bucketPolicyConfig, configData); err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+	if !updateBucketConfiguration(ctx, w, r, bucket, bucketPolicyConfig, configData) {
 		return
 	}
 
@@ -126,8 +128,10 @@ func (api objectAPIHandlers) DeleteBucketPolicyHandler(w http.ResponseWriter, r 
 		return
 	}
 
-	if err := globalBucketMetadataSys.Update(bucket, bucketPolicyConfig, nil); err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+	if !prepareConditionalBucketConfiguration(ctx, w, r, bucketPolicyConfig) {
+		return
+	}
+	if !updateBucketConfiguration(ctx, w, r, bucket, bucketPolicyConfig, nil) {
 		return
 	}
 
@@ -157,6 +161,10 @@ func (api objectAPIHandlers) GetBucketPolicyHandler(w http.ResponseWriter, r *ht
 	// Check if bucket exists.
 	if _, err := objAPI.GetBucketInfo(ctx, bucket); err != nil {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		return
+	}
+
+	if writeFreshBucketConfiguration(ctx, w, r, bucket, bucketPolicyConfig) {
 		return
 	}
 

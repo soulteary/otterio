@@ -848,28 +848,30 @@ func (i *scannerItem) applyLifecycle(ctx context.Context, o ObjectLayer, meta ac
 	if i.debug {
 		logger.LogIf(ctx, err)
 	}
-	if i.lifeCycle == nil {
-		if i.debug {
-			console.Debugf(applyActionsLogPrefix+" no lifecycle rules to apply: %q\n", i.objectPath())
-		}
+	// Pending transitions, permanent deletes and restored-copy expiry outlive the lifecycle
+	// document that initiated them. Continue checking these persisted states
+	// when no currently active rule covers this prefix.
+	var lc lifecycle.Lifecycle
+	if i.lifeCycle != nil {
+		lc = *i.lifeCycle
+	}
+	versionID := meta.oi.VersionID
+	scanned := meta.oi
+	scanned.Name = i.objectPath()
+	deletionPending, err := transitionDeletionPending(scanned)
+	if err != nil {
+		logger.LogIf(ctx, err)
 		return false, size
 	}
-
-	versionID := meta.oi.VersionID
-	action := i.lifeCycle.ComputeAction(
-		lifecycle.ObjectOpts{
-			Name:             i.objectPath(),
-			UserTags:         meta.oi.UserTags,
-			ModTime:          meta.oi.ModTime,
-			VersionID:        meta.oi.VersionID,
-			DeleteMarker:     meta.oi.DeleteMarker,
-			IsLatest:         meta.oi.IsLatest,
-			NumVersions:      meta.oi.NumVersions,
-			SuccessorModTime: meta.oi.SuccessorModTime,
-			RestoreOngoing:   meta.oi.RestoreOngoing,
-			RestoreExpires:   meta.oi.RestoreExpires,
-			TransitionStatus: meta.oi.TransitionStatus,
-		})
+	action := lifecycleActionForObject(lc, scanned)
+	if deletionPending {
+		// This permanent deletion was authorized before its remote side effect.
+		// Retry its exact source even when no current lifecycle rule applies.
+		action = lifecycle.DeleteVersionAction
+		if versionID == "" {
+			versionID = nullVersionID
+		}
+	}
 	if i.debug {
 		if versionID != "" {
 			console.Debugf(applyActionsLogPrefix+" lifecycle: %q (version-id=%s), Initial scan: %v\n", i.objectPath(), versionID, action)
@@ -910,7 +912,18 @@ func (i *scannerItem) applyLifecycle(ctx context.Context, o ObjectLayer, meta ac
 		}
 	}
 
-	action = evalActionFromLifecycle(ctx, *i.lifeCycle, obj, i.debug)
+	deletionPending, err = transitionDeletionPending(obj)
+	if err != nil {
+		logger.LogIf(ctx, err)
+		return false, size
+	}
+	if deletionPending {
+		globalExpiryState.queueExpiryTask(obj, true)
+		// Enqueueing does not remove the source. Keep accounting for its bytes
+		// until a later scan observes the worker's successful local commit.
+		return true, size
+	}
+	action = evalActionFromLifecycle(ctx, lc, obj, i.debug)
 	if action != lifecycle.NoneAction {
 		applied = applyLifecycleAction(ctx, action, o, obj)
 	}
@@ -942,7 +955,7 @@ func (i *scannerItem) applyActions(ctx context.Context, o ObjectLayer, meta acti
 	return size
 }
 
-func evalActionFromLifecycle(ctx context.Context, lc lifecycle.Lifecycle, obj ObjectInfo, debug bool) (action lifecycle.Action) {
+func lifecycleActionForObject(lc lifecycle.Lifecycle, obj ObjectInfo) lifecycle.Action {
 	lcOpts := lifecycle.ObjectOpts{
 		Name:             obj.Name,
 		UserTags:         obj.UserTags,
@@ -957,7 +970,21 @@ func evalActionFromLifecycle(ctx context.Context, lc lifecycle.Lifecycle, obj Ob
 		TransitionStatus: obj.TransitionStatus,
 	}
 
-	action = lc.ComputeAction(lcOpts)
+	action := lc.ComputeAction(lcOpts)
+	if action == lifecycle.NoneAction && !obj.DeleteMarker &&
+		(obj.TransitionStatus == lifecycle.TransitionPending || obj.TransitionStatus == lifecycle.TransitionComplete && obj.RestoreOngoing) {
+		// The pending locator freezes the transition destination. A later rule
+		// edit, tag edit or promotion/demotion must not strand that operation.
+		if obj.VersionID != "" && !obj.IsLatest {
+			return lifecycle.TransitionVersionAction
+		}
+		return lifecycle.TransitionAction
+	}
+	return action
+}
+
+func evalActionFromLifecycle(ctx context.Context, lc lifecycle.Lifecycle, obj ObjectInfo, debug bool) (action lifecycle.Action) {
+	action = lifecycleActionForObject(lc, obj)
 	if debug {
 		console.Debugf(applyActionsLogPrefix+" lifecycle: Secondary scan: %v\n", action)
 	}
@@ -967,7 +994,7 @@ func evalActionFromLifecycle(ctx context.Context, lc lifecycle.Lifecycle, obj Ob
 	}
 
 	switch action {
-	case lifecycle.DeleteVersionAction, lifecycle.DeleteRestoredVersionAction:
+	case lifecycle.DeleteVersionAction:
 		// Defensive code, should never happen
 		if obj.VersionID == "" {
 			return lifecycle.NoneAction
@@ -991,93 +1018,142 @@ func evalActionFromLifecycle(ctx context.Context, lc lifecycle.Lifecycle, obj Ob
 }
 
 func applyTransitionAction(ctx context.Context, _ lifecycle.Action, objLayer ObjectLayer, obj ObjectInfo) bool {
-	opts := ObjectOptions{}
-	if obj.TransitionStatus == "" {
-		opts.Versioned = globalBucketVersioningSys.Enabled(obj.Bucket)
-		opts.VersionID = obj.VersionID
-		opts.TransitionStatus = lifecycle.TransitionPending
-		if _, err := objLayer.DeleteObject(ctx, obj.Bucket, obj.Name, opts); err != nil {
-			if isErrObjectNotFound(err) || isErrVersionNotFound(err) {
-				return false
-			}
-			// Assume it is still there.
-			logger.LogIf(ctx, err)
-			return false
-		}
+	if obj.TransitionStatus == lifecycle.TransitionComplete && obj.RestoreOngoing && !obj.DeleteMarker {
+		// The persisted restore request also survives rule removal and process
+		// restart. The worker rechecks the request under the object lock.
+		globalTransitionState.queueTransitionTask(obj)
+		return true
 	}
-	globalTransitionState.queueTransitionTask(obj)
-	return true
-
-}
-
-func applyExpiryOnTransitionedObject(ctx context.Context, objLayer ObjectLayer, obj ObjectInfo, restoredObject bool) bool {
-	lcOpts := lifecycle.ObjectOpts{
-		Name:             obj.Name,
-		UserTags:         obj.UserTags,
-		ModTime:          obj.ModTime,
-		VersionID:        obj.VersionID,
-		DeleteMarker:     obj.DeleteMarker,
-		IsLatest:         obj.IsLatest,
-		NumVersions:      obj.NumVersions,
-		SuccessorModTime: obj.SuccessorModTime,
-		RestoreOngoing:   obj.RestoreOngoing,
-		RestoreExpires:   obj.RestoreExpires,
-		TransitionStatus: obj.TransitionStatus,
-	}
-
-	if err := deleteTransitionedObject(ctx, objLayer, obj.Bucket, obj.Name, lcOpts, restoredObject, false); err != nil {
-		if isErrObjectNotFound(err) || isErrVersionNotFound(err) {
-			return false
-		}
-		logger.LogIf(ctx, err)
-		return false
-	}
-	// Notification already sent at *deleteTransitionedObject*, just return 'true' here.
-	return true
-}
-
-func applyExpiryOnNonTransitionedObjects(ctx context.Context, objLayer ObjectLayer, obj ObjectInfo, applyOnVersion bool) bool {
-	opts := ObjectOptions{}
-
-	if applyOnVersion {
-		opts.VersionID = obj.VersionID
-	}
-	if opts.VersionID == "" {
-		opts.Versioned = globalBucketVersioningSys.Enabled(obj.Bucket)
-	}
-
-	obj, err := objLayer.DeleteObject(ctx, obj.Bucket, obj.Name, opts)
+	queued, err := prepareTransition(ctx, objLayer, obj)
 	if err != nil {
-		if isErrObjectNotFound(err) || isErrVersionNotFound(err) {
-			return false
+		if !isErrObjectNotFound(err) && !isErrVersionNotFound(err) {
+			logger.LogIf(ctx, err)
 		}
-		// Assume it is still there.
-		logger.LogIf(ctx, err)
 		return false
 	}
-
-	eventName := event.ObjectRemovedDelete
-	if obj.DeleteMarker {
-		eventName = event.ObjectRemovedDeleteMarkerCreated
+	if queued.TransitionStatus != lifecycle.TransitionPending {
+		return false
 	}
-
-	// Notify object deleted event.
-	sendEvent(eventArgs{
-		EventName:  eventName,
-		BucketName: obj.Bucket,
-		Object:     obj,
-		Host:       "Internal: [ILM-EXPIRY]",
-	})
-
+	globalTransitionState.queueTransitionTask(queued)
 	return true
+
 }
 
-// Apply object, object version, restored object or restored object version action on the given object
-func applyExpiryRule(ctx context.Context, objLayer ObjectLayer, obj ObjectInfo, restoredObject, applyOnVersion bool) bool {
-	if obj.TransitionStatus != "" {
-		return applyExpiryOnTransitionedObject(ctx, objLayer, obj, restoredObject)
+// executeExpiry serializes rule selection with lifecycle edits, then fences the
+// exact source under its write lock through remote cleanup and local commit.
+// Restored-copy expiry follows its persisted deadline even after rule removal.
+func executeExpiry(ctx context.Context, objLayer ObjectLayer, queued ObjectInfo, restoredObject, applyOnVersion bool, expected *ObjectInfo) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	targetLock := lifecycleTargetLock(objLayer, queued.Bucket)
+	ctx, err := targetLock.GetRLock(ctx, globalOperationTimeout)
+	if err != nil {
+		return false, err
 	}
-	return applyExpiryOnNonTransitionedObjects(ctx, objLayer, obj, applyOnVersion)
+	defer targetLock.RUnlock()
+	objectLock := objLayer.NewNSLock(queued.Bucket, encodeDirObject(queued.Name))
+	ctx, err = objectLock.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
+		return false, err
+	}
+	defer objectLock.Unlock()
+	versionID := queued.VersionID
+	if versionID == "" && queued.UserDefined[transitionDeleteIntentKey] != "" {
+		versionID = nullVersionID
+	}
+	fresh, err := objLayer.GetObjectInfo(ctx, queued.Bucket, queued.Name, ObjectOptions{VersionID: versionID, NoLock: true})
+	if err != nil {
+		if _, marker := err.(MethodNotAllowed); !marker || !fresh.DeleteMarker {
+			return false, err
+		}
+	}
+	if expected != nil && (fresh.DeleteMarker != expected.DeleteMarker ||
+		!fresh.ModTime.Equal(expected.ModTime) || fresh.ETag != expected.ETag || fresh.Size != expected.Size ||
+		normalizeTransitionVersion(fresh.VersionID) != normalizeTransitionVersion(expected.VersionID)) ||
+		!queued.ModTime.IsZero() && !fresh.ModTime.Equal(queued.ModTime) {
+		return false, PreConditionFailed{}
+	}
+	deletionPending, err := transitionDeletionPending(fresh)
+	if err != nil {
+		return false, err
+	}
+	opts := ObjectOptions{NoLock: true}
+	if deletionPending {
+		// The remote delete may already have committed. Finish the original
+		// permanent deletion rather than applying a newly edited rule, creating
+		// a marker or treating the source as a recoverable restored cache.
+		opts.VersionID, opts.TransitionExpected = fresh.VersionID, &fresh
+		if opts.VersionID == "" {
+			opts.VersionID = nullVersionID
+		}
+		restoredObject = false
+	} else if restoredObject {
+		if fresh.DeleteMarker || fresh.TransitionStatus != lifecycle.TransitionComplete || fresh.RestoreOngoing ||
+			fresh.RestoreExpires.IsZero() || time.Now().Before(fresh.RestoreExpires) {
+			return false, PreConditionFailed{}
+		}
+		opts.VersionID, opts.TransitionStatus = fresh.VersionID, lifecycle.TransitionComplete
+		opts.TransitionedObject, opts.TransitionExpected = fresh.TransitionedObject, &fresh
+	} else {
+		meta, lerr := loadBucketMetadata(ctx, objLayer, queued.Bucket)
+		if lerr != nil {
+			return false, lerr
+		}
+		if meta.lifecycleConfig == nil {
+			return false, BucketLifecycleNotFound{Bucket: queued.Bucket}
+		}
+		want := lifecycle.DeleteAction
+		if applyOnVersion {
+			want = lifecycle.DeleteVersionAction
+		}
+		if meta.lifecycleConfig.Select(lifecycleObjectOpts(fresh)).Action != want {
+			return false, PreConditionFailed{}
+		}
+		if applyOnVersion {
+			if fresh.VersionID == "" {
+				return false, PreConditionFailed{}
+			}
+			opts.VersionID = fresh.VersionID
+		} else {
+			opts.Versioned, opts.VersionSuspended = meta.versioningConfig.Enabled(), meta.versioningConfig.Suspended()
+		}
+		// A current version in an enabled bucket gains a marker. Suspended
+		// buckets retain named versions but replace their null version.
+		permanent := applyOnVersion || !opts.Versioned && (!opts.VersionSuspended || normalizeTransitionVersion(fresh.VersionID) == "")
+		if permanent && !fresh.DeleteMarker && enforceRetentionForDeletion(ctx, fresh) {
+			return false, PreConditionFailed{}
+		}
+	}
+	deleted, err := objLayer.DeleteObject(ctx, queued.Bucket, queued.Name, opts)
+	if err != nil {
+		return false, err
+	}
+	if !restoredObject {
+		eventName := event.ObjectRemovedDelete
+		if deleted.DeleteMarker {
+			eventName = event.ObjectRemovedDeleteMarkerCreated
+		}
+		sendEvent(eventArgs{EventName: eventName, BucketName: queued.Bucket, Object: deleted, Host: "Internal: [ILM-EXPIRY]"})
+	}
+	return true, nil
+}
+
+func normalizeTransitionVersion(version string) string {
+	if version == nullVersionID {
+		return ""
+	}
+	return version
+}
+
+// Apply a queued expiration only while its fresh source and rule still agree.
+func applyExpiryRule(ctx context.Context, objLayer ObjectLayer, obj ObjectInfo, restoredObject, applyOnVersion bool) bool {
+	applied, err := executeExpiry(ctx, objLayer, obj, restoredObject, applyOnVersion, &obj)
+	if err != nil && !isErrObjectNotFound(err) && !isErrVersionNotFound(err) && !isErrPreconditionFailed(err) {
+		if _, missing := err.(BucketLifecycleNotFound); !missing {
+			logger.LogIf(ctx, err)
+		}
+	}
+	return applied
 }
 
 // Perform actions (removal or transitioning of objects), return true the action is successfully performed

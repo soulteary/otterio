@@ -29,6 +29,7 @@ import (
 	"github.com/google/uuid"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
 	"github.com/tinylib/msgp/msgp"
 )
 
@@ -734,16 +735,43 @@ func (z *xlMetaV2) UpdateObjectVersion(fi FileInfo) error {
 		}
 		switch version.Type {
 		case LegacyType:
-			if version.ObjectV1.VersionID == fi.VersionID {
+			if version.ObjectV1.VersionID == fi.VersionID || version.ObjectV1.VersionID == nullVersionID && fi.VersionID == "" {
+				if fi.TransitionStatus != "" {
+					if z.Versions[i].ObjectV1.Meta == nil {
+						z.Versions[i].ObjectV1.Meta = make(map[string]string)
+					}
+					for k, v := range fi.Metadata {
+						z.Versions[i].ObjectV1.Meta[k] = v
+					}
+					z.Versions[i].ObjectV1.Meta[ReservedMetadataPrefixLower+"transition-status"] = fi.TransitionStatus
+					_, restored := caseInsensitiveMap(fi.Metadata).Lookup(xhttp.AmzRestore)
+					if fi.TransitionStatus == lifecycle.TransitionComplete && !restored {
+						removeRestoreHeader(z.Versions[i].ObjectV1.Meta)
+					}
+					return nil
+				}
 				return errMethodNotAllowed
 			}
 		case ObjectType:
 			if version.ObjectV2.VersionID == uv {
+				if z.Versions[i].ObjectV2.MetaSys == nil {
+					z.Versions[i].ObjectV2.MetaSys = make(map[string][]byte)
+				}
+				if z.Versions[i].ObjectV2.MetaUser == nil {
+					z.Versions[i].ObjectV2.MetaUser = make(map[string]string)
+				}
 				for k, v := range fi.Metadata {
 					if strings.HasPrefix(strings.ToLower(k), ReservedMetadataPrefixLower) {
 						z.Versions[i].ObjectV2.MetaSys[k] = []byte(v)
 					} else {
 						z.Versions[i].ObjectV2.MetaUser[k] = v
+					}
+				}
+				if fi.TransitionStatus != "" {
+					z.Versions[i].ObjectV2.MetaSys[ReservedMetadataPrefixLower+"transition-status"] = []byte(fi.TransitionStatus)
+					_, restored := caseInsensitiveMap(fi.Metadata).Lookup(xhttp.AmzRestore)
+					if fi.TransitionStatus == lifecycle.TransitionComplete && !restored {
+						removeRestoreHeader(z.Versions[i].ObjectV2.MetaUser)
 					}
 				}
 				if !fi.ModTime.IsZero() {
@@ -843,6 +871,28 @@ func (z *xlMetaV2) AddVersion(fi FileInfo) error {
 		// If asked to save data.
 		if len(fi.Data) > 0 || fi.Size == 0 {
 			z.data.replace(fi.VersionID, fi.Data)
+		} else {
+			// Metadata-only writes carry no data. Retain an existing inline
+			// payload only when the physical layout is unchanged; a full
+			// replacement has a new data directory or different shard sizes.
+			preserveInline := false
+			for _, old := range z.Versions {
+				if old.Type != ObjectType || old.ObjectV2 == nil || old.ObjectV2.VersionID != uv ||
+					old.ObjectV2.DataDir != dd || old.ObjectV2.Size != fi.Size || len(old.ObjectV2.PartNumbers) != len(fi.Parts) || len(old.ObjectV2.PartSizes) != len(fi.Parts) {
+					continue
+				}
+				preserveInline = true
+				for i, part := range fi.Parts {
+					if old.ObjectV2.PartNumbers[i] != part.Number || old.ObjectV2.PartSizes[i] != part.Size {
+						preserveInline = false
+						break
+					}
+				}
+				break
+			}
+			if !preserveInline {
+				z.data.remove(fi.VersionID)
+			}
 		}
 	}
 
@@ -1015,6 +1065,13 @@ func (z *xlMetaV2) SharedDataDirCount(versionID [16]byte, dataDir [16]byte) int 
 			if version.ObjectV2.VersionID == versionID {
 				continue
 			}
+			// Fully tiered versions no longer need their original local data.
+			// Restored versions retain it until their restore metadata is cleared.
+			if string(version.ObjectV2.MetaSys[ReservedMetadataPrefixLower+"transition-status"]) == lifecycle.TransitionComplete {
+				if _, restored := caseInsensitiveMap(version.ObjectV2.MetaUser).Lookup(xhttp.AmzRestore); !restored {
+					continue
+				}
+			}
 			if version.ObjectV2.DataDir == dataDir {
 				sameDataDirCount++
 			}
@@ -1088,10 +1145,19 @@ func (z *xlMetaV2) DeleteVersion(fi FileInfo) (string, bool, error) {
 		}
 		switch version.Type {
 		case LegacyType:
-			if version.ObjectV1.VersionID == fi.VersionID {
+			if version.ObjectV1.VersionID == fi.VersionID || version.ObjectV1.VersionID == nullVersionID && fi.VersionID == "" {
 				if fi.TransitionStatus != "" {
+					if z.Versions[i].ObjectV1.Meta == nil {
+						z.Versions[i].ObjectV1.Meta = make(map[string]string)
+					}
+					for k, v := range fi.Metadata {
+						z.Versions[i].ObjectV1.Meta[k] = v
+					}
 					z.Versions[i].ObjectV1.Meta[ReservedMetadataPrefixLower+"transition-status"] = fi.TransitionStatus
-					return uuid.UUID(version.ObjectV2.DataDir).String(), len(z.Versions) == 0, nil
+					if fi.TransitionStatus == lifecycle.TransitionComplete {
+						removeRestoreHeader(z.Versions[i].ObjectV1.Meta)
+					}
+					return version.ObjectV1.DataDir, false, nil
 				}
 
 				z.Versions = append(z.Versions[:i], z.Versions[i+1:]...)
@@ -1138,8 +1204,22 @@ func (z *xlMetaV2) DeleteVersion(fi FileInfo) (string, bool, error) {
 		case ObjectType:
 			if version.ObjectV2.VersionID == uv {
 				if fi.TransitionStatus != "" {
+					if z.Versions[i].ObjectV2.MetaSys == nil {
+						z.Versions[i].ObjectV2.MetaSys = make(map[string][]byte)
+					}
+					for k, v := range fi.Metadata {
+						if strings.HasPrefix(strings.ToLower(k), ReservedMetadataPrefixLower) {
+							z.Versions[i].ObjectV2.MetaSys[k] = []byte(v)
+						}
+					}
 					z.Versions[i].ObjectV2.MetaSys[ReservedMetadataPrefixLower+"transition-status"] = []byte(fi.TransitionStatus)
-					return uuid.UUID(version.ObjectV2.DataDir).String(), len(z.Versions) == 0, nil
+					if fi.TransitionStatus == lifecycle.TransitionComplete {
+						removeRestoreHeader(z.Versions[i].ObjectV2.MetaUser)
+					}
+					if z.SharedDataDirCount(version.ObjectV2.VersionID, version.ObjectV2.DataDir) > 0 {
+						return "", false, nil
+					}
+					return uuid.UUID(version.ObjectV2.DataDir).String(), false, nil
 				}
 				z.Versions = append(z.Versions[:i], z.Versions[i+1:]...)
 				if z.SharedDataDirCount(version.ObjectV2.VersionID, version.ObjectV2.DataDir) > 0 {

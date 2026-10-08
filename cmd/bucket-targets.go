@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -32,6 +33,7 @@ import (
 	"github.com/soulteary/otterio-sdk/v7/pkg/credentials"
 	"github.com/soulteary/otterio/cmd/crypto"
 	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/auth"
 	"github.com/soulteary/otterio/pkg/bucket/versioning"
 	"github.com/soulteary/otterio/pkg/madmin"
 )
@@ -45,6 +47,7 @@ type BucketTargetSys struct {
 	sync.RWMutex
 	arnRemotesMap map[string]*TargetClient
 	targetsMap    map[string][]madmin.BucketTarget
+	bucketRemotes map[string]map[string]*TargetClient
 }
 
 // ListTargets lists bucket targets across tenant or for individual bucket, and returns
@@ -54,7 +57,7 @@ func (sys *BucketTargetSys) ListTargets(ctx context.Context, bucket, arnType str
 		if ts, err := sys.ListBucketTargets(ctx, bucket); err == nil {
 			for _, t := range ts.Targets {
 				if string(t.Type) == arnType || arnType == "" {
-					targets = append(targets, t.Clone())
+					targets = append(targets, publicBucketTarget(t))
 				}
 			}
 		}
@@ -65,7 +68,7 @@ func (sys *BucketTargetSys) ListTargets(ctx context.Context, bucket, arnType str
 	for _, tgts := range sys.targetsMap {
 		for _, t := range tgts {
 			if string(t.Type) == arnType || arnType == "" {
-				targets = append(targets, t.Clone())
+				targets = append(targets, publicBucketTarget(t))
 			}
 		}
 	}
@@ -79,37 +82,156 @@ func (sys *BucketTargetSys) ListBucketTargets(_ context.Context, bucket string) 
 
 	tgts, ok := sys.targetsMap[bucket]
 	if ok {
-		return &madmin.BucketTargets{Targets: tgts}, nil
+		result := &madmin.BucketTargets{Targets: make([]madmin.BucketTarget, len(tgts))}
+		for i, target := range tgts {
+			result.Targets[i] = cloneBucketTarget(target)
+		}
+		return result, nil
 	}
 	return nil, BucketRemoteTargetNotFound{Bucket: bucket}
 }
 
-// SetTarget - sets a new otterio-go client target for this bucket.
+// SetTarget validates and persists a target before publishing its client.
 func (sys *BucketTargetSys) SetTarget(ctx context.Context, bucket string, tgt *madmin.BucketTarget, update bool) error {
 	if globalIsGateway {
+		if tgt != nil && tgt.Type == madmin.ILMService {
+			return NotImplemented{}
+		}
 		return nil
 	}
-	if !tgt.Type.IsValid() && !update {
+	if tgt == nil || !tgt.Type.IsValid() || tgt.Credentials == nil {
 		return BucketRemoteArnTypeInvalid{Bucket: bucket}
 	}
+	obj := newObjectLayerFn()
+	if obj == nil {
+		return errServerNotInitialized
+	}
+	if tgt.Type == madmin.ILMService && !lifecycleTransitionSupported(obj) {
+		return NotImplemented{Message: "Lifecycle transition requires native single-pool local erasure storage"}
+	}
+	ctx, release, err := lifecycleTargetMutationContext(ctx, obj, bucket)
+	if err != nil {
+		return err
+	}
+	defer release()
+	meta, targets, err := freshBucketTargets(ctx, obj, bucket)
+	if err != nil {
+		return err
+	}
+	candidate := cloneBucketTarget(*tgt)
+	candidate.SourceBucket = bucket
+	if candidate.Type == madmin.ILMService && strings.TrimSpace(candidate.Label) == "" {
+		return errInvalidArgument
+	}
+	if !update {
+		candidate.Arn = remoteARNFromTargets(bucket, &candidate, targets)
+	}
+	parsedARN, arnErr := madmin.ParseARN(candidate.Arn)
+	if arnErr != nil || parsedARN.Type != candidate.Type || parsedARN.Bucket != candidate.TargetBucket {
+		return BucketRemoteArnInvalid{Bucket: bucket}
+	}
+	if candidate.Arn == "" {
+		return BucketRemoteArnInvalid{Bucket: bucket}
+	}
+	index := -1
+	for i, target := range targets.Targets {
+		if target.Arn == candidate.Arn {
+			if index != -1 {
+				return BucketRemoteArnInvalid{Bucket: bucket}
+			}
+			index = i
+		}
+		if strings.EqualFold(target.Label, candidate.Label) && target.Arn != candidate.Arn {
+			return BucketRemoteLabelInUse{Bucket: target.TargetBucket}
+		}
+	}
+	if update && index == -1 {
+		return BucketRemoteTargetNotFound{Bucket: bucket}
+	}
+	if !update && index != -1 {
+		return BucketRemoteAlreadyExists{Bucket: targets.Targets[index].TargetBucket}
+	}
+	registry, exists, err := readLifecycleTargetRegistry(ctx, obj, bucket, targets)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if err = saveLifecycleTargetRegistry(ctx, obj, bucket, registry); err != nil {
+			return err
+		}
+	}
+	if index != -1 {
+		previous := targets.Targets[index]
+		if candidate.Credentials.SecretKey == "" {
+			if candidate.Credentials.AccessKey != previous.Credentials.AccessKey {
+				return errInvalidArgument
+			}
+			candidate.Credentials = cloneBucketTarget(previous).Credentials
+		}
+		if previous.Type != candidate.Type {
+			return BucketRemoteArnTypeInvalid{Bucket: bucket}
+		}
+		physicalChanged := targetDestinationIdentity(previous) != targetDestinationIdentity(candidate)
+		labelChanged := !strings.EqualFold(previous.Label, candidate.Label)
+		if physicalChanged || labelChanged {
+			if targetConfigured(meta, previous) {
+				return BucketRemoteRemoveDisallowed{Bucket: bucket}
+			}
+			if previous.Type == madmin.ILMService {
+				used, err := lifecycleTargetReferenced(ctx, obj, bucket, previous.Arn, &registry)
+				if err != nil {
+					return err
+				}
+				if used {
+					return BucketRemoteRemoveDisallowed{Bucket: bucket}
+				}
+			}
+		}
+	}
+	if candidate.Credentials.AccessKey == "" || candidate.Credentials.SecretKey == "" {
+		return errInvalidArgument
+	}
+	if err = sys.validateTarget(ctx, bucket, &candidate); err != nil {
+		return err
+	}
+	if index == -1 {
+		targets.Targets = append(targets.Targets, candidate)
+	} else {
+		targets.Targets[index] = candidate
+	}
+	if err = saveLifecycleTargetRegistry(ctx, obj, bucket, registry); err != nil {
+		return err
+	}
+	data, err := json.Marshal(targets)
+	if err != nil {
+		return err
+	}
+	if err = globalBucketMetadataSys.UpdateWithContext(ctx, bucket, bucketTargetsFile, data, ""); err != nil {
+		return err
+	}
+	sys.UpdateAllTargets(bucket, targets)
+	*tgt = cloneBucketTarget(candidate)
+	return nil
+}
+
+func (sys *BucketTargetSys) validateTarget(ctx context.Context, bucket string, tgt *madmin.BucketTarget) error {
 	clnt, err := sys.getRemoteTargetClient(tgt)
 	if err != nil {
 		return BucketRemoteTargetNotFound{Bucket: tgt.TargetBucket}
 	}
-	// validate if target credentials are ok
-	if _, err = clnt.BucketExists(ctx, tgt.TargetBucket); err != nil {
-		if otterio.ToErrorResponse(err).Code == "NoSuchBucket" {
+	if found, err := clnt.BucketExists(ctx, tgt.TargetBucket); err != nil || !found {
+		if !found && err == nil || otterio.ToErrorResponse(err).Code == "NoSuchBucket" {
 			return BucketRemoteTargetNotFound{Bucket: tgt.TargetBucket}
 		}
 		return BucketRemoteConnectionErr{Bucket: tgt.TargetBucket, Err: err}
 	}
-	if tgt.Type == madmin.ReplicationService {
-		if !globalIsErasure {
-			return NotImplemented{Message: "Replication is not implemented in " + getOtterioMode()}
-		}
-		if !globalBucketVersioningSys.Enabled(bucket) {
-			return BucketReplicationSourceNotVersioned{Bucket: bucket}
-		}
+	if tgt.Type == madmin.ReplicationService && !globalIsErasure {
+		return NotImplemented{Message: "Replication requires erasure storage"}
+	}
+	if tgt.Type == madmin.ReplicationService && !globalBucketVersioningSys.Enabled(bucket) {
+		return BucketReplicationSourceNotVersioned{Bucket: bucket}
+	}
+	if tgt.Type == madmin.ReplicationService || globalBucketVersioningSys.Enabled(bucket) {
 		vcfg, err := clnt.GetBucketVersioning(ctx, tgt.TargetBucket)
 		if err != nil {
 			return BucketRemoteConnectionErr{Bucket: tgt.TargetBucket, Err: err}
@@ -117,114 +239,116 @@ func (sys *BucketTargetSys) SetTarget(ctx context.Context, bucket string, tgt *m
 		if vcfg.Status != string(versioning.Enabled) {
 			return BucketRemoteTargetNotVersioned{Bucket: tgt.TargetBucket}
 		}
-		if tgt.ReplicationSync && tgt.BandwidthLimit > 0 {
-			return NotImplemented{Message: "Synchronous replication does not support bandwidth limits"}
-		}
 	}
-	if tgt.Type == madmin.ILMService {
-		if globalBucketVersioningSys.Enabled(bucket) {
-			vcfg, err := clnt.GetBucketVersioning(ctx, tgt.TargetBucket)
-			if err != nil {
-				if otterio.ToErrorResponse(err).Code == "NoSuchBucket" {
-					return BucketRemoteTargetNotFound{Bucket: tgt.TargetBucket}
-				}
-				return BucketRemoteConnectionErr{Bucket: tgt.TargetBucket, Err: err}
-			}
-			if vcfg.Status != string(versioning.Enabled) {
-				return BucketRemoteTargetNotVersioned{Bucket: tgt.TargetBucket}
-			}
-		}
+	if tgt.Type == madmin.ReplicationService && tgt.ReplicationSync && tgt.BandwidthLimit > 0 {
+		return NotImplemented{Message: "Synchronous replication does not support bandwidth limits"}
 	}
-	sys.Lock()
-	defer sys.Unlock()
-
-	tgts := sys.targetsMap[bucket]
-	newtgts := make([]madmin.BucketTarget, len(tgts))
-	labels := make(map[string]struct{}, len(tgts))
-	found := false
-	for idx, t := range tgts {
-		labels[t.Label] = struct{}{}
-		if t.Type == tgt.Type {
-			if t.Arn == tgt.Arn && !update {
-				return BucketRemoteAlreadyExists{Bucket: t.TargetBucket}
-			}
-			if t.Label == tgt.Label && !update {
-				return BucketRemoteLabelInUse{Bucket: t.TargetBucket}
-			}
-			newtgts[idx] = *tgt
-			found = true
-			continue
-		}
-		newtgts[idx] = t
-	}
-	if _, ok := labels[tgt.Label]; ok && !update {
-		return BucketRemoteLabelInUse{Bucket: tgt.TargetBucket}
-	}
-	if !found && !update {
-		newtgts = append(newtgts, *tgt)
-	}
-
-	sys.targetsMap[bucket] = newtgts
-	sys.arnRemotesMap[tgt.Arn] = clnt
 	return nil
 }
 
-// RemoveTarget - removes a remote bucket target for this source bucket.
+// RemoveTarget keeps destinations referenced by durable pending/completed jobs.
 func (sys *BucketTargetSys) RemoveTarget(ctx context.Context, bucket, arnStr string) error {
 	if globalIsGateway {
 		return nil
 	}
-	if arnStr == "" {
-		return BucketRemoteArnInvalid{Bucket: bucket}
-	}
 	arn, err := madmin.ParseARN(arnStr)
-	if err != nil {
+	if err != nil || !arn.Type.IsValid() {
 		return BucketRemoteArnInvalid{Bucket: bucket}
 	}
-	if arn.Type == madmin.ReplicationService {
-		if !globalIsErasure {
-			return NotImplemented{Message: "Replication is not implemented in " + getOtterioMode()}
-		}
-		// reject removal of remote target if replication configuration is present
-		rcfg, err := getReplicationConfig(ctx, bucket)
-		if err == nil && rcfg.RoleArn == arnStr {
-			if _, ok := sys.arnRemotesMap[arnStr]; ok {
-				return BucketRemoteRemoveDisallowed{Bucket: bucket}
+	obj := newObjectLayerFn()
+	if obj == nil {
+		return errServerNotInitialized
+	}
+	ctx, release, err := lifecycleTargetMutationContext(ctx, obj, bucket)
+	if err != nil {
+		return err
+	}
+	defer release()
+	meta, targets, err := freshBucketTargets(ctx, obj, bucket)
+	if err != nil {
+		return err
+	}
+	index := -1
+	for i, target := range targets.Targets {
+		if target.Arn == arnStr {
+			if index != -1 {
+				return BucketRemoteArnInvalid{Bucket: bucket}
 			}
+			index = i
 		}
 	}
-	if arn.Type == madmin.ILMService {
-		// reject removal of remote target if lifecycle transition uses this arn
-		config, err := globalBucketMetadataSys.GetLifecycleConfig(bucket)
-		if err == nil && transitionSCInUse(ctx, config, bucket, arnStr) {
-			if _, ok := sys.arnRemotesMap[arnStr]; ok {
-				return BucketRemoteRemoveDisallowed{Bucket: bucket}
-			}
-		}
-	}
-
-	// delete ARN type from list of matching targets
-	sys.Lock()
-	defer sys.Unlock()
-	found := false
-	tgts, ok := sys.targetsMap[bucket]
-	if !ok {
+	if index == -1 {
 		return BucketRemoteTargetNotFound{Bucket: bucket}
 	}
-	targets := make([]madmin.BucketTarget, 0, len(tgts))
-	for _, tgt := range tgts {
-		if tgt.Arn != arnStr {
-			targets = append(targets, tgt)
+	previous := targets.Targets[index]
+	if targetConfigured(meta, previous) {
+		return BucketRemoteRemoveDisallowed{Bucket: bucket}
+	}
+	registry, exists, err := readLifecycleTargetRegistry(ctx, obj, bucket, targets)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if err = saveLifecycleTargetRegistry(ctx, obj, bucket, registry); err != nil {
+			return err
+		}
+	}
+	if previous.Type == madmin.ILMService {
+		used, err := lifecycleTargetReferenced(ctx, obj, bucket, arnStr, &registry)
+		if err != nil {
+			return err
+		}
+		if used {
+			return BucketRemoteRemoveDisallowed{Bucket: bucket}
+		}
+	}
+	targets.Targets = append(targets.Targets[:index], targets.Targets[index+1:]...)
+	if err = saveLifecycleTargetRegistry(ctx, obj, bucket, registry); err != nil {
+		return err
+	}
+	data, err := json.Marshal(targets)
+	if err != nil {
+		return err
+	}
+	if err = globalBucketMetadataSys.UpdateWithContext(ctx, bucket, bucketTargetsFile, data, ""); err != nil {
+		return err
+	}
+	sys.UpdateAllTargets(bucket, targets)
+	return nil
+}
+
+func cloneBucketTarget(target madmin.BucketTarget) madmin.BucketTarget {
+	if target.Credentials != nil {
+		credentials := *target.Credentials
+		target.Credentials = &credentials
+	}
+	return target
+}
+
+func publicBucketTarget(target madmin.BucketTarget) madmin.BucketTarget {
+	result := cloneBucketTarget(target)
+	if result.Credentials != nil {
+		result.Credentials = &auth.Credentials{AccessKey: result.Credentials.AccessKey}
+	}
+	return result
+}
+
+func targetConfigured(meta BucketMetadata, target madmin.BucketTarget) bool {
+	if target.Type == madmin.ReplicationService {
+		return meta.replicationConfig != nil && meta.replicationConfig.RoleArn == target.Arn
+	}
+	if meta.lifecycleConfig == nil {
+		return false
+	}
+	for _, rule := range meta.lifecycleConfig.Rules {
+		if rule.Status == Disabled {
 			continue
 		}
-		found = true
+		if rule.Transition.StorageClass != "" && strings.EqualFold(rule.Transition.StorageClass, target.Label) || rule.NoncurrentVersionTransition.StorageClass != "" && strings.EqualFold(rule.NoncurrentVersionTransition.StorageClass, target.Label) {
+			return true
+		}
 	}
-	if !found {
-		return BucketRemoteTargetNotFound{Bucket: bucket}
-	}
-	sys.targetsMap[bucket] = targets
-	delete(sys.arnRemotesMap, arnStr)
-	return nil
+	return false
 }
 
 // GetRemoteTargetClient returns otterio-go client for replication target instance
@@ -235,16 +359,29 @@ func (sys *BucketTargetSys) GetRemoteTargetClient(_ context.Context, arn string)
 }
 
 // GetRemoteTargetWithLabel returns bucket target given a target label
-func (sys *BucketTargetSys) GetRemoteTargetWithLabel(_ context.Context, bucket, targetLabel string) *madmin.BucketTarget {
-	sys.RLock()
-	defer sys.RUnlock()
-	for _, t := range sys.targetsMap[bucket] {
-		if strings.ToUpper(t.Label) == strings.ToUpper(targetLabel) {
-			tgt := t.Clone()
-			return &tgt
+func (sys *BucketTargetSys) GetRemoteTargetWithLabel(ctx context.Context, bucket, targetLabel string) *madmin.BucketTarget {
+	if sys == nil {
+		return nil
+	}
+	obj := newObjectLayerFn()
+	if obj == nil {
+		return nil
+	}
+	_, targets, err := freshBucketTargets(ctx, obj, bucket)
+	if err != nil {
+		return nil
+	}
+	var result *madmin.BucketTarget
+	for _, target := range targets.Targets {
+		if strings.EqualFold(target.Label, targetLabel) {
+			if result != nil {
+				return nil
+			}
+			candidate := cloneBucketTarget(target)
+			result = &candidate
 		}
 	}
-	return nil
+	return result
 }
 
 // GetRemoteArnWithLabel returns bucket target's ARN given its target label
@@ -277,6 +414,7 @@ func NewBucketTargetSys() *BucketTargetSys {
 	return &BucketTargetSys{
 		arnRemotesMap: make(map[string]*TargetClient),
 		targetsMap:    make(map[string][]madmin.BucketTarget),
+		bucketRemotes: make(map[string]map[string]*TargetClient),
 	}
 }
 
@@ -296,38 +434,88 @@ func (sys *BucketTargetSys) Init(ctx context.Context, buckets []BucketInfo, objA
 	return nil
 }
 
-// UpdateAllTargets updates target to reflect metadata updates
+// UpdateAllTargets publishes immutable clients. Replaced clients remain usable by
+// operations that already own a snapshot; only their background health work stops.
 func (sys *BucketTargetSys) UpdateAllTargets(bucket string, tgts *madmin.BucketTargets) {
 	if sys == nil {
 		return
 	}
-	sys.Lock()
-	defer sys.Unlock()
-	if tgts == nil || tgts.Empty() {
-		// remove target and arn association
-		if tgts, ok := sys.targetsMap[bucket]; ok {
-			for _, t := range tgts {
-				delete(sys.arnRemotesMap, t.Arn)
+	targets := make([]madmin.BucketTarget, 0)
+	clients := make(map[string]*TargetClient)
+	if tgts != nil {
+		for _, target := range tgts.Targets {
+			target = cloneBucketTarget(target)
+			targets = append(targets, target)
+			if client, err := sys.getRemoteTargetClient(&target); err == nil {
+				clients[target.Arn] = client
 			}
 		}
-		delete(sys.targetsMap, bucket)
-		return
 	}
-
-	if len(tgts.Targets) > 0 {
-		sys.targetsMap[bucket] = tgts.Targets
+	sys.Lock()
+	if sys.bucketRemotes == nil {
+		sys.bucketRemotes = make(map[string]map[string]*TargetClient)
 	}
-	for _, tgt := range tgts.Targets {
-		tgtClient, err := sys.getRemoteTargetClient(&tgt)
-		if err != nil {
-			continue
+	for arn, client := range sys.bucketRemotes[bucket] {
+		client.stopHealthCheck()
+		if sys.arnRemotesMap[arn] == client {
+			delete(sys.arnRemotesMap, arn)
 		}
-		sys.arnRemotesMap[tgt.Arn] = tgtClient
 	}
-	sys.targetsMap[bucket] = tgts.Targets
+	if len(targets) == 0 {
+		delete(sys.targetsMap, bucket)
+		delete(sys.bucketRemotes, bucket)
+	} else {
+		sys.targetsMap[bucket] = targets
+		sys.bucketRemotes[bucket] = clients
+		for arn, client := range clients {
+			sys.arnRemotesMap[arn] = client
+			client.startHealthCheck()
+		}
+	}
+	sys.Unlock()
 }
 
-// create otterio-go clients for buckets having remote targets
+// GetRemoteTargetClientForBucket returns a client scoped to its source bucket, including historical
+// ARNs whose original hash did not include the source bucket or endpoint.
+// Read durable configuration so a delayed peer/cache publication cannot route
+// an object to a stale physical destination after a target mutation.
+func (sys *BucketTargetSys) GetRemoteTargetClientForBucket(ctx context.Context, bucket, arn string) *TargetClient {
+	obj := newObjectLayerFn()
+	if sys == nil || obj == nil {
+		return nil
+	}
+	_, targets, err := freshBucketTargets(ctx, obj, bucket)
+	if err != nil {
+		return nil
+	}
+	var target *madmin.BucketTarget
+	for i := range targets.Targets {
+		if targets.Targets[i].Arn == arn {
+			if target != nil {
+				return nil
+			}
+			target = &targets.Targets[i]
+		}
+	}
+	if target == nil {
+		return nil
+	}
+	sys.RLock()
+	cached := sys.bucketRemotes[bucket][arn]
+	sys.RUnlock()
+	if cached != nil && targetClientIdentity(cached.config) == targetClientIdentity(*target) {
+		return cached
+	}
+	client, err := sys.getRemoteTargetClient(target)
+	if err != nil {
+		return nil
+	}
+	// Avoid publishing a fresh read out of order with another mutation. An
+	// uncached client is still a valid immutable snapshot for this operation.
+	return client
+}
+
+// create clients for buckets having remote targets without racing map access.
 func (sys *BucketTargetSys) load(ctx context.Context, buckets []BucketInfo, _ ObjectLayer) {
 	for _, bucket := range buckets {
 		cfg, err := globalBucketMetadataSys.GetBucketTargetsConfig(bucket.Name)
@@ -335,21 +523,7 @@ func (sys *BucketTargetSys) load(ctx context.Context, buckets []BucketInfo, _ Ob
 			logger.LogIf(ctx, err)
 			continue
 		}
-		if cfg == nil || cfg.Empty() {
-			continue
-		}
-		if len(cfg.Targets) > 0 {
-			sys.targetsMap[bucket.Name] = cfg.Targets
-		}
-		for _, tgt := range cfg.Targets {
-			tgtClient, err := sys.getRemoteTargetClient(&tgt)
-			if err != nil {
-				logger.LogIf(ctx, err)
-				continue
-			}
-			sys.arnRemotesMap[tgt.Arn] = tgtClient
-		}
-		sys.targetsMap[bucket.Name] = cfg.Targets
+		sys.UpdateAllTargets(bucket.Name, cfg)
 	}
 }
 
@@ -359,8 +533,11 @@ var getRemoteTargetInstanceTransportOnce sync.Once
 
 // Returns a otterio-go Client configured to access remote host described in replication target config.
 func (sys *BucketTargetSys) getRemoteTargetClient(tcfg *madmin.BucketTarget) (*TargetClient, error) {
+	if tcfg == nil || tcfg.Credentials == nil {
+		return nil, errInvalidArgument
+	}
 	config := tcfg.Credentials
-	creds := credentials.NewStaticV4(config.AccessKey, config.SecretKey, "")
+	creds := credentials.NewStaticV4(config.AccessKey, config.SecretKey, config.SessionToken)
 
 	getRemoteTargetInstanceTransportOnce.Do(func() {
 		getRemoteTargetInstanceTransport = NewRemoteTargetHTTPTransport()
@@ -383,42 +560,51 @@ func (sys *BucketTargetSys) getRemoteTargetClient(tcfg *madmin.BucketTarget) (*T
 		healthCheckDuration: hcDuration,
 		bucket:              tcfg.TargetBucket,
 		replicateSync:       tcfg.ReplicationSync,
+		config:              cloneBucketTarget(*tcfg),
 	}
-	go tc.healthCheck()
 	return tc, nil
 }
 
-// getRemoteARN gets existing ARN for an endpoint or generates a new one.
-func (sys *BucketTargetSys) getRemoteARN(bucket string, target *madmin.BucketTarget) string {
-	if target == nil {
+func remoteARNFromTargets(bucket string, target *madmin.BucketTarget, targets *madmin.BucketTargets) string {
+	if target == nil || !target.Type.IsValid() {
 		return ""
 	}
-	tgts := sys.targetsMap[bucket]
-	for _, tgt := range tgts {
-		if tgt.Type == target.Type && tgt.TargetBucket == target.TargetBucket && target.URL().String() == tgt.URL().String() {
-			return tgt.Arn
+	for _, existing := range targets.Targets {
+		if targetDestinationIdentity(existing) == targetDestinationIdentity(*target) {
+			return existing.Arn
 		}
 	}
-	if !madmin.ServiceType(target.Type).IsValid() {
-		return ""
-	}
-	return generateARN(target)
+	candidate := cloneBucketTarget(*target)
+	candidate.SourceBucket = bucket
+	return generateARN(&candidate)
 }
 
-// generate ARN that is unique to this target type
-func generateARN(t *madmin.BucketTarget) string {
-	hash := sha256.New()
-	hash.Write([]byte(t.Type))
-	hash.Write([]byte(t.Region))
-	hash.Write([]byte(t.TargetBucket))
-	hashSum := hex.EncodeToString(hash.Sum(nil))
-	arn := madmin.ARN{
-		Type:   t.Type,
-		ID:     hashSum,
-		Region: t.Region,
-		Bucket: t.TargetBucket,
+func targetDestinationIdentity(t madmin.BucketTarget) string {
+	identity := struct {
+		Endpoint, TargetBucket, Path, API, Region string
+		Secure                                    bool
+		Type                                      madmin.ServiceType
+	}{
+		strings.ToLower(t.Endpoint), t.TargetBucket, t.Path, t.API, t.Region, t.Secure, t.Type,
 	}
-	return arn.String()
+	data, _ := json.Marshal(identity)
+	return string(data)
+}
+
+func targetClientIdentity(t madmin.BucketTarget) string {
+	creds := ""
+	if t.Credentials != nil {
+		creds = t.Credentials.AccessKey + "\x00" + t.Credentials.SecretKey + "\x00" + t.Credentials.SessionToken
+	}
+	return targetDestinationIdentity(t) + "\x00" + creds + fmt.Sprint(t.ReplicationSync, t.HealthCheckDuration)
+}
+
+func generateARN(t *madmin.BucketTarget) string {
+	if t == nil || !t.Type.IsValid() {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(t.SourceBucket + "\x00" + targetDestinationIdentity(*t)))
+	return (madmin.ARN{Type: t.Type, ID: hex.EncodeToString(sum[:]), Region: t.Region, Bucket: t.TargetBucket}).String()
 }
 
 // Returns parsed target config. If KMS is configured, remote target is decrypted
@@ -457,21 +643,42 @@ type TargetClient struct {
 	healthCheckDuration time.Duration
 	bucket              string // remote bucket target
 	replicateSync       bool
+	config              madmin.BucketTarget
+	healthCancel        context.CancelFunc
 }
 
 func (tc *TargetClient) isOffline() bool {
 	return atomic.LoadInt32(&tc.up) == 0
 }
 
-func (tc *TargetClient) healthCheck() {
+func (tc *TargetClient) startHealthCheck() {
+	ctx, cancel := context.WithCancel(GlobalContext)
+	tc.healthCancel = cancel
+	go tc.healthCheck(ctx)
+}
+
+func (tc *TargetClient) stopHealthCheck() {
+	if tc.healthCancel != nil {
+		tc.healthCancel()
+	}
+}
+
+func (tc *TargetClient) healthCheck(ctx context.Context) {
 	for {
-		_, err := tc.BucketExists(GlobalContext, tc.bucket)
+		probe, cancel := context.WithTimeout(ctx, 15*time.Second)
+		_, err := tc.BucketExists(probe, tc.bucket)
+		cancel()
 		if err != nil {
 			atomic.StoreInt32(&tc.up, 0)
-			time.Sleep(tc.healthCheckDuration)
-			continue
+		} else {
+			atomic.StoreInt32(&tc.up, 1)
 		}
-		atomic.StoreInt32(&tc.up, 1)
-		time.Sleep(tc.healthCheckDuration)
+		timer := time.NewTimer(tc.healthCheckDuration)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+		}
 	}
 }

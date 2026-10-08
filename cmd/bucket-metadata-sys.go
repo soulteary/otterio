@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	"github.com/soulteary/otterio/cmd/logger"
@@ -73,9 +74,25 @@ func (sys *BucketMetadataSys) Set(bucket string, meta BucketMetadata) {
 // Update update bucket metadata for the specified config file.
 // The configData data should not be modified after being sent here.
 func (sys *BucketMetadataSys) Update(bucket string, configFile string, configData []byte) error {
+	return sys.update(GlobalContext, bucket, configFile, configData, "", nil)
+}
+
+// UpdateWithContext also supports an optional revision checked inside the same
+// transaction as persistence. An empty revision preserves legacy semantics.
+func (sys *BucketMetadataSys) UpdateWithContext(ctx context.Context, bucket, configFile string, configData []byte, expected string) error {
+	return sys.update(ctx, bucket, configFile, configData, expected, nil)
+}
+
+func (sys *BucketMetadataSys) update(ctx context.Context, bucket string, configFile string, configData []byte, expected string, commit *bucketConfigCommit) error {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
 	objAPI := newObjectLayerFn()
 	if objAPI == nil {
 		return errServerNotInitialized
+	}
+
+	if expected != "" && !bucketConfigSupported(configFile) {
+		return NotImplemented{}
 	}
 
 	if globalIsGateway {
@@ -83,49 +100,49 @@ func (sys *BucketMetadataSys) Update(bucket string, configFile string, configDat
 		switch configFile {
 		case bucketSSEConfig:
 			if globalGatewayName == NASBackendGateway {
-				meta, err := loadBucketMetadata(GlobalContext, objAPI, bucket)
+				meta, err := loadBucketMetadataUnlocked(ctx, objAPI, bucket)
 				if err != nil {
 					return err
 				}
 				meta.EncryptionConfigXML = configData
-				return meta.Save(GlobalContext, objAPI)
+				return meta.Save(ctx, objAPI)
 			}
 		case bucketLifecycleConfig:
 			if globalGatewayName == NASBackendGateway {
-				meta, err := loadBucketMetadata(GlobalContext, objAPI, bucket)
+				meta, err := loadBucketMetadataUnlocked(ctx, objAPI, bucket)
 				if err != nil {
 					return err
 				}
 				meta.LifecycleConfigXML = configData
-				return meta.Save(GlobalContext, objAPI)
+				return meta.Save(ctx, objAPI)
 			}
 		case bucketTaggingConfig:
 			if globalGatewayName == NASBackendGateway {
-				meta, err := loadBucketMetadata(GlobalContext, objAPI, bucket)
+				meta, err := loadBucketMetadataUnlocked(ctx, objAPI, bucket)
 				if err != nil {
 					return err
 				}
 				meta.TaggingConfigXML = configData
-				return meta.Save(GlobalContext, objAPI)
+				return meta.Save(ctx, objAPI)
 			}
 		case bucketNotificationConfig:
 			if globalGatewayName == NASBackendGateway {
-				meta, err := loadBucketMetadata(GlobalContext, objAPI, bucket)
+				meta, err := loadBucketMetadataUnlocked(ctx, objAPI, bucket)
 				if err != nil {
 					return err
 				}
 				meta.NotificationConfigXML = configData
-				return meta.Save(GlobalContext, objAPI)
+				return meta.Save(ctx, objAPI)
 			}
 		case bucketPolicyConfig:
 			if configData == nil {
-				return objAPI.DeleteBucketPolicy(GlobalContext, bucket)
+				return objAPI.DeleteBucketPolicy(ctx, bucket)
 			}
 			config, err := policy.ParseConfig(bytes.NewReader(configData), bucket)
 			if err != nil {
 				return err
 			}
-			return objAPI.SetBucketPolicy(GlobalContext, bucket, config)
+			return objAPI.SetBucketPolicy(ctx, bucket, config)
 		}
 		return NotImplemented{}
 	}
@@ -134,9 +151,30 @@ func (sys *BucketMetadataSys) Update(bucket string, configFile string, configDat
 		return errInvalidArgument
 	}
 
-	meta, err := loadBucketMetadata(GlobalContext, objAPI, bucket)
+	// Serialize the complete metadata read/modify/write, including updates to
+	// different settings. This key differs from the metadata object's own lock.
+	lock := objAPI.NewNSLock(otterioMetaBucket, bucketMetadataTransactionKey(bucket))
+	ctx, err := lock.GetLock(ctx, newDynamicTimeout(10*time.Second, time.Second))
 	if err != nil {
 		return err
+	}
+	locked := true
+	defer func() {
+		if locked {
+			lock.Unlock()
+		}
+	}()
+	if _, err := objAPI.GetBucketInfo(ctx, bucket); err != nil {
+		return err
+	}
+
+	meta, err := loadBucketMetadataUnlocked(ctx, objAPI, bucket)
+	if err != nil {
+		return err
+	}
+
+	if expected != "" && bucketConfigRevision(configFile, bucketConfigBytes(meta, configFile)) != expected {
+		return PreConditionFailed{}
 	}
 
 	switch configFile {
@@ -153,18 +191,33 @@ func (sys *BucketMetadataSys) Update(bucket string, configFile string, configDat
 	case bucketQuotaConfigFile:
 		meta.QuotaConfigJSON = configData
 	case objectLockConfig:
-		if !globalIsErasure && !globalIsDistErasure {
+		if !globalIsErasure && !globalIsDistErasure && !bucketMetadataErasureBackend(objAPI) {
 			return NotImplemented{}
 		}
 		meta.ObjectLockConfigXML = configData
 	case bucketVersioningConfig:
-		if !globalIsErasure && !globalIsDistErasure {
+		if !globalIsErasure && !globalIsDistErasure && !bucketMetadataErasureBackend(objAPI) {
 			return NotImplemented{}
+		}
+		requested, err := versioning.ParseConfig(bytes.NewReader(configData))
+		if err != nil {
+			return err
+		}
+		// A peer's cache may lag a different setting. Recheck dependencies in
+		// the same fresh transaction that will commit the versioning document.
+		if requested.Suspended() && ((meta.objectLockConfig != nil && meta.objectLockConfig.ObjectLockEnabled == "Enabled") || meta.replicationConfig != nil) {
+			return errBucketConfigInvalidState
 		}
 		meta.VersioningConfigXML = configData
 	case bucketReplicationConfig:
-		if !globalIsErasure && !globalIsDistErasure {
+		if !globalIsErasure && !globalIsDistErasure && !bucketMetadataErasureBackend(objAPI) {
 			return NotImplemented{}
+		}
+		// Replication's handler checks versioning before reading the body and
+		// contacting its destination. A concurrent suspension may have won
+		// since that check, so validate the fresh state inside this transaction.
+		if len(configData) != 0 && (meta.versioningConfig == nil || !meta.versioningConfig.Enabled()) {
+			return errBucketConfigInvalidState
 		}
 		meta.ReplicationConfigXML = configData
 	case bucketTargetsFile:
@@ -176,12 +229,22 @@ func (sys *BucketMetadataSys) Update(bucket string, configFile string, configDat
 		return fmt.Errorf("Unknown bucket %s metadata update requested %s", bucket, configFile)
 	}
 
-	if err := meta.Save(GlobalContext, objAPI); err != nil {
+	if err := meta.Save(ctx, objAPI); err != nil {
 		return err
 	}
 
+	if commit != nil {
+		data := bucketConfigBytes(meta, configFile)
+		commit.revision, commit.exists = bucketConfigRevision(configFile, data), len(data) != 0
+	}
 	sys.Set(bucket, meta)
-	globalNotificationSys.LoadBucketMetadata(GlobalContext, bucket)
+	// A peer reload acquires this same distributed lock. Release it before
+	// waiting for peer acknowledgments. Persistence/cache/ACK are captured.
+	lock.Unlock()
+	locked = false
+	if globalNotificationSys != nil {
+		globalNotificationSys.LoadBucketMetadata(ctx, bucket)
+	}
 
 	return nil
 }
@@ -409,14 +472,31 @@ func (sys *BucketMetadataSys) GetConfig(bucket string) (BucketMetadata, error) {
 	if ok {
 		return meta, nil
 	}
-	meta, err := loadBucketMetadata(GlobalContext, objAPI, bucket)
-	if err != nil {
-		return meta, err
+	return sys.loadConfig(GlobalContext, objAPI, bucket)
+}
+
+// Loading can write migrations. Publish the resulting cache before releasing
+// the transaction, so an older load cannot overwrite a newer committed cache.
+func (sys *BucketMetadataSys) loadConfig(ctx context.Context, obj ObjectLayer, bucket string) (BucketMetadata, error) {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	if !globalIsGateway && bucketMetadataTransactionSupported(obj) {
+		lock := obj.NewNSLock(otterioMetaBucket, bucketMetadataTransactionKey(bucket))
+		locked, err := lock.GetLock(ctx, newDynamicTimeout(10*time.Second, time.Second))
+		if err != nil {
+			return newBucketMetadata(bucket), err
+		}
+		ctx = locked
+		defer lock.Unlock()
+		if _, err := obj.GetBucketInfo(ctx, bucket); err != nil {
+			return newBucketMetadata(bucket), err
+		}
 	}
-	sys.Lock()
-	sys.metadataMap[bucket] = meta
-	sys.Unlock()
-	return meta, nil
+	meta, err := loadBucketMetadataUnlocked(ctx, obj, bucket)
+	if err == nil {
+		sys.Set(bucket, meta)
+	}
+	return meta, err
 }
 
 // Init - initializes bucket metadata system for all buckets.
@@ -446,13 +526,10 @@ func (sys *BucketMetadataSys) concurrentLoad(ctx context.Context, buckets []Buck
 				// Ensure heal opts for bucket metadata be deep healed all the time.
 				ScanMode: madmin.HealDeepScan,
 			})
-			meta, err := loadBucketMetadata(ctx, objAPI, buckets[index].Name)
+			_, err := sys.loadConfig(ctx, objAPI, buckets[index].Name)
 			if err != nil {
 				return err
 			}
-			sys.Lock()
-			sys.metadataMap[buckets[index].Name] = meta
-			sys.Unlock()
 			return nil
 		}, index)
 	}

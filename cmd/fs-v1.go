@@ -423,6 +423,16 @@ func (fs *FSObjects) statBucketDir(ctx context.Context, bucket string) (os.FileI
 
 // MakeBucketWithLocation - create a new bucket, returns if it already exists.
 func (fs *FSObjects) MakeBucketWithLocation(ctx context.Context, bucket string, opts BucketOptions) error {
+	if !globalIsGateway {
+		transaction := fs.NewNSLock(otterioMetaBucket, bucketMetadataTransactionKey(bucket))
+		locked, err := transaction.GetLock(ctx, newDynamicTimeout(10*time.Second, time.Second))
+		if err != nil {
+			return err
+		}
+		ctx = locked
+		defer transaction.Unlock()
+	}
+
 	if opts.LockEnabled || opts.VersioningEnabled {
 		return NotImplemented{}
 	}
@@ -578,6 +588,16 @@ func (fs *FSObjects) ListBuckets(ctx context.Context) ([]BucketInfo, error) {
 // DeleteBucket - delete a bucket and all the metadata associated
 // with the bucket including pending multipart, object metadata.
 func (fs *FSObjects) DeleteBucket(ctx context.Context, bucket string, forceDelete bool) error {
+	if !globalIsGateway {
+		transaction := fs.NewNSLock(otterioMetaBucket, bucketMetadataTransactionKey(bucket))
+		locked, err := transaction.GetLock(ctx, newDynamicTimeout(10*time.Second, time.Second))
+		if err != nil {
+			return err
+		}
+		ctx = locked
+		defer transaction.Unlock()
+	}
+
 	atomic.AddInt64(&fs.activeIOCount, 1)
 	defer func() {
 		atomic.AddInt64(&fs.activeIOCount, -1)
@@ -1045,6 +1065,9 @@ func (fs *FSObjects) GetObjectInfo(ctx context.Context, bucket, object string, o
 	defer func() {
 		atomic.AddInt64(&fs.activeIOCount, -1)
 	}()
+	if opts.NoLock {
+		return fs.getObjectInfo(ctx, bucket, object)
+	}
 
 	oi, err := fs.getObjectInfoWithLock(ctx, bucket, object)
 	if err == errCorruptedFormat || err == io.EOF {
@@ -1091,7 +1114,7 @@ func (fs *FSObjects) parentDirIsObject(ctx context.Context, bucket, parent strin
 // Additionally writes `fs.json` which carries the necessary metadata
 // for future object operations.
 func (fs *FSObjects) PutObject(ctx context.Context, bucket string, object string, r *PutObjReader, opts ObjectOptions) (objInfo ObjectInfo, err error) {
-	if opts.Versioned {
+	if opts.Versioned || opts.TransitionRestore != nil || opts.TransitionStatus != "" || opts.TransitionedObject != nil || opts.TransitionExpected != nil {
 		return objInfo, NotImplemented{}
 	}
 
@@ -1272,6 +1295,9 @@ func (fs *FSObjects) DeleteObjects(ctx context.Context, bucket string, objects [
 // DeleteObject - deletes an object from a bucket, this operation is destructive
 // and there are no rollbacks supported.
 func (fs *FSObjects) DeleteObject(ctx context.Context, bucket, object string, opts ObjectOptions) (objInfo ObjectInfo, err error) {
+	if opts.TransitionStatus != "" || opts.TransitionedObject != nil || opts.TransitionExpected != nil {
+		return objInfo, NotImplemented{}
+	}
 	if opts.VersionID != "" && opts.VersionID != nullVersionID {
 		return objInfo, VersionNotFound{
 			Bucket:    bucket,
@@ -1280,13 +1306,15 @@ func (fs *FSObjects) DeleteObject(ctx context.Context, bucket, object string, op
 		}
 	}
 
-	// Acquire a write lock before deleting the object.
-	lk := fs.NewNSLock(bucket, object)
-	ctx, err = lk.GetLock(ctx, globalOperationTimeout)
-	if err != nil {
-		return objInfo, err
+	// Lifecycle expiry can already own the source write lock.
+	if !opts.NoLock {
+		lk := fs.NewNSLock(bucket, object)
+		ctx, err = lk.GetLock(ctx, globalOperationTimeout)
+		if err != nil {
+			return objInfo, err
+		}
+		defer lk.Unlock()
 	}
-	defer lk.Unlock()
 
 	if err = checkDelObjArgs(ctx, bucket, object); err != nil {
 		return objInfo, err

@@ -23,6 +23,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -42,7 +43,6 @@ import (
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
-	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
 	objectlock "github.com/soulteary/otterio/pkg/bucket/object/lock"
 	"github.com/soulteary/otterio/pkg/bucket/policy"
 	"github.com/soulteary/otterio/pkg/bucket/replication"
@@ -611,14 +611,6 @@ func (api objectAPIHandlers) DeleteMultipleObjectsHandler(w http.ResponseWriter,
 				}
 				scheduleReplicationDelete(ctx, dv, objectAPI, replicateSync)
 			}
-		}
-
-		if hasLifecycleConfig && dobj.PurgeTransitioned == lifecycle.TransitionComplete { // clean up transitioned tier
-			deleteTransitionedObject(ctx, objectAPI, bucket, dobj.ObjectName, lifecycle.ObjectOpts{
-				Name:         dobj.ObjectName,
-				VersionID:    dobj.VersionID,
-				DeleteMarker: dobj.DeleteMarker,
-			}, false, true)
 		}
 
 		eventName := event.ObjectRemovedDelete
@@ -1526,6 +1518,10 @@ func (api objectAPIHandlers) PutBucketReplicationConfigHandler(w http.ResponseWr
 		return
 	}
 	if err = globalBucketMetadataSys.Update(bucket, bucketReplicationConfig, configData); err != nil {
+		if errors.Is(err, errBucketConfigInvalidState) {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrReplicationNeedsVersioningError), r.URL, guessIsBrowserReq(r))
+			return
+		}
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 		return
 	}

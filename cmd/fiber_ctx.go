@@ -70,6 +70,10 @@ type fiberRequestCtx struct {
 	done <-chan struct{}
 }
 
+// A connection snapshot permits bounded reads on the small configuration
+// endpoints without retaining the recycled fasthttp request context.
+type configurationReadConnKey struct{}
+
 func newFiberRequestCtx(reqCtx *fasthttp.RequestCtx) *fiberRequestCtx {
 	// Capture Done() once, in the request goroutine, while reqCtx.s is
 	// stable. After this point we never call reqCtx.Done() again.
@@ -80,6 +84,7 @@ func newFiberRequestCtx(reqCtx *fasthttp.RequestCtx) *fiberRequestCtx {
 		}
 		values[key] = value
 	})
+	values[configurationReadConnKey{}] = reqCtx.Conn()
 	return &fiberRequestCtx{values: values, done: reqCtx.Done()}
 }
 

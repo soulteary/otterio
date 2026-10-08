@@ -568,13 +568,11 @@ func (s *peerRESTServer) LoadBucketMetadataHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	meta, err := loadBucketMetadata(r.Context(), objAPI, bucketName)
+	meta, err := globalBucketMetadataSys.loadConfig(r.Context(), objAPI, bucketName)
 	if err != nil {
 		s.writeErrorResponse(w, err)
 		return
 	}
-
-	globalBucketMetadataSys.Set(bucketName, meta)
 
 	if meta.notificationConfig != nil {
 		globalNotificationSys.AddRulesMap(bucketName, meta.notificationConfig.ToRulesMap())

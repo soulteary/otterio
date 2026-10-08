@@ -138,7 +138,11 @@ func (g *NotificationGroup) Go(ctx context.Context, f func() error, index int, a
 				}
 				// Wait for one second and no need wait after last attempt.
 				if i < 2 {
-					time.Sleep(1 * time.Second)
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(time.Second):
+					}
 				}
 				continue
 			}
@@ -209,14 +213,19 @@ func (sys *NotificationSys) DeleteUser(accessKey string) []NotificationPeerErr {
 
 // LoadUser - reloads a specific user across all peers
 func (sys *NotificationSys) LoadUser(accessKey string, temp bool) []NotificationPeerErr {
+	return sys.LoadUserWithContext(GlobalContext, accessKey, temp)
+}
+
+// LoadUserWithContext reloads a user across peers within the caller's deadline.
+func (sys *NotificationSys) LoadUserWithContext(ctx context.Context, accessKey string, temp bool) []NotificationPeerErr {
 	ng := WithNPeers(len(sys.peerClients))
 	for idx, client := range sys.peerClients {
 		if client == nil {
 			continue
 		}
 		client := client
-		ng.Go(GlobalContext, func() error {
-			return client.LoadUser(accessKey, temp)
+		ng.Go(ctx, func() error {
+			return client.loadUserWithContext(ctx, accessKey, temp)
 		}, idx, *client.host)
 	}
 	return ng.Wait()
@@ -653,7 +662,7 @@ func (sys *NotificationSys) LoadBucketMetadata(ctx context.Context, bucketName s
 		}
 		client := client
 		ng.Go(ctx, func() error {
-			return client.LoadBucketMetadata(bucketName)
+			return client.loadBucketMetadataWithContext(ctx, bucketName)
 		}, idx, *client.host)
 	}
 	for _, nErr := range ng.Wait() {
@@ -1487,6 +1496,7 @@ func (args eventArgs) ToEvent(escape bool) event.Event {
 }
 
 func sendEvent(args eventArgs) {
+	args.Object = args.Object.Clone()
 	args.Object.Size, _ = args.Object.GetActualSize()
 
 	// avoid generating a notification for REPLICA creation event.
@@ -1496,6 +1506,11 @@ func sendEvent(args eventArgs) {
 	// remove sensitive encryption entries in metadata.
 	crypto.RemoveSensitiveEntries(args.Object.UserDefined)
 	crypto.RemoveInternalEntries(args.Object.UserDefined)
+	for key := range args.Object.UserDefined {
+		if strings.HasPrefix(strings.ToLower(key), ReservedMetadataPrefixLower) {
+			delete(args.Object.UserDefined, key)
+		}
+	}
 
 	// globalNotificationSys is not initialized in gateway mode.
 	if globalNotificationSys == nil {

@@ -46,7 +46,6 @@ import (
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/auth"
-	"github.com/soulteary/otterio/pkg/bucket/lifecycle"
 	objectlock "github.com/soulteary/otterio/pkg/bucket/object/lock"
 	"github.com/soulteary/otterio/pkg/bucket/policy"
 	"github.com/soulteary/otterio/pkg/bucket/replication"
@@ -821,16 +820,6 @@ next:
 					Bucket: args.BucketName,
 				}
 				scheduleReplicationDelete(ctx, dobj, objectAPI, replicateSync)
-			}
-			if goi.TransitionStatus == lifecycle.TransitionComplete {
-				deleteTransitionedObject(ctx, objectAPI, args.BucketName, objectName, lifecycle.ObjectOpts{
-					Name:             objectName,
-					UserTags:         goi.UserTags,
-					VersionID:        goi.VersionID,
-					DeleteMarker:     goi.DeleteMarker,
-					TransitionStatus: goi.TransitionStatus,
-					IsLatest:         goi.IsLatest,
-				}, false, true)
 			}
 
 			logger.LogIf(ctx, err)

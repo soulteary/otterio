@@ -360,6 +360,10 @@ func (er erasureObjects) healObject(ctx context.Context, bucket string, object s
 		// Returns a copy of the 'fi' with checksums and parts nil'ed.
 		nfi := fi
 		nfi.Erasure.Index = 0
+		if fi.TransitionStatus == lifecycle.TransitionComplete && !transitionHasLocalData(fi) {
+			// Original multipart boundaries are also remote read metadata.
+			return nfi
+		}
 		nfi.Erasure.Checksums = nil
 		nfi.Parts = nil
 		return nfi
@@ -393,7 +397,7 @@ func (er erasureObjects) healObject(ctx context.Context, bucket string, object s
 		inlineBuffers = make([]*bytes.Buffer, len(outDatedDisks))
 	}
 
-	if !latestMeta.Deleted || latestMeta.TransitionStatus != lifecycle.TransitionComplete {
+	if !latestMeta.Deleted && transitionHasLocalData(latestMeta) {
 		result.DataBlocks = latestMeta.Erasure.DataBlocks
 		result.ParityBlocks = latestMeta.Erasure.ParityBlocks
 
@@ -497,7 +501,12 @@ func (er erasureObjects) healObject(ctx context.Context, bucket string, object s
 		partsMetadata[i].Erasure.Index = i + 1
 
 		// Attempt a rename now from healed data to final location.
-		if err = disk.RenameData(ctx, otterioMetaTmpBucket, tmpID, partsMetadata[i], bucket, object); err != nil {
+		if latestMeta.TransitionStatus == lifecycle.TransitionComplete && !transitionHasLocalData(latestMeta) {
+			err = disk.WriteMetadata(ctx, bucket, object, partsMetadata[i])
+		} else {
+			err = disk.RenameData(ctx, otterioMetaTmpBucket, tmpID, partsMetadata[i], bucket, object)
+		}
+		if err != nil {
 			logger.LogIf(ctx, err)
 			return result, toObjectErr(err, bucket, object)
 		}
@@ -805,8 +814,14 @@ func isObjectDangling(metaArr []FileInfo, errs []error, dataErrs []error) (valid
 		if !m.IsValid() {
 			continue
 		}
-		validMeta = m
-		break
+		if m.TransitionStatus != "" || m.Metadata[transitionReferenceKey] != "" {
+			// An incomplete metadata quorum is not proof that the remote copy
+			// is disposable. Preserve the only recovery reference for a retry.
+			return m, false
+		}
+		if !validMeta.IsValid() {
+			validMeta = m
+		}
 	}
 
 	if validMeta.Deleted || validMeta.TransitionStatus == lifecycle.TransitionComplete {

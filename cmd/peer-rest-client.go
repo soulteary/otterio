@@ -450,9 +450,13 @@ func (client *peerRESTClient) GetBucketStats(bucket string) (BucketStats, error)
 
 // LoadBucketMetadata - load bucket metadata
 func (client *peerRESTClient) LoadBucketMetadata(bucket string) error {
+	return client.loadBucketMetadataWithContext(GlobalContext, bucket)
+}
+
+func (client *peerRESTClient) loadBucketMetadataWithContext(ctx context.Context, bucket string) error {
 	values := make(url.Values)
 	values.Set(peerRESTBucket, bucket)
-	respBody, err := client.call(peerRESTMethodLoadBucketMetadata, values, nil, -1)
+	respBody, err := client.callWithContext(ctx, peerRESTMethodLoadBucketMetadata, values, nil, -1)
 	if err != nil {
 		return err
 	}
@@ -560,12 +564,16 @@ func (client *peerRESTClient) DeleteServiceAccount(accessKey string) (err error)
 }
 
 // LoadUser - reload a specific user.
-func (client *peerRESTClient) LoadUser(accessKey string, temp bool) (err error) {
+func (client *peerRESTClient) LoadUser(accessKey string, temp bool) error {
+	return client.loadUserWithContext(GlobalContext, accessKey, temp)
+}
+
+func (client *peerRESTClient) loadUserWithContext(ctx context.Context, accessKey string, temp bool) (err error) {
 	values := make(url.Values)
 	values.Set(peerRESTUser, accessKey)
 	values.Set(peerRESTUserTemp, strconv.FormatBool(temp))
 
-	respBody, err := client.call(peerRESTMethodLoadUser, values, nil, -1)
+	respBody, err := client.callWithContext(ctx, peerRESTMethodLoadUser, values, nil, -1)
 	if err != nil {
 		return
 	}

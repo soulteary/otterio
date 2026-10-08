@@ -23,8 +23,8 @@ import (
 	"io"
 	"net/http"
 	"runtime"
+	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	otteriogo "github.com/soulteary/otterio-sdk/v7"
@@ -72,16 +72,16 @@ type expiryTask struct {
 }
 
 type expiryState struct {
-	once     sync.Once
 	expiryCh chan expiryTask
 }
 
 func (es *expiryState) queueExpiryTask(oi ObjectInfo, rmVersion bool) {
+	if GlobalContext.Err() != nil {
+		return
+	}
 	select {
 	case <-GlobalContext.Done():
-		es.once.Do(func() {
-			close(es.expiryCh)
-		})
+		return
 	case es.expiryCh <- expiryTask{objInfo: oi, versionExpiry: rmVersion}:
 	default:
 	}
@@ -100,24 +100,29 @@ func newExpiryState() *expiryState {
 func initBackgroundExpiry(ctx context.Context, objectAPI ObjectLayer) {
 	globalExpiryState = newExpiryState()
 	go func() {
-		for t := range globalExpiryState.expiryCh {
-			applyExpiryRule(ctx, objectAPI, t.objInfo, false, t.versionExpiry)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case t := <-globalExpiryState.expiryCh:
+				applyExpiryRule(ctx, objectAPI, t.objInfo, false, t.versionExpiry)
+			}
 		}
 	}()
 }
 
 type transitionState struct {
-	once sync.Once
 	// add future metrics here
 	transitionCh chan ObjectInfo
 }
 
 func (t *transitionState) queueTransitionTask(oi ObjectInfo) {
+	if GlobalContext.Err() != nil {
+		return
+	}
 	select {
 	case <-GlobalContext.Done():
-		t.once.Do(func() {
-			close(t.transitionCh)
-		})
+		return
 	case t.transitionCh <- oi:
 	default:
 	}
@@ -171,10 +176,16 @@ func initBackgroundTransition(ctx context.Context, objectAPI ObjectLayer) {
 
 func validateLifecycleTransition(ctx context.Context, bucket string, lfc *lifecycle.Lifecycle) error {
 	for _, rule := range lfc.Rules {
-		if rule.Transition.StorageClass != "" {
-			sameTarget, destbucket, err := validateTransitionDestination(ctx, bucket, rule.Transition.StorageClass)
+		for _, storageClass := range []string{rule.Transition.StorageClass, rule.NoncurrentVersionTransition.StorageClass} {
+			if storageClass == "" {
+				continue
+			}
+			sameTarget, destbucket, err := validateTransitionDestination(ctx, bucket, storageClass)
 			if err != nil {
 				return err
+			}
+			if !globalIsErasure || !lifecycleTransitionSupported(newObjectLayerFn()) {
+				return NotImplemented{Message: "Lifecycle transition requires erasure storage"}
 			}
 			if sameTarget && destbucket == bucket {
 				return fmt.Errorf("Transition destination cannot be the same as the source bucket")
@@ -198,7 +209,7 @@ func validateTransitionDestination(ctx context.Context, bucket string, targetLab
 	if arn.Type != madmin.ILMService {
 		return false, "", BucketRemoteArnTypeInvalid{}
 	}
-	clnt := globalBucketTargetSys.GetRemoteTargetClient(ctx, tgt.Arn)
+	clnt := globalBucketTargetSys.GetRemoteTargetClientForBucket(ctx, bucket, tgt.Arn)
 	if clnt == nil {
 		return false, "", BucketRemoteTargetNotFound{Bucket: bucket}
 	}
@@ -226,24 +237,6 @@ func transitionSC(_ context.Context, bucket string) string {
 	return ""
 }
 
-// return true if ARN representing transition storage class is present in a active rule
-// for the lifecycle configured on this bucket
-func transitionSCInUse(ctx context.Context, lfc *lifecycle.Lifecycle, bucket, arnStr string) bool {
-	tgtLabel := globalBucketTargetSys.GetRemoteLabelWithArn(ctx, bucket, arnStr)
-	if tgtLabel == "" {
-		return false
-	}
-	for _, rule := range lfc.Rules {
-		if rule.Status == Disabled {
-			continue
-		}
-		if rule.Transition.StorageClass != "" && rule.Transition.StorageClass == tgtLabel {
-			return true
-		}
-	}
-	return false
-}
-
 // set PutObjectOptions for PUT operation to transition data to target cluster
 func putTransitionOpts(objInfo ObjectInfo) (putOpts otteriogo.PutObjectOptions, err error) {
 	meta := make(map[string]string)
@@ -258,6 +251,15 @@ func putTransitionOpts(objInfo ObjectInfo) (putOpts otteriogo.PutObjectOptions, 
 			SourceMTime:     objInfo.ModTime,
 			SourceETag:      objInfo.ETag,
 		},
+	}
+	for k, v := range objInfo.UserDefined {
+		if strings.HasPrefix(strings.ToLower(k), "x-amz-meta-") && !strings.EqualFold(k, "x-amz-meta-"+transitionIdentityMetadata) {
+			putOpts.UserMetadata[k] = v
+		}
+	}
+	if objInfo.TransitionedObject != nil {
+		putOpts.Internal.SourceVersionID = objInfo.TransitionedObject.VersionID
+		putOpts.UserMetadata[transitionIdentityMetadata] = objInfo.TransitionedObject.Key
 	}
 
 	if objInfo.UserTags != "" {
@@ -299,187 +301,237 @@ func putTransitionOpts(objInfo ObjectInfo) (putOpts otteriogo.PutObjectOptions, 
 // 1. temporarily restored copies of objects (restored with the PostRestoreObject API) expired.
 // 2. life cycle expiry date is met on the object.
 // 3. Object is removed through DELETE api call
-func deleteTransitionedObject(ctx context.Context, objectAPI ObjectLayer, bucket, object string, lcOpts lifecycle.ObjectOpts, restoredObject, isDeleteTierOnly bool) error {
-	if lcOpts.TransitionStatus == "" && !isDeleteTierOnly {
-		return nil
+func deleteTransitionedObject(ctx context.Context, objectAPI ObjectLayer, bucket, object string, lcOpts lifecycle.ObjectOpts, restoredObject, isDeleteTierOnly bool, expected ...ObjectInfo) error {
+	if !isDeleteTierOnly {
+		queued := ObjectInfo{Bucket: bucket, Name: object, VersionID: lcOpts.VersionID, ModTime: lcOpts.ModTime}
+		var source *ObjectInfo
+		if len(expected) != 0 {
+			queued = expected[0]
+			source = &expected[0]
+		}
+		_, err := executeExpiry(ctx, objectAPI, queued, restoredObject, lcOpts.VersionID != "" && (!lcOpts.IsLatest || lcOpts.DeleteMarker), source)
+		return err
 	}
-	lc, err := globalLifecycleSys.Get(bucket)
+	lk := objectAPI.NewNSLock(bucket, encodeDirObject(object))
+	ctx, err := lk.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
 		return err
 	}
-	arn := getLifecycleTransitionTargetArn(ctx, lc, bucket, lcOpts)
-	if arn == nil {
-		return fmt.Errorf("remote target not configured")
-	}
-	tgt := globalBucketTargetSys.GetRemoteTargetClient(ctx, arn.String())
-	if tgt == nil {
-		return fmt.Errorf("remote target not configured")
-	}
-
-	var opts ObjectOptions
-	opts.Versioned = globalBucketVersioningSys.Enabled(bucket)
-	opts.VersionID = lcOpts.VersionID
-	if restoredObject {
-		// delete locally restored copy of object or object version
-		// from the source, while leaving metadata behind. The data on
-		// transitioned tier lies untouched and still accessible
-		opts.TransitionStatus = lcOpts.TransitionStatus
-		_, err = objectAPI.DeleteObject(ctx, bucket, object, opts)
-		return err
-	}
-
-	// When an object is past expiry, delete the data from transitioned tier and
-	// metadata from source
-	if err := tgt.RemoveObject(context.Background(), arn.Bucket, object, otteriogo.RemoveObjectOptions{VersionID: lcOpts.VersionID}); err != nil {
-		logger.LogIf(ctx, err)
-	}
-
-	if isDeleteTierOnly {
-		return nil
-	}
-
-	objInfo, err := objectAPI.DeleteObject(ctx, bucket, object, opts)
+	defer lk.Unlock()
+	oi, err := objectAPI.GetObjectInfo(ctx, bucket, object, ObjectOptions{VersionID: lcOpts.VersionID, NoLock: true})
 	if err != nil {
 		return err
 	}
-	eventName := event.ObjectRemovedDelete
-	if lcOpts.DeleteMarker {
-		eventName = event.ObjectRemovedDeleteMarkerCreated
+	if len(expected) != 0 && !sameTransitionSource(oi, &expected[0]) || !lcOpts.ModTime.IsZero() && !lcOpts.ModTime.Equal(oi.ModTime) {
+		return PreConditionFailed{}
 	}
-	// Notify object deleted event.
-	sendEvent(eventArgs{
-		EventName:  eventName,
-		BucketName: bucket,
-		Object:     objInfo,
-		Host:       "Internal: [ILM-EXPIRY]",
-	})
-
-	// should never reach here
-	return nil
+	if oi.TransitionStatus == "" {
+		return nil
+	}
+	return cleanupTransitionBeforeDelete(ctx, oi, ObjectOptions{VersionID: oi.VersionID, NoLock: true, TransitionExpected: &oi})
 }
 
-// transition object to target specified by the transition ARN. When an object is transitioned to another
-// storage specified by the transition ARN, the metadata is left behind on source cluster and original content
-// is moved to the transition tier. Note that in the case of encrypted objects, entire encrypted stream is moved
-// to the transition tier without decrypting or re-encrypting.
-func transitionObject(ctx context.Context, objectAPI ObjectLayer, objInfo ObjectInfo) error {
-	lc, err := globalLifecycleSys.Get(objInfo.Bucket)
+// prepareTransition binds a fresh source version to one durable destination
+// before any remote upload. Lock order is target registry, then source object.
+func prepareTransition(ctx context.Context, objectAPI ObjectLayer, queued ObjectInfo) (ObjectInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	targetLock := lifecycleTargetLock(objectAPI, queued.Bucket)
+	ctx, err := targetLock.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
-		return err
+		return ObjectInfo{}, err
 	}
-	lcOpts := lifecycle.ObjectOpts{
-		Name:     objInfo.Name,
-		UserTags: objInfo.UserTags,
+	defer targetLock.Unlock()
+	objectLock := objectAPI.NewNSLock(queued.Bucket, encodeDirObject(queued.Name))
+	ctx, err = objectLock.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
+		return ObjectInfo{}, err
 	}
-	arn := getLifecycleTransitionTargetArn(ctx, lc, objInfo.Bucket, lcOpts)
-	if arn == nil {
-		return fmt.Errorf("remote target not configured")
-	}
-	tgt := globalBucketTargetSys.GetRemoteTargetClient(ctx, arn.String())
-	if tgt == nil {
-		return fmt.Errorf("remote target not configured")
-	}
+	defer objectLock.Unlock()
+	return prepareTransitionLocked(ctx, objectAPI, queued)
+}
 
-	gr, err := objectAPI.GetObjectNInfo(ctx, objInfo.Bucket, objInfo.Name, nil, http.Header{}, readLock, ObjectOptions{
-		VersionID:        objInfo.VersionID,
-		TransitionStatus: lifecycle.TransitionPending,
-	})
+func prepareTransitionLocked(ctx context.Context, objectAPI ObjectLayer, queued ObjectInfo) (ObjectInfo, error) {
+	oi, err := objectAPI.GetObjectInfo(ctx, queued.Bucket, queued.Name, ObjectOptions{VersionID: queued.VersionID, NoLock: true})
+	if err != nil {
+		return ObjectInfo{}, err
+	}
+	if oi.DeleteMarker || !oi.ModTime.Equal(queued.ModTime) || oi.ETag != queued.ETag || oi.Size != queued.Size {
+		return ObjectInfo{}, PreConditionFailed{}
+	}
+	if deleting, err := transitionDeletionPending(oi); err != nil {
+		return ObjectInfo{}, err
+	} else if deleting {
+		return ObjectInfo{}, PreConditionFailed{}
+	}
+	if oi.TransitionStatus == lifecycle.TransitionComplete {
+		return oi, nil
+	}
+	if oi.TransitionStatus == lifecycle.TransitionPending && oi.TransitionedObject != nil {
+		return oi, nil
+	}
+	if oi.UserDefined[transitionReferenceKey] != "" {
+		return ObjectInfo{}, fmt.Errorf("corrupt persisted transition reference")
+	}
+	meta, err := loadBucketMetadata(ctx, objectAPI, oi.Bucket)
+	if err != nil {
+		return ObjectInfo{}, err
+	}
+	lc := meta.lifecycleConfig
+	if lc == nil {
+		return ObjectInfo{}, BucketLifecycleNotFound{Bucket: oi.Bucket}
+	}
+	selection := lc.Select(lifecycleObjectOpts(oi))
+	if selection.Action != lifecycle.TransitionAction && selection.Action != lifecycle.TransitionVersionAction {
+		return ObjectInfo{}, PreConditionFailed{}
+	}
+	if !lifecycleTransitionSupported(objectAPI) {
+		return ObjectInfo{}, NotImplemented{Message: "Lifecycle transition requires native single-pool local erasure storage"}
+	}
+	arn := globalBucketTargetSys.GetRemoteArnWithLabel(ctx, oi.Bucket, selection.StorageClass)
+	if arn == nil || arn.Type != madmin.ILMService {
+		return ObjectInfo{}, BucketRemoteTargetNotFound{Bucket: oi.Bucket}
+	}
+	ref := &TransitionedObject{ARN: arn.String(), Key: "otterio-tier/" + mustGetUUID(), StorageClass: selection.StorageClass}
+	clnt, remoteBucket, err := transitionClient(ctx, oi.Bucket, ref)
+	if err != nil {
+		return ObjectInfo{}, err
+	}
+	versioning, err := clnt.GetBucketVersioning(ctx, remoteBucket)
+	if err != nil {
+		return ObjectInfo{}, err
+	}
+	if versioning.Status == "Enabled" {
+		ref.VersionID = mustGetUUID()
+	}
+	if err = pinLifecycleTarget(ctx, objectAPI, oi.Bucket, oi, ref); err != nil {
+		return ObjectInfo{}, err
+	}
+	if _, err = objectAPI.DeleteObject(ctx, oi.Bucket, oi.Name, ObjectOptions{
+		VersionID: oi.VersionID, TransitionStatus: lifecycle.TransitionPending,
+		TransitionedObject: ref, TransitionExpected: &oi, NoLock: true,
+	}); err != nil {
+		return ObjectInfo{}, err
+	}
+	return objectAPI.GetObjectInfo(ctx, oi.Bucket, oi.Name, ObjectOptions{VersionID: oi.VersionID, NoLock: true})
+}
+
+// transitionObject retains the source write lock until the remote upload and
+// its exact destination version have committed. Retry uses the persisted key.
+func transitionObject(ctx context.Context, objectAPI ObjectLayer, queued ObjectInfo) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+	defer cancel()
+	prepared, err := prepareTransition(ctx, objectAPI, queued)
 	if err != nil {
 		return err
 	}
-	oi := gr.ObjInfo
+	queued = prepared
+	if prepared.TransitionStatus == lifecycle.TransitionPending && !lifecycleTransitionSupported(objectAPI) {
+		return NotImplemented{Message: "Lifecycle transition requires native single-pool local erasure storage"}
+	}
+	objectLock := objectAPI.NewNSLock(queued.Bucket, encodeDirObject(queued.Name))
+	ctx, err = objectLock.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
+		return err
+	}
+	defer objectLock.Unlock()
+	oi, err := objectAPI.GetObjectInfo(ctx, queued.Bucket, queued.Name, ObjectOptions{VersionID: queued.VersionID, NoLock: true})
+	if err != nil {
+		return err
+	}
+	if !sameTransitionSource(oi, &prepared) || oi.TransitionStatus != lifecycle.TransitionComplete &&
+		(oi.TransitionStatus != lifecycle.TransitionPending || oi.TransitionedObject == nil ||
+			prepared.TransitionedObject == nil || *oi.TransitionedObject != *prepared.TransitionedObject) {
+		return PreConditionFailed{}
+	}
+	if deleting, err := transitionDeletionPending(oi); err != nil {
+		return err
+	} else if deleting {
+		return PreConditionFailed{}
+	}
 	if oi.TransitionStatus == lifecycle.TransitionComplete {
-		gr.Close()
+		if oi.RestoreOngoing {
+			days, err := strconv.Atoi(oi.UserDefined[xhttp.AmzRestoreExpiryDays])
+			if err != nil || days <= 0 {
+				return fmt.Errorf("invalid persisted restore duration")
+			}
+			requested, err := time.Parse(http.TimeFormat, oi.UserDefined[xhttp.AmzRestoreRequestDate])
+			if err != nil {
+				return err
+			}
+			return restoreTransitionedObjectLocked(ctx, oi.Bucket, oi.Name, objectAPI, oi,
+				&RestoreObjectRequest{Days: days}, lifecycle.ExpectedExpiryTime(requested, days))
+		}
 		return nil
 	}
-
-	putOpts, err := putTransitionOpts(oi)
+	ref := *oi.TransitionedObject
+	clnt, remoteBucket, err := transitionClient(ctx, oi.Bucket, &ref)
 	if err != nil {
-		gr.Close()
-		return err
-
-	}
-	if _, err = tgt.PutObject(ctx, arn.Bucket, oi.Name, gr, oi.Size, putOpts); err != nil {
-		gr.Close()
 		return err
 	}
-	gr.Close()
-
-	var opts ObjectOptions
-	opts.Versioned = globalBucketVersioningSys.Enabled(oi.Bucket)
-	opts.VersionID = oi.VersionID
-	opts.TransitionStatus = lifecycle.TransitionComplete
-	eventName := event.ObjectTransitionComplete
-
-	objInfo, err = objectAPI.DeleteObject(ctx, oi.Bucket, oi.Name, opts)
-	if err != nil {
-		eventName = event.ObjectTransitionFailed
+	remote, statErr := clnt.StatObject(ctx, remoteBucket, ref.Key, otteriogo.StatObjectOptions{VersionID: ref.VersionID})
+	if statErr != nil && isRemoteObjectMissing(statErr) && ref.VersionID != "" {
+		// S3 implementations may allocate their own version ID. The unique key
+		// and identity marker recover an upload whose acknowledgement was lost.
+		remote, statErr = clnt.StatObject(ctx, remoteBucket, ref.Key, otteriogo.StatObjectOptions{})
 	}
-
-	// Notify object deleted event.
-	sendEvent(eventArgs{
-		EventName:  eventName,
-		BucketName: objInfo.Bucket,
-		Object:     objInfo,
-		Host:       "Internal: [ILM-Transition]",
+	if statErr != nil && !isRemoteObjectMissing(statErr) {
+		return statErr
+	}
+	if statErr == nil {
+		if remote.Size != oi.Size || !remoteTransitionIdentity(remote.Metadata, ref.Key) {
+			return fmt.Errorf("remote transition identity does not match source")
+		}
+		ref.VersionID = remote.VersionID
+	} else {
+		gr, err := objectAPI.GetObjectNInfo(ctx, oi.Bucket, oi.Name, nil, http.Header{}, noLock,
+			ObjectOptions{VersionID: oi.VersionID, TransitionStatus: lifecycle.TransitionPending, NoLock: true})
+		if err != nil {
+			return err
+		}
+		putOpts, err := putTransitionOpts(oi)
+		if err != nil {
+			gr.Close()
+			return err
+		}
+		uploaded, putErr := clnt.PutObject(ctx, remoteBucket, ref.Key, gr, oi.Size, putOpts)
+		gr.Close()
+		if putErr != nil {
+			return putErr
+		}
+		ref.VersionID = uploaded.VersionID
+	}
+	_, err = objectAPI.DeleteObject(ctx, oi.Bucket, oi.Name, ObjectOptions{
+		VersionID: oi.VersionID, TransitionStatus: lifecycle.TransitionComplete,
+		TransitionedObject: &ref, TransitionExpected: &oi, NoLock: true,
 	})
-
 	return err
 }
 
-// getLifecycleTransitionTargetArn returns transition ARN for storage class specified in the config.
-func getLifecycleTransitionTargetArn(ctx context.Context, lc *lifecycle.Lifecycle, bucket string, obj lifecycle.ObjectOpts) *madmin.ARN {
-	for _, rule := range lc.FilterActionableRules(obj) {
-		if rule.Transition.StorageClass != "" {
-			return globalBucketTargetSys.GetRemoteArnWithLabel(ctx, bucket, rule.Transition.StorageClass)
-		}
-	}
-	return nil
-}
-
-// getTransitionedObjectReader returns a reader from the transitioned tier.
 func getTransitionedObjectReader(ctx context.Context, bucket, object string, rs *HTTPRangeSpec, h http.Header, oi ObjectInfo, opts ObjectOptions) (gr *GetObjectReader, err error) {
-	var lc *lifecycle.Lifecycle
-	lc, err = globalLifecycleSys.Get(bucket)
+	ref, err := transitionReference(ctx, bucket, object, oi)
 	if err != nil {
 		return nil, err
 	}
-
-	arn := getLifecycleTransitionTargetArn(ctx, lc, bucket, lifecycle.ObjectOpts{
-		Name:         object,
-		UserTags:     oi.UserTags,
-		ModTime:      oi.ModTime,
-		VersionID:    oi.VersionID,
-		DeleteMarker: oi.DeleteMarker,
-		IsLatest:     oi.IsLatest,
-	})
-	if arn == nil {
-		return nil, fmt.Errorf("remote target not configured")
-	}
-	tgt := globalBucketTargetSys.GetRemoteTargetClient(ctx, arn.String())
-	if tgt == nil {
-		return nil, fmt.Errorf("remote target not configured")
+	clnt, remoteBucket, err := transitionClient(ctx, oi.Bucket, ref)
+	if err != nil {
+		return nil, err
 	}
 	fn, off, length, err := NewGetObjectReader(rs, oi, opts)
 	if err != nil {
-		return nil, ErrorRespToObjectError(err, bucket, object)
+		return nil, err
 	}
-	gopts := otteriogo.GetObjectOptions{VersionID: opts.VersionID}
-
-	// get correct offsets for encrypted object
-	if off >= 0 && length >= 0 {
-		if err := gopts.SetRange(off, off+length-1); err != nil {
-			return nil, ErrorRespToObjectError(err, bucket, object)
+	gopts := otteriogo.GetObjectOptions{VersionID: ref.VersionID}
+	if off >= 0 && length > 0 {
+		if err = gopts.SetRange(off, off+length-1); err != nil {
+			return nil, err
 		}
 	}
-
-	reader, err := tgt.GetObject(ctx, arn.Bucket, object, gopts)
+	reader, err := clnt.GetObject(ctx, remoteBucket, ref.Key, gopts)
 	if err != nil {
 		return nil, err
 	}
-	closeReader := func() { reader.Close() }
-
-	return fn(reader, h, opts.CheckPrecondFn, closeReader)
+	return fn(reader, h, opts.CheckPrecondFn, func() { _ = reader.Close() })
 }
 
 // RestoreRequestType represents type of restore.
@@ -562,8 +614,58 @@ const maxRestoreObjectRequestSize = 2 << 20
 
 // parseRestoreRequest parses RestoreObjectRequest from xml
 func parseRestoreRequest(reader io.Reader) (*RestoreObjectRequest, error) {
+	// Consume the authenticated body through EOF before decoding it. XML
+	// decoding alone can stop at the closing root before a signed hash reader
+	// reports a digest mismatch or a transport reports a truncated body.
+	data, err := io.ReadAll(io.LimitReader(reader, maxRestoreObjectRequestSize+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > maxRestoreObjectRequestSize {
+		return nil, fmt.Errorf("restore request exceeds its size limit")
+	}
+	decoder := xml.NewDecoder(strings.NewReader(string(data)))
+	depth, roots := 0, 0
+	seen := make(map[string]bool)
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		switch token := token.(type) {
+		case xml.StartElement:
+			if depth == 0 {
+				roots++
+				if roots != 1 || token.Name.Local != "RestoreRequest" {
+					return nil, fmt.Errorf("restore request must contain one RestoreRequest root")
+				}
+			}
+			if depth == 1 {
+				if seen[token.Name.Local] {
+					return nil, fmt.Errorf("duplicate restore field %s", token.Name.Local)
+				}
+				seen[token.Name.Local] = true
+			}
+			depth++
+		case xml.EndElement:
+			depth--
+		case xml.CharData:
+			if depth == 0 && strings.TrimSpace(string(token)) != "" {
+				return nil, fmt.Errorf("data outside restore request")
+			}
+		case xml.Directive:
+			return nil, fmt.Errorf("XML directives are not supported in restore requests")
+		case xml.ProcInst:
+			if roots != 0 || token.Target != "xml" {
+				return nil, fmt.Errorf("unexpected processing instruction in restore request")
+			}
+		}
+	}
 	req := RestoreObjectRequest{}
-	if err := xml.NewDecoder(io.LimitReader(reader, maxRestoreObjectRequestSize)).Decode(&req); err != nil {
+	if err := xml.NewDecoder(strings.NewReader(string(data))).Decode(&req); err != nil {
 		return nil, err
 	}
 	return &req, nil
@@ -571,6 +673,12 @@ func parseRestoreRequest(reader io.Reader) (*RestoreObjectRequest, error) {
 
 // validate a RestoreObjectRequest as per AWS S3 spec https://docs.aws.amazon.com/AmazonS3/latest/API/API_RestoreObject.html
 func (r *RestoreObjectRequest) validate(ctx context.Context, objAPI ObjectLayer) error {
+	if r.Type != "" && r.Type != SelectRestoreRequest {
+		return fmt.Errorf("unsupported restore request type %s", r.Type)
+	}
+	if r.Days < 0 {
+		return fmt.Errorf("restoration days cannot be negative")
+	}
 	if r.Type != SelectRestoreRequest && !r.SelectParameters.IsEmpty() {
 		return fmt.Errorf("Select parameters can only be specified with SELECT request type")
 	}
@@ -588,7 +696,7 @@ func (r *RestoreObjectRequest) validate(ctx context.Context, objAPI ObjectLayer)
 	if r.Days != 0 && r.Type == SelectRestoreRequest {
 		return fmt.Errorf("Days cannot be specified with SELECT restore request")
 	}
-	if r.Days == 0 && r.Type != SelectRestoreRequest {
+	if r.Days <= 0 && r.Type != SelectRestoreRequest {
 		return fmt.Errorf("restoration days should be at least 1")
 	}
 	// Check if bucket exists.
@@ -638,17 +746,23 @@ func putRestoreOpts(bucket string, _ string, rreq *RestoreObjectRequest, objInfo
 	for k, v := range objInfo.UserDefined {
 		meta[k] = v
 	}
+	meta["etag"] = objInfo.ETag
 	if len(objInfo.UserTags) != 0 {
 		meta[xhttp.AmzObjectTagging] = objInfo.UserTags
 	}
 
 	return ObjectOptions{
-		Versioned:        globalBucketVersioningSys.Enabled(bucket),
-		VersionSuspended: globalBucketVersioningSys.Suspended(bucket),
-		UserDefined:      meta,
-		VersionID:        objInfo.VersionID,
-		MTime:            objInfo.ModTime,
-		Expires:          objInfo.Expires,
+		Versioned:          globalBucketVersioningSys.Enabled(bucket),
+		VersionSuspended:   globalBucketVersioningSys.Suspended(bucket),
+		UserDefined:        meta,
+		VersionID:          objInfo.VersionID,
+		MTime:              objInfo.ModTime,
+		Expires:            objInfo.Expires,
+		TransitionStatus:   lifecycle.TransitionComplete,
+		TransitionedObject: objInfo.TransitionedObject,
+		TransitionExpected: &objInfo,
+		TransitionRestore:  &objInfo,
+		NoLock:             true,
 	}
 }
 
@@ -665,6 +779,9 @@ func parseRestoreHeaderFromMeta(meta map[string]string) (ongoing bool, expiry ti
 		return ongoing, expiry, errRestoreHDRMissing
 	}
 	rslc := strings.SplitN(restoreHdr, ",", 2)
+	if len(rslc) == 1 && strings.TrimSpace(rslc[0]) == "ongoing-request=true" {
+		return true, time.Time{}, nil
+	}
 	if len(rslc) != 2 {
 		return ongoing, expiry, errRestoreHDRMalformed
 	}
@@ -689,9 +806,37 @@ func parseRestoreHeaderFromMeta(meta map[string]string) (ongoing bool, expiry ti
 // is restored locally to the bucket on source cluster until the restore expiry date.
 // The copy that was transitioned continues to reside in the transitioned tier.
 func restoreTransitionedObject(ctx context.Context, bucket, object string, objAPI ObjectLayer, objInfo ObjectInfo, rreq *RestoreObjectRequest, restoreExpiry time.Time) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+	defer cancel()
+	objectLock := objAPI.NewNSLock(bucket, encodeDirObject(object))
+	ctx, err := objectLock.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
+		return err
+	}
+	defer objectLock.Unlock()
+	fresh, err := objAPI.GetObjectInfo(ctx, bucket, object, ObjectOptions{VersionID: objInfo.VersionID, NoLock: true})
+	if err != nil {
+		return err
+	}
+	if !fresh.ModTime.Equal(objInfo.ModTime) || fresh.ETag != objInfo.ETag || fresh.TransitionStatus != lifecycle.TransitionComplete {
+		return PreConditionFailed{}
+	}
+	objInfo = fresh
+	if !objInfo.RestoreOngoing && !objInfo.RestoreExpires.IsZero() && time.Now().Before(objInfo.RestoreExpires) {
+		return nil
+	}
+	return restoreTransitionedObjectLocked(ctx, bucket, object, objAPI, objInfo, rreq, restoreExpiry)
+}
+
+func restoreTransitionedObjectLocked(ctx context.Context, bucket, object string, objAPI ObjectLayer, objInfo ObjectInfo, rreq *RestoreObjectRequest, restoreExpiry time.Time) error {
+	if deleting, err := transitionDeletionPending(objInfo); err != nil {
+		return err
+	} else if deleting {
+		return PreConditionFailed{}
+	}
 	var rs *HTTPRangeSpec
 	gr, err := getTransitionedObjectReader(ctx, bucket, object, rs, http.Header{}, objInfo, ObjectOptions{
-		VersionID: objInfo.VersionID})
+		VersionID: objInfo.VersionID, TransitionStatus: lifecycle.TransitionPending})
 	if err != nil {
 		return err
 	}
@@ -703,9 +848,69 @@ func restoreTransitionedObject(ctx context.Context, bucket, object string, objAP
 	pReader := NewPutObjReader(hashReader)
 	opts := putRestoreOpts(bucket, object, rreq, objInfo)
 	opts.UserDefined[xhttp.AmzRestore] = fmt.Sprintf("ongoing-request=%t, expiry-date=%s", false, restoreExpiry.Format(http.TimeFormat))
-	if _, err := objAPI.PutObject(ctx, bucket, object, pReader, opts); err != nil {
+	restored, err := objAPI.PutObject(ctx, bucket, object, pReader, opts)
+	if err != nil {
 		return err
 	}
+	args, ok := ctx.Value(transitionRestoreEventContextKey{}).(eventArgs)
+	if !ok {
+		args = eventArgs{ReqParams: map[string]string{"region": globalServerRegion}, Host: "Internal: [RESTORE]"}
+	}
+	args.EventName, args.BucketName, args.Object = event.ObjectRestorePostCompleted, bucket, restored
+	sendEvent(args)
 
 	return nil
+}
+
+// A request snapshot is optional: scanner recovery can complete a durable
+// restore after the original HTTP request and process have gone away.
+type transitionRestoreEventContextKey struct{}
+
+func withTransitionRestoreEvent(ctx context.Context, args eventArgs) context.Context {
+	args.ReqParams = cloneMSS(args.ReqParams)
+	args.RespElements = cloneMSS(args.RespElements)
+	return context.WithValue(ctx, transitionRestoreEventContextKey{}, args)
+}
+
+var errTransitionRestoreInProgress = fmt.Errorf("transition restore already in progress")
+
+// Reserve the exact source version atomically. The durable request date and
+// duration let the scanner resume unfinished work after a process restart.
+func beginTransitionRestore(ctx context.Context, objAPI ObjectLayer, bucket, object string, expected ObjectInfo, days int) (ObjectInfo, bool, error) {
+	lk := objAPI.NewNSLock(bucket, encodeDirObject(object))
+	ctx, err := lk.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
+		return ObjectInfo{}, false, err
+	}
+	defer lk.Unlock()
+	oi, err := objAPI.GetObjectInfo(ctx, bucket, object, ObjectOptions{VersionID: expected.VersionID, NoLock: true})
+	if err != nil {
+		return ObjectInfo{}, false, err
+	}
+	if days <= 0 || oi.TransitionStatus != lifecycle.TransitionComplete || !oi.ModTime.Equal(expected.ModTime) || oi.ETag != expected.ETag {
+		return ObjectInfo{}, false, PreConditionFailed{}
+	}
+	if deleting, err := transitionDeletionPending(oi); err != nil {
+		return ObjectInfo{}, false, err
+	} else if deleting {
+		return ObjectInfo{}, false, PreConditionFailed{}
+	}
+	if oi.RestoreOngoing {
+		return ObjectInfo{}, false, errTransitionRestoreInProgress
+	}
+	alreadyRestored := !oi.RestoreExpires.IsZero() && time.Now().Before(oi.RestoreExpires)
+	meta := cloneMSS(oi.UserDefined)
+	now := time.Now().UTC()
+	meta[xhttp.AmzRestoreExpiryDays] = strconv.Itoa(days)
+	meta[xhttp.AmzRestoreRequestDate] = now.Format(http.TimeFormat)
+	if alreadyRestored {
+		meta[xhttp.AmzRestore] = fmt.Sprintf("ongoing-request=false, expiry-date=%s", lifecycle.ExpectedExpiryTime(now, days).Format(http.TimeFormat))
+	} else {
+		meta[xhttp.AmzRestore] = "ongoing-request=true"
+	}
+	oi, err = objAPI.PutObjectMetadata(ctx, bucket, object, ObjectOptions{
+		VersionID: oi.VersionID, MTime: oi.ModTime, UserDefined: meta,
+		NoLock: true, TransitionExpected: &oi,
+	})
+	return oi, alreadyRestored, err
 }

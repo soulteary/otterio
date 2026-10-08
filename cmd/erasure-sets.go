@@ -1020,7 +1020,7 @@ func (s *erasureSets) CopyObject(ctx context.Context, srcBucket, srcObject, dstB
 		// of the content, instead we add a reference, we disallow legacy
 		// objects to be self referenced in this manner so make sure
 		// that we actually create a new dataDir for legacy objects.
-		if dstOpts.Versioned && srcOpts.VersionID != dstOpts.VersionID && !srcInfo.Legacy {
+		if dstOpts.Versioned && srcOpts.VersionID != dstOpts.VersionID && !srcInfo.Legacy && srcInfo.TransitionStatus == "" {
 			srcInfo.versionOnly = true
 			return srcSet.CopyObject(ctx, srcBucket, srcObject, dstBucket, dstObject, srcInfo, srcOpts, dstOpts)
 		}
@@ -1032,6 +1032,10 @@ func (s *erasureSets) CopyObject(ctx context.Context, srcBucket, srcObject, dstB
 		Versioned:            dstOpts.Versioned,
 		VersionID:            dstOpts.VersionID,
 		MTime:                dstOpts.MTime,
+		NoLock:               dstOpts.NoLock,
+		TransitionExpected:   dstOpts.TransitionExpected,
+		TransitionRestore:    dstOpts.TransitionRestore,
+		TransitionedObject:   dstOpts.TransitionedObject,
 	}
 
 	return dstSet.putObject(ctx, dstBucket, dstObject, srcInfo.PutObjReader, putOpts)

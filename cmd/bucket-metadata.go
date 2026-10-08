@@ -146,6 +146,25 @@ func (b *BucketMetadata) Load(ctx context.Context, api ObjectLayer, name string)
 
 // loadBucketMetadata loads and migrates to bucket metadata.
 func loadBucketMetadata(ctx context.Context, objectAPI ObjectLayer, bucket string) (BucketMetadata, error) {
+	// Loading can migrate legacy files and encrypt targets, both of which
+	// persist the complete metadata object. Serialize those writes with CAS.
+	if !globalIsGateway && bucketMetadataTransactionSupported(objectAPI) {
+		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+		defer cancel()
+		lock := objectAPI.NewNSLock(otterioMetaBucket, bucketMetadataTransactionKey(bucket))
+		ctx, err := lock.GetLock(ctx, newDynamicTimeout(10*time.Second, time.Second))
+		if err != nil {
+			return newBucketMetadata(bucket), err
+		}
+		defer lock.Unlock()
+		return loadBucketMetadataUnlocked(ctx, objectAPI, bucket)
+	}
+	return loadBucketMetadataUnlocked(ctx, objectAPI, bucket)
+}
+
+// Caller owns the transaction lock for native FS/erasure. Gateway loads retain
+// their existing backend-specific behavior and never advertise CAS.
+func loadBucketMetadataUnlocked(ctx context.Context, objectAPI ObjectLayer, bucket string) (BucketMetadata, error) {
 	b := newBucketMetadata(bucket)
 	err := b.Load(ctx, objectAPI, b.Name)
 	if err != nil && !errors.Is(err, errConfigNotFound) {
@@ -339,7 +358,10 @@ func (b *BucketMetadata) convertLegacyConfigs(ctx context.Context, objectAPI Obj
 	for legacyFile := range configs {
 		configFile := path.Join(bucketConfigPrefix, b.Name, legacyFile)
 		if err := deleteConfig(ctx, objectAPI, configFile); err != nil && !errors.Is(err, errConfigNotFound) {
-			logger.LogIf(ctx, err)
+			// A future load would import this leftover legacy file again.
+			// Do not let a following RMW commit acknowledge settings that the
+			// next migration could replace with the old document.
+			return err
 		}
 	}
 
@@ -373,6 +395,7 @@ func (b *BucketMetadata) Save(ctx context.Context, api ObjectLayer) error {
 func deleteBucketMetadata(ctx context.Context, obj objectDeleter, bucket string) error {
 	metadataFiles := []string{
 		dataUsageCacheName,
+		lifecycleTargetRegistryFile,
 		bucketMetadataFile,
 	}
 	for _, metaFile := range metadataFiles {

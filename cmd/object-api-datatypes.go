@@ -113,7 +113,8 @@ type ObjectInfo struct {
 	DeleteMarker bool
 
 	// TransitionStatus indicates if transition is complete/pending
-	TransitionStatus string
+	TransitionStatus   string
+	TransitionedObject *TransitionedObject
 
 	// RestoreExpires indicates date a restored object expires
 	RestoreExpires time.Time
@@ -214,6 +215,10 @@ func (o ObjectInfo) Clone() (cinfo ObjectInfo) {
 		SuccessorModTime:   o.SuccessorModTime,
 	}
 	cinfo.UserDefined = make(map[string]string, len(o.UserDefined))
+	if o.TransitionedObject != nil {
+		ref := *o.TransitionedObject
+		cinfo.TransitionedObject = &ref
+	}
 	for k, v := range o.UserDefined {
 		cinfo.UserDefined[k] = v
 	}
