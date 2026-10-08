@@ -1,102 +1,60 @@
-# 分布式OtterIO快速入门
+# 分布式 OtterIO 快速入门
 
-分布式Otterio可以让你将多块硬盘（甚至在不同的机器上）组成一个对象存储服务。由于硬盘分布在不同的节点上，分布式Otterio避免了单点故障。
+分布式 OtterIO 将多台机器上的硬盘端点组成一个对象存储部署。数据按纠删码集合组织，多个集合组成存储池，一个部署可以包含多个存储池。每个对象保存在一个纠删码集合中，不会复制到所有节点。
 
-## 分布式Otterio有什么好处?
+## 数据保护和可用性
 
-在大数据领域，通常的设计理念都是无中心和分布式。Otterio分布式模式可以帮助你搭建一个高可用的对象存储服务，你可以使用这些存储设备，而不用考虑其真实物理位置。
+OtterIO 使用[纠删码和校验和](../erasure/README.md)在健康分片充足时恢复缺失或损坏的分片。`STANDARD` 默认奇偶校验数为：4–5 盘集合使用 2，6–7 盘集合使用 3，8–16 盘集合使用 4，并非始终为集合盘数的一半。
 
-### 数据保护
+一个集合有 `N` 块盘、`P` 个奇偶校验分片时，读取需要 `N - P` 个健康分片及可用元数据。写入通常需要 `N - P` 块盘；数据分片与奇偶校验分片数量相等时，还需要一块额外的盘。节点故障容忍能力必须根据**每个节点的硬盘在各个集合中的分布**计算。仅看整个部署在线节点或硬盘的比例不够：故障集中在一个集合时，该集合的对象可能无法访问，而其他集合仍然正常。
 
+例如，4 个节点各提供一块盘组成 4 盘集合，默认 `EC:2` 要求读取至少有 2 块健康盘、写入至少有 3 块健康盘。一个节点故障时可以继续读写；两个节点故障时，剩余分片足以读取，但不能写入。16 盘集合默认使用 `EC:4`，读写都需要 12 块健康盘，因此该集合最多容忍 4 块盘故障。请结合[容量规划示例](../../distributed/SIZING.md)、[存储类型](../erasure/storage-class/README.md)和实际端点布局评估部署。
 
-分布式Otterio采用 [纠删码](https://docs.min.io/cn/minio-erasure-code-quickstart-guide)来防范多个节点宕机和[位衰减`bit rot`](https://github.com/minio/minio/blob/master/docs/zh_CN/erasure/README.md#what-is-bit-rot-protection)。
+成功完成的对象操作遵循服务端的写后读（read-after-write）与写后列举（list-after-write）一致性模型。客户端仍需要处理未满足法定数量的错误；可用性取决于健康硬盘、元数据和网络连接。
 
-分布式Otterio至少需要4个硬盘，使用分布式Otterio自动引入了纠删码功能。
+## 前提条件
 
-### 高可用
+- 按照[快速入门](../../../README.md#quick-start)安装和配置 OtterIO。
+- 每个参与节点使用相同的 OtterIO 版本、已保存的根凭据（`OTTERIO_ROOT_USER`、`OTTERIO_ROOT_PASSWORD`）和端点参数。
+- 新部署使用容量接近的物理盘和专用空目录。重启已有部署时复用原目录。同一硬盘上的多个目录共享故障域。
+- 确保每个节点都能解析并访问所有端点，每个节点公开的硬盘路径在该节点上存在。端点协议和端口应保持一致。
+- 保持节点时钟同步。节点间请求校验 15 分钟的时间偏差上限，应使用时间同步服务，让实际偏差远小于该值。
+- 跨越不可信网络的流量需要配置 [TLS](../tls/README.md)。`OTTERIO_DOMAIN` 是可选项，用于配置虚拟主机风格的存储桶访问。
 
-单机Otterio服务存在单点故障，相反，如果是一个有 _m_ 台服务器， _n_ 块硬盘的分布式Otterio,只要有 _m/2_ 台服务器或者 _m*n_/2 及更多硬盘在线，你的数据就是安全的。
+## 启动部署
 
-例如，一个16节点的Otterio集群，每个节点200块硬盘，就算8台服務器宕机，即大概有1600块硬盘，这个集群仍然是可读的，不过你需要9台服務器在线才能写数据。
-
-你还可以使用[存储类型](https://github.com/minio/minio/tree/master/docs/zh_CN/erasure/storage-class)自定义每个对象的奇偶分布。
-
-### 一致性
-
-Otterio在分布式和单机模式下，所有读写操作都严格遵守**read-after-write**和**list-after-write**一致性模型。
-
-# 开始吧
-
-如果你了解Otterio单机模式的搭建的话，分布式搭建的流程基本一样，Otterio服务基于命令行传入的参数自动切换成单机模式还是分布式模式。
-
-## 1. 前提条件
-
-安装Otterio - [Otterio快速入门](https://docs.min.io/cn/minio-quickstart-guide).
-
-## 2. 运行分布式Otterio
-
-启动一个分布式Otterio实例，你只需要把硬盘位置做为参数传给otterio server命令即可，然后，你需要在所有其它节点运行同样的命令。
-
-*注意*
-
-- 分布式Otterio里所有的节点需要有同样的access秘钥和secret秘钥，这样这些节点才能建立联接。为了实现这个，__建议__ 在执行otterio server命令之前，在所有节点上先将access秘钥和secret秘钥export成环境变量`OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD`。
-- __OtterIO 可创建每组4到16个磁盘组成的纠删码集合。所以你提供的磁盘总数必须是其中一个数字的倍数。__
-- OtterIO会根据给定的磁盘总数或者节点总数选择最大的纠删码集合大小，确保统一分布，即每个节点参与每个集合的磁盘数量相等。
-- __每个对象被写入一个EC集合中，因此该对象分布在不超过16个磁盘上。__
-- __建议运行分布式OtterIO设置的所有节点都是同构的，即相同的操作系统，相同数量的磁盘和相同的网络互连。__
-- 分布式Otterio使用干净的目录，里面没有数据。你也可以与其他程序共享磁盘，这时候只需要把一个子目录单独给OtterIO使用即可。例如，你可以把磁盘挂在到`/export`下, 然后把`/export/data`作为参数传给OtterIO server即可。
-- 下面示例里的IP仅供示例参考，你需要改成你真实用到的IP和文件夹路径。
-- 分布式Otterio里的节点时间差不能超过15分钟，你可以使用[NTP](http://www.ntp.org/) 来保证时间一致。
-- `OTTERIO_DOMAIN`环境变量应该定义并且导出,以支持bucket DNS style。
-- 在Windows下运行分布式Otterio处于实验阶段，请悠着点使用。
-
-示例1: 启动分布式Otterio实例，8个节点，每节点1块盘，需要在8个节点上都运行下面的命令。
-示例1: 在n个节点上启动分布式OtterIO实例，每个节点有m个磁盘，分别挂载在`/export1` 到 `/exportm` (如下图所示), 在所有n个节点上运行此命令:
-
-![Distributed OtterIO, n nodes with m drives each](https://github.com/minio/minio/blob/master/docs/screenshots/Architecture-diagram_distributed_nm.png?raw=true)
-
-#### GNU/Linux 和 macOS
-
-```shell
-export OTTERIO_ROOT_USER=<ACCESS_KEY>
-export OTTERIO_ROOT_PASSWORD=<SECRET_KEY>
-otterio server http://host{1...n}/export{1...m}
-```
-
-> __注意:__ 在以上示例中`n`和`m`代表正整数, *不要直接复制粘贴它们，你应该在部署的时候改成你期望的值*.
-
-> __注意:__ `{1...n}` 是有3个点的! 用2个点`{1..n}`的话会被shell解析导致不能传给OtterIO server, 影响纠删码的顺序, 进而影响性能和高可用性. __所以要始终使用省略号 `{1...n}` (3个点!) 以获得最佳的纠删码分布__
-
-#### 扩展现有的分布式集群
-OtterIO支持通过命令，指定新的集群来扩展现有集群（纠删码模式），命令行如下：
+在 4 台主机上运行相同命令。示例中每台主机提供 4 块盘，分别挂载在 `/export1` 到 `/export4`。将 `host1` 到 `host4` 替换为能解析到各节点的名称。HTTP 示例假定使用受控网络，为所有端点配置证书后可改用 `https://`。
 
 ```sh
-export OTTERIO_ROOT_USER=<ACCESS_KEY>
-export OTTERIO_ROOT_PASSWORD=<SECRET_KEY>
-otterio server http://host{1...n}/export{1...m} http://host{o...z}/export{1...m}
+: "${OTTERIO_ROOT_USER:?Set the shared saved username first}"
+: "${OTTERIO_ROOT_PASSWORD:?Set the shared saved password first}"
+export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
+otterio server 'http://host{1...4}:9000/export{1...4}'
 ```
 
-例如:
+使用 OtterIO 的三个点范围语法（`{1...4}`），并为端点模式加上引号。服务端会展开模式，并在 4 到 16 之间选择能整除端点数量、同时满足模式对称性的集合大小。Shell 的 `{1..4}` 是另一种语法，可能改变端点顺序和分组。
+
+![多节点、多硬盘分布式部署示意图](../../screenshots/Architecture-diagram_distributed_nm.png)
+
+所有节点必须使用完整且顺序相同的端点列表。客户端可以通过负载均衡器或选定节点访问服务，相关配置需要保留 S3 请求签名所需的信息。
+
+## 增加存储池
+
+扩容通过添加新存储池实现，不会增大或重排原硬盘中已记录的纠删码集合。保留原来的端点组，在后面追加新组，并更新所有参与节点的启动命令。例如，为前面的部署再添加 4 台主机：
+
+```sh
+otterio server 'http://host{1...4}:9000/export{1...4}' \
+  'http://host{5...8}:9000/export{1...4}'
 ```
-otterio server http://host{1...4}/export{1...16} http://host{5...12}/export{1...16}
-```
 
-现在整个集群就扩展了 _(newly_added_servers\*m)_ 个磁盘，总磁盘变为 _(existing_servers\*m)+(newly_added_servers\*m)_ 个，新的对象上传请求会自动分配到最少使用的集群上。通过以上扩展策略，您就可以按需扩展您的集群。重新配置后重启集群，会立即在集群中生效，并对现有集群无影响。如上命令中，我们可以把原来的集群看做一个区，新增集群看做另一个区，新对象按每个区域中的可用空间比例放置在区域中。在每个区域内，基于确定性哈希算法确定位置。
+先准备新增主机和空硬盘目录，再使用完整命令重启部署。应将重启安排为维护操作，本指南不承诺零停机。新增存储池必须支持部署选定的共同奇偶校验数，硬盘总数不需要与原存储池相同。
 
-> __说明:__ __您添加的每个区域必须具有与原始区域相同的磁盘数量（纠删码集）大小，以便维持相同的数据冗余SLA。__
-> 例如，第一个区有8个磁盘，您可以将集群扩展为16个、32个或1024个磁盘的区域，您只需确保部署的SLA是原始区域的倍数即可。
+新对象按满足条件的存储池的可用空间加权放置；池内通过确定性哈希选择纠删码集合。增加存储池不会自动把已有对象迁移到新池，也不会提高已有对象的冗余度。容量和节点故障容忍能力仍由各存储池的集合布局决定。
 
+**分布式和多存储池部署目前不支持生命周期分层转移。** 当前持久化 ILM 目标协议仅支持原生、单存储池、本地纠删码后端，详见[生命周期指南](../bucket/lifecycle/README.md)。
 
-## 3. 验证
+## 验证部署
 
-验证是否部署成功，使用浏览器访问Otterio服务或者使用 [`mc`](https://docs.min.io/cn/minio-client-quickstart-guide)。多个节点的存储容量和就是分布式Otterio的存储容量。
+为面向客户端的端点配置 S3 客户端，例如 `mc`、AWS CLI 或 [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk)。验证创建桶、上传、下载内容校验和列举操作。在可丢弃的测试集群中，按集合级读写法定数量测试受控节点故障，并确认节点恢复后的数据状态。
 
-## 了解更多
-
-- [Otterio纠删码快速入门](https://docs.min.io/cn/minio-erasure-code-quickstart-guide)
-- [使用 `mc`](https://docs.min.io/cn/minio-client-quickstart-guide)
-- [使用 `aws-cli`](https://docs.min.io/cn/aws-cli-with-minio)
-- [使用 `s3cmd`](https://docs.min.io/cn/s3cmd-with-minio)
-- [使用 `otterio-go` SDK ](https://docs.min.io/cn/golang-client-quickstart-guide)
-
-- [otterio官方文档](https://docs.min.io)
+本指南以[端点分组](../../../cmd/endpoint-ellipses.go)、[存储池初始化和放置](../../../cmd/erasure-server-pool.go)及[读写法定数量](../../../cmd/erasure-metadata.go)的实现为依据。上游 MinIO 文档可以帮助理解通用 S3 工作流，但不能定义当前 OtterIO 版本的能力和限制。

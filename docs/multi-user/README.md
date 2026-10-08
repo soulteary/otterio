@@ -1,122 +1,112 @@
 # OtterIO Multi-user Quickstart Guide
-OtterIO supports multiple long term users in addition to default user created during server startup. New users can be added after server starts up, and server can be configured to deny or allow access to buckets and resources to each of these users. This document explains how to add/remove users and modify their access rights.
 
-## Get started
-In this document we will explain in detail on how to configure multiple users.
+OtterIO supports long-term IAM users in addition to the root credentials supplied at startup. A new user has no S3 permissions until a policy is attached directly or through an enabled group. This guide uses [OC](https://github.com/soulteary/oc) to create users, groups and policies.
 
-### 1. Prerequisites
-- Install mc - [OtterIO Client Quickstart Guide](https://docs.min.io/docs/minio-client-quickstart-guide.html)
-- Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
-- Configure etcd (optional needed only in gateway or federation mode) - [Etcd V3 Quickstart Guide](https://github.com/minio/minio/blob/master/docs/sts/etcd.md)
+## Prerequisites
 
-### 2. Create a new user with canned policy
-Use [`mc admin policy`](https://docs.min.io/docs/minio-admin-complete-guide.html#policies) to create canned policies. Server provides a default set of canned policies namely `writeonly`, `readonly` and `readwrite` *(these policies apply to all resources on the server)*. These can be overridden by custom policies using `mc admin policy` command.
+- Install [OtterIO](../../README.md) and the current [OC client](https://github.com/soulteary/oc).
+- Use root credentials, or an IAM account authorized for the corresponding administration operations.
+- For gateway IAM or federation, see the [etcd guide](../sts/etcd.md). Available administration operations depend on the gateway backend and its configuration.
 
-Create new canned policy file `getonly.json`. This policy enables users to download all objects under `my-bucketname`.
-```json
-cat > getonly.json << EOF
+The examples use a single listener on port 9000. Configure an administrator alias:
+
+```sh
+oc alias set myotterio http://localhost:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD" --api s3v4 --path on
+```
+
+If the server has a separate console listener on port 9001, add `--admin-url http://localhost:9001` when setting the alias. The management URL is a root URL without `/otterio/` or `/otterio/admin/v3`. OC uses OtterIO's `/otterio/admin/v3` management protocol; upstream `mc admin` compatibility is not assumed.
+
+## Create a user with a policy
+
+The built-in S3 policies are `writeonly`, `readonly` and `readwrite`; they apply across all buckets. `diagnostics` grants selected administration diagnostics, and `consoleAdmin` grants all administration and S3 operations. Use a custom policy when access should be limited to one bucket or prefix.
+
+Create `getonly.json`. This policy permits object downloads from `my-bucketname`; it does not permit listing the bucket or uploading objects.
+
+```sh
+cat > getonly.json <<'EOF'
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Action": [
-        "s3:GetObject"
-      ],
+      "Action": ["s3:GetObject"],
       "Effect": "Allow",
-      "Resource": [
-        "arn:aws:s3:::my-bucketname/*"
-      ],
-      "Sid": ""
+      "Resource": ["arn:aws:s3:::my-bucketname/*"]
     }
   ]
 }
 EOF
 ```
 
-Create new canned policy by name `getonly` using `getonly.json` policy file.
-```
-mc admin policy add myotterio getonly getonly.json
+Upload the policy, create the user, and attach the policy:
+
+```sh
+oc admin policy add myotterio getonly getonly.json
+export OTTERIO_TEST_USER_PASSWORD="$(openssl rand -hex 32)"
+# Save this password in your secret store before creating the account.
+oc admin user add myotterio newuser "$OTTERIO_TEST_USER_PASSWORD"
+oc admin policy set myotterio getonly user=newuser
 ```
 
-Create a new user `newuser` on OtterIO use `mc admin user`.
-```
-mc admin user add myotterio newuser newuser123
+Restore `OTTERIO_TEST_USER_PASSWORD` from the saved value when using another shell. To test downloading, first create the bucket and an object using the administrator alias:
+
+```sh
+oc mb myotterio/my-bucketname
+printf 'hello OtterIO\n' > my-objectname
+oc cp my-objectname myotterio/my-bucketname/my-objectname
+oc alias set myotterio-newuser http://localhost:9000 newuser "$OTTERIO_TEST_USER_PASSWORD" --api s3v4 --path on
+oc cat myotterio-newuser/my-bucketname/my-objectname
 ```
 
-Once the user is successfully created you can now apply the `getonly` policy for this user.
-```
-mc admin policy set myotterio getonly user=newuser
+## Create a group
+
+```sh
+oc admin group add myotterio newgroup newuser
+oc admin policy set myotterio getonly group=newgroup
 ```
 
-### 3. Create a new group
-```
-mc admin group add myotterio newgroup newuser
+Policies from direct user attachments and enabled group memberships are evaluated together. Disabling a group disables access granted through that group; it does not disable its users or their directly attached policies.
+
+## Inspect and change access
+
+```sh
+oc admin user list myotterio
+oc admin user info myotterio newuser
+oc admin group list myotterio
+oc admin group info myotterio newgroup
 ```
 
-Once the group is successfully created you can now apply the `getonly` policy for this group.
-```
-mc admin policy set myotterio getonly group=newgroup
+To replace a direct policy attachment with the built-in upload policy:
+
+```sh
+oc admin policy set myotterio writeonly user=newuser
+oc admin policy set myotterio writeonly group=newgroup
 ```
 
-### 4. Disable user
-Disable user `newuser`.
-```
-mc admin user disable myotterio newuser
+`writeonly` is a built-in policy. A policy named `putonly` must be created explicitly before it can be attached.
+
+## Disable, enable and remove accounts
+
+Disable and re-enable a user or group:
+
+```sh
+oc admin user disable myotterio newuser
+oc admin user enable myotterio newuser
+oc admin group disable myotterio newgroup
+oc admin group enable myotterio newgroup
 ```
 
-Disable group `newgroup`.
-```
-mc admin group disable myotterio newgroup
-```
+Remove the user from the group before removing the empty group and user:
 
-### 5. Remove user
-Remove the user `newuser`.
-```
-mc admin user remove myotterio newuser
-```
-
-Remove the user `newuser` from a group.
-```
-mc admin group remove myotterio newgroup newuser
-```
-
-Remove the group `newgroup`.
-```
-mc admin group remove myotterio newgroup
-```
-
-### 6. Change user or group policy
-Change the policy for user `newuser` to `putonly` canned policy.
-```
-mc admin policy set myotterio putonly user=newuser
-```
-
-Change the policy for group `newgroup` to `putonly` canned policy.
-```
-mc admin policy set myotterio putonly group=newgroup
-```
-
-### 7. List all users or groups
-List all enabled and disabled users.
-```
-mc admin user list myotterio
-```
-
-List all enabled or disabled groups.
-```
-mc admin group list myotterio
-```
-
-### 8. Configure `mc`
-```
-mc alias set myotterio-newuser http://localhost:9000 newuser newuser123 --api s3v4
-mc cat myotterio-newuser/my-bucketname/my-objectname
+```sh
+oc admin group remove myotterio newgroup newuser
+oc admin group remove myotterio newgroup
+oc admin user remove myotterio newuser
 ```
 
 ### Policy Variables
 You can use policy variables in the *Resource* element and in string comparisons in the *Condition* element.
 
-You can use a policy variable in the Resource element, but only in the resource portion of the ARN. This portion of the ARN appears after the 5th colon (:). You can't use a variable to replace parts of the ARN before the 5th colon, such as the service or account. The following policy might be attached to a group. It gives each of the users in the group full programmatic access to a user-specific object (their own "home directory") in OtterIO.
+You can use a policy variable in the Resource element, but only in the resource portion of the ARN. This portion of the ARN appears after the 5th colon (:). You can't use a variable to replace parts of the ARN before the 5th colon, such as the service or account. The following policy might be attached to a group. It gives each of the users in the group read and write access to user-specific objects (their own "home directory") in OtterIO.
 
 ```
 {
@@ -168,7 +158,7 @@ List of policy variables for OpenID based STS.
 "jwt:client_id"
 ```
 
-Following example shows OpenID users with full programmatic access to a OpenID user-specific directory (their own "home directory") in OtterIO.
+Following example shows OpenID users with read and write access to an OpenID user-specific directory (their own "home directory") in OtterIO.
 ```
 {
   "Version": "2012-10-17",
@@ -191,7 +181,7 @@ Following example shows OpenID users with full programmatic access to a OpenID u
 }
 ```
 
-If the user is authenticating using an STS credential which was authorized from AD/LDAP we allow `ldap:*` variables, currently only supports `ldap:user`. Following example shows LDAP users full programmatic access to a LDAP user-specific directory (their own "home directory") in OtterIO.
+If the user is authenticating using an STS credential which was authorized from AD/LDAP we allow `ldap:*` variables, currently only supports `ldap:user`. Following example shows LDAP users read and write access to an LDAP user-specific directory (their own "home directory") in OtterIO.
 ```
 {
   "Version": "2012-10-17",
@@ -234,12 +224,11 @@ If the user is authenticating using an STS credential which was authorized from 
 }
 ```
 
-- *aws:UserAgent* - This value is a string that contains information about the requester's client application. This string is generated by the client and can be unreliable. You can only use this context key from `mc` or other OtterIO SDKs which standardize the User-Agent string.
+- *aws:UserAgent* - This value is a string that contains information about the requester's client application. This string is generated by the client and can be unreliable. You can only use this context key from `oc` or OtterIO SDKs which standardize the User-Agent string.
 - *aws:username* - This is a string containing the friendly name of the current user, this value would point to STS temporary credential in `AssumeRole`ed requests, instead use `jwt:preferred_username` in case of OpenID connect and `ldap:user` in case of AD/LDAP connect. *aws:userid* is an alias to *aws:username* in OtterIO.
 
 
 ## Explore Further
-- [OtterIO Client Complete Guide](https://docs.min.io/docs/minio-client-complete-guide)
-- [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
-- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OC usage guide](https://github.com/soulteary/oc/blob/main/docs/usage.md)
+- [OtterIO STS Quickstart Guide](../sts/README.md)
+- [OtterIO Admin Multi-user Guide](admin/README.md)

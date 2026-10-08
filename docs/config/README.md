@@ -2,26 +2,23 @@
 
 ## Configuration Directory
 
-Till OtterIO release `RELEASE.2018-08-02T23-11-36Z`, OtterIO server configuration file (`config.json`) was stored in the configuration directory specified by `--config-dir` or defaulted to `${HOME}/.otterio`. However from releases after `RELEASE.2018-08-18T03-49-57Z`, the configuration file (only), has been migrated to the storage backend (storage backend is the directory passed to OtterIO server while starting the server).
+Current server configuration is stored in the storage backend passed to `otterio server`, rather than in a local `config.json` beside the executable. Use [OC](https://github.com/soulteary/oc) to inspect and update it through the OtterIO management API.
 
-You can specify the location of your existing config using `--config-dir`, OtterIO will migrate the `config.json` to your backend storage. Your current `config.json` will be renamed upon successful migration as `config.json.deprecated` in your current `--config-dir`. All your existing configurations are honored after this migration.
-
-Additionally `--config-dir` is now a legacy option which will is scheduled for removal in future, so please update your local startup, ansible scripts accordingly.
+`--config-dir` remains a hidden, deprecated compatibility option for importing a legacy `config.json`. A successful migration renames the old file to `config.json.deprecated`. For a new deployment, specify the data directory and use `--certs-dir` when a custom certificate location is needed.
 
 ```sh
 otterio server /data
 ```
 
-OtterIO also encrypts all the config, IAM and policies content with admin credentials.
+When root credentials are supplied through environment variables, OtterIO uses them to encrypt backend configuration, IAM data and policies. Keep these credentials available when restarting or migrating the deployment.
 
 ### Certificate Directory
 
-TLS certificates by default are stored under ``${HOME}/.otterio/certs`` directory. You need to place certificates here to enable `HTTPS` based access. Read more about [How to secure access to OtterIO server with TLS](https://docs.min.io/docs/how-to-secure-access-to-minio-server-with-tls).
+TLS certificates by default are stored under ``${HOME}/.otterio/certs`` directory. You need to place certificates here to enable `HTTPS` based access. See the local [TLS guide](../tls/README.md).
 
 Following is the directory structure for OtterIO server with TLS certificates.
 
 ```sh
-$ mc tree --files ~/.otterio
 /home/user1/.otterio
 └─ certs
    ├─ CAs
@@ -32,31 +29,34 @@ $ mc tree --files ~/.otterio
 You can provide a custom certs directory using `--certs-dir` command line option.
 
 #### Credentials
-On OtterIO admin credentials or root credentials are only allowed to be changed using ENVs namely `OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD`. Using the combination of these two values OtterIO encrypts the config stored at the backend.
+Set the root credentials with `OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD`. Set both variables together. The legacy `OTTERIO_ACCESS_KEY` and `OTTERIO_SECRET_KEY` names remain accepted for compatibility; use the root variable names for new deployments.
 
 ```sh
 export OTTERIO_ROOT_USER=otterio
-export OTTERIO_ROOT_PASSWORD=otterio13
+export OTTERIO_ROOT_PASSWORD="$(openssl rand -hex 32)"
+# Save both values in your secret store before starting the server.
 otterio server /data
 ```
+
+For an existing deployment, restore the saved values instead of generating new credentials at each restart. See the [quickstart](../../README.md) for the initial setup.
 
 ##### Rotating encryption with new credentials
 
-Additionally if you wish to change the admin credentials, then OtterIO will automatically detect this and re-encrypt with new credentials as shown below. For one time only special ENVs as shown below needs to be set for rotating the encryption config.
-
-> Old ENVs are never remembered in memory and are destroyed right after they are used to migrate your existing content with new credentials. You are safe to remove them after the server as successfully started, by restarting the services once again.
+To rotate credentials for an encrypted backend, supply the current credentials through the `_OLD` variables and the new credentials through the root variables for one startup. The old values must match the credentials that encrypted the existing configuration.
 
 ```sh
-export OTTERIO_ROOT_USER=newotterio
-export OTTERIO_ROOT_PASSWORD=newotterio123
-export OTTERIO_ROOT_USER_OLD=otterio
-export OTTERIO_ROOT_PASSWORD_OLD=otterio123
+# Restore the current root credentials from your secret store first.
+: "${OTTERIO_ROOT_USER:?Restore the current root user first}"
+: "${OTTERIO_ROOT_PASSWORD:?Restore the current root password first}"
+export OTTERIO_ROOT_USER_OLD="$OTTERIO_ROOT_USER"
+export OTTERIO_ROOT_PASSWORD_OLD="$OTTERIO_ROOT_PASSWORD"
+export OTTERIO_ROOT_USER="otterio-$(openssl rand -hex 8)"
+export OTTERIO_ROOT_PASSWORD="$(openssl rand -hex 32)"
+# Save the new root values in your secret store before starting the server.
 otterio server /data
 ```
 
-Once the migration is complete, server will automatically unset the `OTTERIO_ROOT_USER_OLD` and `OTTERIO_ROOT_PASSWORD_OLD` with in the process namespace.
-
-> **NOTE: Make sure to remove `OTTERIO_ROOT_USER_OLD` and `OTTERIO_ROOT_PASSWORD_OLD` in scripts or service files before next service restarts of the server to avoid double encryption of your existing contents.**
+The server removes the `_OLD` variables from its process environment after reading them. After a successful rotation, remove them from shell startup scripts, container definitions or service files before restarting again.
 
 #### Region
 ```
@@ -86,7 +86,7 @@ otterio server /data
 ```
 
 ### Storage Class
-By default, parity for objects with standard storage class is set to `N/2`, and parity for objects with reduced redundancy storage class objects is set to `2`. Read more about storage class support in OtterIO server [here](https://github.com/minio/minio/blob/master/docs/erasure/storage-class/README.md).
+For an erasure set with 4 or 5 drives, default STANDARD parity is `EC:2`; with 6 or 7 drives it is `EC:3`; with 8–16 drives it is `EC:4`. The default REDUCED_REDUNDANCY parity is `EC:2`. These settings apply to erasure storage. See the local [storage class guide](../erasure/storage-class/README.md).
 
 ```
 KEY:
@@ -172,7 +172,7 @@ OTTERIO_ETCD_COMMENT          (sentence)  optionally add a comment to this setti
 ```
 
 ### API
-By default, there is no limitation on the number of concurrent requests that a server/cluster processes at the same time. However, it is possible to impose such limitation using the API subsystem. Read more about throttling limitation in OtterIO server [here](https://github.com/minio/minio/blob/master/docs/throttle/README.md).
+The default `requests_max=0` lets the server calculate a concurrent request limit from available memory and the number of drives. Set a positive value to choose an explicit deployment limit; distributed deployments divide it across server hosts. `requests_deadline` controls how long a request can wait for capacity. See the local [throttling guide](../throttle/README.md). The following are common API settings; query OC help for the full set.
 
 ```
 KEY:
@@ -195,7 +195,7 @@ OTTERIO_API_REMOTE_TRANSPORT_DEADLINE  (duration)  set the deadline for API requ
 ```
 
 #### Notifications
-Notification targets supported by OtterIO are in the following list. To configure individual targets please refer to more detailed documentation [here](https://docs.min.io/docs/minio-bucket-notification-guide.html)
+Notification targets supported by OtterIO are in the following list. To configure individual targets please refer to more detailed documentation [the bucket notification guide](../bucket/notifications/README.md)
 
 ```
 notify_webhook        publish bucket notifications to webhook endpoints
@@ -206,22 +206,30 @@ notify_redis          publish bucket notifications to Redis datastores
 ```
 
 ### Accessing configuration
-All configuration changes can be made using [`mc admin config` get/set/reset/export/import commands](https://github.com/minio/mc/blob/master/docs/minio-admin-complete-guide.md).
+Use the current [OC client](https://github.com/soulteary/oc) and its `oc admin config` get/set/reset/export/import commands. OtterIO exposes management operations under `/otterio/admin/v3`; upstream `mc admin` compatibility is not assumed.
+
+For a single-port server, configure the alias using the S3 endpoint:
+
+```sh
+oc alias set myotterio http://localhost:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD" --api s3v4 --path on
+```
+
+If the server uses `--console-address ":9001"`, add `--admin-url http://localhost:9001` to the alias command. This URL is the management root; do not append `/otterio/` or `/otterio/admin/v3`. Object operations still use port 9000. For separate TLS certificates, use OC's `--admin-ca /path/to/admin-ca.pem` when the management certificate needs a custom CA.
 
 #### List all config keys available
 ```
-~ mc admin config set myotterio/
+oc admin config set myotterio/
 ```
 
 #### Obtain help for each key
 ```
-~ mc admin config set myotterio/ <key>
+oc admin config set myotterio/ <key>
 ```
 
-e.g: `mc admin config set myotterio/ etcd` returns available `etcd` config args
+e.g: `oc admin config set myotterio/ etcd` returns available `etcd` config args
 
 ```
-~ mc admin config set play/ etcd
+oc admin config set myotterio/ etcd
 KEY:
 etcd  federate multiple clusters for IAM and Bucket DNS
 
@@ -236,7 +244,7 @@ comment          (sentence)  optionally add a comment to this setting
 
 To get ENV equivalent for each config args use `--env` flag
 ```
-~ mc admin config set play/ etcd --env
+oc admin config set myotterio/ etcd --env
 KEY:
 etcd  federate multiple clusters for IAM and Bucket DNS
 
@@ -257,32 +265,34 @@ The following sub-systems are dynamic i.e., configuration parameters for each su
 
 ```
 api                   manage global HTTP API call specific features, such as throttling, authentication types, etc.
+compression           configure compression where supported by the storage backend
 heal                  manage object healing frequency and bitrot verification checks
 scanner               manage namespace scanning for usage calculation, lifecycle, healing and more
 ```
 
-> NOTE: if you set any of the following sub-system configuration using ENVs, dynamic behavior is not supported.
+> Environment variables take precedence over stored settings. A value supplied through the process environment cannot be changed with `oc admin config set`; update the environment and restart the server to change that value.
 
 ### Usage scanner
 
-Data usage scanner is enabled by default. The following configuration settings allow for more staggered delay in terms of usage calculation. The scanner adapts to the system speed and completely pauses when the system is under load. It is possible to adjust the speed of the scanner and thereby the latency of updates being reflected. The delays between each operation of the scanner can be adjusted by the `mc admin config set alias/ delay=15.0`. By default the value is `10.0`. This means the scanner will sleep *10x* the time each operation takes.
+Data usage scanner is enabled by default. The following configuration settings allow for more staggered delay in terms of usage calculation. The scanner adapts to the system speed and completely pauses when the system is under load. It is possible to adjust the speed of the scanner and thereby the latency of updates being reflected. The delays between each operation of the scanner can be adjusted by the `oc admin config set alias/ scanner delay=15.0`. By default the value is `10.0`. This means the scanner will sleep *10x* the time each operation takes.
 
 In most setups this will keep the scanner slow enough to not impact overall system performance. Setting the `delay` key to a *lower* value will make the scanner faster and setting it to 0 will make the scanner run at full speed (not recommended in production). Setting it to a higher value will make the scanner slower, consuming less resources with the trade off of not collecting metrics for operations like healing and disk usage as fast.
 
 ```
-~ mc admin config set alias/ scanner
+oc admin config set alias/ scanner
 KEY:
 scanner  manage namespace scanning for usage calculation, lifecycle, healing and more
 
 ARGS:
 delay     (float)     scanner delay multiplier, defaults to '10.0'
 max_wait  (duration)  maximum wait time between operations, defaults to '15s'
+cycle     (duration)  time between scanner cycles, defaults to '1m'
 ```
 
 Example: Following setting will decrease the scanner speed by a factor of 3, reducing the system resource use, but increasing the latency of updates being reflected.
 
 ```sh
-~ mc admin config set alias/ scanner delay=30.0
+oc admin config set alias/ scanner delay=30.0
 ```
 
 Once set the scanner settings are automatically applied without the need for server restarts.
@@ -291,12 +301,12 @@ Once set the scanner settings are automatically applied without the need for ser
 
 ### Healing
 
-Healing is enabled by default. The following configuration settings allow for more staggered delay in terms of healing. The healing system by default adapts to the system speed and pauses up to '1sec' per object when the system has `max_io` number of concurrent requests. It is possible to adjust the `max_delay` and `max_io` values thereby increasing the healing speed. The delays between each operation of the healer can be adjusted by the `mc admin config set alias/ max_delay=1s` and maximum concurrent requests allowed before we start slowing things down can be configured with `mc admin config set alias/ max_io=30` . By default the wait delay is `1sec` beyond 10 concurrent operations. This means the healer will sleep *1 second* at max for each heal operation if there are more than *10* concurrent client requests.
+Healing is enabled by default. The following configuration settings allow for more staggered delay in terms of healing. The healing system by default adapts to the system speed and pauses up to '1sec' per object when the system has `max_io` number of concurrent requests. It is possible to adjust the `max_sleep` and `max_io` values thereby increasing the healing speed. The delays between each operation of the healer can be adjusted by the `oc admin config set alias/ heal max_sleep=1s` and maximum concurrent requests allowed before we start slowing things down can be configured with `oc admin config set alias/ heal max_io=30` . By default the wait delay is `1sec` beyond 10 concurrent operations. This means the healer will sleep *1 second* at max for each heal operation if there are more than *10* concurrent client requests.
 
-In most setups this is sufficient to heal the content after drive replacements. Setting `max_delay` to a *lower* value and setting `max_io` to a *higher* value would make heal go faster.
+In most setups this is sufficient to heal the content after drive replacements. Setting `max_sleep` to a *lower* value and setting `max_io` to a *higher* value would make heal go faster.
 
 ```
-~ mc admin config set alias/ heal
+oc admin config set alias/ heal
 KEY:
 heal  manage object healing frequency and bitrot verification checks
 
@@ -309,7 +319,7 @@ max_io      (int)       maximum IO requests allowed between objects to slow down
 Example: The following settings will increase the heal operation speed by allowing healing operation to run without delay up to `100` concurrent requests, and the maximum delay between each heal operation is set to `300ms`.
 
 ```sh
-~ mc admin config set alias/ heal max_delay=300ms max_io=100
+oc admin config set alias/ heal max_sleep=300ms max_io=100
 ```
 
 Once set the healer settings are automatically applied without the need for server restarts.
@@ -321,7 +331,7 @@ Once set the healer settings are automatically applied without the need for serv
 
 ### Browser
 
-Enable or disable access to web UI. By default it is set to `on`. You may override this field with `OTTERIO_BROWSER` environment variable.
+Enable or disable access to the web UI with `OTTERIO_BROWSER`; the default is `on`. Setting it to `off` does not disable the S3 or management APIs.
 
 Example:
 
@@ -381,5 +391,6 @@ otterio server /data
 ```
 
 ## Explore Further
-* [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
-* [Configure OtterIO Server with TLS](https://docs.min.io/docs/how-to-secure-access-to-minio-server-with-tls)
+* [OtterIO Quickstart Guide](../../README.md)
+* [Configure OtterIO Server with TLS](../tls/README.md)
+* [OC configuration and administration](https://github.com/soulteary/oc/blob/main/docs/administration.md)

@@ -58,7 +58,7 @@ The console is at <http://127.0.0.1:9001>; sign in with the credentials you conf
 > Container startup now rejects missing or default credentials. Older no-credential Docker examples must be updated before upgrading. For `_FILE` secrets, a non-root Compose profile, and migration instructions, see [Docker security](./README_DOCKER_SECURITY.md). Only an explicit local-development opt-in, `OTTERIO_ALLOW_DEFAULT_CREDENTIALS=1`, permits default credentials; keep such demos bound to loopback. Production deployments should pin a reviewed release tag or digest instead of `latest`.
 
 > [!NOTE]
-> Standalone OtterIO servers are best suited for development and evaluation. Production deployments should run **distributed mode with Erasure Coding enabled** — at least **4 drives per server**. See [`docs/erasure/README.md`](./docs/erasure/README.md) and [`docs/distributed/README.md`](./docs/distributed/README.md).
+> A single-drive server has no erasure redundancy. Erasure sets contain **4–16 drives**, which can be local or distributed across servers; a supported distributed topology does not require four drives on every server. Plan failure domains and per-set read/write quorum before deploying. See [erasure coding](./docs/erasure/README.md), [distributed deployment](./docs/distributed/README.md), and [service limits](./docs/otterio-limits.md).
 
 ---
 
@@ -341,7 +341,7 @@ The links below point to the **original upstream MinIO** project's documentation
 
 Thank you to our reporters and contributors. See the [acknowledgment records](ACKNOWLEDGMENTS.md) for their specific contributions.
 
-Contributions are welcome via the project repository at <https://github.com/soulteary/otterio>. For coding conventions inherited from the upstream baseline, see the original [Contributor's Guide](https://github.com/minio/minio/blob/master/CONTRIBUTING.md).
+Contributions are welcome via the project repository at <https://github.com/soulteary/otterio>. Start with the local [Contributor's Guide](./CONTRIBUTING.md) for the repository layout, supported toolchain and checks. The [current project assessment](./docs/development/project-status-20261008.md) records the reviewed source, release boundary and documentation gaps.
 
 ---
 
@@ -352,7 +352,7 @@ Contributions are welcome via the project repository at <https://github.com/soul
 
 Because OtterIO is forked from the **last Apache 2.0 release of MinIO (≈ `RELEASE.2021-04-22T15-44-28Z`)**, every CVE / GHSA published against upstream `minio/minio` after that date must be evaluated and back-ported separately. OtterIO does **not** automatically inherit those fixes.
 
-**Backlog status (as of 2026-06): 14 closed, 2 not-applicable, 0 open.** Every advisory currently triaged against the post-2021-04 baseline has been resolved on `main` — see [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md) for the per-item table with the OtterIO codepath, the upstream reference, and the regression tests pinning each fix. New upstream advisories will be added with status `Pending` and tracked from there.
+The [rolling advisory backlog](./docs/security/upstream-cve-backlog.md) records each item's applicability, source-level fix and regression tests. A source fix or closed item does not prove that your deployed release contains it; verify the selected tag and artifact. New advisories are added with status `Pending` and tracked there. This record does not replace a deployment-specific security assessment.
 
 **Operators upgrading from a previous OtterIO build that used LDAP** should consult [`docs/security/ldap-dn-normalization-migration.md`](./docs/security/ldap-dn-normalization-migration.md) before rolling out: the new release canonicalises every LDAP DN before it touches the IAM policy map, which is a one-shot breaking change for deployments that happened to rely on case-only DN differences.
 

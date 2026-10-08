@@ -1,55 +1,112 @@
-## OtterIO Server Limits Per Tenant
+# OtterIO server limits and S3 compatibility
 
-### Erasure Code (Multiple Drives / Servers)
+[简体中文](zh_CN/otterio-limits.md) · [Documentation index](README.md)
 
-|Item|Specification|
-|:---|:---|
-|Maximum number of servers per cluster| no-limit|
-|Maximum number of federated clusters | no-limit|
-|Minimum number of servers| 02|
-|Minimum number of drives per server when server count is 1 | 04 |
-|Minimum number of drives per server when server count is 2 or 3 | 02|
-|Minimum number of drives per server when server count is 4 | 01|
-|Maximum number of drives per server| no-limit|
-|Read quorum| N/2|
-|Write quorum| N/2+1|
+These limits describe this repository's server implementation. A gateway's
+upstream service, a client, a reverse proxy, available storage and configured
+quotas can impose lower limits. Check the source and release used by your
+deployment; S3 compatibility does not mean that every AWS S3 feature is present.
 
-### Browser Access
+## Erasure topology and quorum
 
-|Item|Specification|
-|:---|:---|
-|Web browser upload size limit| 5 TiB|
+An erasure set contains **4–16 drives**. A single local drive uses the filesystem
+backend without erasure redundancy. Larger deployments form multiple sets;
+endpoint counts must divide into supported set sizes and satisfy the endpoint
+layout checks. The drive minimum applies to a set, not to every server. For
+example, four servers with one drive each can form one four-drive set.
 
-### Limits of S3 API
+For an object's set, let `N` be the total shards, `P` the parity shards and
+`D = N - P` the data shards. Object reads require `D` valid shards. Object writes
+require `D`, or `D + 1` when data and parity counts are equal. Metadata operations
+also require their own quorum; drive counts alone do not guarantee availability.
+Node-failure tolerance depends on the placement of each set's shards across nodes.
 
-|Item|Specification|
-|:---|:---|
-|Maximum number of buckets| no-limit|
-|Maximum number of objects per bucket| no-limit|
-|Maximum object size| 5 TiB|
-|Minimum object size| 0 B|
-|Maximum object size per PUT operation| 5 TiB|
-|Maximum number of parts per upload| 	10,000|
-|Part size|5 MiB to 5 GiB. Last part can be 0 B to 5 GiB|
-|Maximum number of parts returned per list parts request| 10000|
-|Maximum number of objects returned per list objects request| 10000|
-|Maximum number of multipart uploads returned per list multipart uploads request| 1000|
+Default STANDARD parity is `EC:2` for 4–5 drives, `EC:3` for 6–7 drives and `EC:4`
+for 8–16 drives. Changing a storage class changes parity for new objects, not the
+layout of existing objects. See [storage classes](erasure/storage-class/README.md),
+[distributed deployment](distributed/README.md) and the
+[sizing examples](distributed/SIZING.md).
 
-### List of Amazon S3 API's not supported on OtterIO
-We found the following APIs to be redundant or less useful outside of AWS S3. If you have a different view on any of the APIs we missed, please open a [github issue](https://github.com/minio/minio/issues).
+Source: [set sizes and layout](../cmd/endpoint-ellipses.go),
+[object quorum](../cmd/erasure-metadata.go),
+[storage-class defaults](../cmd/config/storageclass/storage-class.go).
 
-#### List of Amazon S3 Bucket API's not supported on OtterIO
+## S3 request limits
 
-- BucketACL (Use [bucket policies](https://docs.min.io/docs/minio-client-complete-guide#policy) instead)
-- BucketCORS (CORS enabled by default on all buckets for all HTTP verbs)
-- BucketWebsite (Use [`caddy`](https://github.com/caddyserver/caddy) or [`nginx`](https://www.nginx.com/resources/wiki/))
-- BucketAnalytics, BucketMetrics, BucketLogging (Use [bucket notification](https://docs.min.io/docs/minio-client-complete-guide#events) APIs)
-- BucketRequestPayment
+| Item | Server limit |
+| --- | --- |
+| Object size and single PUT size | 5 TiB |
+| Minimum object size | 0 B |
+| Parts per multipart upload | 10,000 |
+| Multipart part size | 5 MiB–5 GiB; the last part may be smaller, including 0 B |
+| Entries per object/version listing response | 4,500 |
+| Parts per list-parts response | 10,000 |
+| Default page size for list-multipart-uploads | 10,000 |
 
-#### List of Amazon S3 Object API's not supported on OtterIO
+TiB, GiB and MiB are binary units. Clients may request smaller pages; always
+follow truncation markers or continuation tokens instead of assuming one page
+contains every result. The upload-list value is the default when `max-uploads`
+is omitted; explicit pagination and backend behavior may differ. These are
+implementation values, not measured capacity
+or throughput guarantees. Bucket and object counts remain constrained by storage,
+metadata workload and operational resources.
 
-- ObjectACL (Use [bucket policies](https://docs.min.io/docs/minio-client-complete-guide#policy) instead)
-- ObjectTorrent
+Source: [object and part size constants](../cmd/utils.go),
+[response limits](../cmd/api-response.go), [metacache block size](../cmd/metacache.go)
+and [request argument parsing](../cmd/api-resources.go).
 
-### Object name restrictions on OtterIO
-Object names that contain characters `^*|\/&";` are unsupported on Windows and other file systems which do not support filenames with these characters. Note that this list is not exhaustive, and depends on the maintainers of the filesystem itself.
+The web console uploads a file through one XMLHttpRequest rather than a multipart
+S3 upload. Its practical limit depends on the browser, proxy timeouts and server
+configuration; the S3 ceiling is not a verified 5 TiB browser-upload guarantee.
+Use a multipart-capable S3 client for large transfers. See
+[console upload code](../browser/app/js/uploads/actions.js).
+
+## Conditional object writes
+
+Current `main` supports atomic `If-None-Match: *` for PUT and multipart completion
+on filesystem and single-pool erasure storage, subject to the running backend.
+Supported configurations advertise `X-Otterio-Conditional-Writes: v1`. Existing
+objects, including empty objects, return HTTP 412. Gateways, multiple pools,
+write-back cache and uninitialized storage do not advertise this capability.
+Unsupported conditions or backends return HTTP 501; `If-Match` is not supported
+for these write operations. Preserve a conditional failure instead of retrying
+with an unconditional overwrite.
+
+This capability is newer than `RELEASE.2026-10-07T14-09-17Z`; verify that your
+selected release includes it. Source: [conditional-write contract](../cmd/object-conditional-write.go)
+and [release review](releases/2026-10-08-release-review.md).
+
+## Partial or unavailable S3 features
+
+- **Bucket/Object ACLs:** compatibility handlers accept private access and return
+  a dummy owner `FULL_CONTROL` ACL. They do not implement AWS ACL grants; use
+  [IAM and bucket policies](multi-user/README.md) for authorization. See
+  [ACL handlers](../cmd/acl-handlers.go).
+- **Per-bucket CORS configuration:** not implemented. The compatibility GET
+  returns `NoSuchCORSConfiguration`; cross-origin access is governed by server
+  configuration `api cors_allow_origin` or `OTTERIO_API_CORS_ALLOW_ORIGIN`
+  (default `*`). See [configuration](config/README.md),
+  [CORS middleware](../cmd/fiber_router.go) and [API configuration](../cmd/config/api/api.go).
+- **BucketWebsite, BucketAnalytics, BucketMetrics, BucketLogging and
+  BucketRequestPayment:** full AWS behavior is not implemented. Some routes
+  return compatibility responses, which do not establish feature support. Use
+  a web server for website hosting, [Prometheus](metrics/prometheus/README.md)
+  for metrics and [audit logging](logging/README.md) for audit events.
+  [Bucket notifications](bucket/notifications/README.md) serve event delivery;
+  they do not reproduce S3 access-log semantics.
+- **ObjectTorrent:** not implemented.
+- **Lifecycle tier transition and restore:** supported only on a local,
+  single-pool erasure server; see the [lifecycle guide](bucket/lifecycle/README.md)
+  for target requirements and restore restrictions.
+
+The [S3 route table](../cmd/fiber_api_router.go) and
+[compatibility handlers](../cmd/dummy-handlers.go) are the source of truth for
+these endpoints. Report missing functionality in
+[OtterIO issues](https://github.com/soulteary/otterio/issues).
+
+## Object names
+
+Filesystem and NAS deployments inherit restrictions from their host filesystem.
+On Windows, characters such as `^*|\\/&\";` may be unavailable in filenames; this
+is not an exhaustive cross-platform list. Validate names against the backend
+and clients used by your deployment.

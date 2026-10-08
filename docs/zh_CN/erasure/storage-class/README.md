@@ -1,103 +1,52 @@
-# OtterIO 存储类型快速入门
+# OtterIO 存储类型
 
-在纠删码模式下,OtterIO server支持存储类型. 这可以指定每个对象的数据和奇偶校验盘，其实就是可以为对象选择不同的存储类型.
+在纠删码模式下，本地存储类型决定 OtterIO 为每个对象写入多少个数据分片和奇偶校验分片，控制的是[纠删码集合](../README.md)内的里德-所罗门冗余。生命周期转移中的 `StorageClass` 表示远端目标标签，使用[另一套配置](../../bucket/lifecycle/README.md#将数据转移到远端存储桶)。
 
-## 概述
+## 默认值和允许范围
 
-OtterIO 支持两种存储类型, 低冗余存储和标准存储。 这些存储类型可以在OtterIO服务器启动之前通过环境变量定义。 在通过环境变量定义了每个存储类型的数据和奇偶校验盘的数量后，
-你可以通过请求中的元数据字段`x-amz-storage-class`来设置一个对象的存储类型。然后，OtterIO服务器通过将对象保存在特定数量的数据和奇偶校验盘中来兑现存储类型。
+上传请求的 `x-amz-storage-class` 头接受 `STANDARD` 或 `REDUCED_REDUNDANCY`。未提供该头时使用 `STANDARD`。
 
-## 可用存储空间
+一个纠删码集合包含 `N` 块盘时，配置的奇偶校验数 `P` 必须是 2 到 `floor(N/2)` 之间的整数。同时配置两种类型时，`STANDARD` 的奇偶校验数必须大于或等于 `REDUCED_REDUNDANCY`。二者相等是有效配置；4 盘集合也可以使用两种类型，此时都为 `EC:2`。
 
-选择不同的数据和奇偶校验盘的数量会直接影响到存储空间的使用。通过存储类型，你能优化以实现高冗余或者是更好的空间利用率。
+未显式配置 `STANDARD` 时，默认值为：
 
-让我们以在16个盘的OtterIO部署中存储100M文件为例，来了解数据和奇偶校验盘数量的不同组合是如何影响可用存储空间的。如果你使用8个数据盘和8个奇偶校验盘，文件空间使用量约为两倍，
-即100M文件将占用200M空间。但是，如果你是用10个数据盘和6个奇偶校验盘，则同样的100M文件大约需要160M的空间。如果你是用14个数据盘和2个奇偶校验盘，100M文件仅仅需要约114M空间。
+- 每集合 4–5 块盘：`EC:2`。
+- 每集合 6–7 块盘：`EC:3`。
+- 每集合 8–16 块盘：`EC:4`。
 
-以下是一张16盘的OtterIO部署，数据/奇偶校验盘数量和相应的 _近似_ 存储储空间使用情况列表。_空间使用率_ 约等于纠删编码下的使用空间除以文件的实际大小。
+`REDUCED_REDUNDANCY` 默认使用 `EC:2`。`N` 是**单个集合**的盘数，不是所有存储池的硬盘总数。配置值必须适用于部署中的每一种集合大小。
 
-|    盘总个数 (N)   |   数据盘个数 (D)  |  奇偶校验码个数 (P) |      空间使用率      |
-|------------------|-----------------|-------------------|---------------------|
-|               16 |               8 |                 8 |                2.00 |
-|               16 |               9 |                 7 |                1.79 |
-|               16 |              10 |                 6 |                1.60 |
-|               16 |              11 |                 5 |                1.45 |
-|               16 |              12 |                 4 |                1.34 |
-|               16 |              13 |                 3 |                1.23 |
-|               16 |              14 |                 2 |                1.14 |
+## 容量和故障容忍
 
-你可以使用公式: `盘总个数 (N)/数据盘个数 (D)`来计算 _大概的_ 空间使用率。
+对象的数据分片数为 `D = N - P`。编码后的近似大小为 `原始大小 × N / D`，尚未包含元数据、文件系统分配和其他开销。在 16 盘集合中保存 100 MiB 对象时：
 
-### 标准(STANDARD)存储类型的允许值
+- `EC:8`：8 个数据分片 + 8 个奇偶校验分片，约占 200 MiB。
+- `EC:4`（`STANDARD` 默认值）：12 个数据分片 + 4 个奇偶校验分片，约占 133.3 MiB。
+- `EC:2`：14 个数据分片 + 2 个奇偶校验分片，约占 114.3 MiB。
 
-`STANDARD`存储类型意味着奇偶校验盘比`REDUCED_REDUNDANCY`多。 所以, `STANDARD`的奇偶校验盘数量应该
+恢复对象需要 `D` 个健康分片。写入需要 `D` 块盘；数据与奇偶校验分片数量相等时需要 `D + 1` 块盘。增加奇偶校验数会减少可用容量，同时提高对分片丢失的容忍能力；容错范围应按对象及其集合计算，详见[法定数量示例](../README.md#数据奇偶校验和法定数量)。
 
-- 如果`REDUCED_REDUNDANCY`的奇偶校验盘未设置的话，应该大于等于2。
-- 如果已设置的话，应该大于`REDUCED_REDUNDANCY`的奇偶校验盘数量。
+## 配置奇偶校验数
 
-奇偶校验块不能大于数据块，所以`STANDARD`存储类型的奇偶校验块不能大于N/2。（N是盘总个数）
-
-`STANDARD`存储类型的默认值是`N/2`（N是盘总个数）。
-
-### 低冗余(REDUCED_REDUNDANCY)存储类型的允许值
-
-`REDUCED_REDUNDANCY`存储类型意味着奇偶校验盘比`REDUCED_REDUNDANCY`少。 所以, `REDUCED_REDUNDANCY`的奇偶校验盘数量应该
-
-- 如果`STANDARD`的奇偶校验盘未设置的话，应该小于2。
-- 如果设置的话，应该小于`STANDARD`的奇偶校验盘数量。
-
-因为不建议奇偶校验盘数量低于2， 所以4个盘组成的纠删码模式部署是不支持`REDUCED_REDUNDANCY`存储类型的。
-
-`REDUCED_REDUNDANCY`存储类型的默认值是`2`。
-
-## 存储类型入门
-
-### 设置存储类型
-
-设置存储类型环境变量的格式如下
-
-`OTTERIO_STORAGE_CLASS_STANDARD=EC:parity`
-`OTTERIO_STORAGE_CLASS_RRS=EC:parity`
-
-例如, 设置 `OTTERIO_STORAGE_CLASS_RRS` 奇偶校验盘为2 以及设置 `OTTERIO_STORAGE_CLASS_STANDARD` 奇偶校验盘为3
+在启动服务之前设置以下环境变量。对至少有 6 块盘的集合，这个示例让标准上传使用 3 个奇偶校验分片，低冗余上传使用 2 个：
 
 ```sh
 export OTTERIO_STORAGE_CLASS_STANDARD=EC:3
 export OTTERIO_STORAGE_CLASS_RRS=EC:2
 ```
 
-也可以通过`mc admin config` get/set 命令来设置存储类型。参考 [存储类型](https://github.com/minio/minio/tree/master/docs/zh_CN/config#存储类型) 获取更多详细信息。
+对应的服务配置项为 `storage_class standard` 和 `storage_class rrs`，详见[配置指南](../../config/README.md#存储类型)。环境变量优先于已保存的配置。各节点应保持相同设置。修改只影响后续写入，不会重新编码已有对象版本。
 
+## 上传时选择类型
 
-*注意*
+先为 AWS CLI 配置 OtterIO 凭据和区域，再以低冗余类型上传一个已存在的本地文件：
 
-- 如果通过环境变量或`mc admin config` get/set命令设置了`STANDARD`存储类型，并且请求元数据中不存在`x-amz-storage-class`，则OtterIO服务器会将`STANDARD`存储类型应用于该对象。这意味着将按照`STANDARD`存储类型中的设置使用数据和奇偶校验盘数量。
-
-- 如果在启动OtterIO服务器之前未定义存储类型，并且随后的PutObject元数据字段中存在`x-amz-storage-class`，其值为`REDUCED_REDUNDANCY`或`STANDARD`，则OtterIO服务器将使用默认的奇偶校验值。
-
-### 设置元数据
-
-如下`otterio-go`的示例中，存储类型被设置为`REDUCED_REDUNDANCY`。这意味着对象被拆分为6个数据块和2个奇偶校验块(按照上一步骤中的存储类型设置)。
-
-```go
-s3Client, err := otterio.New("localhost:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
-if err != nil {
-	log.Fatalln(err)
-}
-
-object, err := os.Open("my-testfile")
-if err != nil {
-	log.Fatalln(err)
-}
-defer object.Close()
-objectStat, err := object.Stat()
-if err != nil {
-	log.Fatalln(err)
-}
-
-n, err := s3Client.PutObject("my-bucketname", "my-objectname", object, objectStat.Size(), otterio.PutObjectOptions{ContentType: "application/octet-stream", StorageClass: "REDUCED_REDUNDANCY"})
-if err != nil {
-	log.Fatalln(err)
-}
-log.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
+```sh
+aws --endpoint-url http://127.0.0.1:9000 s3api put-object \
+  --bucket my-bucket --key my-testfile --body ./my-testfile \
+  --storage-class REDUCED_REDUNDANCY
 ```
+
+将桶名和端点替换为实际值，访问远端端点时使用 HTTPS。8 盘集合配置低冗余 `EC:2` 时，该对象使用 6 个数据分片和 2 个奇偶校验分片。[OtterIO Go SDK](https://github.com/soulteary/otterio-sdk)也提供 `PutObjectOptions.StorageClass` 上传选项。
+
+OtterIO 的当前行为以[奇偶校验数验证](../../../../cmd/config/storageclass/storage-class.go)和[默认奇偶校验数](../../../../cmd/format-erasure.go)实现为准。[AWS CLI 上传文档](https://docs.aws.amazon.com/cli/latest/reference/s3api/put-object.html)用于了解客户端语法，其中 AWS 的存储层级选项不会扩展 OtterIO 支持的本地存储类型。

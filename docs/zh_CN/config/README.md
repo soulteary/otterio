@@ -2,31 +2,22 @@
 
 ## 配置目录
 
-默认的配置目录是 `${HOME}/.otterio`，你可以使用`--config-dir`命令行选项重写之。OtterIO server在首次启动时会生成一个新的`config.json`，里面带有自动生成的访问凭据。
+当前服务端配置保存在 `otterio server` 指定的存储后端中，不会在程序旁生成供日常编辑的 `config.json`。使用 [OC 客户端](https://github.com/soulteary/oc)通过 OtterIO 管理接口查看和修改配置。
 
-```sh
-otterio server --config-dir /etc/otterio /data
-```
-
-截止到 OtterIO `RELEASE.2018-08-02T23-11-36Z` 版本, OtterIO server 的配置文件(`config.json`) 被存储在通过 `--config-dir` 指定的目录或者默认的 `${HOME}/.otterio` 目录。 但是从 `RELEASE.2018-08-18T03-49-57Z` 版本之后, 配置文件 (仅仅), 已经被迁移到存储后端 (存储后端指的是启动一个服务器的时候，传递给OtterIO server的目录)。
-
-您可以使用`--config-dir`指定现有配置的位置, OtterIO 会迁移 `config.json` 配置到你的存储后端。 迁移成功后，你当前 `--config-dir` 目录中的 `config.json` 将被重命名为 `config.json.deprecated`。 迁移后，所有现有配置都将得到保留。
-
-此外，`--config-dir`现在是一个旧配置，计划在将来删除，因此请相应地更新本地startup和ansible脚本。
+`--config-dir` 仍作为隐藏的旧版兼容选项保留，用于导入已有的 `config.json`。迁移成功后，旧文件会被重命名为 `config.json.deprecated`。新部署直接指定数据目录；自定义证书位置使用 `--certs-dir`。
 
 ```sh
 otterio server /data
 ```
 
-OtterIO还使用管理员凭据对所有配置，IAM和策略内容进行加密。
+通过环境变量设置 root 凭据时，OtterIO 会使用这些凭据加密后端配置、IAM 数据和策略。重启或迁移部署时，需要保留对应的凭据。
 
 ### 证书目录
-TLS证书存在``${HOME}/.otterio/certs``目录下，你需要将证书放在该目录下来启用`HTTPS` 。如果你是一个乐学上进的好青年，这里有一本免费的秘籍传授一你: [如何使用TLS安全的访问otterio](https://docs.min.io/cn/how-to-secure-access-to-minio-server-with-tls).
+TLS 证书默认保存在 `${HOME}/.otterio/certs`。将 `public.crt` 和 `private.key` 放入该目录可启用 HTTPS，详见[本项目 TLS 指南](../tls/README.md)。
 
 以下是一个具有TLS证书的OtterIO server的目录结构。
 
 ```sh
-$ mc tree --files ~/.otterio
 /home/user1/.otterio
 └─ certs
    ├─ CAs
@@ -37,31 +28,34 @@ $ mc tree --files ~/.otterio
 你可以使用`--certs-dir`命令行选项提供自定义certs目录。
 
 #### 凭据
-只能通过环境变量`OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD` 更改OtterIO的admin凭据和root凭据。使用这两个值的组合，OtterIO加密存储在后端的配置
+通过 `OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD` 设置 root 凭据，两个变量需要同时设置。旧名称 `OTTERIO_ACCESS_KEY` 和 `OTTERIO_SECRET_KEY` 仍为兼容保留；新部署使用 root 变量名称。
 
 ```
 export OTTERIO_ROOT_USER=otterio
-export OTTERIO_ROOT_PASSWORD=otterio13
+export OTTERIO_ROOT_PASSWORD="$(openssl rand -hex 32)"
+# 启动前将这两个值保存到你的凭据管理系统。
 otterio server /data
 ```
+
+已有部署应恢复保存的凭据，不能在每次重启时重新生成。初次部署参见[快速入门](../../../README_zh_CN.md)。
 
 ##### 使用新的凭据轮换加密
 
-另外，如果您想更改管理员凭据，则OtterIO将自动检测到该凭据，并使用新凭据重新加密，如下所示。一次只需要设置如下所示的环境变量即可轮换加密配置。
+轮换加密后端的凭据时，在一次启动中通过 `_OLD` 变量提供原凭据，通过 root 变量提供新凭据。原凭据必须与现有配置的加密凭据一致。
 
-> 旧的环境变量永远不会在内存中被记住，并且在使用新凭据迁移现有内容后立即销毁。在服务器再次成功重启后，你可以安全的删除它们。
-
-```
-export OTTERIO_ROOT_USER=newotterio
-export OTTERIO_ROOT_PASSWORD=newotterio123
-export OTTERIO_ROOT_USER_OLD=otterio
-export OTTERIO_ROOT_PASSWORD_OLD=otterio123
+```sh
+# 先从凭据管理系统恢复当前真实 root 凭据。
+: "${OTTERIO_ROOT_USER:?Restore the current root user first}"
+: "${OTTERIO_ROOT_PASSWORD:?Restore the current root password first}"
+export OTTERIO_ROOT_USER_OLD="$OTTERIO_ROOT_USER"
+export OTTERIO_ROOT_PASSWORD_OLD="$OTTERIO_ROOT_PASSWORD"
+export OTTERIO_ROOT_USER="otterio-$(openssl rand -hex 8)"
+export OTTERIO_ROOT_PASSWORD="$(openssl rand -hex 32)"
+# 启动前将新的 root 值保存到凭据管理系统。
 otterio server /data
 ```
 
-迁移完成后, 服务器会自动的取消进程空间中的`OTTERIO_ROOT_USER_OLD` and `OTTERIO_ROOT_PASSWORD_OLD`设置。
-
-> **注意: 在下一次服务重新启动前，要确保移除脚本或者服务文件中的 `OTTERIO_ROOT_USER_OLD` and `OTTERIO_ROOT_PASSWORD_OLD`， 避免现有的内容被双重加密**
+服务器读取 `_OLD` 变量后会将其从自身的进程环境中移除。确认轮换成功后，在下次重启之前，从 shell 启动脚本、容器定义或服务文件中移除这些变量。
 
 #### 区域
 ```
@@ -91,7 +85,7 @@ otterio server /data
 ```
 
 ### 存储类型
-默认情况下，标准存储类型的奇偶校验值设置为N/2，低冗余的存储类型奇偶校验值设置为2。在[此处](https://github.com/minio/minio/blob/master/docs/zh_CN/erasure/storage-class/README.md)了解有关OtterIO服务器存储类型的更多信息。
+纠删码集合包含 4 或 5 块盘时，STANDARD 默认校验配置为 `EC:2`；6 或 7 块盘时为 `EC:3`；8–16 块盘时为 `EC:4`。REDUCED_REDUNDANCY 默认为 `EC:2`。这些设置用于纠删码存储，详见[本项目存储类型指南](../erasure/storage-class/README.md)。
 
 ```
 KEY:
@@ -177,7 +171,7 @@ OTTERIO_ETCD_COMMENT          (sentence)  为这个设置添加一个可选的�
 ```
 
 ### API
-默认情况下，服务器/集群同时处理的并发请求数没有限制。 但是，可以使用API子系统强加这种限制。 在[此处](https://github.com/minio/minio/blob/master/docs/zh_CN/throttle/README.md)阅读有关OtterIO服务器中限制限制的更多信息。
+默认 `requests_max=0` 时，服务器根据内存容量和磁盘数量计算并发请求上限。设置正数可指定部署的并发上限，分布式部署会将其分配到各个服务器节点。`requests_deadline` 控制请求等待空闲处理容量的时间，详见[本项目限流指南](../throttle/README.md)。以下列出常用 API 设置，完整参数请查询 OC 帮助。
 
 ```
 KEY:
@@ -186,7 +180,7 @@ api  管理全局HTTP API调用的特定功能，例如限制，身份验证类�
 ARGS:
 requests_max       (number)    设置并发请求的最大数量，例如 "1600"
 requests_deadline  (duration)  设置等待处理的API请求的期限，例如 "1m"
-ready_deadline     (duration)  设置健康检查API /otterio/health/ready的期限，例如 "1m"
+remote_transport_deadline (duration)  联邦实例间转发请求时远程传输的期限，例如 "2h"
 cors_allow_origin  (csv)       设置CORS请求允许的来源列表,以逗号分割,例如 "https://example1.com,https://example2.com"
 ```
 
@@ -196,10 +190,11 @@ cors_allow_origin  (csv)       设置CORS请求允许的来源列表,以逗号�
 OTTERIO_API_REQUESTS_MAX       (number)    设置并发请求的最大数量，例如 "1600"
 OTTERIO_API_REQUESTS_DEADLINE  (duration)  设置等待处理的API请求的期限，例如 "1m"
 OTTERIO_API_CORS_ALLOW_ORIGIN  (csv)       设置CORS请求允许的来源列表,以逗号分割,例如 "https://example1.com,https://example2.com"
+OTTERIO_API_REMOTE_TRANSPORT_DEADLINE (duration)  联邦实例间远程传输的期限，例如 "2h"
 ```
 
 #### 通知
-OtterIO支持如下列表中的通知。要配置单个目标，请参阅[此处](https://docs.min.io/cn/minio-bucket-notification-guide.html)的更多详细文档
+OtterIO支持如下列表中的通知。要配置单个目标，请参阅[本项目存储桶通知指南](../bucket/notifications/README.md)的更多详细文档
 
 ```
 notify_webhook        发布 bucket 通知到 webhook endpoints
@@ -210,22 +205,30 @@ notify_redis          发布 bucket 通知到 Redis datastores
 ```
 
 ### 访问配置
-可以使用[`mc admin config` get/set/reset/export/import commands](https://github.com/minio/mc/blob/master/docs/minio-admin-complete-guide.md)命令应用所有配置的更改.
+使用当前 [OC 客户端](https://github.com/soulteary/oc)的 `oc admin config` get/set/reset/export/import 命令。OtterIO 管理接口使用 `/otterio/admin/v3` 路径，不应假定上游 `mc admin` 能直接兼容。
+
+单端口部署使用 S3 地址配置别名：
+
+```sh
+oc alias set myotterio http://localhost:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD" --api s3v4 --path on
+```
+
+如果服务端设置了 `--console-address ":9001"`，在别名命令中增加 `--admin-url http://localhost:9001`。这里填写管理根地址，不追加 `/otterio/` 或 `/otterio/admin/v3`；对象操作仍使用 9000 端口。管理入口的独立证书需要自定义 CA 时，使用 OC 的 `--admin-ca /path/to/admin-ca.pem`。
 
 #### 列出所有可用的配置key
 ```
-~ mc admin config set myotterio/
+oc admin config set myotterio/
 ```
 
 #### 获取每个key的帮助
 ```
-~ mc admin config set myotterio/ <key>
+oc admin config set myotterio/ <key>
 ```
 
-例如: `mc admin config set myotterio/ etcd` 会返回 `etcd` 可用的配置参数
+例如: `oc admin config set myotterio/ etcd` 会返回 `etcd` 可用的配置参数
 
 ```
-~ mc admin config set play/ etcd
+oc admin config set myotterio/ etcd
 KEY:
 etcd  federate multiple clusters for IAM and Bucket DNS
 
@@ -240,7 +243,7 @@ comment          (sentence)  optionally add a comment to this setting
 
 要获取每个配置参数的等效ENV，请使用`--env`标志
 ```
-~ mc admin config set play/ etcd --env
+oc admin config set myotterio/ etcd --env
 KEY:
 etcd  federate multiple clusters for IAM and Bucket DNS
 
@@ -255,28 +258,41 @@ OTTERIO_ETCD_COMMENT          (sentence)  optionally add a comment to this setti
 
 此行为在所有key中都是一致的，每个key都带有可用的示例文档。
 
-## 环境变量仅有的配置 (配置文件中没有)
+## 无需重启的动态配置
 
-#### 使用情况采集器
-> 注意: 数据使用情况采集器不支持网关部署模式。
+`api`、`compression`、`scanner` 和 `heal` 子系统支持运行时更新；压缩仍要求存储后端支持。环境变量优先于存储的配置。通过进程环境提供的值不能用 `oc admin config set` 改写，修改这些值需要更新环境并重启服务。
 
-数据使用情况采集器默认是启用的，通过Envs可以设置更多的交错延迟。
+### 使用情况采集器
 
-采集器能适应系统速度，并在系统负载时完全暂停。 可以调整采集器的速度，从而达到延迟更新的效果。 每次采集操作之间的延迟都可以通过环境变量`OTTERIO_SCANNER_DELAY`来调整。 默认情况下，该值为10。 这意味着采集每次操作都将休眠*10x*的时间。
-
-大多数设置要让采集器足够慢，这样不会影响整体的系统性能。
-设置 `OTTERIO_SCANNER_DELAY` 为一个 *较低* 的值可以让采集器更快，并且设置为0的时候，可以让采集器全速运行（不推荐）。 设置一个较高的值可以让采集器变慢，进一步减少资源的消耗。
-
-示例: 如下设置将使采集器的速度降低三倍, 减少了系统资源的使用，但是反映到更新的延迟会增加。
+数据使用情况采集器默认启用。`delay` 是每次操作之间的等待倍数，默认为 `10`；值越小扫描越快，设为 `0` 会取消这种等待。`max_wait` 限制每次等待时间，默认为 `15s`；`cycle` 是两轮扫描之间的间隔，默认为 `1m`。
 
 ```sh
-export OTTERIO_SCANNER_DELAY=30
-otterio server /data
+oc admin config set myotterio scanner
+oc admin config set myotterio scanner delay=30 max_wait=15s cycle=1m
 ```
+
+示例将等待倍数提高到 30，减少扫描对资源的占用，但用量和生命周期状态的更新也会更慢。对应的环境变量为 `OTTERIO_SCANNER_DELAY`、`OTTERIO_SCANNER_MAX_WAIT` 和 `OTTERIO_SCANNER_CYCLE`。
+
+> 数据使用情况采集器不支持网关部署模式。
+
+### 修复
+
+`heal` 子系统的有效参数是 `bitrotscan`、`max_sleep` 和 `max_io`，默认分别为 `off`、`1s` 和 `10`。当并发请求超过 `max_io` 时，修复会通过 `max_sleep` 控制等待；`max_delay` 不是有效配置键。
+
+```sh
+oc admin config set myotterio heal
+oc admin config set myotterio heal max_sleep=300ms max_io=100
+```
+
+对应环境变量为 `OTTERIO_HEAL_BITROTSCAN`、`OTTERIO_HEAL_MAX_SLEEP` 和 `OTTERIO_HEAL_MAX_IO`。
+
+> 修复不支持网关部署模式。
+
+## 仅通过环境变量设置的选项
 
 ### 浏览器
 
-开启或关闭浏览器访问，默认是开启的，你可以通过``OTTERIO_BROWSER``环境变量进行修改。
+通过 `OTTERIO_BROWSER` 开启或关闭 Web UI，默认是 `on`。设为 `off` 不会关闭 S3 或管理接口。
 
 示例:
 
@@ -337,5 +353,6 @@ otterio server /data
 ```
 
 ## 进一步探索
-* [OtterIO快速入门指南](https://docs.min.io/cn/minio-quickstart-guide)
-* [使用TLS安全的访问Otterio服务](https://docs.min.io/cn/how-to-secure-access-to-minio-server-with-tls.html)
+* [OtterIO 快速入门指南](../../../README_zh_CN.md)
+* [本项目 TLS 指南](../tls/README.md)
+* [OC 管理指南](https://github.com/soulteary/oc/blob/main/docs/zh_CN/administration.md)

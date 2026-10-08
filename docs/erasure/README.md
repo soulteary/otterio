@@ -1,56 +1,46 @@
 # OtterIO Erasure Code Quickstart Guide
 
-OtterIO protects data against hardware failures and silent data corruption using erasure code and checksums. With the highest level of redundancy, you may lose up to half (N/2) of the total drives and still be able to recover the data.
+OtterIO's erasure backend uses Reed-Solomon coding and checksums to recover missing or corrupted object shards. Recovery depends on the number of healthy shards in the object's **erasure set**, not the number of healthy drives in the entire deployment.
 
-## What is Erasure Code?
+## Data, parity, and quorum
 
-Erasure code is a mathematical algorithm to reconstruct missing or corrupted data. OtterIO uses Reed-Solomon code to shard objects into variable data and parity blocks. For example, in a 12 drive setup, an object can be sharded to a variable number of data and parity blocks across all the drives - ranging from six data and six parity blocks to ten data and two parity blocks.
+For a set of `N` drives with `P` parity shards, each object has `D = N - P` data shards. Reading requires at least `D` healthy shards with usable metadata. Writing normally requires `D` drives; when data and parity counts are equal, writing requires `D + 1` to avoid split-brain writes.
 
-By default, OtterIO shards the objects across N/2 data and N/2 parity drives. Though, you can use [storage classes](https://github.com/minio/minio/tree/master/docs/erasure/storage-class) to use a custom configuration. We recommend N/2 data and parity blocks, as it ensures the best protection from drive failures.
+The default `STANDARD` parity depends on the set size:
 
-In 12 drive example above, with OtterIO server running in the default configuration, you can lose any of the six drives and still reconstruct the data reliably from the remaining drives.
+- 4–5 drives: `EC:2`.
+- 6–7 drives: `EC:3`.
+- 8–16 drives: `EC:4`.
 
-## Why is Erasure Code useful?
+`REDUCED_REDUNDANCY` defaults to `EC:2`. You can configure parity using [storage classes](storage-class/README.md), up to `floor(N/2)` parity shards. This is not a default guarantee that half of all drives can fail.
 
-Erasure code protects data from multiple drives failure, unlike RAID or replication. For example, RAID6 can protect against two drive failure whereas in OtterIO erasure code you can lose as many as half of drives and still the data remains safe. Further, OtterIO's erasure code is at the object level and can heal one object at a time. For RAID, healing can be done only at the volume level which translates into high downtime. As OtterIO encodes each object individually, it can heal objects incrementally. Storage servers once deployed should not require drive replacement or healing for the lifetime of the server. OtterIO's erasure coded backend is designed for operational efficiency and takes full advantage of hardware acceleration whenever available.
+For example, a 12-drive set uses **8 data and 4 parity** shards by default. With four failed drives in that set, existing objects can still be read and writes can still satisfy the 8-drive quorum. If explicitly configured with `EC:6`, the same set uses 6 data and 6 parity shards: six healthy drives can reconstruct data, while new writes need seven. These thresholds assume the remaining drives have healthy data and metadata; other errors can still prevent an operation.
 
-![Erasure](https://github.com/minio/minio/blob/master/docs/screenshots/erasure-code.jpg?raw=true)
+Changing storage-class configuration affects new writes and does not rewrite the shards of existing objects. Check the parity used by the objects you need to protect when planning failure tolerance.
 
-## What is Bit Rot protection?
+## Object healing and bit rot
 
-Bit Rot, also known as data rot or silent data corruption is a data loss issue faced by disk drives today. Data on the drive may silently get corrupted without signaling an error has occurred, making bit rot more dangerous than a permanent hard drive failure.
+Objects are encoded independently, so healing can repair an individual object's missing or damaged shards. Failed drives still need operational attention and replacement; erasure coding does not remove that requirement. Healing requires enough healthy shards to reconstruct the object.
 
-OtterIO's erasure coded backend uses high speed [HighwayHash](https://github.com/soulteary/otterio-kits/highwayhash) checksums to protect against Bit Rot.
+The erasure backend uses [HighwayHash checksums](../../cmd/bitrot.go) to detect silent corruption, also called bit rot. Detection allows reconstruction when enough valid shards remain; it cannot recover data after losses exceed the object's redundancy.
 
-## How are drives used for Erasure Code?
+![Illustration of object-level erasure coding](../screenshots/erasure-code.jpg)
 
-OtterIO divides the drives you provide into erasure-coding sets of *4 to 16* drives.  Therefore, the number of drives you present must be a multiple of one of these numbers.  Each object is written to a single erasure-coding set.
+## How drives are grouped
 
-Otterio uses the largest possible EC set size which divides into the number of drives given. For example, *18 drives* are configured as *2 sets of 9 drives*, and *24 drives* are configured as *2 sets of 12 drives*.  This is true for scenarios when running OtterIO as a standalone erasure coded deployment. In [distributed setup however node (affinity) based](https://docs.otterio.io/docs/distributed-otterio-quickstart-guide.html) erasure stripe sizes are chosen.
+OtterIO groups drive endpoints into erasure sets of **4 to 16 drives**. Each object is written to one set. For local deployments using automatic grouping, it chooses the largest supported set size that divides the drive count: 18 drives become two sets of 9, and 24 drives become two sets of 12. Distributed endpoint patterns also affect grouping so that the generated layout is symmetric; see the [distributed guide](../distributed/README.md).
 
-The drives should all be of approximately the same size.
+Use similarly sized drives and map each endpoint to its intended physical drive. Multiple directories on one disk share a failure domain and do not offer independent drive protection. Usable capacity also depends on parity and the smallest drives in each set.
 
-## Get Started with OtterIO in Erasure Code
+## Start a local erasure deployment
 
-### 1. Prerequisites
-
-Install OtterIO - [OtterIO Quickstart Guide](../../README.md#quick-start)
-
-### 2. Run OtterIO Server with Erasure Code
-
-Example: Start OtterIO server in a 12 drives setup, using OtterIO binary.
+Install and configure OtterIO using the [Quick Start](../../README.md#quick-start). With non-default root credentials already configured, start a 12-drive deployment:
 
 ```sh
-otterio server /data{1...12}
+otterio server '/data{1...12}'
 ```
 
-Example: Start OtterIO server in an 8-drive setup, using the OtterIO Docker image.
-First configure and securely save a non-default username and password as described
-in the [Quick Start](../../README.md#quick-start). Reuse the same credentials on
-restart; the example below refuses to run until both values are set. See
-[Docker security](../../README_DOCKER_SECURITY.md) for `_FILE` secrets and non-root
-volume permissions. Production deployments should pin a reviewed release tag or
-digest instead of `latest`.
+For an 8-drive Docker deployment, first configure and securely save a non-default username and password as described in the [Quick Start](../../README.md#quick-start). Reuse the same credentials on restart; this example refuses to run until both values are set. See [Docker security](../../README_DOCKER_SECURITY.md) for `_FILE` secrets and non-root volume permissions. Production deployments should pin a reviewed release tag or digest instead of `latest`.
 
 ```sh
 : "${OTTERIO_ROOT_USER:?Set your saved username first}"
@@ -69,11 +59,10 @@ docker run -p 127.0.0.1:9000:9000 --name otterio \
   soulteary/otterio:latest server '/data{1...8}'
 ```
 
-The published port is available only on the Docker host. For remote access, use
-an authenticated, TLS-protected reverse proxy or a controlled network rather than
-exposing the console directly. Mount each `/mnt/dataN` on the intended drive;
-eight directories on one disk do not provide eight independent failure domains.
+The published port is available only on the Docker host. For remote access, use an authenticated, TLS-protected reverse proxy or a controlled network. Mount each `/mnt/dataN` on the intended drive; eight directories on one disk do not provide eight independent failure domains.
 
-### 3. Test your setup
+## Validate recovery
 
-You may unplug drives randomly and continue to perform I/O on the system.
+Use a disposable test deployment with known object contents and checksums. Confirm uploads and downloads while healthy, then simulate a controlled drive outage within the set's read and write thresholds, verify the expected operations, and restore the drive. Recheck object contents after healing. Do not infer production fault tolerance from directory count alone.
+
+The implementation of [default parity](../../cmd/format-erasure.go), [write quorum](../../cmd/erasure-object.go), and [endpoint grouping](../../cmd/endpoint-ellipses.go) is the source of truth for this guide.
