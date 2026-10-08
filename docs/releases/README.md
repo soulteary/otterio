@@ -25,10 +25,10 @@ and [CLI migration](../cli-migration.md). Reconcile any later main changes befor
 selecting a fresh UTC tag.
 
 The [project assessment for 2026-10-08](../development/project-status-20261008.md)
-reviews the later source baseline `8ead9fb`, including storage-class synchronization
-and durable lifecycle transition/version restore work. The preparation above and
-root release notes do not yet cover that entire later range. Reconcile those
-implementation changes and their acceptance checks before the next release.
+is a historical snapshot at `8ead9fb`, an ancestor of the current `458b54c` cutoff.
+Its implementation range is included in the preparation above and root release
+notes. Publication and deployment acceptance remain pending as recorded in the
+release review.
 
 ## Historical announcement draft
 
@@ -62,6 +62,8 @@ unless attribution is approved; do not publish contact details or correspondence
 范围已补齐至 `458b54c`：生命周期迁移与版本恢复、分层元数据与覆盖写入保护、
 桶配置修订与 IAM 自助轮换、存储类型同步，以及此前账户信息、对象条件写入、CLI、
 SDK/kits、Mint 安装器、镜像刷新与文档更新。当前回归与 `6f6d083` 历史兼容检查分开记录。
+[10 月 8 日项目现状分析](../development/project-status-20261008.md)是 `8ead9fb` 的历史快照，
+其实现范围已纳入当前 `458b54c` 发布准备；正式发布与部署验收仍以核对记录中的待办为准。
 上方 10 月 5 日文章及 10 月 5 日、7 日核对记录作为历史材料保留，不能代替当前正文。
 正式发布时再确定新标签和链接，不复用旧版标签。
 64 MiB 是内部缓冲 RPC 限制，不是 S3 对象大小限制；仅当清单有效且固定标签摘要一致时，
