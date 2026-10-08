@@ -70,7 +70,7 @@ class LocalService:
         self.stderr.flush()
         return self.stdout_path.read_text() + self.stderr_path.read_text()
 
-    def ready(self):
+    def ready(self, wait_for_storage=False):
         deadline = time.monotonic() + 30
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),
                                             urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
@@ -82,7 +82,8 @@ class LocalService:
                     # The ready endpoint returns 200 during storage initialization,
                     # with an offline header. Wait until S3 requests can be served.
                     if (response.status == 200
-                            and response.headers.get("x-otterio-server-status") != "offline"
+                            and (not wait_for_storage
+                                 or response.headers.get("x-otterio-server-status") != "offline")
                             and (self.console_port is None or listening(self.console_port))):
                         return
             except (OSError, urllib.error.URLError):
@@ -119,7 +120,7 @@ class ServiceReadinessTests(unittest.TestCase):
         opener = mock.Mock()
         opener.open.side_effect = [offline, online]
         with mock.patch("urllib.request.build_opener", return_value=opener), mock.patch("time.sleep") as sleep:
-            service.ready()
+            service.ready(wait_for_storage=True)
         self.assertEqual(opener.open.call_count, 2)
         sleep.assert_called_once_with(0.1)
 
@@ -150,10 +151,10 @@ class CLIIntegrationTests(unittest.TestCase):
                 return port
         raise AssertionError("could not allocate distinct fixture ports")
 
-    def start(self, name, argv, port, console_port=None, tls=False):
+    def start(self, name, argv, port, console_port=None, tls=False, wait_for_storage=False):
         service = LocalService(self.root, name, argv, port, console_port, tls)
         self.services.append(service)
-        service.ready()
+        service.ready(wait_for_storage=wait_for_storage)
         return service
 
     def client(self, *argv):
@@ -218,7 +219,7 @@ class CLIIntegrationTests(unittest.TestCase):
         upstream_port, gateway_port = self.port(), self.port()
         data = self.root / "upstream-data"
         data.mkdir()
-        upstream = self.start("upstream", ["server", "--address", f"127.0.0.1:{upstream_port}", str(data)], upstream_port)
+        upstream = self.start("upstream", ["server", "--address", f"127.0.0.1:{upstream_port}", str(data)], upstream_port, wait_for_storage=True)
         gateway = self.start("s3", ["gateway", "s3", "--address", f"127.0.0.1:{gateway_port}", upstream.url], gateway_port)
         self.alias("s3fixture", gateway)
         target = self.crud("s3fixture")
