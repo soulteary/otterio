@@ -2133,6 +2133,35 @@ func (s *xlStorage) RenameData(ctx context.Context, srcVolume, srcPath string, f
 		}
 	}
 
+	// Check the version that AddVersion will replace, rather than the latest
+	// version. A failed earlier ReadVersion must not let an upload or heal erase
+	// the only durable destination or deletion intent of a tiered object.
+	versionID := fi.VersionID
+	if versionID == "" {
+		versionID = nullVersionID
+	}
+	previous, previousErr := xlMeta.ToFileInfo(dstVolume, dstPath, versionID)
+	if previousErr != nil && previousErr != errFileNotFound && previousErr != errFileVersionNotFound {
+		return previousErr
+	}
+	if previousErr == nil && !previous.Deleted && previous.TransitionStatus != "" {
+		sameDestination := previous.Metadata[transitionReferenceKey] == fi.Metadata[transitionReferenceKey]
+		oldRef, newRef := parseTransitionedObject(previous.Metadata), parseTransitionedObject(fi.Metadata)
+		if oldRef != nil && newRef != nil {
+			sameRemoteVersion := oldRef.VersionID == newRef.VersionID ||
+				(previous.TransitionStatus == lifecycle.TransitionPending && fi.TransitionStatus == lifecycle.TransitionComplete && oldRef.VersionID == "")
+			sameDestination = oldRef.ARN == newRef.ARN && oldRef.Key == newRef.Key &&
+				oldRef.StorageClass == newRef.StorageClass && sameRemoteVersion
+		}
+		previousInfo := previous.ToObjectInfo(dstVolume, dstPath)
+		intent := previous.Metadata[transitionDeleteIntentKey]
+		if fi.TransitionStatus == "" || !sameDestination ||
+			(intent != "" && intent != fi.Metadata[transitionDeleteIntentKey]) ||
+			!sameTransitionSource(fi.ToObjectInfo(dstVolume, dstPath), &previousInfo) {
+			return errMethodNotAllowed
+		}
+	}
+
 	if legacyPreserved {
 		// Preserve all the legacy data, could be slow, but at max there can be 10,000 parts.
 		currentDataPath := pathJoin(dstVolumeDir, dstPath)
@@ -2172,6 +2201,15 @@ func (s *xlStorage) RenameData(ctx context.Context, srcVolume, srcPath string, f
 		}
 	}
 
+	if fi.TransitionStatus != "" {
+		// Reads expose the status separately from Metadata. Persist it during
+		// healing without changing metadata maps shared by other disk writers.
+		fi.Metadata = cloneMSS(fi.Metadata)
+		if fi.Metadata == nil {
+			fi.Metadata = make(map[string]string)
+		}
+		fi.Metadata[ReservedMetadataPrefixLower+"transition-status"] = fi.TransitionStatus
+	}
 	if err = xlMeta.AddVersion(fi); err != nil {
 		return err
 	}

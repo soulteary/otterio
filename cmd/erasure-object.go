@@ -812,16 +812,19 @@ func (er erasureObjects) putObject(ctx context.Context, bucket string, object st
 	} else if !opts.Versioned || opts.VersionID != "" {
 		// Never overwrite the only durable reference to a tiered object. An
 		// explicit deletion cleans its remote object before removing metadata.
+		// Inspect every readable copy without requiring read quorum: ordinary
+		// uploads may replace inconsistent local metadata, while even a partial
+		// transition commit must keep its recovery reference. renameData below
+		// remains responsible for enforcing write quorum.
 		versionID := opts.VersionID
 		if opts.VersionSuspended && versionID == "" {
 			versionID = nullVersionID
 		}
-		current, readErr := er.getObjectInfo(ctx, bucket, object, ObjectOptions{VersionID: versionID, NoLock: true})
-		if readErr == nil && current.TransitionStatus != "" {
-			return ObjectInfo{}, NotImplemented{}
-		}
-		if readErr != nil && !isErrObjectNotFound(readErr) && !isErrVersionNotFound(readErr) {
-			return ObjectInfo{}, readErr
+		current, readErrs := readAllFileInfo(ctx, storageDisks, bucket, object, versionID, false)
+		for i, fi := range current {
+			if readErrs[i] == nil && !fi.Deleted && fi.TransitionStatus != "" {
+				return ObjectInfo{}, NotImplemented{}
+			}
 		}
 	}
 
