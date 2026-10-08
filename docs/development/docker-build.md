@@ -24,3 +24,23 @@ built container reports it. The metadata tests run without a Git checkout and
 reject malformed commit overrides. Dependency and base-image downloads still
 require network access; local-source correctness is not a claim of bit-for-bit
 reproducibility.
+
+## Runtime package refresh in CI images
+
+`Dockerfile.ci` installs runtime packages before the version labels and binary
+copy, so changing a binary does not rerun the system package installer under
+QEMU. The `RUNTIME_REFRESH` build argument controls when that layer expires:
+
+- Edge pushes share the layer within one UTC day. The first build on the next
+  day updates it; a manual Docker (edge) workflow run forces another update
+  immediately, including when a security fix arrives on the same day.
+- Every stable Release run and rerun updates runtime packages independently.
+- Edge and Release use separate GitHub Actions cache scopes to avoid overwriting
+  each other's build snapshots. Their architecture lists and image verification
+  remain the same.
+
+For a local `Dockerfile.ci` build, pass
+`--build-arg RUNTIME_REFRESH="$(date -u +%Y-%m-%d)"` to refresh at least daily,
+or use a new value or `--no-cache` to force an immediate package refresh. Without
+an override, local builds may reuse the `local` runtime layer. Changing only
+`RELEASE` intentionally keeps the cached runtime packages.

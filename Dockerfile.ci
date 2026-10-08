@@ -1,5 +1,13 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
 
+# Refresh this layer independently of the binary/version layers. CI supplies a
+# UTC date for edge builds and a unique run/attempt for every stable release.
+# For local builds, pass a new RUNTIME_REFRESH value to fetch current packages.
+ARG RUNTIME_REFRESH=local
+RUN microdnf update --nodocs && \
+    microdnf install curl ca-certificates shadow-utils util-linux --nodocs && \
+    microdnf clean all
+
 # Built by the release GitHub Action: copies a pre-compiled binary for the
 # target architecture instead of compiling under QEMU. Expects the binaries to
 # live in ./dist/otterio-linux-<arch> (produced by the "binaries" job).
@@ -31,12 +39,7 @@ COPY LICENSE /licenses/LICENSE
 COPY NOTICE /licenses/NOTICE
 COPY dist/otterio-linux-${TARGETARCH} /usr/bin/otterio
 
-RUN \
-     microdnf update --nodocs && \
-     microdnf install curl ca-certificates shadow-utils util-linux --nodocs && \
-     microdnf clean all && \
-     chmod +x /usr/bin/otterio && \
-     chmod +x /usr/bin/docker-entrypoint.sh
+RUN chmod +x /usr/bin/otterio /usr/bin/docker-entrypoint.sh
 
 EXPOSE 9000
 

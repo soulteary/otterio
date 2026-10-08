@@ -196,15 +196,17 @@ jobs:
           file: Dockerfile.ci
           platforms: linux/amd64,linux/arm64,linux/ppc64le
           push: true
+          # Stable releases always fetch current runtime packages, even on rerun.
           build-args: |
             RELEASE=${{ needs.prepare.outputs.tag }}
+            RUNTIME_REFRESH=release-${{ github.run_id }}-${{ github.run_attempt }}
           tags: ${{ steps.tags.outputs.tags }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ needs.prepare.outputs.sha }}
           provenance: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=otterio-release
+          cache-to: type=gha,scope=otterio-release,mode=max
       - name: S3 round trip against the pushed image digest
         env:
           IMAGE_REF: ${{ steps.tags.outputs.ghcr_repository }}@${{ steps.image.outputs.digest }}

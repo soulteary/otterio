@@ -8,6 +8,9 @@ on:
     paths: ['go.mod', 'go.sum', 'Dockerfile.ci', 'go.mod', 'go.sum', 'dockerscripts/**', 'buildscripts/test_docker_entrypoint*.py', 'cmd/main.go', 'cmd/server-main.go', 'README.md', 'README_zh_CN.md', 'docs/erasure/README.md', 'docker-compose.secure.yml', '.github/workflows/container-security-checks.yml']
 permissions:
   contents: read
+concurrency:
+  group: container-security-checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   entrypoint:
     runs-on: ubuntu-latest
