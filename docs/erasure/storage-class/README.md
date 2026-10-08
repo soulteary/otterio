@@ -1,122 +1,52 @@
-# OtterIO Storage Class Quickstart Guide
+# OtterIO Storage Classes
 
-OtterIO server supports storage class in erasure coding mode. This allows configurable data and parity disks per object.
+In erasure mode, local storage classes choose how many data and parity shards OtterIO writes for each object. They apply to Reed-Solomon redundancy within an [erasure set](../README.md). Lifecycle transition `StorageClass` values name remote target labels and use a [different configuration](../../bucket/lifecycle/README.md#transition-data-to-a-remote-bucket).
 
-This page is intended as a summary of OtterIO Erasure Coding. For a more complete explanation, see https://docs.min.io/minio/baremetal/concepts/erasure-coding.html.
+## Defaults and accepted values
 
-## Overview
+The upload request header `x-amz-storage-class` accepts `STANDARD` or `REDUCED_REDUNDANCY`. If the header is absent, OtterIO uses `STANDARD`.
 
-OtterIO supports two storage classes, Reduced Redundancy class and Standard class. These classes can be defined using environment variables
-set before starting OtterIO server. After the data and parity disks for each storage class are defined using environment variables,
-you can set the storage class of an object via request metadata field `x-amz-storage-class`. OtterIO server then honors the storage class by
-saving the object in specific number of data and parity disks.
+For an erasure set containing `N` drives, a configured parity count `P` must be an integer from 2 through `floor(N/2)`. When both classes are configured, `STANDARD` parity must be greater than or equal to `REDUCED_REDUNDANCY` parity. Equal parity is valid, including on a 4-drive set, where both classes use `EC:2`.
 
-## Storage usage
+When `STANDARD` is not explicitly configured, its default is:
 
-The selection of varying data and parity drives has a direct impact on the drive space usage. With storage class, you can optimize for high
-redundancy or better drive space utilization.
+- 4–5 drives per set: `EC:2`.
+- 6–7 drives per set: `EC:3`.
+- 8–16 drives per set: `EC:4`.
 
-To get an idea of how various combinations of data and parity drives affect the storage usage, let’s take an example of a 100 MiB file stored
-on 16 drive OtterIO deployment. If you use eight data and eight parity drives, the file space usage will be approximately twice, i.e. 100 MiB
-file will take 200 MiB space. But, if you use ten data and six parity drives, same 100 MiB file takes around 160 MiB. If you use 14 data and
-two parity drives, 100 MiB file takes only approximately 114 MiB.
+`REDUCED_REDUNDANCY` defaults to `EC:2`. `N` is the number of drives **in one set**, rather than the total number of drives in all pools. Choose values valid for every set size in your deployment.
 
-Below is a list of data/parity drives and corresponding _approximate_ storage space usage on a 16 drive OtterIO deployment. The field _storage
-usage ratio_ is simply the drive space used by the file after erasure-encoding, divided by actual file size.
+## Capacity and failure tolerance
 
-| Total Drives (N) | Data Drives (D) | Parity Drives (P) | Storage Usage Ratio |
-|------------------|-----------------|-------------------|---------------------|
-|               16 |               8 |                 8 |                2.00 |
-|               16 |               9 |                 7 |                1.79 |
-|               16 |              10 |                 6 |                1.60 |
-|               16 |              11 |                 5 |                1.45 |
-|               16 |              12 |                 4 |                1.34 |
-|               16 |              13 |                 3 |                1.23 |
-|               16 |              14 |                 2 |                1.14 |
+An object has `D = N - P` data shards. Its approximate encoded size is `original size × N / D`, before metadata, filesystem allocation, and other overhead. For a 100 MiB object in a 16-drive set:
 
-You can calculate _approximate_ storage usage ratio using the formula - total drives (N) / data drives (D).
+- `EC:8`: 8 data + 8 parity, approximately 200 MiB.
+- `EC:4` (the `STANDARD` default): 12 data + 4 parity, approximately 133.3 MiB.
+- `EC:2`: 14 data + 2 parity, approximately 114.3 MiB.
 
-### Allowed values for STANDARD storage class
+Recovering an object requires `D` healthy shards. Writing requires `D` drives, or `D + 1` when data and parity counts are equal. Increasing parity trades usable capacity for greater tolerance of missing shards; failure tolerance applies per object and per set. See [quorum examples](../README.md#data-parity-and-quorum).
 
-`STANDARD` storage class implies more parity than `REDUCED_REDUNDANCY` class. So, `STANDARD` parity disks should be
+## Configure parity
 
-- Greater than or equal to 2, if `REDUCED_REDUNDANCY` parity is not set.
-- Greater than `REDUCED_REDUNDANCY` parity, if it is set.
-
-Parity blocks can not be higher than data blocks, so `STANDARD` storage class parity can not be higher than N/2. (N being total number of disks)
-
-The default value for the `STANDARD` storage class depends on the number of volumes in the erasure set:
-
-| Erasure Set Size | Default Parity (EC:N) |
-|------------------|-----------------------|
-| 5 or fewer       |                 EC:2  |
-| 6-7              |                 EC:3  |
-| 8 or more        |                 EC:4  |
-
-Prior to the ``RELEASE.2021-01-30T00-20-58Z`` OtterIO release, the default `STANDARD` value was `EC(N/2)` where `N` was the number of erasure set drives.
-For more complete documentation on Erasure Set sizing, see the [OtterIO Documentation on Erasure Sets](https://docs.min.io/minio/baremetal/concepts/erasure-coding.html#erasure-sets).
-
-### Allowed values for REDUCED_REDUNDANCY storage class
-
-`REDUCED_REDUNDANCY` implies lesser parity than `STANDARD` class. So,`REDUCED_REDUNDANCY` parity disks should be
-
-- Less than N/2, if `STANDARD` parity is not set.
-- Less than `STANDARD` Parity, if it is set.
-
-As parity below 2 is not recommended, `REDUCED_REDUNDANCY` storage class is not supported for 4 disks erasure coding setup.
-
-Default value for `REDUCED_REDUNDANCY` storage class is `2`.
-
-## Get started with Storage Class
-
-### Set storage class
-
-The format to set storage class environment variables is as follows
-
-`OTTERIO_STORAGE_CLASS_STANDARD=EC:parity`
-`OTTERIO_STORAGE_CLASS_RRS=EC:parity`
-
-For example, set `OTTERIO_STORAGE_CLASS_RRS` parity 2 and `OTTERIO_STORAGE_CLASS_STANDARD` parity 3
+Set these environment variables before starting the server. For a set with at least six drives, this example uses 3 parity shards for standard uploads and 2 for reduced redundancy:
 
 ```sh
 export OTTERIO_STORAGE_CLASS_STANDARD=EC:3
 export OTTERIO_STORAGE_CLASS_RRS=EC:2
 ```
 
-Storage class can also be set via `mc admin config` get/set commands to update the configuration. Refer [storage class](https://github.com/minio/minio/tree/master/docs/config#storage-class) for
-more details.
+The corresponding server configuration keys are `storage_class standard` and `storage_class rrs`; see the [configuration guide](../../config/README.md#storage-class). Environment variables override saved configuration. Keep settings consistent across participating nodes. Changes affect subsequent writes and do not recode existing object versions.
 
-*Note*
+## Choose the class on upload
 
-- If `STANDARD` storage class is set via environment variables or `mc admin config` get/set commands, and `x-amz-storage-class` is not present in request metadata, OtterIO server will
-apply `STANDARD` storage class to the object. This means the data and parity disks will be used as set in `STANDARD` storage class.
+With the AWS CLI configured for your OtterIO credentials and region, upload an existing local file with reduced redundancy:
 
-- If storage class is not defined before starting OtterIO server, and subsequent PutObject metadata field has `x-amz-storage-class` present
-with values `REDUCED_REDUNDANCY` or `STANDARD`, OtterIO server uses default parity values.
-
-### Set metadata
-
-In below example `otterio-go` is used to set the storage class to `REDUCED_REDUNDANCY`. This means this object will be split across 6 data disks and 2 parity disks (as per the storage class set in previous step).
-
-```go
-s3Client, err := otterio.New("localhost:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
-if err != nil {
-	log.Fatalln(err)
-}
-
-object, err := os.Open("my-testfile")
-if err != nil {
-	log.Fatalln(err)
-}
-defer object.Close()
-objectStat, err := object.Stat()
-if err != nil {
-	log.Fatalln(err)
-}
-
-n, err := s3Client.PutObject("my-bucketname", "my-objectname", object, objectStat.Size(), otterio.PutObjectOptions{ContentType: "application/octet-stream", StorageClass: "REDUCED_REDUNDANCY"})
-if err != nil {
-	log.Fatalln(err)
-}
-log.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
+```sh
+aws --endpoint-url http://127.0.0.1:9000 s3api put-object \
+  --bucket my-bucket --key my-testfile --body ./my-testfile \
+  --storage-class REDUCED_REDUNDANCY
 ```
+
+Replace the bucket and endpoint with your deployment values; use HTTPS for remote endpoints. For an 8-drive set with `EC:2` reduced redundancy, the object uses 6 data and 2 parity shards. The [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk) also exposes `PutObjectOptions.StorageClass` for uploads.
+
+See the implementation of [parity validation](../../../cmd/config/storageclass/storage-class.go) and [default parity](../../../cmd/format-erasure.go) for OtterIO's current behavior. The [AWS CLI upload reference](https://docs.aws.amazon.com/cli/latest/reference/s3api/put-object.html) describes client syntax; its AWS storage-tier options do not expand OtterIO's supported local classes.

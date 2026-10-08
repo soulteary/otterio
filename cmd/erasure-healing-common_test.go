@@ -353,13 +353,15 @@ func TestListOnlineDisksSmallObjects(t *testing.T) {
 		t.Fatalf("Failed to make a bucket %v", err)
 	}
 
-	object := "object"
 	data := bytes.Repeat([]byte("a"), smallFileThreshold/2)
 	z := obj.(*erasureServerPools)
 	erasureDisks := z.serverPools[0].sets[0].getDisks()
 	for i, test := range testCases {
 		test := test
 		t.Run(fmt.Sprintf("case-%d", i), func(t *testing.T) {
+			// Each case deliberately leaves conflicting or corrupt metadata.
+			// Start with a new object instead of overwriting the previous case.
+			object := fmt.Sprintf("object-%d", i)
 			_, err = obj.PutObject(ctx, bucket, object, mustGetPutObjReader(t, bytes.NewReader(data), int64(len(data)), "", ""), ObjectOptions{})
 			if err != nil {
 				t.Fatalf("Failed to putObject %v", err)

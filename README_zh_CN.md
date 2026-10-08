@@ -58,7 +58,7 @@ docker run -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
 > 容器启动现在会拒绝缺失凭据或默认密码。升级前请修正旧的不带凭据的 Docker 启动命令。`_FILE` Secret、非 root Compose 配置和迁移步骤见 [Docker 安全指南](./README_DOCKER_SECURITY.md)。仅本地开发演示可显式设置 `OTTERIO_ALLOW_DEFAULT_CREDENTIALS=1` 允许默认凭据，并应将端口绑定到回环地址。生产部署请固定经过验证的版本标签或镜像 digest，而不是使用 `latest`。
 
 > [!NOTE]
-> 单节点 OtterIO 仅适合开发与评估场景。生产部署应使用**启用纠删码的分布式模式**，每节点至少 **4 块磁盘**。详见 [`docs/erasure/README.md`](./docs/erasure/README.md) 与 [`docs/distributed/README.md`](./docs/distributed/README.md)。
+> 单盘服务没有纠删冗余。每个纠删集包含 **4–16 块磁盘**，可在单机使用，也可分布到多台服务器；受支持的分布式拓扑并不要求每台服务器都有四块盘。部署前应规划故障域，并核对每个纠删集的读写仲裁。详见[纠删码](./docs/zh_CN/erasure/README.md)、[分布式部署](./docs/zh_CN/distributed/README.md)与[服务限制](./docs/zh_CN/otterio-limits.md)。
 
 ---
 
@@ -343,7 +343,7 @@ oc admin info local
 
 感谢帮助项目发现问题、提供分析和提交补丁的贡献者，具体贡献见[项目致谢记录](ACKNOWLEDGMENTS.md)。
 
-欢迎通过仓库 <https://github.com/soulteary/otterio> 参与贡献。继承自上游基线的编码规范请参考原始 [Contributor's Guide](https://github.com/minio/minio/blob/master/CONTRIBUTING.md)。
+欢迎通过仓库 <https://github.com/soulteary/otterio> 参与贡献。本仓库的[贡献指南（英文）](./CONTRIBUTING.md)介绍代码结构、工具链与验证流程。[当前项目分析](./docs/development/project-status-20261008.md)记录了本次核对的源码、发布边界与文档缺口。
 
 ---
 
@@ -354,7 +354,7 @@ oc admin info local
 
 由于 OtterIO 派生自 **MinIO 最后一个 Apache 2.0 版本（约 `RELEASE.2021-04-22T15-44-28Z`）**，上游 `minio/minio` 在该版本之后发布的 CVE / GHSA **不会**自动被本项目继承，需要逐条评估并回填。
 
-**当前积压清单状态（2026-06）：14 项已修复、2 项不适用、0 项待处理。** 针对 2021-04 基线已纳入跟踪的全部上游公告均已在 `main` 关闭，详细表格、对应 OtterIO 代码路径、上游引用与回归测试请见 [`docs/security/upstream-cve-backlog.md`](./docs/security/upstream-cve-backlog.md)。上游若有新公告，会以 `Pending` 状态滚动加入。
+持续更新的[公告清单](./docs/security/upstream-cve-backlog.md)逐项记录适用性、源码修复与回归测试。源码已修复或条目已关闭，不代表你部署的正式版本已经包含修复；请核对所选标签与产物。新公告会以 `Pending` 状态纳入并跟踪。该记录不能代替具体部署的安全评估。
 
 **从早期版本升级且使用 LDAP 的运维人员**请先阅读 [`docs/security/ldap-dn-normalization-migration.md`](./docs/security/ldap-dn-normalization-migration.md) 再上线：本次发布会在 LDAP DN 进入 IAM 策略表前先做规范化处理，这对于历史上依赖 DN 大小写差异区分多份映射的部署是一次性的破坏性变更。
 

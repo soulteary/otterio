@@ -43,6 +43,7 @@ OtterIO 是服务端，[OC](https://github.com/soulteary/oc) 是配套命令行�
 
 ## 开发与发布维护
 
+- [贡献指南（英文）](../../CONTRIBUTING.md)与[2026-10-08 项目现状分析](../development/project-status-20261008.md)
 - [源码构建](../../README_zh_CN.md#源码构建)
 - [服务端 CLI 迁移（英文）](../cli-migration.md)：服务端 CLI 框架变更，与 OC 客户端是不同主题
 - [SDK 与 kits 依赖迁移（英文）](../development/sdk-kits-migration-20261008.md)

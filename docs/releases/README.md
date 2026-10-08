@@ -22,6 +22,12 @@ Go integrations should also read [SDK and kits compatibility](../development/sdk
 and [CLI migration](../cli-migration.md). Reconcile any later main changes before
 selecting a fresh UTC tag.
 
+The [project assessment for 2026-10-08](../development/project-status-20261008.md)
+reviews the later source baseline `8ead9fb`, including storage-class synchronization
+and durable lifecycle transition/version restore work. The preparation above and
+root release notes do not yet cover that entire later range. Reconcile those
+implementation changes and their acceptance checks before the next release.
+
 ## Historical announcement draft
 
 [OtterIO 新版本：补强存储安全边界，完善容器部署与发布](2026-10-05-announcement.zh-CN.md)

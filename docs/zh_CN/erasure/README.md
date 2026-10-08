@@ -1,51 +1,53 @@
-# Otterio纠删码快速入门
+# OtterIO 纠删码快速入门
 
-Otterio使用纠删码`erasure code`和`checksum`来保护数据免受硬件故障和无声数据损坏。 即便您丢失一半数量（N/2）的硬盘，您仍然可以恢复数据。
+OtterIO 纠删码后端使用里德-所罗门编码和校验和恢复缺失或损坏的对象分片。能否恢复取决于对象所在**纠删码集合**中的健康分片数量，不能只看整个部署还有多少块盘在线。
 
-## 什么是纠删码`erasure code`?
+## 数据、奇偶校验和法定数量
 
-纠删码是一种恢复丢失和损坏数据的数学算法， Otterio采用里德-所罗门码将对象分片为数据和奇偶校验块。 这就意味着如果是12块盘，一个对象可被分片的范围是：6个数据块和6个奇偶校验块 到 10个数据块和2个奇偶校验块之间。
+一个集合有 `N` 块盘、`P` 个奇偶校验分片时，对象的数据分片数为 `D = N - P`。读取至少需要 `D` 个健康分片及可用元数据。写入通常需要 `D` 块盘；数据分片与奇偶校验分片数量相等时，写入需要 `D + 1` 块盘，防止网络分区下发生相互冲突的写入。
 
-默认情况下, OtterIO 将对象拆分成N/2数据和N/2 奇偶校验盘. 虽然你可以通过 [存储类型](https://github.com/minio/minio/tree/master/docs/zh_CN/erasure/storage-class) 自定义配置, 但是我们还是推荐N/2个数据和奇偶校验块, 因为它可以确保对硬盘故障提供最佳保护。
+`STANDARD` 的默认奇偶校验数取决于集合大小：
 
-比如上面12个盘的例子，通过默认配置运行OtterIO服务的话，你可以丢失任意6块盘（不管其是存放的数据块还是奇偶校验块），你仍可以从剩下的盘中的数据进行恢复，是不是很NB，感兴趣的同学请翻墙google。
+- 4–5 块盘：`EC:2`。
+- 6–7 块盘：`EC:3`。
+- 8–16 块盘：`EC:4`。
 
-## 为什么纠删码有用?
+`REDUCED_REDUNDANCY` 默认使用 `EC:2`。可以通过[存储类型](storage-class/README.md)配置奇偶校验数，最大为 `floor(N/2)`。这不表示默认就能容忍整个部署的一半硬盘同时故障。
 
-纠删码的工作原理和RAID或者复制不同，像RAID6可以在损失两块盘的情况下不丢数据，而Otterio纠删码可以在丢失一半的盘的情况下，仍可以保证数据安全。 而且Otterio纠删码是作用在对象级别，可以一次恢复一个对象，而RAID是作用在卷级别，数据恢复时间很长。 Otterio对每个对象单独编码，存储服务一经部署，通常情况下是不需要更换硬盘或者修复。Otterio纠删码的设计目标是为了性能和尽可能的使用硬件加速。
+例如，12 盘集合默认使用 **8 个数据分片和 4 个奇偶校验分片**。该集合有 4 块盘故障时，已有对象仍可读取，写入也可以满足 8 盘的法定数量。如果显式配置 `EC:6`，则使用 6 个数据分片和 6 个奇偶校验分片：6 块健康盘可以重建数据，新写入需要 7 块健康盘。这些条件假定剩余盘上的数据和元数据正常，其他错误仍可能导致操作失败。
 
-![Erasure](https://github.com/minio/minio/blob/master/docs/screenshots/erasure-code.jpg?raw=true)
+修改存储类型配置影响后续写入，不会重新编码已有对象。规划故障容忍范围时，要检查待保护对象实际使用的奇偶校验数。
 
-## 什么是位衰减`bit rot`保护?
+## 对象修复和位衰减
 
-位衰减又被称为数据腐化`Data Rot`、无声数据损坏`Silent Data Corruption`,是目前硬盘数据的一种严重数据丢失问题。硬盘上的数据可能会神不知鬼不觉就损坏了，也没有什么错误日志。正所谓明枪易躲，暗箭难防，这种背地里犯的错比硬盘直接咔咔宕了还危险。 不过不用怕，Otterio纠删码采用了高速 [HighwayHash](https://github.com/soulteary/otterio-kits/highwayhash) 基于哈希的校验和来防范位衰减。
+每个对象独立编码，因此可以逐个修复缺失或损坏的分片。发生故障的硬盘仍需要维护和更换，纠删码不会免除这些工作。修复要求剩余健康分片足以重建对象。
 
-## 驱动器（盘）如何使用纠删码?
+纠删码后端使用 [HighwayHash 校验和](../../../cmd/bitrot.go)检测静默数据损坏，也称位衰减（bit rot）。剩余有效分片充足时，可以据此重建数据；损失超过对象冗余能力后就无法恢复。
 
-OtterIO会把你提供的所有驱动器，按照*4 到 16*个一组划分为多个纠删码集合，因此，你提供的驱动器数量必须是以上这些数字(4到16)的倍数。每个对象都会被写入一个单独的纠删码集合中。
+![对象级纠删码示意图](../../screenshots/erasure-code.jpg)
 
-Otterio会尽可能使用最大的纠删码集合大小（EC set size）进行划分.比如 *18个盘*会被划分为2个纠删码集合，每个集合有9个盘；*24个盘*也会被划分为2个纠删码集合，每个集合有12个盘。对于将OtterIO作为独立的纠删码部署运行的场景而言，这是正确的。然而，在 [分布式部署](https://docs.otterio.io/cn/distributed-otterio-quickstart-guide.html) 时，选择的是基于节点（亲和力）的纠删条带大小.
+## 硬盘如何分组
 
-驱动器的大小应当都差不多。
+OtterIO 将硬盘端点划分成每组 **4 到 16 块盘**的纠删码集合，每个对象写入一个集合。本地部署自动分组时，会选择能整除硬盘总数的最大支持集合大小：18 块盘划分为两个 9 盘集合，24 块盘划分为两个 12 盘集合。分布式端点模式还会影响分组，使生成的布局保持对称，详见[分布式部署指南](../distributed/README.md)。
 
-## Otterio纠删码快速入门
+使用容量接近的硬盘，并将每个端点对应到计划中的物理盘。同一硬盘上的多个目录共享故障域，不能提供独立硬盘保护。可用容量还取决于奇偶校验数及每个集合中容量最小的盘。
 
-### 1. 前提条件:
+## 启动本地纠删码部署
 
-安装Otterio- [Otterio快速入门](https://docs.min.io/cn/minio-quickstart-guide)
-
-### 2. 以纠删码模式运行Otterio
-
-示例: 使用Otterio，在12个盘中启动Otterio服务。
+按照[快速入门](../../../README.md#quick-start)安装和配置 OtterIO。已配置非默认根凭据后，启动 12 盘部署：
 
 ```sh
-otterio server /data{1...12}
+otterio server '/data{1...12}'
 ```
 
-示例: 使用Otterio Docker镜像，在8块盘中启动Otterio服务。
+使用 Docker 启动 8 盘部署前，按[快速入门](../../../README.md#quick-start)设置并妥善保存非默认用户名和密码。重启时复用相同凭据，以下示例会在任一凭据未设置时退出。[Docker 安全指南](../../../README_DOCKER_SECURITY.md)说明了 `_FILE` 密钥文件与非 root 容器的卷权限。生产部署应固定审核过的版本标签或镜像摘要，而不是使用 `latest`。
 
 ```sh
-docker run -p 9000:9000 --name otterio \
+: "${OTTERIO_ROOT_USER:?Set your saved username first}"
+: "${OTTERIO_ROOT_PASSWORD:?Set your saved password first}"
+export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
+docker run -p 127.0.0.1:9000:9000 --name otterio \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
   -v /mnt/data1:/data1 \
   -v /mnt/data2:/data2 \
   -v /mnt/data3:/data3 \
@@ -54,9 +56,13 @@ docker run -p 9000:9000 --name otterio \
   -v /mnt/data6:/data6 \
   -v /mnt/data7:/data7 \
   -v /mnt/data8:/data8 \
-  minio/minio server /data{1...8}
+  soulteary/otterio:latest server '/data{1...8}'
 ```
 
-### 3. 验证是否设置成功
+发布的端口仅允许 Docker 宿主机访问。远端访问可使用带认证和 TLS 的反向代理或受控网络。将每个 `/mnt/dataN` 挂载到计划中的物理盘；同一硬盘上的八个目录不等于八个独立故障域。
 
-你可以随意拔掉硬盘，看Otterio是否可以正常读写。
+## 验证恢复
+
+使用可丢弃的测试部署，准备已知内容和校验和的对象。先确认正常状态下可以上传和下载，再在集合读写法定数量允许的范围内模拟受控硬盘故障，验证预期操作并恢复硬盘。修复后再次核对对象内容，不能仅凭目录数量推断生产环境的容错能力。
+
+本指南以[默认奇偶校验数](../../../cmd/format-erasure.go)、[写入法定数量](../../../cmd/erasure-object.go)和[端点分组](../../../cmd/endpoint-ellipses.go)的实现为依据。

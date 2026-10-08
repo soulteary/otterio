@@ -87,7 +87,7 @@ server only assumes that the KMS provides two services:
 
 - `DecryptKey`: Takes a key ID and an encrypted data key and returns the plain data key - the decryption of the encrypted data key using the master key referenced by the key ID - on success or an error otherwise.
 
-More details about supported KMS implementations and configuration can be found at the [KMS guide](https://github.com/minio/minio/blob/master/docs/kms/README.md).
+More details about supported KMS implementations and configuration can be found at the [KMS guide](../kms/README.md).
 
 The OtterIO server requests a new data key from the KMS for each uploaded object and uses that data key as EK. Additionally it stores the encrypted form of the data key and the master key ID as part of the object metadata. The plain data only resides in RAM during the en/decryption process. The OtterIO server does not store any SSE-related key at the KMS. Instead the KMS is treated as trusted component that performs key sealing/unsealing operations to build a key hierarchy:
 
@@ -161,7 +161,7 @@ The OtterIO server supports key rotation for SSE-S3 encrypted objects. The otter
  ```
 <center>Figure 3 - KMS data key rotation</center>
 
-Only the root/admin user can perform an SSE-S3 key rotation using the Admin-API via [mc](https://github.com/minio/mc). For more details about how to perform key management operations using the CLI refer to [mc admin guide](https://github.com/minio/mc/blob/master/docs/minio-admin-complete-guide.md) or run `mc admin kms key`.
+Use the [local KMS guide](../kms/README.md) for the KMS configuration and supported operations. OtterIO management uses `/otterio/admin/v3`; use the current [OC client](https://github.com/soulteary/oc) for management commands and check `oc admin kms --help` for the commands available in your client version. The key-wrapping process illustrated above describes the encryption design; it does not imply that a bulk rotation command is provided.
 
 #### Secure Erasure and Locking
 

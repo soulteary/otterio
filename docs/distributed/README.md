@@ -1,96 +1,60 @@
 # Distributed OtterIO Quickstart Guide
 
-OtterIO in distributed mode lets you pool multiple drives (even on different machines) into a single object storage server. As drives are distributed across several nodes, distributed OtterIO can withstand multiple node failures and yet ensure full data protection.
+Distributed OtterIO combines drive endpoints on multiple machines into one object storage deployment. Data is grouped into erasure sets; multiple sets form a server pool, and a deployment can contain multiple pools. Each object is stored in one erasure set, rather than being replicated to every node.
 
-## Why distributed OtterIO?
+## Data protection and availability
 
-OtterIO in distributed mode can help you setup a highly-available storage system with a single object storage deployment. With distributed OtterIO, you can optimally use storage devices, irrespective of their location in a network.
+OtterIO uses [erasure coding and checksums](../erasure/README.md) to recover missing or corrupted shards when enough healthy shards remain. The default `STANDARD` parity is 2 for 4–5-drive sets, 3 for 6–7-drive sets, and 4 for 8–16-drive sets. It is not always half of the set.
 
-### Data protection
+For a set of `N` drives with `P` parity shards, reading requires `N - P` healthy shards and usable metadata. Writing normally requires `N - P` drives; when data and parity counts are equal, writing requires one additional drive. Calculate node-failure tolerance from **how each node's drives are distributed across every set**. A deployment-wide percentage of online nodes or drives is insufficient: failures concentrated in one set can make its objects unavailable while other sets remain healthy.
 
-Distributed OtterIO provides protection against multiple node/drive failures and [bit rot](https://github.com/minio/minio/blob/master/docs/erasure/README.md#what-is-bit-rot-protection) using [erasure code](https://docs.min.io/docs/minio-erasure-code-quickstart-guide). As the minimum disks required for distributed OtterIO is 4 (same as minimum disks required for erasure coding), erasure code automatically kicks in as you launch distributed OtterIO.
+For example, with four nodes contributing one drive each to a 4-drive set, default `EC:2` needs two healthy drives for reads and three for writes. Losing one node permits reads and writes; losing two nodes leaves enough shards for reads but not writes. With a 16-drive set at default `EC:4`, both reads and writes need twelve healthy drives, so only four failed drives in that set can be tolerated. Consult the [sizing examples](SIZING.md) and [storage classes](../erasure/storage-class/README.md) alongside your actual endpoint layout.
 
-### High availability
+Successful object operations follow the server's read-after-write and list-after-write consistency model. Quorum failures must be handled by the client; availability depends on healthy drives, metadata, and connectivity.
 
-A stand-alone OtterIO server would go down if the server hosting the disks goes offline. In contrast, a distributed OtterIO setup with _m_ servers and _n_ disks will have your data safe as long as _m/2_ servers or _m*n_/2 or more disks are online.
+## Prerequisites
 
-For example, an 16-server distributed setup with 200 disks per node would continue serving files, up to 4 servers can be offline in default configuration i.e around 800 disks down OtterIO would continue to read and write objects.
+- Install and configure OtterIO using the [Quick Start](../../README.md#quick-start).
+- Use the same OtterIO version, saved root credentials (`OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD`), and endpoint arguments on every participating node.
+- Prepare similarly sized physical drives and dedicated empty directories for a new deployment. Reuse the existing directories when restarting that deployment. Multiple directories on one disk share a failure domain.
+- Ensure every node can resolve and reach every endpoint and that each node's advertised drive paths exist on that node. Use consistent endpoint schemes and ports.
+- Synchronize node clocks. Inter-node requests enforce a 15-minute skew limit, so keep clocks much closer using a time synchronization service.
+- Configure [TLS](../tls/README.md) for traffic that crosses untrusted networks. `OTTERIO_DOMAIN` is optional and is used when configuring virtual-host-style bucket access.
 
-Refer to sizing guide for more understanding on default values chosen depending on your erasure stripe size [here](https://github.com/minio/minio/blob/master/docs/distributed/SIZING.md). Parity settings can be changed using [storage classes](https://github.com/minio/minio/tree/master/docs/erasure/storage-class).
+## Start the deployment
 
-### Consistency Guarantees
-
-OtterIO follows strict **read-after-write** and **list-after-write** consistency model for all i/o operations both in distributed and standalone modes.
-
-# Get started
-
-If you're aware of stand-alone OtterIO set up, the process remains largely the same. OtterIO server automatically switches to stand-alone or distributed mode, depending on the command line parameters.
-
-## 1. Prerequisites
-
-Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
-
-## 2. Run distributed OtterIO
-
-To start a distributed OtterIO instance, you just need to pass drive locations as parameters to the otterio server command. Then, you’ll need to run the same command on all the participating nodes.
-
-__NOTE:__
-
-- All the nodes running distributed OtterIO need to have same access key and secret key for the nodes to connect. To achieve this, it is __recommended__ to export access key and secret key as environment variables, `OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD`, on all the nodes before executing OtterIO server command.
-- __OtterIO creates erasure-coding sets of *4* to *16* drives per set.  The number of drives you provide in total must be a multiple of one of those numbers.__
-- __OtterIO chooses the largest EC set size which divides into the total number of drives or total number of nodes given - making sure to keep the uniform distribution i.e each node participates equal number of drives per set__.
-- __Each object is written to a single EC set, and therefore is spread over no more than 16 drives.__
-- __All the nodes running distributed OtterIO setup are recommended to be homogeneous, i.e. same operating system, same number of disks and same network interconnects.__
-- OtterIO distributed mode requires __fresh directories__. If required, the drives can be shared with other applications. You can do this by using a sub-directory exclusive to OtterIO. For example, if you have mounted your volume under `/export`, pass `/export/data` as arguments to OtterIO server.
-- The IP addresses and drive paths below are for demonstration purposes only, you need to replace these with the actual IP addresses and drive paths/folders.
-- Servers running distributed OtterIO instances should be less than 15 minutes apart. You can enable [NTP](http://www.ntp.org/) service as a best practice to ensure same times across servers.
-- `OTTERIO_DOMAIN` environment variable should be defined and exported for bucket DNS style support.
-- Running Distributed OtterIO on __Windows__ operating system is considered **experimental**. Please proceed with caution.
-
-Example 1: Start distributed OtterIO instance on n nodes with m drives each mounted at `/export1` to `/exportm` (pictured below), by running this command on all the n nodes:
-
-![Distributed OtterIO, n nodes with m drives each](https://github.com/minio/minio/blob/master/docs/screenshots/Architecture-diagram_distributed_nm.png?raw=true)
-
-#### GNU/Linux and macOS
+Run the same command on each of four hosts. The example uses four drives per host, mounted at `/export1` through `/export4`. Replace `host1` through `host4` with names that resolve to the participating nodes. The HTTP example assumes a controlled network; use `https://` after provisioning certificates for all endpoints.
 
 ```sh
-export OTTERIO_ROOT_USER=<ACCESS_KEY>
-export OTTERIO_ROOT_PASSWORD=<SECRET_KEY>
-otterio server http://host{1...n}/export{1...m}
+: "${OTTERIO_ROOT_USER:?Set the shared saved username first}"
+: "${OTTERIO_ROOT_PASSWORD:?Set the shared saved password first}"
+export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
+otterio server 'http://host{1...4}:9000/export{1...4}'
 ```
 
-> __NOTE:__ In above example `n` and `m` represent positive integers, *do not copy paste and expect it work make the changes according to local deployment and setup*.
+Use OtterIO's literal three-dot range syntax (`{1...4}`) and quote the endpoint pattern. The server expands it and chooses a supported set size from 4 through 16 that divides the endpoint count while accounting for pattern symmetry. Shell expansion with `{1..4}` is a different syntax and can change endpoint ordering and grouping.
 
-> __NOTE:__ `{1...n}` shown have 3 dots! Using only 2 dots `{1..n}` will be interpreted by your shell and won't be passed to OtterIO server, affecting the erasure coding order, which would impact performance and high availability. __Always use ellipses syntax `{1...n}` (3 dots!) for optimal erasure-code distribution__
+![Distributed deployment with multiple nodes and drives](../screenshots/Architecture-diagram_distributed_nm.png)
 
-#### Expanding existing distributed setup
-OtterIO supports expanding distributed erasure coded clusters by specifying new set of clusters on the command-line as shown below:
+All nodes must agree on the complete endpoint list and ordering. Use a load balancer or a chosen node endpoint for client access, with a configuration that preserves S3 request signing.
+
+## Add a server pool
+
+Expansion adds a new pool; it does not enlarge or reorder the erasure sets already recorded on existing drives. Retain the original endpoint group and append a new group, then update the startup command on every participating node. For example, expand the preceding deployment with another four hosts:
 
 ```sh
-export OTTERIO_ROOT_USER=<ACCESS_KEY>
-export OTTERIO_ROOT_PASSWORD=<SECRET_KEY>
-otterio server http://host{1...n}/export{1...m} http://host{o...z}/export{1...m}
+otterio server 'http://host{1...4}:9000/export{1...4}' \
+  'http://host{5...8}:9000/export{1...4}'
 ```
 
-For example:
-```
-otterio server http://host{1...4}/export{1...16} http://host{5...12}/export{1...16}
-```
+Prepare the new hosts and empty drive directories before restarting the deployment with the complete command. Plan the restart as a maintenance operation; this guide does not promise zero downtime. Each new pool must support the common parity count selected for the deployment; its total drive count need not equal the original pool's count.
 
-Now the server has expanded total storage by _(newly_added_servers\*m)_ more disks, taking the total count to _(existing_servers\*m)+(newly_added_servers\*m)_ disks. New object upload requests automatically start using the least used cluster. This expansion strategy works endlessly, so you can perpetually expand your clusters as needed.  When you restart, it is immediate and non-disruptive to the applications. Each group of servers in the command-line is called a pool. There are 2 server pools in this example. New objects are placed in server pools in proportion to the amount of free space in each pool. Within each pool, the location of the erasure-set of drives is determined based on a deterministic hashing algorithm.
+Placement of new objects is weighted by available space in eligible pools. Within a pool, a deterministic hash chooses an erasure set. Adding a pool does not automatically move existing objects to the new pool or improve an existing object's redundancy. Capacity and node-failure tolerance remain tied to each pool's set layout.
 
-> __NOTE:__ __Each pool you add must have the same erasure coding parity configuration as the original pool, so the same data redundancy SLA is maintained.__
+**Lifecycle tier transitions are currently unavailable in distributed and multi-pool deployments.** The current durable ILM target protocol supports only native, single-pool, local erasure storage; see the [lifecycle guide](../bucket/lifecycle/README.md).
 
-## 3. Test your setup
-To test this setup, access the OtterIO server via browser or [`mc`](https://docs.min.io/docs/minio-client-quickstart-guide).
+## Validate the deployment
 
-## Explore Further
+Configure an S3 client such as `mc`, the AWS CLI, or the [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk) for a client-facing endpoint. Verify bucket creation, upload, download checksums, and listing. In a disposable test cluster, test controlled node outages against the set-level read and write thresholds and verify recovery after the nodes return.
 
-> The links below point to the **original upstream MinIO** project's documentation. They remain useful as background reading on S3-compatible workflows, but they describe upstream MinIO behaviour and are **not** maintained by OtterIO.
-
-- [MinIO Erasure Code QuickStart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide) (upstream)
-- [Use `mc` with MinIO Server](https://docs.min.io/docs/minio-client-quickstart-guide) (upstream)
-- [Use `aws-cli` with MinIO Server](https://docs.min.io/docs/aws-cli-with-minio) (upstream)
-- [Use `s3cmd` with MinIO Server](https://docs.min.io/docs/s3cmd-with-minio) (upstream)
-- [Use `minio-go` SDK with MinIO Server](https://docs.min.io/docs/golang-client-quickstart-guide) (upstream)
-- [The MinIO documentation website](https://docs.min.io) (upstream)
+The [endpoint grouping](../../cmd/endpoint-ellipses.go), [pool initialization and placement](../../cmd/erasure-server-pool.go), and [quorum implementation](../../cmd/erasure-metadata.go) define the behavior described here. Upstream MinIO documentation can explain general S3 workflows, but it does not define the capabilities or limits of this OtterIO revision.

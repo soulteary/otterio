@@ -1,40 +1,53 @@
-# OtterIO存储桶通知指南
+# OtterIO 存储桶通知指南
 
-可以使用存储桶事件通知来监视存储桶中对象上发生的事件。 OtterIO服务器支持的事件类型是
+存储桶通知会发布符合过滤条件的对象操作事件。网关模式中，只有 NAS 网关支持存储桶通知。
 
-| Supported Event Types   |                                            |                          |
-| :---------------------- | ------------------------------------------ | ------------------------ |
-| `s3:ObjectCreated:Put`  | `s3:ObjectCreated:CompleteMultipartUpload` | `s3:ObjectAccessed:Head` |
-| `s3:ObjectCreated:Post` | `s3:ObjectRemoved:Delete`                  |                          |
-| `s3:ObjectCreated:Copy` | `s3:ObjectAccessed:Get`                    |                          |
+## 事件与通知目标
 
-使用诸如`mc`之类的客户端工具通过[`event`子命令](https://docs.min.io/cn/minio-client-complete-guide#events)设置和监听事件通知。也可以使用OtterIO SDK [`BucketNotification` APIs](https://docs.min.io/cn/golang-client-api-reference#SetBucketNotification) 。OtterIO发送的用于发布事件的通知消息是JSON格式的，JSON结构参考[这里](https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html)。
+当前源码识别以下事件名称。每一行中，首个名称之后的名称使用相同前缀：
 
-存储桶事件可以发布到以下目标：
+- `s3:ObjectCreated:Put`, `Post`, `Copy`, `CompleteMultipartUpload`, `PutTagging`, `DeleteTagging`, `PutRetention`, `PutLegalHold`.
+- `s3:ObjectRemoved:Delete`, `DeleteMarkerCreated`.
+- `s3:ObjectAccessed:Get`, `Head`, `GetRetention`, `GetLegalHold`.
+- `s3:Replication:OperationFailedReplication`, `OperationCompletedReplication`, `OperationNotTracked`, `OperationMissedThreshold`, `OperationReplicatedAfterThreshold`.
+- `s3:ObjectRestore:Post`, `Completed`; `s3:ObjectTransition:Failed`, `Complete`.
 
-| 支持的通知目标    |                             |                                 |
-| :-------------------------------- | --------------------------- | ------------------------------- |
-| [`Redis`](#Redis)                 | [`MySQL`](#MySQL)           |                                 |
-| [`Elasticsearch`](#Elasticsearch) | [`PostgreSQL`](#PostgreSQL) | [`Webhooks`](#webhooks)         |
+全局事件 `s3:BucketCreated:*` 和 `s3:BucketRemoved:*` 通过监听通知接口提供，不用于单个存储桶的目标配置。事件名称定义见 [pkg/event/name.go](../../../../pkg/event/name.go)。
+
+使用 [OC 客户端](https://github.com/soulteary/oc)的 `oc event add`、`oc event list` 和 `oc event listen`，或者使用 [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk)的存储桶通知接口。通知为包含 `Records` 数组的 JSON 对象，结构参考 [S3 通知格式](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html)；OtterIO 的 `eventSource` 为 `otterio:s3`。
+
+目前支持 Redis、MySQL、PostgreSQL、Elasticsearch 和 Webhook。Kafka、NATS、NATS Streaming、NSQ、AMQP 和 MQTT 通知目标已经移除。
 
 ## 前提条件
 
-* 从[这里](https://docs.min.io/cn/minio-quickstart-guide)下载并安装OtterIO Server。
-* 从[这里](https://docs.min.io/cn/minio-client-quickstart-guide)下载并安装OtterIO Client。
+- 安装 [OtterIO](../../../../README_zh_CN.md)和当前 [OC 客户端](https://github.com/soulteary/oc)。
+- 使用有权修改配置和存储桶通知的凭据设置别名：
 
-```
-$ mc admin config get myotterio | grep notify
-notify_webhook        publish bucket notifications to webhook endpoints
-notify_mysql          publish bucket notifications to MySQL databases
-notify_postgres       publish bucket notifications to Postgres databases
-notify_elasticsearch  publish bucket notifications to Elasticsearch endpoints
-notify_redis          publish bucket notifications to Redis datastores
+```sh
+oc alias set myotterio http://localhost:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD" --api s3v4 --path on
+oc admin config set myotterio
 ```
 
-> 注意:
-> - '\*' 结尾的参数是必填的.
-> - '\*' 结尾的值，是参数的的默认值.
-> - 当通过环境变量配置的时候, `:name` 可以通过这样 `OTTERIO_NOTIFY_WEBHOOK_ENABLE_<name>` 的格式指定.
+如果服务端设置了 `--console-address ":9001"`，在别名命令中增加 `--admin-url http://localhost:9001`。对象和存储桶通知操作使用 9000 端口，`oc admin config` 使用 9001 管理入口。管理地址填写根 URL，不追加 `/otterio/` 或 `/otterio/admin/v3`；不应假定上游 `mc admin` 能直接兼容。
+
+修改目标之前，先查询服务端提供的帮助：
+
+```sh
+oc admin config set myotterio notify_webhook
+oc admin config set myotterio notify_webhook --env
+```
+
+五个通知配置子系统分别为 `notify_webhook`、`notify_mysql`、`notify_postgres`、`notify_elasticsearch` 和 `notify_redis`。下文输出为示例，实际值以你的服务端返回结果为准。
+
+- 参数后的 `*` 表示必填，值后的 `*` 表示默认值。
+- 使用 `enable=on` 或对应的 `OTTERIO_NOTIFY_<TARGET>_ENABLE=on` 环境变量启用目标；修改通知目标后需要重启服务。
+- 命名目标的所有环境变量都使用相同后缀，例如 `OTTERIO_NOTIFY_WEBHOOK_ENABLE_photos` 和 `OTTERIO_NOTIFY_WEBHOOK_ENDPOINT_photos`。不带后缀的变量配置默认目标。
+- ARN 格式为 `arn:otterio:sqs:<region>:<target-id>:<type>`。复制服务器输出的 ARN；示例的区域为空，设置 `OTTERIO_REGION_NAME` 后该部分会改变。PostgreSQL 的配置键是 `notify_postgres`，ARN 类型则是 `postgresql`。
+- 持久化投递需要设置非空、绝对路径的 `queue_dir`，确保每个服务器实例的目录可写且存储可持久化。空目录配置会关闭磁盘队列。`queue_limit=0` 表示使用默认 100,000 条队列上限，并受进程文件上限约束，不表示无限容量。队列满时会返回错误，消费者需要处理重试产生的重复事件。
+- 通知只覆盖配置启用之后发生的匹配操作。`namespace` 目标不会自动补入存储桶中已有的对象。
+- 目标地址由 OtterIO 服务器所在的网络环境解析；在容器中，`localhost` 指向容器自身。
+
+目标配置指南：[Elasticsearch](#Elasticsearch)、[Redis](#Redis)、[PostgreSQL](#PostgreSQL)、[MySQL](#MySQL)、[Webhook](#webhooks)。
 
 <a name="Elasticsearch"></a>
 ## 使用Elasticsearch发布OtterIO事件
@@ -47,12 +60,12 @@ notify_redis          publish bucket notifications to Redis datastores
 
 如果使用的是 _access_ 格式，OtterIO将事件作为document附加到ES的index中。对于每个事件，将带有事件详细信息的文档（文档的时间戳设置为事件的时间戳）附加到索引。这个文档的ID是由ES随机生成的。在 _access_ 格式下，不会有文档被删除或者修改。
 
-下面的步骤展示的是在`namespace`格式下，如何使用通知目标。另一种格式和这个很类似，为了不让你们说我墨迹，就不再赘述了。
+以下步骤演示 `namespace` 格式，`access` 格式的配置过程类似。
 
 
 ### 第一步：确保至少满足最低要求
 
-OtterIO要求使用的是ES 5.X系统版本。如果使用的是低版本的ES，也没关系，ES官方支持升级迁移，详情请看[这里](https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-upgrade.html)。
+内置目标使用 [`github.com/olivere/elastic/v7`](../../../../pkg/event/target/elasticsearch.go)。接入前需要验证与实际 Elasticsearch API 的兼容性，客户端依赖本身不能证明与所有服务端主版本兼容。
 
 ### 第二步：把ES集成到OtterIO中
 
@@ -65,6 +78,8 @@ notify_elasticsearch[:name]  发布存储桶通知到Elasticsearch endpoints
 ARGS:
 url*         (url)                Elasticsearch服务器的地址，以及可选的身份验证信息
 index*       (string)             存储/更新事件的Elasticsearch索引，索引是自动创建的
+username     (string)             Elasticsearch basic-auth 用户名
+password     (string)             Elasticsearch basic-auth 密码
 format*      (namespace*|access)  是`namespace` 还是 `access`，默认是 'namespace'
 queue_dir    (path)               未发送消息的暂存目录 例如 '/home/events'
 queue_limit  (number)             未发送消息的最大限制, 默认是'100000'
@@ -81,26 +96,32 @@ ARGS:
 OTTERIO_NOTIFY_ELASTICSEARCH_ENABLE*      (on|off)             enable notify_elasticsearch target, default is 'off'
 OTTERIO_NOTIFY_ELASTICSEARCH_URL*         (url)                Elasticsearch server's address, with optional authentication info
 OTTERIO_NOTIFY_ELASTICSEARCH_INDEX*       (string)             Elasticsearch index to store/update events, index is auto-created
+OTTERIO_NOTIFY_ELASTICSEARCH_USERNAME     (string)             username for Elasticsearch basic-auth
+OTTERIO_NOTIFY_ELASTICSEARCH_PASSWORD     (string)             password for Elasticsearch basic-auth
 OTTERIO_NOTIFY_ELASTICSEARCH_FORMAT*      (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
 OTTERIO_NOTIFY_ELASTICSEARCH_QUEUE_DIR    (path)               staging dir for undelivered messages e.g. '/home/events'
 OTTERIO_NOTIFY_ELASTICSEARCH_QUEUE_LIMIT  (number)             maximum limit for undelivered messages, defaults to '100000'
 OTTERIO_NOTIFY_ELASTICSEARCH_COMMENT      (sentence)           optionally add a comment to this setting
 ```
 
-比如: `http://localhost:9200` 或者带有授权信息的 `http://elastic:MagicWord@127.0.0.1:9200`
+比如: `http://localhost:9200` 或者带有授权信息的 `http://<username>:<password>@127.0.0.1:9200`
 
 OtterIO支持持久事件存储。持久存储将在Elasticsearch broker离线时备份事件，并在broker恢复在线时重播事件。事件存储的目录可以通过`queue_dir`字段设置，存储的最大限制可以通过`queue_limit`设置。例如, `queue_dir`可以设置为`/home/events`, 并且`queue_limit`可以设置为`1000`. 默认情况下 `queue_limit` 是100000.
 
 如果Elasticsearch启用了身份验证, 凭据可以通过格式为`PROTO://USERNAME:PASSWORD@ELASTICSEARCH_HOST:PORT`的`url`参数，提供给OtterIO。
 
-更新配置前，可以通过`mc admin config get`命令获取当前配置。
+更新配置前，可以通过`oc admin config get`命令获取当前配置。
 
 ```sh
-$ mc admin config get myotterio/ notify_elasticsearch
+$ oc admin config get myotterio/ notify_elasticsearch
 notify_elasticsearch:1 queue_limit="0"  url="" format="namespace" index="" queue_dir=""
 ```
 
-使用`mc admin config set`命令更新配置后，重启OtterIO Server让配置生效。 如果一切顺利，OtterIO Server会在启动时输出一行信息，类似`SQS ARNs: arn:otterio:sqs::1:elasticsearch`。
+使用`oc admin config set`命令更新配置后，重启OtterIO Server让配置生效。 如果一切顺利，OtterIO Server会在启动时输出一行信息，类似`SQS ARNs: arn:otterio:sqs::1:elasticsearch`。
+
+```sh
+oc admin config set myotterio notify_elasticsearch:1 enable=on url="http://127.0.0.1:9200" format="namespace" index="otterio_events"
+```
 
 请注意, 根据你的需要，你可以添加任意多个ES server endpoint，只要提供ES实例的标识符（如上例中的“ 1”）和每个实例配置参数的信息即可。
 
@@ -110,101 +131,30 @@ notify_elasticsearch:1 queue_limit="0"  url="" format="namespace" index="" queue
 
 要配置这种存储桶通知，我们需要用到前面步骤OtterIO输出的ARN信息。更多有关ARN的资料，请参考[这里](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)。
 
-有了`mc`这个工具，这些配置信息很容易就能添加上。假设咱们的OtterIO服务别名叫`myotterio`,可执行下列脚本：
+有了`oc`这个工具，这些配置信息很容易就能添加上。假设咱们的OtterIO服务别名叫`myotterio`,可执行下列脚本：
 
 ```
-mc mb myotterio/images
-mc event add  myotterio/images arn:otterio:sqs::1:elasticsearch --suffix .jpg
-mc event list myotterio/images
-arn:otterio:sqs::1:elasticsearch s3:ObjectCreated:*,s3:ObjectRemoved:* Filter: suffix=”.jpg”
+oc mb myotterio/images
+oc event add  myotterio/images arn:otterio:sqs::1:elasticsearch --suffix .jpg --event put,delete
+oc event list myotterio/images
+arn:otterio:sqs::1:elasticsearch s3:ObjectCreated:*,s3:ObjectRemoved:* Filter: suffix=".jpg"
 ```
 
-### 第四步：验证Elasticsearch
+### 第四步：验证 Elasticsearch
 
-上传一张JPEG图片到`images` 存储桶。
+上传一张 JPEG 图片，然后查询已配置的索引：
 
-```
-mc cp myphoto.jpg myotterio/images
-```
-
-使用curl查看`otterio_events` index中的内容。
-
-```
-$ curl  "http://localhost:9200/otterio_events/_search?pretty=true"
-{
-  "took" : 40,
-  "timed_out" : false,
-  "_shards" : {
-    "total" : 5,
-    "successful" : 5,
-    "failed" : 0
-  },
-  "hits" : {
-    "total" : 1,
-    "max_score" : 1.0,
-    "hits" : [
-      {
-        "_index" : "otterio_events",
-        "_type" : "event",
-        "_id" : "images/myphoto.jpg",
-        "_score" : 1.0,
-        "_source" : {
-          "Records" : [
-            {
-              "eventVersion" : "2.0",
-              "eventSource" : "otterio:s3",
-              "awsRegion" : "",
-              "eventTime" : "2017-03-30T08:00:41Z",
-              "eventName" : "s3:ObjectCreated:Put",
-              "userIdentity" : {
-                "principalId" : "otterio"
-              },
-              "requestParameters" : {
-                "sourceIPAddress" : "127.0.0.1:38062"
-              },
-              "responseElements" : {
-                "x-amz-request-id" : "14B09A09703FC47B",
-                "x-otterio-origin-endpoint" : "http://192.168.86.115:9000"
-              },
-              "s3" : {
-                "s3SchemaVersion" : "1.0",
-                "configurationId" : "Config",
-                "bucket" : {
-                  "name" : "images",
-                  "ownerIdentity" : {
-                    "principalId" : "otterio"
-                  },
-                  "arn" : "arn:aws:s3:::images"
-                },
-                "object" : {
-                  "key" : "myphoto.jpg",
-                  "size" : 6474,
-                  "eTag" : "a3410f4f8788b510d6f19c5067e60a90",
-                  "sequencer" : "14B09A09703FC47B"
-                }
-              },
-              "source" : {
-                "host" : "127.0.0.1",
-                "port" : "38062",
-                "userAgent" : "OtterIO (linux; amd64) otterio-go/2.0.3 mc/2017-02-15T17:57:25Z"
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
-}
+```sh
+oc cp myphoto.jpg myotterio/images
+curl "http://localhost:9200/otterio_events/_search?pretty=true"
 ```
 
-这个输出显示在ES中为这个事件创建了一个document。
-
-这里我们可以看到这个document ID就是存储桶和对象的名称。如果用的是`access`格式，这个document ID就是由ES随机生成的。
+结果中应包含 `_id` 为 `images/myphoto.jpg` 的文档，`_source.Records[0].eventName` 为 `s3:ObjectCreated:Put`。请求 ID、时间戳和事件元数据会因部署而不同。
 
 <a name="Redis"></a>
 ## 使用Redis发布OtterIO事件
 
-安装 [Redis](http://redis.io/download)。为了演示，我们将数据库密码设为"yoursecret"。
+安装 [Redis](https://redis.io/downloads/)，在执行配置示例之前，从凭据管理系统中将它的真实密码恢复到 `OTTERIO_REDIS_PASSWORD`。
 
 这种通知目标支持两种格式: _namespace_ 和 _access_。
 
@@ -216,7 +166,7 @@ $ curl  "http://localhost:9200/otterio_events/_search?pretty=true"
 
 ### 第一步：集成Redis到OtterIO
 
-The OtterIO server的配置文件以json格式存储在后端。Redis的配置信息位于`notify_redis`这个顶级的key下。在这里为你的Redis实例创建配置信息键值对。key是你的Redis endpoint的名称，value是下面表格中列的键值对集合。
+Redis 的配置位于 `notify_redis` 子系统中。在这里为你的Redis实例创建配置信息键值对。key是你的Redis endpoint的名称，value是下面表格中列的键值对集合。
 
 ```
 KEY:
@@ -240,6 +190,7 @@ notify_redis[:name]  publish bucket notifications to Redis datastores
 
 ARGS:
 OTTERIO_NOTIFY_REDIS_ENABLE*      (on|off)             enable notify_redis target, default is 'off'
+OTTERIO_NOTIFY_REDIS_ADDRESS*     (address)            Redis server address, e.g. 'localhost:6379'
 OTTERIO_NOTIFY_REDIS_KEY*         (string)             Redis key to store/update events, key is auto-created
 OTTERIO_NOTIFY_REDIS_FORMAT*      (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
 OTTERIO_NOTIFY_REDIS_PASSWORD     (string)             Redis server password
@@ -250,17 +201,17 @@ OTTERIO_NOTIFY_REDIS_COMMENT      (sentence)           optionally add a comment 
 
 OtterIO支持持久事件存储。持久存储将在Redis broker离线时备份事件，并在broker恢复在线时重播事件。事件存储的目录可以通过`queue_dir`字段设置，存储的最大限制可以通过`queue_limit`设置。例如, `queue_dir`可以设置为`/home/events`, 并且`queue_limit`可以设置为`1000`. 默认情况下 `queue_limit` 是100000.
 
-更新配置前，可以通过`mc admin config get`命令获取当前配置。
+更新配置前，可以通过`oc admin config get`命令获取当前配置。
 
 ```sh
-$ mc admin config get myotterio/ notify_redis
+$ oc admin config get myotterio/ notify_redis
 notify_redis:1 address="" format="namespace" key="" password="" queue_dir="" queue_limit="0"
 ```
 
-使用`mc admin config set`命令更新配置后，重启OtterIO Server让配置生效。 如果一切顺利，OtterIO Server会在启动时输出一行信息，类似`SQS ARNs: arn:otterio:sqs::1:redis`。
+使用`oc admin config set`命令更新配置后，重启OtterIO Server让配置生效。 如果一切顺利，OtterIO Server会在启动时输出一行信息，类似`SQS ARNs: arn:otterio:sqs::1:redis`。
 
 ```sh
-$ mc admin config set myotterio/ notify_redis:1 address="127.0.0.1:6379" format="namespace" key="bucketevents" password="yoursecret" queue_dir="" queue_limit="0"
+$ oc admin config set myotterio/ notify_redis:1 enable=on address="127.0.0.1:6379" format="namespace" key="bucketevents" password="$OTTERIO_REDIS_PASSWORD" queue_dir="" queue_limit="0"
 ```
 
 请注意, 根据你的需要，你可以添加任意多个Redis server endpoint，只要提供Redis实例的标识符（如上例中的“ 1”）和每个实例配置参数的信息即可。
@@ -271,69 +222,32 @@ $ mc admin config set myotterio/ notify_redis:1 address="127.0.0.1:6379" format=
 
 要配置这种存储桶通知，我们需要用到前面步骤OtterIO输出的ARN信息。更多有关ARN的资料，请参考[这里](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)。
 
-有了`mc`这个工具，这些配置信息很容易就能添加上。假设咱们的OtterIO服务别名叫`myotterio`,可执行下列脚本：
+有了`oc`这个工具，这些配置信息很容易就能添加上。假设咱们的OtterIO服务别名叫`myotterio`,可执行下列脚本：
 
 ```
-mc mb myotterio/images
-mc event add myotterio/images arn:otterio:sqs::1:redis --suffix .jpg
-mc event list myotterio/images
-arn:otterio:sqs::1:redis s3:ObjectCreated:*,s3:ObjectRemoved:* Filter: suffix=”.jpg”
+oc mb myotterio/images
+oc event add myotterio/images arn:otterio:sqs::1:redis --suffix .jpg --event put,delete
+oc event list myotterio/images
+arn:otterio:sqs::1:redis s3:ObjectCreated:*,s3:ObjectRemoved:* Filter: suffix=".jpg"
 ```
 
-### 第三步：验证Redis
+### 第三步：验证 Redis
 
-启动`redis-cli`这个Redis客户端程序来检查Redis中的内容. 运行`monitor`Redis命令将会输出在Redis上执行的每个命令的。
+上传一张 JPEG 图片，然后从已配置的 `bucketevents` hash 读取对应条目：
 
-```
-redis-cli -a yoursecret
-127.0.0.1:6379> monitor
-OK
-```
-
-打开一个新的terminal终端并上传一张JPEG图片到`images` 存储桶。
-
-```
-mc cp myphoto.jpg myotterio/images
+```sh
+oc cp myphoto.jpg myotterio/images
+REDISCLI_AUTH="$OTTERIO_REDIS_PASSWORD" redis-cli HGET bucketevents images/myphoto.jpg
 ```
 
-在上一个终端中，你将看到OtterIO在Redis上执行的操作：
-
-```
-127.0.0.1:6379> monitor
-OK
-1490686879.650649 [0 172.17.0.1:44710] "PING"
-1490686879.651061 [0 172.17.0.1:44710] "HSET" "otterio_events" "images/myphoto.jpg" "{\"Records\":[{\"eventVersion\":\"2.0\",\"eventSource\":\"otterio:s3\",\"awsRegion\":\"\",\"eventTime\":\"2017-03-28T07:41:19Z\",\"eventName\":\"s3:ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"otterio\"},\"requestParameters\":{\"sourceIPAddress\":\"127.0.0.1:52234\"},\"responseElements\":{\"x-amz-request-id\":\"14AFFBD1ACE5F632\",\"x-otterio-origin-endpoint\":\"http://192.168.86.115:9000\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"Config\",\"bucket\":{\"name\":\"images\",\"ownerIdentity\":{\"principalId\":\"otterio\"},\"arn\":\"arn:aws:s3:::images\"},\"object\":{\"key\":\"myphoto.jpg\",\"size\":2586,\"eTag\":\"5d284463f9da279f060f0ea4d11af098\",\"sequencer\":\"14AFFBD1ACE5F632\"}},\"source\":{\"host\":\"127.0.0.1\",\"port\":\"52234\",\"userAgent\":\"OtterIO (linux; amd64) otterio-go/2.0.3 mc/2017-02-15T17:57:25Z\"}}]}"
-```
-
-在这我们可以看到OtterIO在`otterio_events`这个key上执行了`HSET`命令。
-
-如果用的是`access`格式，那么`otterio_events`就是一个list,OtterIO就会调用`RPUSH`添加到list中。这个list的消费者会使用`BLPOP`从list的最左端删除list元素。
+返回的 JSON 应包含 `Records`，其中 `eventName` 为 `s3:ObjectCreated:Put`，对象 key 为 `myphoto.jpg`。使用 `access` 格式时，改用 `LRANGE bucketevents 0 -1` 查看 Redis list。
 
 <a name="PostgreSQL"></a>
 ## 使用PostgreSQL发布OtterIO事件
 
-> 注意：在版本RELEASE.2020-04-10T03-34-42Z之前的PostgreSQL通知用于支持以下选项：
->
-> ```
-> host                (hostname)           Postgres server hostname (used only if `connection_string` is empty)
-> port                (port)               Postgres server port, defaults to `5432` (used only if `connection_string` is empty)
-> username            (string)             database username (used only if `connection_string` is empty)
-> password            (string)             database password (used only if `connection_string` is empty)
-> database            (string)             database name (used only if `connection_string` is empty)
-> ```
->
-> 这些现在已经弃用, 如果你打算升级到*RELEASE.2020-04-10T03-34-42Z*之后的版本请确保
-> 仅使用*connection_string*选项迁移.一旦所有服务器都升级完成，请使用以下命令更新现有的通知目标完成迁移。
->
-> ```
-> mc admin config set myotterio/ notify_postgres[:name] connection_string="host=hostname port=2832 username=psqluser password=psqlpass database=bucketevents"
-> ```
->
-> 请确保执行此步骤，否则将无法执行PostgreSQL通知目标，
-> 服务器升级/重启后，控制台上会显示一条错误消息，请务必遵循上述说明。
-> 如有其他问题，请加入我们的 https://slack.min.io
+使用 `connection_string` 配置连接。当前通知子系统不接受旧版 `host`、`port`、`username`、`password` 和 `database` 配置键。
 
-安装 [PostgreSQL](https://www.postgresql.org/) 数据库。为了演示，我们将"postgres"用户的密码设为`password`，并且创建了一个`otterio_events`数据库来存储事件信息。
+安装 [PostgreSQL](https://www.postgresql.org/)，创建 `otterio_events` 数据库和通知专用账户 `otterio_events_user`，允许该账户创建事件表并新增、更新和删除行。从凭据管理系统中将它的真实密码恢复到 `OTTERIO_POSTGRES_PASSWORD`。示例使用本地数据库连接。
 
 这个通知目标支持两种格式: _namespace_ 和 _access_。
 
@@ -349,19 +263,20 @@ OtterIO要求PostgresSQL9.5版本及以上。 OtterIO用了PostgreSQL9.5引入�
 
 ### 第二步：集成PostgreSQL到OtterIO
 
-PostgreSQL的配置信息位于`notify_postgresql`这个顶级的key下。在这里为你的PostgreSQL实例创建配置信息键值对。key是你的PostgreSQL endpoint的名称，value是下面表格中列列的键值对集合。
+PostgreSQL的配置信息位于`notify_postgres`这个顶级的key下。在这里为你的PostgreSQL实例创建配置信息键值对。key是你的PostgreSQL endpoint的名称，value是下面表格中列列的键值对集合。
 
 ```
 KEY:
 notify_postgres[:name]  发布存储桶通知到Postgres数据库
 
 ARGS:
-connection_string*  (string)             Postgres server的连接字符串，例如 "host=localhost port=5432 dbname=otterio_events user=postgres password=password sslmode=disable"
+connection_string*  (string)             Postgres server的连接字符串，例如 "host=localhost port=5432 dbname=otterio_events user=postgres password=<password> sslmode=disable"
 table*              (string)             存储/更新事件的数据库表名, 表会自动被创建
 format*             (namespace*|access)  'namespace'或者'access', 默认是'namespace'
 queue_dir           (path)               未发送消息的暂存目录 例如 '/home/events'
 queue_limit         (number)             未发送消息的最大限制, 默认是'100000'
 comment             (sentence)           可选的注释说明
+max_open_connections (number)           数据库最大连接数，默认 2；0 表示不限制
 ```
 
 或者通过环境变量（说明详见上面）
@@ -371,28 +286,29 @@ notify_postgres[:name]  publish bucket notifications to Postgres databases
 
 ARGS:
 OTTERIO_NOTIFY_POSTGRES_ENABLE*             (on|off)             enable notify_postgres target, default is 'off'
-OTTERIO_NOTIFY_POSTGRES_CONNECTION_STRING*  (string)             Postgres server connection-string e.g. "host=localhost port=5432 dbname=otterio_events user=postgres password=password sslmode=disable"
+OTTERIO_NOTIFY_POSTGRES_CONNECTION_STRING*  (string)             Postgres server connection-string e.g. "host=localhost port=5432 dbname=otterio_events user=postgres password=<password> sslmode=disable"
 OTTERIO_NOTIFY_POSTGRES_TABLE*              (string)             DB table name to store/update events, table is auto-created
 OTTERIO_NOTIFY_POSTGRES_FORMAT*             (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
 OTTERIO_NOTIFY_POSTGRES_QUEUE_DIR           (path)               staging dir for undelivered messages e.g. '/home/events'
 OTTERIO_NOTIFY_POSTGRES_QUEUE_LIMIT         (number)             maximum limit for undelivered messages, defaults to '100000'
 OTTERIO_NOTIFY_POSTGRES_COMMENT             (sentence)           optionally add a comment to this setting
+OTTERIO_NOTIFY_POSTGRES_MAX_OPEN_CONNECTIONS (number)  maximum number of open database connections, defaults to 2
 ```
 
 OtterIO支持持久事件存储。持久存储将在PostgreSQL连接离线时备份事件，并在broker恢复在线时重播事件。事件存储的目录可以通过`queue_dir`字段设置，存储的最大限制可以通过`queue_limit`设置。例如, `queue_dir`可以设置为`/home/events`, 并且`queue_limit`可以设置为`1000`. 默认情况下 `queue_limit` 是100000.
 
 注意这里为了演示, 我们禁止了SSL. 处于安全起见, 不推荐用于生产.
-更新配置前, 使用`mc admin config get`命令获取当前配置。
+更新配置前, 使用`oc admin config get`命令获取当前配置。
 
 ```sh
-$ mc admin config get myotterio notify_postgres
+$ oc admin config get myotterio notify_postgres
 notify_postgres:1 queue_dir="" connection_string="" queue_limit="0"  table="" format="namespace"
 ```
 
-Use `mc admin config set`命令更新完配置后，重启OtterIO Server让配置生效。 如果一切顺利，OtterIO Server会在启动时输出一行信息，类似 `SQS ARNs: arn:otterio:sqs::1:postgresql`。
+使用 `oc admin config set` 命令更新配置后，重启OtterIO Server让配置生效。 如果一切顺利，OtterIO Server会在启动时输出一行信息，类似 `SQS ARNs: arn:otterio:sqs::1:postgresql`。
 
 ```sh
-$ mc admin config set myotterio notify_postgres:1 connection_string="host=localhost port=5432 dbname=otterio_events user=postgres password=password sslmode=disable" table="bucketevents" format="namespace"
+$ oc admin config set myotterio notify_postgres:1 enable=on connection_string="host=localhost port=5432 dbname=otterio_events user=otterio_events_user password=${OTTERIO_POSTGRES_PASSWORD} sslmode=disable" table="bucketevents" format="namespace"
 ```
 
 请注意, 根据你的需要，你可以添加任意多个PostgreSQL server endpoint，只要提供PostgreSQL实例的标识符（如上例中的“ 1”）和每个实例配置参数的信息即可。
@@ -403,65 +319,44 @@ $ mc admin config set myotterio notify_postgres:1 connection_string="host=localh
 
 要配置这种存储桶通知，我们需要用到前面步骤中OtterIO输出的ARN信息。更多有关ARN的资料，请参考[这里](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)。
 
-有了`mc`这个工具，这些配置信息很容易就能添加上。假设OtterIO服务别名叫`myotterio`,可执行下列脚本：
+有了`oc`这个工具，这些配置信息很容易就能添加上。假设OtterIO服务别名叫`myotterio`,可执行下列脚本：
 
 ```
 # Create bucket named `images` in myotterio
-mc mb myotterio/images
-# Add notification configuration on the `images` bucket using the MySQL ARN. The --suffix argument filters events.
-mc event add myotterio/images arn:otterio:sqs::1:postgresql --suffix .jpg
+oc mb myotterio/images
+# Add notification configuration on the `images` bucket using the PostgreSQL ARN. The --suffix argument filters events.
+oc event add myotterio/images arn:otterio:sqs::1:postgresql --suffix .jpg --event put,delete
 # Print out the notification configuration on the `images` bucket.
-mc event list myotterio/images
-mc event list myotterio/images
-arn:otterio:sqs::1:postgresql s3:ObjectCreated:*,s3:ObjectRemoved:* Filter: suffix=”.jpg”
+oc event list myotterio/images
+arn:otterio:sqs::1:postgresql s3:ObjectCreated:*,s3:ObjectRemoved:* Filter: suffix=".jpg"
 ```
 
-### 第四步：验证PostgreSQL
+### 第四步：验证 PostgreSQL
 
-打开一个新的terminal终端并上传一张JPEG图片到``images`` 存储桶。
+上传一张 JPEG 图片，用通知账户连接数据库并查询事件：
 
+```sh
+oc cp myphoto.jpg myotterio/images
+psql -h 127.0.0.1 -U otterio_events_user -d otterio_events
 ```
-mc cp myphoto.jpg myotterio/images
+
+```sql
+SELECT key, value->'Records'->0->>'eventName' AS event_name FROM bucketevents;
 ```
 
-打开一个PostgreSQL终端列出表 `bucketevents` 中所有的记录。
-
-```
-$ psql -h 127.0.0.1 -U postgres -d otterio_events
-otterio_events=# select * from bucketevents;
-
-key                 |                      value
---------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- images/myphoto.jpg | {"Records": [{"s3": {"bucket": {"arn": "arn:aws:s3:::images", "name": "images", "ownerIdentity": {"principalId": "otterio"}}, "object": {"key": "myphoto.jpg", "eTag": "1d97bf45ecb37f7a7b699418070df08f", "size": 56060, "sequencer": "147CE57C70B31931"}, "configurationId": "Config", "s3SchemaVersion": "1.0"}, "awsRegion": "", "eventName": "s3:ObjectCreated:Put", "eventTime": "2016-10-12T21:18:20Z", "eventSource": "aws:s3", "eventVersion": "2.0", "userIdentity": {"principalId": "otterio"}, "responseElements": {}, "requestParameters": {"sourceIPAddress": "[::1]:39706"}}]}
-(1 row)
+```text
+key                | event_name
+-------------------+---------------------
+images/myphoto.jpg | s3:ObjectCreated:Put
 ```
 
 <a name="MySQL"></a>
 
 ## 使用MySQL发布OtterIO事件
 
-> 注意：在版本RELEASE.2020-04-10T03-34-42Z之前的MySQL通知用于支持以下选项：
->
-> ```
-> host         (hostname)           MySQL server hostname (used only if `dsn_string` is empty)
-> port         (port)               MySQL server port (used only if `dsn_string` is empty)
-> username     (string)             database username (used only if `dsn_string` is empty)
-> password     (string)             database password (used only if `dsn_string` is empty)
-> database     (string)             database name (used only if `dsn_string` is empty)
-> ```
->
-> 这些现在已经弃用, 如果你打算升级到*RELEASE.2020-04-10T03-34-42Z*之后的版本请确保
-> 仅使用*dsn_string*选项迁移. 一旦所有服务器都升级完成，请使用以下命令更新现有的通知目标完成迁移
->
-> ```
-> mc admin config set myotterio/ notify_mysql[:name] dsn_string="mysqluser:mysqlpass@tcp(localhost:2832)/bucketevents"
-> ```
->
-> 请确保执行此步骤, 否则将无法执行MySQL通知目标，
-> 服务器升级/重启后，控制台上会显示一条错误消息，请务必遵循上述说明。
-> 如有其他问题，请加入我们的 https://slack.min.io
+使用 `dsn_string` 配置连接。当前通知子系统不接受旧版 `host`、`port`、`username`、`password` 和 `database` 配置键。
 
-安装 [MySQL](https://dev.mysql.com/downloads/mysql/). 为了演示，我们将"root"用户的密码设为`password`，并且创建了一个`otteriodb`数据库来存储事件信息。
+安装 [MySQL](https://dev.mysql.com/downloads/mysql/)，创建 `otteriodb` 数据库和通知专用账户 `otterio_events_user`，允许该账户创建事件表并新增、更新和删除行。从凭据管理系统中将它的真实密码恢复到 `OTTERIO_MYSQL_PASSWORD`。
 
 这个通知目标支持两种格式: _namespace_ 和 _access_。
 
@@ -477,7 +372,7 @@ OtterIO要求MySQL 版本 5.7.8及以上，OtterIO使用了MySQL5.7.8版本引�
 
 ### 第二步：集成MySQL到OtterIO
 
-MySQL配置位于 `notify_mysql`key下. 在这里为你的PostgreSQL实例创建配置信息键值对。key是你的MySQL endpoint的名称，value是下面表格中列列的键值对集合。
+MySQL配置位于 `notify_mysql`key下. 在这里为你的 MySQL 实例创建配置信息键值对。key 是你的 MySQL endpoint的名称，value是下面表格中列列的键值对集合。
 
 ```
 KEY:
@@ -490,6 +385,7 @@ format*      (namespace*|access)  'namespace'或者'access', 默认是'namespace
 queue_dir    (path)               未发送消息的暂存目录 例如 '/home/events'
 queue_limit  (number)             未发送消息的最大限制, 默认是'100000'
 comment      (sentence)           可选的注释说明
+max_open_connections (number)           数据库最大连接数，默认 2；0 表示不限制
 ```
 
 或者通过环境变量（说明详见上面）
@@ -505,28 +401,29 @@ OTTERIO_NOTIFY_MYSQL_FORMAT*      (namespace*|access)  'namespace' reflects curr
 OTTERIO_NOTIFY_MYSQL_QUEUE_DIR    (path)               staging dir for undelivered messages e.g. '/home/events'
 OTTERIO_NOTIFY_MYSQL_QUEUE_LIMIT  (number)             maximum limit for undelivered messages, defaults to '100000'
 OTTERIO_NOTIFY_MYSQL_COMMENT      (sentence)           optionally add a comment to this setting
+OTTERIO_NOTIFY_MYSQL_MAX_OPEN_CONNECTIONS (number)  maximum number of open database connections, defaults to 2
 ```
 
 `dsn_string`是必须的，并且格式为 `"<user>:<password>@tcp(<host>:<port>)/<database>"`
 
 OtterIO支持持久事件存储。持久存储将在MySQL连接离线时备份事件，并在broker恢复在线时重播事件。事件存储的目录可以通过`queue_dir`字段设置，存储的最大限制可以通过`queue_limit`设置。例如, `queue_dir`可以设置为`/home/events`, 并且`queue_limit`可以设置为`1000`. 默认情况下 `queue_limit` 是100000.
 
-更新配置前, 可以使用`mc admin config get`命令获取当前配置.
+更新配置前, 可以使用`oc admin config get`命令获取当前配置.
 
 ```sh
-$ mc admin config get myotterio/ notify_mysql
-notify_mysql:myinstance enable=off format=namespace host= port= username= password= database= dsn_string= table= queue_dir= queue_limit=0
+$ oc admin config get myotterio/ notify_mysql
+notify_mysql:myinstance enable=off format=namespace dsn_string= table= queue_dir= queue_limit=0 max_open_connections=2
 ```
 
-使用带有`dsn_string`参数的`mc admin config set`的命令更新MySQL的通知配置:
+使用带有`dsn_string`参数的`oc admin config set`的命令更新MySQL的通知配置:
 
 ```sh
-$ mc admin config set myotterio notify_mysql:myinstance table="otterio_images" dsn_string="root:xxxx@tcp(172.17.0.1:3306)/otteriodb"
+$ oc admin config set myotterio notify_mysql:myinstance enable=on table="otterio_images" dsn_string="otterio_events_user:${OTTERIO_MYSQL_PASSWORD}@tcp(127.0.0.1:3306)/otteriodb"
 ```
 
 请注意, 根据你的需要，你可以添加任意多个MySQL server endpoint，只要提供MySQL实例的标识符（如上例中的"myinstance"）和每个实例配置参数的信息即可。
 
-使用`mc admin config set`命令更新配置后，重启OtterIO Server让配置生效。 如果一切顺利，OtterIO Server会在启动时输出一行信息，类似 `SQS ARNs: arn:otterio:sqs::myinstance:mysql`。
+使用`oc admin config set`命令更新配置后，重启OtterIO Server让配置生效。 如果一切顺利，OtterIO Server会在启动时输出一行信息，类似 `SQS ARNs: arn:otterio:sqs::myinstance:mysql`。
 
 ### 第三步：使用OtterIO客户端启用bucket通知
 
@@ -534,38 +431,36 @@ $ mc admin config set myotterio notify_mysql:myinstance table="otterio_images" d
 
 要配置这种存储桶通知，我们需要用到前面步骤OtterIO输出的ARN信息。更多有关ARN的资料，请参考[这里](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)。
 
-有了`mc`这个工具，这些配置信息很容易就能添加上。假设咱们的OtterIO服务别名叫`myotterio`,可执行下列脚本：
+有了`oc`这个工具，这些配置信息很容易就能添加上。假设咱们的OtterIO服务别名叫`myotterio`,可执行下列脚本：
 
 ```
 # Create bucket named `images` in myotterio
-mc mb myotterio/images
+oc mb myotterio/images
 # Add notification configuration on the `images` bucket using the MySQL ARN. The --suffix argument filters events.
-mc event add myotterio/images arn:otterio:sqs::myinstance:mysql --suffix .jpg
+oc event add myotterio/images arn:otterio:sqs::myinstance:mysql --suffix .jpg --event put,delete
 # Print out the notification configuration on the `images` bucket.
-mc event list myotterio/images
-arn:otterio:sqs::myinstance:mysql s3:ObjectCreated:*,s3:ObjectRemoved:*,s3:ObjectAccessed:* Filter: suffix=”.jpg”
+oc event list myotterio/images
+arn:otterio:sqs::myinstance:mysql s3:ObjectCreated:*,s3:ObjectRemoved:* Filter: suffix=".jpg"
 ```
 
-### 第四步：验证MySQL
+### 第四步：验证 MySQL
 
-打开一个新的terminal终端并上传一张JPEG图片到`images` 存储桶。
+上传一张 JPEG 图片，用通知账户连接数据库并查询事件：
 
+```sh
+oc cp myphoto.jpg myotterio/images
+mysql -h 127.0.0.1 -P 3306 -u otterio_events_user -p otteriodb
 ```
-mc cp myphoto.jpg myotterio/images
+
+```sql
+SELECT key_name, JSON_UNQUOTE(JSON_EXTRACT(value, '$.Records[0].eventName')) AS event_name
+FROM otterio_images;
 ```
 
-打开一个MySQL终端列出表 `otterio_images` 中所有的记录。
-
-```
-$ mysql -h 172.17.0.1 -P 3306 -u root -p otteriodb
-mysql> select * from otterio_images;
-+--------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| key_name           | value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-+--------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| images/myphoto.jpg | {"Records": [{"s3": {"bucket": {"arn": "arn:aws:s3:::images", "name": "images", "ownerIdentity": {"principalId": "otterio"}}, "object": {"key": "myphoto.jpg", "eTag": "467886be95c8ecfd71a2900e3f461b4f", "size": 26, "sequencer": "14AC59476F809FD3"}, "configurationId": "Config", "s3SchemaVersion": "1.0"}, "awsRegion": "", "eventName": "s3:ObjectCreated:Put", "eventTime": "2017-03-16T11:29:00Z", "eventSource": "aws:s3", "eventVersion": "2.0", "userIdentity": {"principalId": "otterio"}, "responseElements": {"x-amz-request-id": "14AC59476F809FD3", "x-otterio-origin-endpoint": "http://192.168.86.110:9000"}, "requestParameters": {"sourceIPAddress": "127.0.0.1:38260"}}]} |
-+--------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-1 row in set (0.01 sec)
-
+```text
+key_name           | event_name
+-------------------+---------------------
+images/myphoto.jpg | s3:ObjectCreated:Put
 ```
 
 <a name="webhooks"></a>
@@ -609,14 +504,14 @@ OTTERIO_NOTIFY_WEBHOOK_CLIENT_KEY   (string)    client cert key for Webhook mTLS
 ```
 
 ```sh
-$ mc admin config get myotterio/ notify_webhook
+$ oc admin config get myotterio/ notify_webhook
 notify_webhook:1 endpoint="" auth_token="" queue_limit="0" queue_dir="" client_cert="" client_key=""
 ```
 
-用`mc admin config set` 命令更新配置. 在这endpoint是监听webhook通知的服务. 保存配置文件并重启OtterIO服务让配配置生效. 注意一下，在重启OtterIO时，这个endpoint必须是启动并且可访问到。
+用`oc admin config set` 命令更新配置. 在这endpoint是监听webhook通知的服务. 保存配置文件并重启OtterIO服务让配配置生效. 注意一下，在重启OtterIO时，这个endpoint必须是启动并且可访问到。
 
 ```sh
-$ mc admin config set myotterio notify_webhook:1 queue_limit="0"  endpoint="http://localhost:3000" queue_dir=""
+$ oc admin config set myotterio notify_webhook:1 enable=on queue_limit="0"  endpoint="http://localhost:3000" queue_dir=""
 ```
 
 ### 第二步：使用OtterIO客户端启用bucket通知
@@ -624,15 +519,14 @@ $ mc admin config set myotterio notify_webhook:1 queue_limit="0"  endpoint="http
 我们现在可以在一个叫`images`的存储桶上开启事件通知，一旦上有文件上传到存储桶中，事件将被触发。在这里，ARN的值是`arn:otterio:sqs::1:webhook`。更多有关ARN的资料，请参考[这里](http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html)。
 
 ```
-mc mb myotterio/images
-mc mb myotterio/images-thumbnail
-mc event add myotterio/images arn:otterio:sqs::1:webhook --event put --suffix .jpg
+oc mb myotterio/images
+oc event add myotterio/images arn:otterio:sqs::1:webhook --event put --suffix .jpg
 ```
 
 验证事件通知是否配置正确：
 
 ```
-mc event list myotterio/images
+oc event list myotterio/images
 ```
 
 你应该可以收到如下的响应：
@@ -641,32 +535,32 @@ mc event list myotterio/images
 arn:otterio:sqs::1:webhook   s3:ObjectCreated:*   Filter: suffix=".jpg"
 ```
 
-### 第三步：采用Thumbnailer进行验证
+### 第三步：使用本地 Webhook 接收器验证
 
-我们使用 [Thumbnailer](https://github.com/minio/thumbnailer) 来监听OtterIO通知。如果有文件上传于是OtterIO服务，Thumnailer监听到该通知，生成一个缩略图并上传到OtterIO服务。
-安装Thumbnailer:
+将以下内容保存为 `webhook_receiver.py`，在另一个终端运行 `python3 webhook_receiver.py`，然后执行第一步的目标配置。示例假定接收器与 OtterIO 位于同一台主机；容器或远程部署需要调整监听地址和目标地址。
 
-```
-git clone https://github.com/minio/thumbnailer/
-npm install
+```python
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import json
+
+class Receiver(BaseHTTPRequestHandler):
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
+
+    def do_POST(self):
+        body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+        print(json.dumps(json.loads(body), ensure_ascii=False, indent=2), flush=True)
+        self.send_response(200)
+        self.end_headers()
+
+HTTPServer(("127.0.0.1", 3000), Receiver).serve_forever()
 ```
 
-然后打开Thumbnailer的``config/webhook.json``配置文件，添加有关OtterIO server的配置，使用下面的方式启动Thumbnailer:
+上传一张 JPEG 图片，触发已配置的 `put` 事件：
 
-```
-NODE_ENV=webhook node thumbnail-webhook.js
-```
-
-Thumbnailer运行在``http://localhost:3000/``。下一步，配置OtterIO server,让其发送消息到这个URL（第一步提到的），并使用 ``mc`` 来设置存储桶通知（第二步提到的）。然后上传一张图片到OtterIO server:
-
-```
-mc cp ~/images.jpg myotterio/images
-.../images.jpg:  8.31 KB / 8.31 KB ┃▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓┃ 100.00% 59.42 KB/s 0s
+```sh
+oc cp ~/images.jpg myotterio/images
 ```
 
-稍等片刻，然后使用mc ls检查存储桶的内容 -，你将看到有个缩略图出现了。
-
-```
-mc ls myotterio/images-thumbnail
-[2017-02-08 11:39:40 IST]   992B images-thumbnail.jpg
-```
+接收器应打印 JSON，`Records` 中包含 `eventName: s3:ObjectCreated:Put`、存储桶 `images` 和上传对象的 key。接收到通知内容后才能确认投递成功，上传进度本身不能证明通知已送达。

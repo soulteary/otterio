@@ -10,9 +10,11 @@ against `minio/minio` after that date is treated as **potentially applicable
 to OtterIO until proven otherwise**, and is tracked in
 [`docs/security/upstream-cve-backlog.md`](docs/security/upstream-cve-backlog.md).
 
-**Backlog status (as of 2026-06): 14 closed, 2 not-applicable, 0 open.**
-New upstream advisories are triaged into the same table with status
-`Pending` and resolved on `main`.
+The linked backlog records each advisory's applicability, source-level fix and
+regression coverage. A `Done` or `Done (source)` entry does not establish that
+every published release or deployed binary contains the fix. New upstream
+advisories are added with status `Pending` and resolved on `main`; consult the
+rolling table rather than a historical closed-item count.
 
 As with any infrastructure component, adopters are expected to evaluate
 fitness against their own deployment context — workload profile, capacity
@@ -23,15 +25,23 @@ production.
 
 ## Supported versions
 
-The project currently ships from `main`. Public Docker images and source
-tarballs are snapshots of `main` and roll forward as security and
-compatibility fixes land — track `main` and rebuild when a relevant fix
-is merged.
+Security fixes land on `main` first. The `edge` container tag follows that
+development branch. Stable binaries and versioned container images are built
+from a fixed `RELEASE.*` tag; `latest` is updated separately by the stable
+promotion workflow. A fix merged to `main` is not evidence that a stable
+artifact contains it. Before upgrading, check the tagged source commit,
+checksums and image digest using the [release guide](docs/releasing.md).
+
+For production, pin a reviewed release tag or digest and monitor security
+announcements. If a needed fix is not released yet, evaluate an exact-commit
+build in staging or coordinate a release with the maintainer; do not treat a
+moving development tag as a stable release. The support policy below does not
+promise long-term maintenance for a particular tag.
 
 | Branch | Supported | Notes |
 | --- | --- | --- |
-| `main` | yes | All security fixes land here first. |
-| Tagged releases | best effort | Upgrade to the latest `main` for the fastest fix availability. |
+| `main` | yes | All security fixes land here first; development branch. |
+| Tagged releases | best effort | Check whether the selected tag contains the relevant fix; upgrade to a reviewed fixed release. |
 | Forks / vendored copies | no | The maintainers cannot patch unknown forks; please rebase. |
 
 ## Reporting a vulnerability
@@ -94,9 +104,10 @@ OtterIO 派生自 MinIO 最后一个 Apache 2.0 版本（约
 CVE / GHSA，**在被明确排除之前**都视为可能影响 OtterIO，相关清单维护在
 [`docs/security/upstream-cve-backlog.md`](docs/security/upstream-cve-backlog.md)。
 
-**当前积压清单状态（2026-06）：14 项已修复、2 项不适用、0 项待处理。**
-上游若有新公告，会以 `Pending` 状态滚动纳入同一张表，并在 `main` 上
-完成修复。
+公告清单逐项记录适用性、源码修复与回归覆盖。`Done` 或 `Done (source)`
+不代表每个正式版本或已部署二进制都包含修复。新公告会以 `Pending` 状态
+滚动纳入同一张表，并在 `main` 上完成修复；请查阅该清单，不以历史关闭总数
+判断当前部署状态。
 
 与任何基础设施组件一样，请结合自身部署场景做严谨的适用性评估：业务
 负载特征、容量与吞吐目标、合规与数据驻留要求，以及组织内部的变更
@@ -104,9 +115,15 @@ CVE / GHSA，**在被明确排除之前**都视为可能影响 OtterIO，相关�
 
 ### 受支持的版本
 
-项目目前从 `main` 分支出货。公开的 Docker 镜像与源码 tarball 是 `main`
-的快照，会随安全与兼容性修复持续滚动 —— 请直接跟随 `main`，并在相关
-修复合入后重新构建。
+安全修复首先合入 `main`，`edge` 容器标签跟随该开发分支。正式二进制与
+版本镜像从固定的 `RELEASE.*` 标签构建，`latest` 由独立的稳定版本晋升流程
+更新。修复合入 `main` 不代表正式产物已经包含它；升级前请按
+[发布指南](docs/releasing.md)核对标签源码提交、校验和与镜像摘要。
+
+生产部署应固定经过评审的版本标签或摘要，并关注安全公告。所需修复尚未发布时，
+可在测试环境评估固定提交的构建，或与维护者协调发布。滚动开发标签不能作为
+正式版本的依据。`main` 接收安全修复，正式标签按 best effort 维护，fork 或
+vendored 副本不受维护者支持；这不构成特定标签的长期维护承诺。
 
 ### 漏洞报告
 
