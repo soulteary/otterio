@@ -821,6 +821,11 @@ func (er erasureObjects) putObject(ctx context.Context, bucket string, object st
 			return ObjectInfo{}, NotImplemented{}
 		}
 		if readErr != nil && !isErrObjectNotFound(readErr) && !isErrVersionNotFound(readErr) {
+			if errors.Is(readErr, errErasureReadQuorum) {
+				// The upload cannot safely commit without the old metadata.
+				// Keep the overwrite protection and report the failed write.
+				return ObjectInfo{}, toObjectErr(errErasureWriteQuorum, bucket, object)
+			}
 			return ObjectInfo{}, readErr
 		}
 	}

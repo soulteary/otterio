@@ -488,6 +488,90 @@ func (d transitionFailCommitDisk) DeleteVersion(ctx context.Context, volume, obj
 	return d.StorageAPI.DeleteVersion(ctx, volume, object, fi, force)
 }
 
+func TestTransitionStorageOverwriteMetadataQuorum(t *testing.T) {
+	skipIfWindowsErasureExec(t)
+	ctx := context.Background()
+	obj, roots, err := prepareErasure(ctx, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer obj.Shutdown(ctx)
+	defer removeRoots(roots)
+	const bucket = "transition-overwrite-quorum"
+	if err = obj.MakeBucketWithLocation(ctx, bucket, BucketOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	disks := obj.(*erasureServerPools).serverPools[0].sets[0].getDisks()
+	for _, test := range []struct {
+		name   string
+		status string
+	}{
+		{name: "ordinary"},
+		{name: "pending", status: lifecycle.TransitionPending},
+		{name: "complete", status: lifecycle.TransitionComplete},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			data := []byte("retain original inline source")
+			source, err := obj.PutObject(ctx, bucket, test.name, mustGetPutObjReader(t, bytes.NewReader(data), int64(len(data)), "", ""), ObjectOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if test.status != "" {
+				source, err = obj.PutObjectMetadata(ctx, bucket, test.name, ObjectOptions{TransitionStatus: test.status, TransitionedObject: transitionStorageReference()})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			pristine, errs := readAllFileInfo(ctx, disks, bucket, test.name, "", true)
+			pristineBytes := make([][]byte, len(disks))
+			before := make([][]byte, len(disks))
+			for i, disk := range disks {
+				if errs[i] != nil {
+					t.Fatal(errs[i])
+				}
+				pristineBytes[i], err = disk.ReadAll(ctx, bucket, pathJoin(test.name, xlStorageFormatFile))
+				if err != nil {
+					t.Fatal(err)
+				}
+				// Every disk can write, but no two agree on the old snapshot.
+				// A successful write would discard an untrusted tier reference.
+				conflict := pristine[i]
+				conflict.Metadata = cloneMSS(conflict.Metadata)
+				conflict.Metadata["snapshot"] = fmt.Sprintf("disk-%d", i)
+				if err = disk.UpdateMetadata(ctx, bucket, test.name, conflict); err != nil {
+					t.Fatal(err)
+				}
+				before[i], err = disk.ReadAll(ctx, bucket, pathJoin(test.name, xlStorageFormatFile))
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err = obj.GetObjectInfo(ctx, bucket, test.name, ObjectOptions{}); !errors.Is(err, errErasureReadQuorum) {
+				t.Fatalf("conflicting fixture retained metadata quorum: %v", err)
+			}
+			replacement := []byte("replacement")
+			_, err = obj.PutObject(ctx, bucket, test.name, mustGetPutObjReader(t, bytes.NewReader(replacement), int64(len(replacement)), "", ""), ObjectOptions{})
+			var quorumErr InsufficientWriteQuorum
+			if !errors.As(err, &quorumErr) || quorumErr.Bucket != bucket || quorumErr.Object != test.name {
+				t.Fatalf("unsafe overwrite did not report the failed write: %v", err)
+			}
+			for i, disk := range disks {
+				after, readErr := disk.ReadAll(ctx, bucket, pathJoin(test.name, xlStorageFormatFile))
+				if readErr != nil || !bytes.Equal(before[i], after) {
+					t.Fatalf("rejected overwrite changed disk %d metadata or inline data: %v", i, readErr)
+				}
+				if err = disk.WriteAll(ctx, bucket, pathJoin(test.name, xlStorageFormatFile), pristineBytes[i]); err != nil {
+					t.Fatal(err)
+				}
+			}
+			retained, err := obj.GetObjectInfo(ctx, bucket, test.name, ObjectOptions{})
+			if err != nil || retained.ETag != source.ETag || retained.TransitionStatus != source.TransitionStatus || !reflect.DeepEqual(retained.TransitionedObject, source.TransitionedObject) {
+				t.Fatalf("rejected overwrite lost the source identity or tier reference: %+v / %v", retained, err)
+			}
+		})
+	}
+}
+
 func TestTransitionStorageErasureRestoreAndCAS(t *testing.T) {
 	skipIfWindowsErasureExec(t)
 	ctx := context.Background()
