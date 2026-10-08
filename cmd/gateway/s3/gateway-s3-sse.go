@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/minio/minio-go/v7/pkg/encrypt"
+	"github.com/soulteary/otterio-sdk/v7/pkg/encrypt"
 	otterio "github.com/soulteary/otterio/cmd"
 
 	"github.com/soulteary/otterio/cmd/logger"

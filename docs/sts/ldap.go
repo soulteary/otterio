@@ -26,8 +26,8 @@ import (
 	"log"
 	"net/url"
 
-	otterio "github.com/minio/minio-go/v7"
-	cr "github.com/minio/minio-go/v7/pkg/credentials"
+	otterio "github.com/soulteary/otterio-sdk/v7"
+	cr "github.com/soulteary/otterio-sdk/v7/pkg/credentials"
 )
 
 var (

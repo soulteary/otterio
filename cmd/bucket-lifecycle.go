@@ -27,8 +27,8 @@ import (
 	"sync"
 	"time"
 
-	otteriogo "github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/tags"
+	otteriogo "github.com/soulteary/otterio-sdk/v7"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	sse "github.com/soulteary/otterio/pkg/bucket/encryption"

@@ -57,8 +57,8 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
-	"github.com/minio/minio-go/v7/pkg/s3utils"
-	"github.com/minio/minio-go/v7/pkg/signer"
+	"github.com/soulteary/otterio-sdk/v7/pkg/s3utils"
+	"github.com/soulteary/otterio-sdk/v7/pkg/signer"
 	"github.com/soulteary/otterio/cmd/config"
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"

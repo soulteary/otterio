@@ -27,7 +27,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/cmd/rest"

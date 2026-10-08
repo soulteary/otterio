@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/minio/minio-go/v7/pkg/encrypt"
-	"github.com/minio/minio-go/v7/pkg/tags"
+	"github.com/soulteary/otterio-sdk/v7/pkg/encrypt"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	"github.com/soulteary/otterio/pkg/bucket/policy"
 	"github.com/soulteary/otterio/pkg/madmin"
 )

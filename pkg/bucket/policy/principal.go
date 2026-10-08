@@ -19,7 +19,7 @@ package policy
 import (
 	"encoding/json"
 
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/pkg/wildcard"
 )
 

@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/minio/simdjson-go"
+	"github.com/soulteary/otterio-kits/simdjson-go"
 	"github.com/soulteary/otterio/pkg/s3select/json"
 	"github.com/soulteary/otterio/pkg/s3select/sql"
 )

@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	otterio "github.com/minio/minio-go/v7"
+	otterio "github.com/soulteary/otterio-sdk/v7"
 )
 
 func TestParsePostPolicyForm(t *testing.T) {

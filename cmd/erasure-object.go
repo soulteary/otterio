@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/minio/minio-go/v7/pkg/tags"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/bucket/lifecycle"

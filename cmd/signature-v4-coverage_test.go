@@ -18,7 +18,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/minio/minio-go/v7/pkg/signer"
+	"github.com/soulteary/otterio-sdk/v7/pkg/signer"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 )
 

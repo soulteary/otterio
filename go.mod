@@ -35,11 +35,6 @@ require (
 	github.com/mattn/go-colorable v0.1.15
 	github.com/mattn/go-isatty v0.0.24
 	github.com/miekg/dns v1.1.73
-	github.com/minio/highwayhash v1.0.4
-	github.com/minio/minio-go/v7 v7.3.0
-	github.com/minio/sha256-simd v1.0.1
-	github.com/minio/simdjson-go v0.4.5
-	github.com/minio/sio v0.5.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/montanaflynn/stats v0.12.7
 	github.com/ncw/directio v1.0.5
@@ -53,6 +48,11 @@ require (
 	github.com/rjeczalik/notify v0.9.3
 	github.com/secure-io/sio-go v0.3.1
 	github.com/shirou/gopsutil/v3 v3.24.5
+	github.com/soulteary/otterio-kits/highwayhash v1.0.5
+	github.com/soulteary/otterio-kits/sha256-simd v1.0.2
+	github.com/soulteary/otterio-kits/simdjson-go v0.4.6
+	github.com/soulteary/otterio-kits/sio v0.5.2
+	github.com/soulteary/otterio-sdk/v7 v7.3.1
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/tinylib/msgp v1.6.5
@@ -99,8 +99,6 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20260802145828-341c2f0c90b5 // indirect
 	github.com/mailru/easyjson v0.9.2 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
-	github.com/minio/crc64nvme v1.1.1 // indirect
-	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
@@ -111,6 +109,8 @@ require (
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/shoenig/go-m1cpu v0.2.3 // indirect
+	github.com/soulteary/otterio-kits/crc64nvme v1.1.2 // indirect
+	github.com/soulteary/otterio-kits/md5-simd v1.1.3 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.2 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect

@@ -29,8 +29,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/minio/minio-go/v7/pkg/set"
-	"github.com/minio/minio-go/v7/pkg/tags"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	"github.com/soulteary/otterio/cmd/config/storageclass"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/madmin"

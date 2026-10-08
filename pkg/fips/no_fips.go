@@ -21,7 +21,7 @@ package fips
 import (
 	"crypto/tls"
 
-	"github.com/minio/sio"
+	"github.com/soulteary/otterio-kits/sio"
 )
 
 var enabled = false

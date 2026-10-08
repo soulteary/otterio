@@ -26,8 +26,8 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	otteriogopolicy "github.com/minio/minio-go/v7/pkg/policy"
-	"github.com/minio/minio-go/v7/pkg/tags"
+	otteriogopolicy "github.com/soulteary/otterio-sdk/v7/pkg/policy"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/bucket/policy"

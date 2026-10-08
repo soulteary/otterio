@@ -25,8 +25,8 @@ import (
 	"net/url"
 	"strings"
 
-	otterio "github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/tags"
+	otterio "github.com/soulteary/otterio-sdk/v7"
+	"github.com/soulteary/otterio-sdk/v7/pkg/tags"
 	"github.com/soulteary/otterio/cmd/config/dns"
 	"github.com/soulteary/otterio/cmd/crypto"
 	"github.com/soulteary/otterio/cmd/logger"

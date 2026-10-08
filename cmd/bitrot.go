@@ -24,7 +24,7 @@ import (
 	"hash"
 	"io"
 
-	"github.com/minio/highwayhash"
+	"github.com/soulteary/otterio-kits/highwayhash"
 	"github.com/soulteary/otterio/cmd/logger"
 	"golang.org/x/crypto/blake2b"
 )

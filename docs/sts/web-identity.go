@@ -37,8 +37,8 @@ import (
 
 	"golang.org/x/oauth2"
 
-	otterio "github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	otterio "github.com/soulteary/otterio-sdk/v7"
+	"github.com/soulteary/otterio-sdk/v7/pkg/credentials"
 	"github.com/soulteary/otterio/pkg/auth"
 )
 

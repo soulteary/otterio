@@ -28,8 +28,8 @@ import (
 	"testing"
 
 	"github.com/klauspost/cpuid/v2"
-	otterio "github.com/minio/minio-go/v7"
-	"github.com/minio/simdjson-go"
+	"github.com/soulteary/otterio-kits/simdjson-go"
+	otterio "github.com/soulteary/otterio-sdk/v7"
 )
 
 type testResponseWriter struct {

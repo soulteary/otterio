@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"testing"
 
-	otteriogopolicy "github.com/minio/minio-go/v7/pkg/policy"
-	"github.com/minio/minio-go/v7/pkg/set"
+	otteriogopolicy "github.com/soulteary/otterio-sdk/v7/pkg/policy"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/pkg/bucket/policy"
 	"github.com/soulteary/otterio/pkg/bucket/policy/condition"
 )

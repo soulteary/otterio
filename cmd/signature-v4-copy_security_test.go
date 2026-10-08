@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	s3signer "github.com/minio/minio-go/v7/pkg/signer"
+	s3signer "github.com/soulteary/otterio-sdk/v7/pkg/signer"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/pkg/auth"
 	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"

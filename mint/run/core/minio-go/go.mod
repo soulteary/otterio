@@ -2,4 +2,4 @@ module mint.minio.io/minio-go
 
 go 1.14
 
-require github.com/minio/minio-go/v7 v7.0.7 // indirect
+require github.com/soulteary/otterio-sdk/v7 v7.3.1 // indirect

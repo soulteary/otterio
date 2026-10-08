@@ -37,9 +37,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/minio/minio-go/v7/pkg/s3utils"
-	"github.com/minio/minio-go/v7/pkg/signer"
+	"github.com/soulteary/otterio-sdk/v7/pkg/credentials"
+	"github.com/soulteary/otterio-sdk/v7/pkg/s3utils"
+	"github.com/soulteary/otterio-sdk/v7/pkg/signer"
 	"golang.org/x/net/publicsuffix"
 )
 

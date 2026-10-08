@@ -20,7 +20,7 @@ Erasure code protects data from multiple drives failure, unlike RAID or replicat
 
 Bit Rot, also known as data rot or silent data corruption is a data loss issue faced by disk drives today. Data on the drive may silently get corrupted without signaling an error has occurred, making bit rot more dangerous than a permanent hard drive failure.
 
-OtterIO's erasure coded backend uses high speed [HighwayHash](https://github.com/minio/highwayhash) checksums to protect against Bit Rot.
+OtterIO's erasure coded backend uses high speed [HighwayHash](https://github.com/soulteary/otterio-kits/highwayhash) checksums to protect against Bit Rot.
 
 ## How are drives used for Erasure Code?
 

@@ -28,8 +28,8 @@ import (
 
 	humanize "github.com/dustin/go-humanize"
 	"github.com/klauspost/compress/zstd"
-	"github.com/minio/minio-go/v7/pkg/encrypt"
-	"github.com/minio/sio"
+	"github.com/soulteary/otterio-kits/sio"
+	"github.com/soulteary/otterio-sdk/v7/pkg/encrypt"
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 )

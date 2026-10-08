@@ -33,7 +33,7 @@ import (
 
 	"github.com/fatih/color"
 	dns2 "github.com/miekg/dns"
-	"github.com/minio/minio-go/v7/pkg/set"
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/config"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"

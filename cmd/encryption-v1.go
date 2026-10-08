@@ -31,7 +31,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/minio/sio"
+	"github.com/soulteary/otterio-kits/sio"
 	"github.com/soulteary/otterio/cmd/crypto"
 	xhttp "github.com/soulteary/otterio/cmd/http"
 	"github.com/soulteary/otterio/cmd/logger"
