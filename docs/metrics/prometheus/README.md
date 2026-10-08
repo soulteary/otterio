@@ -14,7 +14,7 @@ OtterIO exports Prometheus compatible data by default as an authorized endpoint 
     - [3. Configuring Prometheus](#3-configuring-prometheus)
         - [3.1 Authenticated Prometheus config](#31-authenticated-prometheus-config)
         - [3.2 Public Prometheus config](#32-public-prometheus-config)
-    - [4. Update `scrape_configs` section in prometheus.yml](#4-update-scrapeconfigs-section-in-prometheusyml)
+    - [4. Update `scrape_configs` section in prometheus.yml](#4-update-scrape_configs-section-in-prometheusyml)
     - [5. Start Prometheus](#5-start-prometheus)
     - [6. Configure Grafana](#6-configure-grafana)
 - [List of metrics exposed by OtterIO](#list-of-metrics-exposed-by-otterio)

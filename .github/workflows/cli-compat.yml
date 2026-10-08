@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: cli-compat-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   cli-contract:
     name: CLI contract (${{ matrix.os }})

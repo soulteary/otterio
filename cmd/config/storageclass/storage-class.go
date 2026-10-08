@@ -239,7 +239,7 @@ func validateParity(ssParity, rrsParity, setDriveCount int) (err error) {
 //
 //	is returned, the caller is expected to choose the right parity
 //	at that point.
-func (sCfg Config) GetParityForSC(sc string) (parity int) {
+func (sCfg *Config) GetParityForSC(sc string) (parity int) {
 	ConfigLock.RLock()
 	defer ConfigLock.RUnlock()
 	switch strings.TrimSpace(sc) {
@@ -255,7 +255,7 @@ func (sCfg Config) GetParityForSC(sc string) (parity int) {
 }
 
 // Update update storage-class with new config
-func (sCfg Config) Update(newCfg Config) {
+func (sCfg *Config) Update(newCfg Config) {
 	ConfigLock.Lock()
 	defer ConfigLock.Unlock()
 	sCfg.RRS = newCfg.RRS
@@ -264,10 +264,17 @@ func (sCfg Config) Update(newCfg Config) {
 }
 
 // GetDMA - returns DMA configuration.
-func (sCfg Config) GetDMA() string {
+func (sCfg *Config) GetDMA() string {
 	ConfigLock.RLock()
 	defer ConfigLock.RUnlock()
 	return sCfg.DMA
+}
+
+// Snapshot returns a copy of the storage-class configuration under the read lock.
+func (sCfg *Config) Snapshot() Config {
+	ConfigLock.RLock()
+	defer ConfigLock.RUnlock()
+	return *sCfg
 }
 
 // Enabled returns if etcd is enabled.

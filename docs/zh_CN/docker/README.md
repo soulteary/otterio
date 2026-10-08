@@ -1,180 +1,114 @@
 # OtterIO Docker 快速入门
 
-## 前提条件
-您的机器已经安装docker. 从 [这里](https://www.docker.com/community-edition#/download)下载相关软件。
+[文档索引](../README.md) · [English](../../docker/README.md)
 
-## 拉取 OtterIO 镜像
-OtterIO 同时把官方容器镜像发布到 Docker Hub 和 GitHub 容器镜像仓库（GHCR），按需任选其一拉取：
+## 环境与镜像
+
+安装 [Docker Engine](https://docs.docker.com/engine/install/) 或启用 Linux 容器的 Docker Desktop。OtterIO 发布的容器镜像是 Linux 镜像，在 macOS 和 Windows 上也通过 Linux 容器运行。发布流程构建 Linux amd64、arm64 与 ppc64le 镜像。
+
+可选择 Docker Hub 或 GitHub Container Registry（GHCR）：
 
 ```sh
-# Docker Hub
 docker pull soulteary/otterio:latest
-
-# GitHub 容器镜像仓库（GHCR）
+# 也可选择：
 docker pull ghcr.io/soulteary/otterio:latest
 ```
 
-下面的示例统一使用 `soulteary/otterio:latest`，凡是出现镜像名的地方都可以替换为 `ghcr.io/soulteary/otterio:latest`。
+下文使用 `soulteary/otterio:latest` 进行本地体验。实际部署请固定经过审核的版本标签或摘要，见[发布验证步骤](../../releasing.md#4-verify-before-announcing)。使用 GHCR 时，替换下面的镜像名称即可。
 
-## 在Docker中运行OtterIO单点模式。
-OtterIO 需要一个持久卷来存储配置和应用数据。不过, 如果只是为了测试一下, 您可以通过简单地传递一个目录（在下面的示例中为`/ data`）启动OtterIO。这个目录会在容器启动时在容器的文件系统中创建，不过所有的数据都会在容器退出时丢失。
+## 启动带持久存储的本地服务
+
+首次设置非默认凭据后，请安全保存。Unix 下生成密码的命令依赖 OpenSSL；重启或连接客户端时，应继续使用同一组凭据。
+
+### Linux 与 macOS
 
 ```sh
-docker run -p 9000:9000 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  soulteary/otterio:latest server /data
+export OTTERIO_ROOT_USER=otterio-admin
+OTTERIO_ROOT_PASSWORD="$(openssl rand -hex 32)"
+export OTTERIO_ROOT_PASSWORD
+
+docker volume create otterio-data
+docker run -d --name otterio \
+  -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
+  --mount source=otterio-data,target=/data \
+  soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-要创建具有永久存储的OtterIO容器，您需要将本地持久目录从主机操作系统映射到虚拟配置`~/.otterio` 并导出`/data`目录。 为此，请运行以下命令
+### Windows PowerShell 7.1 或更新版本
 
-#### GNU/Linux 和 macOS
-```sh
-docker run -p 9000:9000 \
-  --name otterio1 \
-  -v /mnt/data:/data \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  soulteary/otterio:latest server /data
-```
-
-#### Windows
-```sh
-docker run -p 9000:9000 \
-  --name otterio1 \
-  -v D:\data:/data \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  soulteary/otterio:latest server /data
-```
-
-## 在Docker中运行OtterIO分布式模式
-分布式OtterIO可以通过 [Docker Compose](https://docs.min.io/cn/deploy-minio-on-docker-compose) 或者 [Swarm mode](https://docs.min.io/cn/deploy-minio-on-docker-swarm)进行部署。这两者之间的主要区别是Docker Compose创建了单个主机，多容器部署，而Swarm模式创建了一个多主机，多容器部署。
-
-这意味着Docker Compose可以让你快速的在你的机器上快速使用分布式OtterIO-非常适合开发，测试环境；而Swarm模式提供了更健壮，生产级别的部署。
-
-## OtterIO Docker提示
-
-### OtterIO自定义Access和Secret密钥
-要覆盖OtterIO的自动生成的密钥，您可以将Access和Secret密钥设为环境变量。 OtterIO允许常规字符串作为Access和Secret密钥。
-
-#### GNU/Linux 和 macOS
-```sh
-docker run -p 9000:9000 --name otterio1 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  -v /mnt/data:/data \
-  soulteary/otterio:latest server /data
-```
-
-#### Windows
-```powershell
-docker run -p 9000:9000 --name otterio1 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  -v D:\data:/data \
-  soulteary/otterio:latest server /data
-```
-
-### 以普通用户身份运行OtterIO Docker
-Docker提供了标准化的机制，可以以非root用户身份运行docker容器。
-
-#### GNU/Linux 和 macOS
-在 Linux 和 macOS 上， 你可以使用 `--user` 以普通用户身份来运行容器。
-
-> 注意: 在使用`--user`前，一定要确保--user指定的用户具备 *${HOME}/data* 的写入权限。
-```sh
-mkdir -p ${HOME}/data
-docker run -p 9000:9000 \
-  --user $(id -u):$(id -g) \
-  --name otterio1 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
-  -v ${HOME}/data:/data \
-  soulteary/otterio:latest server /data
-```
-
-#### Windows
-在windows上， 你需要用到 [Docker集成Windows身份验证](https://success.docker.com/article/modernizing-traditional-dot-net-applications#integratedwindowsauthentication) 和 [创建具有Active Directory支持的容器](https://blogs.msdn.microsoft.com/containerstuff/2017/01/30/create-a-container-with-active-directory-support/) 的能力
-
-> 注意: 在使用`credentialspec=`时，要确保你的AD/Windows用户具备 *D:\data* 的写入权限。
+输入为本次部署保存的非默认凭据。命名卷可避免 Windows 与 Linux 主机路径的差异：
 
 ```powershell
-docker run -p 9000:9000 \
-  --name otterio1 \
-  --security-opt "credentialspec=file://myuser.json"
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
-  -v D:\data:/data \
-  soulteary/otterio:latest server /data
+$env:OTTERIO_ROOT_USER = Read-Host 'Root username'
+$env:OTTERIO_ROOT_PASSWORD = Read-Host 'Root password' -MaskInput
+
+docker volume create otterio-data
+docker run -d --name otterio `
+  -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 `
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD `
+  --mount source=otterio-data,target=/data `
+  soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-### 使用Docker secrets进行OtterIO Access和Secret密钥自定义
-要覆盖OtterIO的自动生成的密钥,你可以把secret和access秘钥创建成[Docker secrets](https://docs.docker.com/engine/swarm/secrets/). OtterIO允许常规字符串作为Access和Secret密钥。
+S3 端点为 <http://127.0.0.1:9000>，控制台及管理端点为 <http://127.0.0.1:9001>，请使用已配置的凭据登录。通过 OC [验证上传与下载](../../../README_zh_CN.md#验证部署)，同一别名可保存两个端点。
 
-```
-echo "AKIAIOSFODNN7EXAMPLE" | docker secret create access_key -
-echo "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" | docker secret create secret_key -
+命名卷不会随容器删除。重新创建容器时，应使用同一数据卷与凭据。临时测试可去掉 `--mount` 和 `-d`，加上 `--rm`；Docker 会在删除该容器时清理匿名数据卷。若已有实例运行，请使用不同容器名和空闲端口。
+
+## 凭据、密钥文件与非 root 运行
+
+镜像入口脚本会拒绝缺失、不完整或默认的凭据。`OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD` 作为一组优先于旧的 `OTTERIO_ACCESS_KEY` 和 `OTTERIO_SECRET_KEY`，不要各取一半混用。
+
+使用密钥文件时，将 `OTTERIO_ROOT_USER_FILE` 和／或 `OTTERIO_ROOT_PASSWORD_FILE` 指向容器内可读、非空的普通文件。绝对路径会强制检查文件是否存在。同一凭据同时设置非空环境值和已存在的 `_FILE` 文件会报错。这些变量由容器入口脚本读取，裸金属二进制不读取它们。
+
+非 root 本地部署请使用仓库中的[安全 Compose 配置](../../../README_DOCKER_SECURITY.md)与 [docker-compose.secure.yml](../../../docker-compose.secure.yml)，其中说明了固定 UID/GID 的权限、密码文件挂载与重启升级注意事项。若使用 `docker run --user` 配合主机目录挂载，请先确保所选数字 UID/GID 能写入该目录。Windows 容器的 Active Directory 凭据规格不适用于这些 Linux 镜像。
+
+### Docker Swarm secrets
+
+在已初始化的 Swarm 上，下面的 Unix shell 示例用已保存的凭据创建密钥并启动一个服务。示例不发布端口；请另行配置私有服务网络或适当的入口。
+
+```sh
+: "${OTTERIO_ROOT_USER:?请先设置已保存的用户名}"
+: "${OTTERIO_ROOT_PASSWORD:?请先设置已保存的密码}"
+printf '%s' "$OTTERIO_ROOT_USER" | docker secret create otterio-root-user -
+printf '%s' "$OTTERIO_ROOT_PASSWORD" | docker secret create otterio-root-password -
+
+docker service create --name otterio \
+  --secret otterio-root-user --secret otterio-root-password \
+  --env OTTERIO_ROOT_USER_FILE=/run/secrets/otterio-root-user \
+  --env OTTERIO_ROOT_PASSWORD_FILE=/run/secrets/otterio-root-password \
+  --mount type=volume,source=otterio-data,target=/data \
+  soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-使用`docker service`创建OtterIO服务，并读取Docker secrets。
-```
-docker service create --name="otterio-service" --secret="access_key" --secret="secret_key" soulteary/otterio:latest server /data
-```
+密钥生命周期见 [Docker Swarm secrets 指南](https://docs.docker.com/engine/swarm/secrets/)。这不是分布式存储部署。本地卷属于单个节点，重新调度服务前应处理好节点与存储位置的关系。存储拓扑见[分布式部署](../distributed/README.md)和[纠删码](../erasure/README.md)。
 
-更多 `docker service`信息，请访问 [这里](https://docs.docker.com/engine/swarm/how-swarm-mode-works/services/)
-
-#### 自定义OtterIO Access和Secret密钥文件
-要使用其他密钥名称，请把上面的`access_key` 和 `secret_key`替换为你自定义的名称(比如`my_secret_key`,`my_custom_key`)。使用如下命令运行服务
-```
-docker service create --name="otterio-service" \
-  --secret="my_access_key" \
-  --secret="my_secret_key" \
-  --env="OTTERIO_ROOT_USER_FILE=my_access_key" \
-  --env="OTTERIO_ROOT_PASSWORD_FILE=my_secret_key" \
-  soulteary/otterio:latest server /data
-```
-
-### 获取容器ID
-在容器中使用Docker命令, 你需要知道这个容器的 `容器ID` 。 为了获取 `Container ID`, 运行
+## 查看状态与重启
 
 ```sh
 docker ps -a
+docker logs otterio
+docker stats otterio
+docker stop otterio
+docker start otterio
 ```
 
-`-a` flag 确保你获取所有的容器(创建的，正在运行的，退出的)，然后从输出中识别`Container ID`。
+`docker start` 沿用已有容器的环境与挂载。修改终端中的凭据不会改变已有容器；需要以预期环境重新创建容器，并复用原数据卷。升级或删除数据卷前应先备份。
 
-### 启动和停止容器
-启动容器,你可以使用 [`docker start`](https://docs.docker.com/engine/reference/commandline/start/) 命令。
+## 从当前工作目录构建镜像
+
+根目录的 `Dockerfile` 编译传入的构建上下文，包括本地修改。在克隆的仓库中运行：
 
 ```sh
-docker start <container_id>
+docker build --build-arg VCS_REF="$(git rev-parse HEAD)" -t otterio:local .
 ```
 
-停止一下正在运行的容器, 使用 [`docker stop`](https://docs.docker.com/engine/reference/commandline/stop/) 命令。
-```sh
-docker stop <container_id>
-```
+将启动示例中的镜像替换为 `otterio:local` 即可。`make docker` 则先构建主机二进制，再通过 `Dockerfile.dev` 复制到镜像，二进制必须匹配容器的 Linux 架构。发布流程使用 `Dockerfile.ci` 与预编译发行二进制；`Dockerfile.release` 克隆远程源码，不构建本地修改。
 
-### OtterIO容器日志
-获取OtterIO日志，使用 [`docker logs`](https://docs.docker.com/engine/reference/commandline/logs/) 命令。
+## 继续阅读
 
-```sh
-docker logs <container_id>
-```
-
-### 监控OtterioDocker容器
-监控OtterIO容器使用的资源,使用 [`docker stats`](https://docs.docker.com/engine/reference/commandline/stats/) 命令.
-
-```sh
-docker stats <container_id>
-```
-
-## 了解更多
-
-
-* [在Docker Compose上部署OtterIO](https://docs.min.io/cn/deploy-minio-on-docker-compose)
-* [在Docker Swarm上部署OtterIO](https://docs.min.io/cn/deploy-minio-on-docker-swarm)
-* [分布式OtterIO快速入门](https://docs.min.io/cn/distributed-minio-quickstart-guide)
-* [OtterIO纠删码模式快速入门](https://docs.min.io/cn/minio-erasure-code-quickstart-guide)
-
+- [容器凭据迁移与安全 Compose 配置](../../../README_DOCKER_SECURITY.md)
+- [分布式部署](../distributed/README.md)与[纠删码](../erasure/README.md)
+- [TLS](../tls/README.md)，包括证书挂载
+- [OC 配置与独立管理端点](https://github.com/soulteary/oc/blob/main/docs/zh_CN/configuration.md)
+- [历史编排示例](../orchestration/README.md)：使用前应按当前服务核对镜像、凭据和拓扑

@@ -16,7 +16,7 @@ English · [简体中文](./README_zh_CN.md)
 
 OtterIO is a high-performance, S3-compatible object storage server. It is suitable for building infrastructure for machine learning, analytics, backup, and general application data workloads.
 
-This README covers running OtterIO on bare metal, Docker, and from source. For deeper topics (erasure coding, distributed mode, KMS, replication, etc.) see the [`docs/`](./docs) folder.
+This README covers running OtterIO on bare metal, Docker, and from source. The [documentation index](./docs/README.md) links deployment, administration, security, and development guides; [OC](https://github.com/soulteary/oc) is the companion CLI, and [OtterIO SDK](https://github.com/soulteary/otterio-sdk) is the Go client.
 
 > [!IMPORTANT]
 > OtterIO is an independent, community-maintained fork of the upstream Apache-licensed MinIO codebase. It is **not** affiliated with, endorsed by, or sponsored by MinIO, Inc. See [Trademark & Upstream Notice](#trademark--upstream-notice) and the [Security Advisory](#security-advisory) before deploying.
@@ -52,7 +52,7 @@ docker run -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
   soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-The console is at <http://127.0.0.1:9001>; sign in with the credentials you configured, not a default password. See [Verify](#verify) for `mc` setup.
+The console is at <http://127.0.0.1:9001>; sign in with the credentials you configured. See [Verify](#verify) to connect OC and check an upload and download.
 
 > [!IMPORTANT]
 > Container startup now rejects missing or default credentials. Older no-credential Docker examples must be updated before upgrading. For `_FILE` secrets, a non-root Compose profile, and migration instructions, see [Docker security](./README_DOCKER_SECURITY.md). Only an explicit local-development opt-in, `OTTERIO_ALLOW_DEFAULT_CREDENTIALS=1`, permits default credentials; keep such demos bound to loopback. Production deployments should pin a reviewed release tag or digest instead of `latest`.
@@ -81,13 +81,13 @@ docker pull ghcr.io/soulteary/otterio:latest
 | `latest` | Latest stable release.                                   |
 | `edge`   | Bleeding-edge build from `main` — for testing only.      |
 
-Run a standalone server with an ephemeral volume, using the credentials configured in [Quick Start](#quick-start):
+For disposable testing, run a standalone server with an anonymous data volume, using the credentials configured in [Quick Start](#quick-start). `--rm` removes the container and its anonymous volume when it stops:
 
 ```sh
 : "${OTTERIO_ROOT_USER:?Set your saved username first}"
 : "${OTTERIO_ROOT_PASSWORD:?Set your saved password first}"
 export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
-docker run -p 127.0.0.1:9000:9000 \
+docker run --rm -p 127.0.0.1:9000:9000 \
   -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
   soulteary/otterio:latest server /data
 ```
@@ -105,37 +105,29 @@ docker run -p 127.0.0.1:9000:9000 \
 
 ### macOS
 
-#### Homebrew (recommended)
+Download `otterio-darwin-arm64` for Apple Silicon or `otterio-darwin-amd64` for Intel from [GitHub Releases](https://github.com/soulteary/otterio/releases), together with that release's `otterio-<TAG>-checksums.txt`. These are raw binaries, not archives. Check the selected binary against its entry with `shasum -a 256`; see [release verification](./docs/releasing.md#4-verify-before-announcing). For Apple Silicon:
 
 ```sh
-brew install otterio/stable/otterio
-otterio server /data
-```
-
-If you previously installed OtterIO from a different tap, reinstall from the official tap:
-
-```sh
-brew uninstall otterio
-brew install otterio/stable/otterio
-```
-
-#### Binary
-
-Pre-built macOS binaries are published on [GitHub Releases](https://github.com/soulteary/otterio/releases). Download the appropriate archive, then:
-
-```sh
+mv otterio-darwin-arm64 otterio
 chmod +x otterio
-./otterio server /data
+mkdir -p "$HOME/otterio-data"
+./otterio server "$HOME/otterio-data"
 ```
+
+Set and export your saved `OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD` before starting the binary, as in [Quick Start](#quick-start). The release workflow does not publish a Homebrew tap.
 
 ### Linux
 
-Pre-built Linux binaries are published on [GitHub Releases](https://github.com/soulteary/otterio/releases). Download the asset that matches your architecture and run it as `otterio`:
+Download the `otterio-linux-<arch>` binary and `otterio-<TAG>-checksums.txt` from the same [GitHub Release](https://github.com/soulteary/otterio/releases). Verify the selected binary against its entry with `sha256sum`, then rename it to `otterio`. For an amd64 host:
 
 ```sh
+mv otterio-linux-amd64 otterio
 chmod +x otterio
-./otterio server /data
+mkdir -p "$HOME/otterio-data"
+./otterio server "$HOME/otterio-data"
 ```
+
+Export your saved root credentials before starting the binary. See [release verification](./docs/releasing.md#4-verify-before-announcing) for checksum details.
 
 The release pipeline ([`release.yml`](./.github/workflows/release.yml)) currently produces Linux binaries for the following architectures:
 
@@ -149,11 +141,18 @@ The tag-driven workflow publishes raw binaries and SHA-256 checksums; it does no
 
 ### Windows
 
-Pre-built Windows binaries (`amd64`) are published on [GitHub Releases](https://github.com/soulteary/otterio/releases). After downloading `otterio.exe`, run it from the directory where it lives, or add that directory to the system `PATH`:
+Download `otterio-windows-amd64.exe` and `otterio-<TAG>-checksums.txt` from the same [GitHub Release](https://github.com/soulteary/otterio/releases). Compare `(Get-FileHash .\otterio-windows-amd64.exe -Algorithm SHA256).Hash` with its checksum entry, then run it in PowerShell:
 
 ```powershell
-otterio.exe server D:\
+Rename-Item .\otterio-windows-amd64.exe otterio.exe
+# Set these to the same non-default credentials you saved for this deployment.
+$env:OTTERIO_ROOT_USER = Read-Host 'Root username'
+$env:OTTERIO_ROOT_PASSWORD = Read-Host 'Root password' -MaskInput
+New-Item -ItemType Directory -Force D:\otterio-data | Out-Null
+.\otterio.exe server D:\otterio-data
 ```
+
+[`Read-Host -MaskInput`](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/read-host#-maskinput) requires PowerShell 7.1 or newer. You can also supply the environment variables from your secret manager.
 
 ### FreeBSD
 
@@ -161,13 +160,14 @@ OtterIO does not currently provide an official FreeBSD package. Build from sourc
 
 ### Build from Source
 
-Source builds are intended for developers and advanced users. Make sure you have a working Go toolchain (Go 1.27.1 or newer — see [How to install Go](https://go.dev/doc/install)).
+Source builds are intended for developers and advanced users. Install Git, Make, and Go 1.27.1 or newer (see [How to install Go](https://go.dev/doc/install)); `make build` checks dependencies and builds `./otterio`. Export your saved root credentials before running it.
 
 ```sh
 git clone https://github.com/soulteary/otterio.git
 cd otterio
 make build
-./otterio server /data
+mkdir -p "$HOME/otterio-data"
+./otterio server "$HOME/otterio-data"
 ```
 
 > [!WARNING]
@@ -200,7 +200,7 @@ When the dedicated console listener is enabled:
 - `Ctrl+C` / `SIGTERM` shuts down both listeners gracefully.
 
 > [!NOTE]
-> The admin API (used by `mc admin ...`) is served from the console port in this mode. Configure your `mc` alias to point at the console URL when issuing admin commands. Regular S3 operations (`mc cp`, `mc ls`, etc.) continue to use the S3 port.
+> The admin API (used by `oc admin ...`) is served from the console port in this mode. OC keeps the S3 URL and an independent `--admin-url` in one alias; see [Verify](#verify). Regular S3 operations (`oc cp`, `oc ls`, etc.) continue to use the S3 port. Private CAs can be configured independently for each endpoint; see [OC configuration](https://github.com/soulteary/oc/blob/main/docs/configuration.md).
 
 If `--console-address` is not provided, both surfaces share a single port (the original behaviour).
 
@@ -281,20 +281,25 @@ Use the credentials configured at startup. The Docker examples above pass `OTTER
 
 For the Quick Start's split listeners, open <http://127.0.0.1:9001>; for a single listener, open <http://127.0.0.1:9000>. Log in with your configured root username and password to create buckets, upload objects, and browse contents.
 
-### `mc` client
+### OC client
 
-`mc` is a modern command-line client that speaks S3 and local filesystem URIs (similar to `ls`, `cp`, `mirror`, `diff`, etc.). Configure an alias against your OtterIO endpoint:
+Install [OC](https://github.com/soulteary/oc/blob/main/docs/installation.md), the companion client for S3 operations and OtterIO administration. The following example uses the Quick Start's two ports. When OC prompts, enter the root username and password used to start OtterIO:
 
 ```sh
-: "${OTTERIO_ROOT_USER:?Set the username used to start OtterIO}"
-: "${OTTERIO_ROOT_PASSWORD:?Set the password used to start OtterIO}"
-mc alias set local http://127.0.0.1:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD"
-mc mb local/test-bucket
-mc cp ./somefile local/test-bucket/
-mc ls local/test-bucket/
+oc alias set local http://127.0.0.1:9000 \
+  --api s3v4 --path on --admin-url http://127.0.0.1:9001
+oc mb local/otterio-quickstart
+printf 'Hello from OtterIO\n' > otterio-hello.txt
+oc cp otterio-hello.txt local/otterio-quickstart/hello.txt
+oc cp local/otterio-quickstart/hello.txt otterio-downloaded.txt
+cmp otterio-hello.txt otterio-downloaded.txt
+oc ls local/otterio-quickstart/
+oc admin info local
 ```
 
-OtterIO is wire-compatible with the AWS S3 API, so `aws-cli`, `s3cmd`, and the various AWS SDKs all work out of the box — point them at your OtterIO endpoint with the root credentials (or an IAM-issued access key).
+`cmp` exits successfully when the downloaded bytes match. The example creates a bucket and two local files; choose another bucket name if you already used it. For a single-port server, omit `--admin-url`. For applications, use an IAM-issued access key with the required permissions instead of the root credentials.
+
+[OtterIO SDK](https://github.com/soulteary/otterio-sdk) provides the Go client and a working upload example. Other S3 clients such as `aws-cli`, `s3cmd`, and upstream `mc` can target the S3 endpoint, subject to the features and signing behavior your workload needs. OtterIO's management API uses `/otterio/admin/v3`; upstream `mc admin` targets a different path, so use OC for administration.
 
 ---
 
@@ -302,6 +307,8 @@ OtterIO is wire-compatible with the AWS S3 API, so `aws-cli`, `s3cmd`, and the v
 
 ### Project documentation (this repository)
 
+- [Documentation index](./docs/README.md) · [中文文档索引](./docs/zh_CN/README.md)
+- [OC command-line client](https://github.com/soulteary/oc) · [Go SDK](https://github.com/soulteary/otterio-sdk)
 - [Erasure Coding](./docs/erasure/README.md)
 - [Distributed mode](./docs/distributed/README.md)
 - [Multi-user / IAM](./docs/multi-user/README.md)
@@ -384,7 +391,7 @@ OtterIO is an independent, community-maintained fork of the upstream Apache-lice
 
 OtterIO is based on the **last Apache License 2.0 release of MinIO**, prior to MinIO's relicensing to the GNU AGPLv3, and remains distributed under the [Apache License, Version 2.0](./LICENSE). The original copyright notices of MinIO, Inc. and all third-party subcomponents are retained — see [`NOTICE`](./NOTICE).
 
-OtterIO publishes its own container images at `soulteary/otterio` (Docker Hub) and `ghcr.io/soulteary/otterio` (GitHub Container Registry). Other links in this guide pointing to `docs.min.io`, `dl.min.io`, etc. still refer to the **original upstream project**, not to OtterIO. Build OtterIO from source (see [Build from Source](#build-from-source)) to use the OtterIO customizations.
+OtterIO publishes its own binaries on [GitHub Releases](https://github.com/soulteary/otterio/releases) and container images at `soulteary/otterio` (Docker Hub) and `ghcr.io/soulteary/otterio` (GitHub Container Registry). Use these OtterIO artifacts or [build from source](#build-from-source) to get the fork's customizations. Links to `docs.min.io`, `dl.min.io`, etc. refer to the **original upstream project**.
 
 Project home: <https://github.com/soulteary/otterio>
 

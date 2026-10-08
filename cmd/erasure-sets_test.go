@@ -21,11 +21,37 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 var testUUID = uuid.MustParse("f5c58c61-7175-4018-ab5e-a94fe9c2de4e")
+
+type monitorAccessDisk struct {
+	StorageAPI
+	accesses int
+}
+
+func (d *monitorAccessDisk) IsOnline() bool {
+	d.accesses++
+	return false
+}
+
+func TestMonitorAndConnectEndpointsCanceled(t *testing.T) {
+	disk := &monitorAccessDisk{}
+	sets := &erasureSets{
+		setCount:      1,
+		setDriveCount: 1,
+		erasureDisks:  [][]StorageAPI{{disk}},
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	sets.monitorAndConnectEndpoints(ctx, time.Second)
+	if disk.accesses != 0 {
+		t.Fatalf("Canceled monitor accessed disks %d times", disk.accesses)
+	}
+}
 
 func BenchmarkCrcHash(b *testing.B) {
 	cases := []struct {

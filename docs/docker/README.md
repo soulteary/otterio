@@ -1,183 +1,114 @@
 # OtterIO Docker Quickstart Guide
 
-## Prerequisites
-Docker installed on your machine. Download the relevant installer from [here](https://www.docker.com/community-edition#/download).
+[Documentation index](../README.md) · [简体中文](../zh_CN/docker/README.md)
 
-## Pull the OtterIO Image
-OtterIO publishes official container images to both Docker Hub and the GitHub Container Registry (GHCR). Pull whichever registry is most convenient:
+## Prerequisites and images
+
+Install [Docker Engine](https://docs.docker.com/engine/install/) or Docker Desktop with Linux containers enabled. OtterIO's published container images are Linux images, including when run from macOS or Windows. The release workflow builds Linux amd64, arm64 and ppc64le images.
+
+Choose Docker Hub or the GitHub Container Registry (GHCR):
 
 ```sh
-# Docker Hub
 docker pull soulteary/otterio:latest
-
-# GitHub Container Registry (GHCR)
+# Alternative registry:
 docker pull ghcr.io/soulteary/otterio:latest
 ```
 
-The examples below use `soulteary/otterio:latest`; you can substitute `ghcr.io/soulteary/otterio:latest` anywhere the image name appears.
+The examples use `soulteary/otterio:latest` for local evaluation. For deployments, select a reviewed release tag or digest; see [release verification](../releasing.md#4-verify-before-announcing). Substitute the GHCR name anywhere below if you use that registry.
 
-## Run Standalone OtterIO on Docker.
-OtterIO needs a persistent volume to store configuration and application data. However, for testing purposes, you can launch OtterIO by simply passing a directory (`/data` in the example below). This directory gets created in the container filesystem at the time of container start. But all the data is lost after container exits.
+## Start a persistent local server
+
+Set a non-default credential pair once and save it securely. The Unix password-generation command requires OpenSSL. Reuse the same credentials when restarting the server or connecting a client.
+
+### Linux and macOS
 
 ```sh
-docker run -p 9000:9000 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  soulteary/otterio:latest server /data
+export OTTERIO_ROOT_USER=otterio-admin
+OTTERIO_ROOT_PASSWORD="$(openssl rand -hex 32)"
+export OTTERIO_ROOT_PASSWORD
+
+docker volume create otterio-data
+docker run -d --name otterio \
+  -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
+  --mount source=otterio-data,target=/data \
+  soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-To create a OtterIO container with persistent storage, you need to map local persistent directories from the host OS to virtual config `~/.otterio` and export `/data` directories. To do this, run the below commands
+### Windows PowerShell 7.1 or newer
 
-#### GNU/Linux and macOS
-```sh
-docker run -p 9000:9000 \
-  --name otterio1 \
-  -v /mnt/data:/data \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  soulteary/otterio:latest server /data
-```
-
-#### Windows
-```sh
-docker run -p 9000:9000 \
-  --name otterio1 \
-  -v D:\data:/data \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  soulteary/otterio:latest server /data
-```
-
-## Run Distributed OtterIO on Docker
-Distributed OtterIO can be deployed via [Docker Compose](https://docs.min.io/docs/deploy-minio-on-docker-compose) or [Swarm mode](https://docs.min.io/docs/deploy-minio-on-docker-swarm). The major difference between these two being, Docker Compose creates a single host, multi-container deployment, while Swarm mode creates a multi-host, multi-container deployment.
-
-This means Docker Compose lets you quickly get started with Distributed OtterIO on your computer - ideal for development, testing, staging environments. While deploying Distributed OtterIO on Swarm offers a more robust, production level deployment.
-
-## OtterIO Docker Tips
-
-### OtterIO Custom Access and Secret Keys
-To override OtterIO's auto-generated keys, you may pass secret and access keys explicitly as environment variables. OtterIO server also allows regular strings as access and secret keys.
-
-#### GNU/Linux and macOS
-```sh
-docker run -p 9000:9000 --name otterio1 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  -v /mnt/data:/data \
-  soulteary/otterio:latest server /data
-```
-
-#### Windows
-```powershell
-docker run -p 9000:9000 --name otterio1 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  -v D:\data:/data \
-  soulteary/otterio:latest server /data
-```
-
-### Run OtterIO Docker as a regular user
-Docker provides standardized mechanisms to run docker containers as non-root users.
-
-#### GNU/Linux and macOS
-On Linux and macOS you can use `--user` to run the container as regular user.
-
-> NOTE: make sure --user has write permission to *${HOME}/data* prior to using `--user`.
-```sh
-mkdir -p ${HOME}/data
-docker run -p 9000:9000 \
-  --user $(id -u):$(id -g) \
-  --name otterio1 \
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
-  -v ${HOME}/data:/data \
-  soulteary/otterio:latest server /data
-```
-
-#### Windows
-On windows you would need to use [Docker integrated windows authentication](https://success.docker.com/article/modernizing-traditional-dot-net-applications#integratedwindowsauthentication) and [Create a container with Active Directory Support](https://blogs.msdn.microsoft.com/containerstuff/2017/01/30/create-a-container-with-active-directory-support/)
-
-> NOTE: make sure your AD/Windows user has write permissions to *D:\data* prior to using `credentialspec=`.
+Enter the non-default credentials saved for this deployment. The named volume avoids host-path differences between Windows and Linux:
 
 ```powershell
-docker run -p 9000:9000 \
-  --name otterio1 \
-  --security-opt "credentialspec=file://myuser.json"
-  -e "OTTERIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "OTTERIO_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
-  -v D:\data:/data \
-  soulteary/otterio:latest server /data
+$env:OTTERIO_ROOT_USER = Read-Host 'Root username'
+$env:OTTERIO_ROOT_PASSWORD = Read-Host 'Root password' -MaskInput
+
+docker volume create otterio-data
+docker run -d --name otterio `
+  -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 `
+  -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD `
+  --mount source=otterio-data,target=/data `
+  soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-### OtterIO Custom Access and Secret Keys using Docker secrets
-To override OtterIO's auto-generated keys, you may pass secret and access keys explicitly by creating access and secret keys as [Docker secrets](https://docs.docker.com/engine/swarm/secrets/). OtterIO server also allows regular strings as access and secret keys.
+The S3 endpoint is <http://127.0.0.1:9000> and the console/management endpoint is <http://127.0.0.1:9001>. Sign in using the configured credentials. [Verify an upload and download](../../README.md#verify) with OC; its alias can store both endpoints.
 
-```
-echo "AKIAIOSFODNN7EXAMPLE" | docker secret create access_key -
-echo "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" | docker secret create secret_key -
+The named volume survives container removal. Recreating the container requires the same volume and credentials. For disposable testing, omit `--mount` and use `--rm` without `-d`; Docker removes the anonymous data volume when that container is removed. Use a separate container name and free ports if another instance is running.
+
+## Credentials, secret files and non-root operation
+
+The image entrypoint rejects missing, incomplete or default credential pairs. `OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD` take precedence as a pair over legacy `OTTERIO_ACCESS_KEY` and `OTTERIO_SECRET_KEY`. Do not mix half of each pair.
+
+For secret files, set `OTTERIO_ROOT_USER_FILE` and/or `OTTERIO_ROOT_PASSWORD_FILE` to readable, nonempty regular files inside the container. An absolute path enforces presence. A nonempty environment value and an existing `_FILE` value for the same credential are an error. These variables are read by the container entrypoint, not by a bare-metal server binary.
+
+For a non-root local deployment, use the repository's [secure Compose profile](../../README_DOCKER_SECURITY.md) and [docker-compose.secure.yml](../../docker-compose.secure.yml). It documents fixed UID/GID ownership, mounted password files and restart/upgrade considerations. If using `docker run --user` with a bind-mounted directory, make the directory writable by the selected numeric UID/GID first. Windows container Active Directory credential specifications do not apply to these Linux images.
+
+### Docker Swarm secrets
+
+On an initialized Swarm, the following Unix-shell example creates secrets from your saved credentials and starts one server. It leaves ports unpublished; configure private service networking or an appropriate ingress separately.
+
+```sh
+: "${OTTERIO_ROOT_USER:?Set your saved username first}"
+: "${OTTERIO_ROOT_PASSWORD:?Set your saved password first}"
+printf '%s' "$OTTERIO_ROOT_USER" | docker secret create otterio-root-user -
+printf '%s' "$OTTERIO_ROOT_PASSWORD" | docker secret create otterio-root-password -
+
+docker service create --name otterio \
+  --secret otterio-root-user --secret otterio-root-password \
+  --env OTTERIO_ROOT_USER_FILE=/run/secrets/otterio-root-user \
+  --env OTTERIO_ROOT_PASSWORD_FILE=/run/secrets/otterio-root-password \
+  --mount type=volume,source=otterio-data,target=/data \
+  soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-Create a OtterIO service using `docker service` to read from Docker secrets.
-```
-docker service create --name="otterio-service" --secret="access_key" --secret="secret_key" soulteary/otterio:latest server /data
-```
+Read [Docker's Swarm secrets guide](https://docs.docker.com/engine/swarm/secrets/) for the secret lifecycle. This example is not a distributed storage deployment. A local volume belongs to one node; account for scheduling and storage placement before rescheduling a service. Follow [distributed deployment](../distributed/README.md) and [erasure coding](../erasure/README.md) for storage topology.
 
-Read more about `docker service` [here](https://docs.docker.com/engine/swarm/how-swarm-mode-works/services/)
-
-#### OtterIO Custom Access and Secret Key files
-To use other secret names follow the instructions above and replace `access_key` and `secret_key` with your custom names (e.g. `my_secret_key`,`my_custom_key`). Run your service with
-```
-docker service create --name="otterio-service" \
-  --secret="my_access_key" \
-  --secret="my_secret_key" \
-  --env="OTTERIO_ROOT_USER_FILE=my_access_key" \
-  --env="OTTERIO_ROOT_PASSWORD_FILE=my_secret_key" \
-  soulteary/otterio:latest server /data
-```
-`OTTERIO_ROOT_USER_FILE` and `OTTERIO_ROOT_PASSWORD_FILE` also support custom absolute paths, in case Docker secrets are mounted to custom locations or other tools are used to mount secrets into the container. For example, HashCorp Vault injects secrets to `/vault/secrets`. With the custom names above, set the environment variables to
-```
-OTTERIO_ROOT_USER_FILE=/vault/secrets/my_access_key
-OTTERIO_ROOT_PASSWORD_FILE=/vault/secrets/my_secret_key
-```
-
-### Retrieving Container ID
-To use Docker commands on a specific container, you need to know the `Container ID` for that container. To get the `Container ID`, run
+## Inspect and restart the container
 
 ```sh
 docker ps -a
+docker logs otterio
+docker stats otterio
+docker stop otterio
+docker start otterio
 ```
 
-`-a` flag makes sure you get all the containers (Created, Running, Exited). Then identify the `Container ID` from the output.
+`docker start` reuses the container's existing environment and mounts. Changing credentials in your shell does not change an existing container; recreate it with the intended environment and existing data volume. Back up data before upgrades or volume deletion.
 
-### Starting and Stopping Containers
-To start a stopped container, you can use the [`docker start`](https://docs.docker.com/engine/reference/commandline/start/) command.
+## Build an image from this checkout
+
+The root `Dockerfile` compiles the supplied build context, including local edits. From a cloned repository:
 
 ```sh
-docker start <container_id>
+docker build --build-arg VCS_REF="$(git rev-parse HEAD)" -t otterio:local .
 ```
 
-To stop a running container, you can use the [`docker stop`](https://docs.docker.com/engine/reference/commandline/stop/) command.
-```sh
-docker stop <container_id>
-```
+Replace the image name in the startup example with `otterio:local`. By comparison, `make docker` first builds a host binary and copies it through `Dockerfile.dev`; the binary must match the container's Linux architecture. The release workflow uses `Dockerfile.ci` with precompiled release binaries. `Dockerfile.release` clones remote source and does not build local edits.
 
-### OtterIO container logs
-To access OtterIO logs, you can use the [`docker logs`](https://docs.docker.com/engine/reference/commandline/logs/) command.
+## Further reading
 
-```sh
-docker logs <container_id>
-```
-
-### Monitor OtterIO Docker Container
-To monitor the resources used by OtterIO container, you can use the [`docker stats`](https://docs.docker.com/engine/reference/commandline/stats/) command.
-
-```sh
-docker stats <container_id>
-```
-
-## Explore Further
-
-* [Deploy OtterIO on Docker Compose](https://docs.min.io/docs/deploy-minio-on-docker-compose)
-* [Deploy OtterIO on Docker Swarm](https://docs.min.io/docs/deploy-minio-on-docker-swarm)
-* [Distributed OtterIO Quickstart Guide](https://docs.min.io/docs/distributed-minio-quickstart-guide)
-* [OtterIO Erasure Code QuickStart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide)
+- [Container credential migration and secure Compose profile](../../README_DOCKER_SECURITY.md)
+- [Distributed deployment](../distributed/README.md) and [erasure coding](../erasure/README.md)
+- [TLS](../tls/README.md), including certificate mounts
+- [OC configuration and separate management endpoints](https://github.com/soulteary/oc/blob/main/docs/configuration.md)
+- [Historical orchestration examples](../orchestration/README.md): review their images, credentials and topology against the current server before use
