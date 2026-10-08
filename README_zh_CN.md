@@ -16,7 +16,7 @@
 
 OtterIO 是一个高性能、S3 兼容的对象存储服务，适合用于机器学习、数据分析、备份归档及通用应用数据等场景。
 
-本文档涵盖在裸金属、Docker 与源码方式下运行 OtterIO 的指引。更深入的主题（纠删码、分布式部署、KMS、复制等）请参见 [`docs/`](./docs)。
+本文档涵盖裸金属、Docker 与源码运行方式。[文档索引](./docs/zh_CN/README.md)按部署、管理、安全与开发整理了阅读入口；[OC](https://github.com/soulteary/oc) 是配套命令行客户端，[OtterIO SDK](https://github.com/soulteary/otterio-sdk) 是 Go 客户端。
 
 > [!IMPORTANT]
 > OtterIO 是一个独立的、由社区维护的 MinIO 分支。本项目**未**获得 MinIO, Inc. 的关联、认可或赞助。部署前请阅读[商标与上游声明](#商标与上游声明)与[安全公告](#安全公告)。
@@ -52,7 +52,7 @@ docker run -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
   soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-控制台地址为 <http://127.0.0.1:9001>，请使用刚才配置的用户名和密码登录，不要使用默认密码。`mc` 连接方式见[验证部署](#验证部署)。
+控制台地址为 <http://127.0.0.1:9001>，请使用刚才配置的用户名和密码登录。OC 连接及上传、下载检查见[验证部署](#验证部署)。
 
 > [!IMPORTANT]
 > 容器启动现在会拒绝缺失凭据或默认密码。升级前请修正旧的不带凭据的 Docker 启动命令。`_FILE` Secret、非 root Compose 配置和迁移步骤见 [Docker 安全指南](./README_DOCKER_SECURITY.md)。仅本地开发演示可显式设置 `OTTERIO_ALLOW_DEFAULT_CREDENTIALS=1` 允许默认凭据，并应将端口绑定到回环地址。生产部署请固定经过验证的版本标签或镜像 digest，而不是使用 `latest`。
@@ -81,13 +81,13 @@ docker pull ghcr.io/soulteary/otterio:latest
 | `latest` | 最新稳定版。                                      |
 | `edge`   | 来自 `main` 分支的尝鲜构建，仅供测试使用。        |
 
-使用[快速开始](#快速开始)中配置的凭据，以临时数据卷启动单节点服务：
+临时测试可使用[快速开始](#快速开始)中已配置的凭据启动单机实例，由 Docker 创建匿名数据卷。`--rm` 会在停止时删除容器及匿名卷：
 
 ```sh
 : "${OTTERIO_ROOT_USER:?请先设置已保存的用户名}"
 : "${OTTERIO_ROOT_PASSWORD:?请先设置已保存的密码}"
 export OTTERIO_ROOT_USER OTTERIO_ROOT_PASSWORD
-docker run -p 127.0.0.1:9000:9000 \
+docker run --rm -p 127.0.0.1:9000:9000 \
   -e OTTERIO_ROOT_USER -e OTTERIO_ROOT_PASSWORD \
   soulteary/otterio:latest server /data
 ```
@@ -105,37 +105,29 @@ docker run -p 127.0.0.1:9000:9000 \
 
 ### macOS
 
-#### Homebrew（推荐）
+从 [GitHub Releases](https://github.com/soulteary/otterio/releases) 下载 Apple Silicon 对应的 `otterio-darwin-arm64` 或 Intel 对应的 `otterio-darwin-amd64`，以及同一版本的 `otterio-<TAG>-checksums.txt`。产物是独立二进制，不是压缩包。先用 `shasum -a 256` 与校验文件中的对应记录比对，详见[发布验证步骤](./docs/releasing.md#4-verify-before-announcing)。Apple Silicon 示例：
 
 ```sh
-brew install otterio/stable/otterio
-otterio server /data
-```
-
-如果你之前是从其他 tap 安装的 otterio，建议先卸载再从官方 tap 安装：
-
-```sh
-brew uninstall otterio
-brew install otterio/stable/otterio
-```
-
-#### 二进制下载
-
-预编译的 macOS 二进制发布在 [GitHub Releases](https://github.com/soulteary/otterio/releases)。下载对应架构的产物后：
-
-```sh
+mv otterio-darwin-arm64 otterio
 chmod +x otterio
-./otterio server /data
+mkdir -p "$HOME/otterio-data"
+./otterio server "$HOME/otterio-data"
 ```
+
+启动前请按[快速开始](#快速开始)设置并导出已保存的 `OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD`。发布流程不提供 Homebrew tap。
 
 ### Linux
 
-预编译的 Linux 二进制发布在 [GitHub Releases](https://github.com/soulteary/otterio/releases)。请下载与目标主机架构匹配的产物，并以 `otterio` 名称运行：
+从同一 [GitHub Release](https://github.com/soulteary/otterio/releases) 下载 `otterio-linux-<arch>` 与 `otterio-<TAG>-checksums.txt`。先用 `sha256sum` 比对校验文件中的对应记录，再重命名为 `otterio`。amd64 主机示例：
 
 ```sh
+mv otterio-linux-amd64 otterio
 chmod +x otterio
-./otterio server /data
+mkdir -p "$HOME/otterio-data"
+./otterio server "$HOME/otterio-data"
 ```
+
+启动前请导出已保存的 root 凭据。校验方法见[发布验证步骤](./docs/releasing.md#4-verify-before-announcing)。
 
 构建流水线 ([`release.yml`](./.github/workflows/release.yml)) 当前为 Linux 提供如下架构的产物：
 
@@ -149,11 +141,18 @@ Tag 发布流程提供独立二进制与 SHA-256 校验文件，不提供 `.deb`
 
 ### Windows
 
-预编译的 Windows 二进制（`amd64`）发布在 [GitHub Releases](https://github.com/soulteary/otterio/releases)。下载 `otterio.exe` 后，在其所在目录运行，或将该目录加入系统 `PATH`：
+从同一 [GitHub Release](https://github.com/soulteary/otterio/releases) 下载 `otterio-windows-amd64.exe` 与 `otterio-<TAG>-checksums.txt`。先将 `(Get-FileHash .\otterio-windows-amd64.exe -Algorithm SHA256).Hash` 与校验文件中的对应记录比对，再通过 PowerShell 运行：
 
 ```powershell
-otterio.exe server D:\
+Rename-Item .\otterio-windows-amd64.exe otterio.exe
+# 输入为本次部署保存的非默认凭据。
+$env:OTTERIO_ROOT_USER = Read-Host 'Root username'
+$env:OTTERIO_ROOT_PASSWORD = Read-Host 'Root password' -MaskInput
+New-Item -ItemType Directory -Force D:\otterio-data | Out-Null
+.\otterio.exe server D:\otterio-data
 ```
+
+[`Read-Host -MaskInput`](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/read-host#-maskinput) 需要 PowerShell 7.1 或更新版本；也可以由密钥管理工具提供环境变量。
 
 ### FreeBSD
 
@@ -161,13 +160,14 @@ OtterIO 当前没有官方发布的 FreeBSD 软件包。请按下文[源码构�
 
 ### 源码构建
 
-源码安装仅供开发者与高级用户使用。请确认本机已具备可用的 Go 工具链（Go 1.27.1 及以上 —— 参见 [Go 安装文档](https://go.dev/doc/install)）。
+源码安装仅供开发者与高级用户使用。请准备 Git、Make 与 Go 1.27.1 或更新版本（参见 [Go 安装文档](https://go.dev/doc/install)）；`make build` 会检查依赖并生成 `./otterio`。运行前请导出已保存的 root 凭据。
 
 ```sh
 git clone https://github.com/soulteary/otterio.git
 cd otterio
 make build
-./otterio server /data
+mkdir -p "$HOME/otterio-data"
+./otterio server "$HOME/otterio-data"
 ```
 
 > [!WARNING]
@@ -202,7 +202,7 @@ otterio server --address ":9000" /data
 - `Ctrl+C` / `SIGTERM` 会同时优雅关停两个监听器。
 
 > [!NOTE]
-> 开启拆分模式后，Admin API（即 `mc admin ...` 使用的接口）位于控制台端口。使用 `mc admin` 系列命令时，需要把 mc alias 指向控制台 URL；普通 S3 操作（`mc cp`、`mc ls` 等）仍然走 S3 端口。
+> 开启拆分模式后，Admin API（即 `oc admin ...` 使用的接口）位于控制台端口。OC 可在同一别名中保存 S3 URL 与独立的 `--admin-url`，见[验证部署](#验证部署)。普通 S3 操作（`oc cp`、`oc ls` 等）仍然走 S3 端口。两个端点的私有 CA 也可分别配置，见 [OC 配置指南](https://github.com/soulteary/oc/blob/main/docs/zh_CN/configuration.md)。
 
 如未指定 `--console-address`，则保持原行为，二者共用同一个端口。
 
@@ -283,20 +283,25 @@ service iptables restart
 
 快速开始示例已拆分监听器，请访问 <http://127.0.0.1:9001>；单端口部署则访问 <http://127.0.0.1:9000>。使用自己配置的 root 用户名和密码登录，即可创建桶、上传对象、浏览内容。
 
-### `mc` 客户端
+### OC 客户端
 
-`mc` 是一个支持 S3 与本地文件系统 URI 的现代命令行客户端（功能类似 `ls`、`cp`、`mirror`、`diff` 等）。配置一个指向你 OtterIO 实例的别名：
+安装 [OC](https://github.com/soulteary/oc/blob/main/docs/zh_CN/installation.md)，用于 S3 对象操作与 OtterIO 管理。下面的示例对应快速开始中的双端口配置；OC 提示输入凭据时，请输入启动 OtterIO 所用的 root 用户名与密码：
 
 ```sh
-: "${OTTERIO_ROOT_USER:?请设置启动 OtterIO 时使用的用户名}"
-: "${OTTERIO_ROOT_PASSWORD:?请设置启动 OtterIO 时使用的密码}"
-mc alias set local http://127.0.0.1:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD"
-mc mb local/test-bucket
-mc cp ./somefile local/test-bucket/
-mc ls local/test-bucket/
+oc alias set local http://127.0.0.1:9000 \
+  --api s3v4 --path on --admin-url http://127.0.0.1:9001
+oc mb local/otterio-quickstart
+printf 'Hello from OtterIO\n' > otterio-hello.txt
+oc cp otterio-hello.txt local/otterio-quickstart/hello.txt
+oc cp local/otterio-quickstart/hello.txt otterio-downloaded.txt
+cmp otterio-hello.txt otterio-downloaded.txt
+oc ls local/otterio-quickstart/
+oc admin info local
 ```
 
-OtterIO 与 AWS S3 API 协议兼容，因此 `aws-cli`、`s3cmd` 以及各语言的 AWS SDK 均可直接使用 —— 把它们指向 OtterIO 端点并使用 root 凭据（或通过 IAM 签发的 access key）即可。
+`cmp` 成功退出表示下载内容与原文件一致。示例会创建一个桶及两个本地文件；若已使用过该桶名，请改用其他名称。单端口部署请省略 `--admin-url`。应用程序应使用具备所需权限的 IAM access key，避免使用 root 凭据。
+
+[OtterIO SDK](https://github.com/soulteary/otterio-sdk) 提供 Go 客户端与可运行的上传示例。`aws-cli`、`s3cmd`、上游 `mc` 等客户端也可连接 S3 端点，具体功能和签名行为仍需按业务验证。OtterIO 管理接口位于 `/otterio/admin/v3`；上游 `mc admin` 使用不同路径，请通过 OC 执行管理操作。
 
 ---
 
@@ -304,6 +309,8 @@ OtterIO 与 AWS S3 API 协议兼容，因此 `aws-cli`、`s3cmd` 以及各语言
 
 ### 项目自带文档（本仓库）
 
+- [中文文档索引](./docs/zh_CN/README.md) · [English documentation index](./docs/README.md)
+- [OC 命令行客户端](https://github.com/soulteary/oc) · [Go SDK](https://github.com/soulteary/otterio-sdk)
 - [纠删码](./docs/erasure/README.md)
 - [分布式部署](./docs/distributed/README.md)
 - [多用户 / IAM](./docs/multi-user/README.md)
@@ -315,7 +322,7 @@ OtterIO 与 AWS S3 API 协议兼容，因此 `aws-cli`、`s3cmd` 以及各语言
 - [桶生命周期 / 保留 / 版本控制 / 配额](./docs/bucket)
 - [指标与 Prometheus](./docs/metrics/README.md)
 - [日志](./docs/logging/README.md)
-- [Docker](./docs/docker/README.md) · [编排](./docs/orchestration/README.md)
+- [Docker](./docs/zh_CN/docker/README.md) · [编排](./docs/zh_CN/orchestration/README.md)
 - [安全公告积压清单](./docs/security/upstream-cve-backlog.md)
 - [LDAP DN 规范化迁移](./docs/security/ldap-dn-normalization-migration.md)
 - [服务限制](./docs/zh_CN/otterio-limits.md)
@@ -386,7 +393,7 @@ OtterIO 是一个独立的、由社区维护的上游 MinIO Apache 协议版本�
 
 OtterIO 基于 MinIO **在改用 GNU AGPLv3 之前的最后一个 Apache License 2.0 版本**，并继续以 [Apache License, Version 2.0](./LICENSE) 进行分发。MinIO, Inc. 及所有第三方子组件的原始版权声明均予以保留 —— 详见 [`NOTICE`](./NOTICE)。
 
-OtterIO 提供了自己的容器镜像，分别发布在 `soulteary/otterio`（Docker Hub）和 `ghcr.io/soulteary/otterio`（GitHub 容器镜像仓库）。本指南中出现的其他链接（`docs.min.io`、`dl.min.io` 等）仍指向**原始上游项目**，而非 OtterIO。要使用 OtterIO 的定制能力，请从源码构建（见[源码构建](#源码构建)）。
+OtterIO 在 [GitHub Releases](https://github.com/soulteary/otterio/releases) 提供自己的二进制，容器镜像发布在 `soulteary/otterio`（Docker Hub）和 `ghcr.io/soulteary/otterio`（GitHub 容器镜像仓库）。使用这些 OtterIO 产物或[从源码构建](#源码构建)即可获得本分支的定制能力。`docs.min.io`、`dl.min.io` 等链接指向**原始上游项目**。
 
 项目主页：<https://github.com/soulteary/otterio>
 

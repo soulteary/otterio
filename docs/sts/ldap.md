@@ -2,7 +2,7 @@
 
 **Table of Contents**
 
-- [AssumeRoleWithLDAPIdentity](#assumerolewithldapidentity-slackhttpsslackotterioslacktypesvghttpsslackotterio)
+- [AssumeRoleWithLDAPIdentity](#assumerolewithldapidentity)
     - [Introduction](#introduction)
     - [Configuring AD/LDAP on OtterIO](#configuring-adldap-on-otterio)
         - [Supported modes of operation](#supported-modes-of-operation)

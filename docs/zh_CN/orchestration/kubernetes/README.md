@@ -1,154 +1,22 @@
-# 使用Kubernetes部署OtterIO
+# 在 Kubernetes 上部署 OtterIO
 
-Kubernetes的部署和状态集提供了在独立，分布式或共享模式下部署OtterIO服务器的完美平台。 在Kubernetes上部署OtterIO有多种选择，您可以选择最适合您的。
+[English](../../../orchestration/kubernetes/README.md) · [文档目录](../../README.md)
 
-- OtterIO [Helm](https://helm.sh) Chart通过一个简单的命令即可提供自定义而且简单的OtterIO部署。更多关于OtterIO Helm部署的资料，请访问[这里](#prerequisites).
+本仓库发布 OtterIO 容器镜像，但没有提供 OtterIO Helm Chart、Kubernetes Operator 或经过 Kubernetes 验收的部署清单。本页旧版本链接的 MinIO Operator 和 Chart 属于上游 MinIO，不能作为 OtterIO 的安装渠道。旧命令 `helm install stable/otterio` 也不是本项目提供的 Chart。
 
-- 你也可以浏览Kubernetes [OtterIO示例](https://github.com/minio/minio/blob/master/docs/orchestration/kubernetes/README.md) ，通过`.yaml`文件来部署OtterIO。
+先按照 [Docker 指南](../../docker/README.md)在本机验证镜像、凭据和服务端参数。Kubernetes 部署需要根据存储、网络和可用性要求编写清单；下面的准备说明不代表已经完成 Kubernetes 验收。
 
-<a name="prerequisites"></a>
-## 1. 前提条件
+## 准备工作负载
 
-* 默认standalone模式下，需要开启Beta API的Kubernetes 1.4+。
-* [distributed 模式](#distributed-otterio)，需要开启Beta API的Kubernetes 1.5+。
-* 底层支持PV provisioner。
-* 你的K8s集群里需要有Helm package manager [installed](https://github.com/kubernetes/helm#install)。
+- **镜像：** 使用 `soulteary/otterio` 或 `ghcr.io/soulteary/otterio`，固定经过评审的版本标签或 digest。发布产物见[发布指南](../../../releases/README.md)。
+- **凭据：** 通过 Kubernetes Secret 提供 `OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD`，或挂载 Secret 文件，并将 `OTTERIO_ROOT_USER_FILE` 和 `OTTERIO_ROOT_PASSWORD_FILE` 设置为容器内的文件路径。文件变量由镜像入口脚本读取，设置容器参数时请保留该入口脚本。详见 [Docker 凭据规则](../../../../README_DOCKER_SECURITY.md)和 Kubernetes [Secret 文档](https://kubernetes.io/docs/concepts/configuration/secret/)。
+- **存储：** 将持久化存储挂载到 `server` 参数指定的路径。临时单节点实例可使用 `server /data`；分布式部署需要按照[分布式指南](../../distributed/README.md)和[纠删码指南](../../erasure/README.md)规划磁盘及节点端点。增加单节点工作负载的副本数不会自动组成分布式 OtterIO 集群。Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)可提供稳定身份和持久卷关联，但不会替你配置 OtterIO 的存储拓扑。
+- **端口：** 使用 `server --address :9000 --console-address :9001 /data` 时，S3 监听 9000，控制台与 Admin API 监听 9001。根据流量用途配置 Service 和访问控制，并按[服务端 README](../../../../README_zh_CN.md#拆分-s3-与-web-控制台端口)为 OC 设置分别对应 S3 和管理接口的地址。
+- **TLS：** 按 [TLS 指南](../../tls/README.md)挂载 PEM 格式的证书，并使用规定的文件名与路径。为控制台设置独立证书目录时，必须同时启用独立控制台监听器。
+- **健康检查：** S3 监听器通过 `/otterio/health/live` 和 `/otterio/health/ready` 提供进程探针，不能据此判断分布式读写仲裁状态；[健康检查指南](../../../metrics/healthcheck/README.md)介绍集群探针。按照 Kubernetes [探针文档](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)和部署情况设置超时及启动预算。
 
-## 2. 使用Helm Chart部署OtterIO
+## 使用持久数据前验证
 
-安装 OtterIO chart
+先在可丢弃的部署中验证凭据加载、卷权限、TLS 信任和两个客户端端点，再测试对象上传下载、Pod 重启后的数据保留，以及所选拓扑的故障恢复行为。本机 Docker 示例通过，不代表已经验证 Kubernetes 的可用性或升级兼容性。
 
-```bash
-$ helm install stable/otterio
-```
-以上命令以默认配置在Kubernetes群集上部署OtterIO。 以下部分列出了OtterIO图表的所有可配置参数及其默认值。
-
-### 配置
-
-| 参数                  | 描述                         | 默认值                                                 |
-|----------------------------|-------------------------------------|---------------------------------------------------------|
-| `image`                    | OtterIO镜像名称                | `minio/minio`                                           |
-| `imageTag`                 | OtterIO镜像tag. 可选值在 [这里](https://hub.docker.com/r/minio/minio/tags/).| `latest`|
-| `imagePullPolicy`          | Image pull policy                   | `Always`                                                |
-| `mode`                     | OtterIO server模式 (`standalone`, `shared` 或者 `distributed`)| `standalone`                     |
-| `numberOfNodes`            | 节点数 (仅对分布式模式生效). 可选值 4 <= x <= 16 | `4`    |
-| `accessKey`                | 默认access key                  | `AKIAIOSFODNN7EXAMPLE`                                  |
-| `secretKey`                | 默认secret key                  | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`              |
-| `configPath`               | 默认配置文件路径         | `~/.otterio`                                              |
-| `mountPath`                | 默认挂载路径| `/export`                                        |
-| `serviceType`              | Kubernetes service type             | `LoadBalancer`                                          |
-| `servicePort`              | Kubernetes端口 | `9000`                                              |
-| `persistence.enabled`      | 是否使用持久卷存储数据 | `true`                                                  |
-| `persistence.size`         | 持久卷大小     | `10Gi`                                                  |
-| `persistence.storageClass` | 持久卷类型    | `generic`                                               |
-| `persistence.accessMode`   | ReadWriteOnce 或者 ReadOnly           | `ReadWriteOnce`                                         |
-| `resources`                | CPU/Memory 资源需求/限制 | Memory: `256Mi`, CPU: `100m`                            |
-
-你可以通过`--set key=value[,key=value]`给`helm install`。 比如,
-
-```bash
-$ helm install --name my-release \
-  --set persistence.size=100Gi \
-    stable/otterio
-```
-
-上述命令部署了一个带上100G持久卷的OtterIO服务。
-
-或者，您可以提供一个YAML文件，用于在安装chart时指定参数值。 例如，
-
-```bash
-$ helm install --name my-release -f values.yaml stable/otterio
-```
-
-### 分布式OtterIO
-
-默认情况下，此图表以独立模式提供OtterIO服务器。 要在[分布式模式](https://docs.min.io/cn/distributed-minio-quickstart-guide)中配置OtterIO服务器，请将`mode`字段设置为`distributed`,
-
-```bash
-$ helm install --set mode=distributed stable/otterio
-```
-
-上述命令部署了个带有4个节点的分布式OtterIO服务器。 要更改分布式OtterIO服务器中的节点数，请设置`numberOfNodes`属性。
-
-
-```bash
-$ helm install --set mode=distributed,numberOfNodes=8 stable/otterio
-```
-
-上述命令部署了个带有8个节点的分布式OtterIO服务器。注意一下，`numberOfNodes`取值范围是[4,16]。
-
-#### StatefulSet [限制](http://kubernetes.io/docs/concepts/abstractions/controllers/statefulsets/#limitations)，适用于分布式OtterIO
-
-* StatefulSets需要持久化存储，所以如果 `mode`设成 `distributed`的话，`persistence.enabled`参数不生效。
-* 卸载分布式OtterIO版本时，需要手动删除与StatefulSet关联的卷。
-
-### Shared OtterIO
-
-如需采用[shared mode](https://github.com/minio/minio/blob/master/docs/shared-backend/README.md)部署OtterIO, 将`mode` 设为`shared`,
-
-```bash
-$ helm install --set mode=shared stable/otterio
-```
-
-上述命令规定了4个OtterIO服务器节点，一个存储。 要更改共享的OtterIO部署中的节点数，请设置`numberOfNodes`字段，
-
-```bash
-$ helm install --set mode=shared,numberOfNodes=8 stable/otterio
-```
-
-上述命令规定了OtterIO服务有8个节点，采用shared模式。
-
-### 持久化
-
-这里规定了PersistentVolumeClaim并将相应的持久卷挂载到默认位置`/export`。 您需要Kubernetes集群中的物理存储才能使其工作。 如果您宁愿使用`emptyDir`，请通过以下方式禁用PersistentVolumeClaim：
-
-```bash
-$ helm install --set persistence.enabled=false stable/otterio
-```
-
-> *"当Pod分配给节点时，首先创建一个emptyDir卷，只要该节点上的Pod正在运行，它就会存在。 当某个Pod由于任何原因从节点中删除时，emptyDir中的数据将永久删除。"*
-
-## 3. 使用Helm更新OtterIO版本
-
-您可以更新现有的OtterIO Helm Release以使用较新的OtterIO Docker镜像。 为此，请使用`helm upgrade`命令：
-
-```bash
-$ helm upgrade --set imageTag=<replace-with-otterio-docker-image-tag> <helm-release-name> stable/otterio
-```
-
-如果更新成功，你可以看到下面的输出信息
-
-```bash
-Release "your-helm-release" has been upgraded. Happy Helming!
-```
-
-## 4. 卸载Chart
-
-假设你的版本被命名为`my-release`，使用下面的命令删除它：
-
-```bash
-$ helm delete my-release
-```
-
-该命令删除与chart关联的所有Kubernetes组件，并删除该release。
-
-### 提示
-
-* 在Kubernetes群集中运行的chart的实例称为release。 安装chart后，Helm会自动分配唯一的release名称。 你也可以通过下面的命令设置你心仪的名称：
-
-```bash
-$ helm install --name my-release stable/otterio
-```
-
-* 为了覆盖默认的秘钥，可在运行helm install时将access key和secret key做为参数传进去。
-
-```bash
-$ helm install --set accessKey=myaccesskey,secretKey=mysecretkey \
-    stable/otterio
-```
-
-### 了解更多
-
-- [OtterIO纠删码快速入门](https://docs.min.io/cn/minio-erasure-code-quickstart-guide)
-- [Kubernetes文档](https://kubernetes.io/docs/home/)
-- [Helm package manager for kubernetes](https://helm.sh/)
+后续可参考 [Prometheus 监控](../../../metrics/prometheus/README.md)、[OC 连接与传输示例](https://github.com/soulteary/oc/blob/main/README_zh_CN.md)和 [Kubernetes 文档](https://kubernetes.io/docs/home/)。
