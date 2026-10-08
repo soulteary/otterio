@@ -14,6 +14,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+from unittest import mock
 import urllib.error
 import urllib.request
 
@@ -69,7 +70,7 @@ class LocalService:
         self.stderr.flush()
         return self.stdout_path.read_text() + self.stderr_path.read_text()
 
-    def ready(self):
+    def ready(self, wait_for_storage=False):
         deadline = time.monotonic() + 30
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),
                                             urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
@@ -78,7 +79,12 @@ class LocalService:
                 raise AssertionError(f"service exited with {self.process.returncode}: {self.logs()}")
             try:
                 with opener.open(self.url + "/otterio/health/ready", timeout=0.5) as response:
-                    if response.status == 200 and (self.console_port is None or listening(self.console_port)):
+                    # The ready endpoint returns 200 during storage initialization,
+                    # with an offline header. Wait until S3 requests can be served.
+                    if (response.status == 200
+                            and (not wait_for_storage
+                                 or response.headers.get("x-otterio-server-status") != "offline")
+                            and (self.console_port is None or listening(self.console_port))):
                         return
             except (OSError, urllib.error.URLError):
                 pass
@@ -99,6 +105,24 @@ class LocalService:
         finally:
             self.stdout.close()
             self.stderr.close()
+
+
+class ServiceReadinessTests(unittest.TestCase):
+    def test_waits_for_storage_initialization_after_http_is_listening(self):
+        service = LocalService.__new__(LocalService)
+        service.port, service.tls, service.console_port = 9000, False, None
+        service.process = mock.Mock()
+        service.process.poll.return_value = None
+        offline = mock.MagicMock(status=200, headers={"x-otterio-server-status": "offline"})
+        online = mock.MagicMock(status=200, headers={})
+        offline.__enter__.return_value = offline
+        online.__enter__.return_value = online
+        opener = mock.Mock()
+        opener.open.side_effect = [offline, online]
+        with mock.patch("urllib.request.build_opener", return_value=opener), mock.patch("time.sleep") as sleep:
+            service.ready(wait_for_storage=True)
+        self.assertEqual(opener.open.call_count, 2)
+        sleep.assert_called_once_with(0.1)
 
 
 @unittest.skipUnless(SERVER_BINARY and CLIENT_BINARY and os.name != "nt",
@@ -127,10 +151,10 @@ class CLIIntegrationTests(unittest.TestCase):
                 return port
         raise AssertionError("could not allocate distinct fixture ports")
 
-    def start(self, name, argv, port, console_port=None, tls=False):
+    def start(self, name, argv, port, console_port=None, tls=False, wait_for_storage=False):
         service = LocalService(self.root, name, argv, port, console_port, tls)
         self.services.append(service)
-        service.ready()
+        service.ready(wait_for_storage=wait_for_storage)
         return service
 
     def client(self, *argv):
@@ -195,7 +219,7 @@ class CLIIntegrationTests(unittest.TestCase):
         upstream_port, gateway_port = self.port(), self.port()
         data = self.root / "upstream-data"
         data.mkdir()
-        upstream = self.start("upstream", ["server", "--address", f"127.0.0.1:{upstream_port}", str(data)], upstream_port)
+        upstream = self.start("upstream", ["server", "--address", f"127.0.0.1:{upstream_port}", str(data)], upstream_port, wait_for_storage=True)
         gateway = self.start("s3", ["gateway", "s3", "--address", f"127.0.0.1:{gateway_port}", upstream.url], gateway_port)
         self.alias("s3fixture", gateway)
         target = self.crud("s3fixture")
