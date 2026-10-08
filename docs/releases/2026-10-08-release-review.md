@@ -26,12 +26,28 @@ All four commits after the published baseline are included:
   gateway command factories with compatibility fixtures.
 - [`7dc4888`](https://github.com/soulteary/otterio/commit/7dc48889db1109e1dda8f25f505322a8a9100888),
   [PR #31](https://github.com/soulteary/otterio/pull/31): migrate server code,
-  examples and the Mint harness to published OtterIO SDK and kits modules.
+  examples and the Mint module manifest to published OtterIO SDK and kits modules.
 - [`6f6d083`](https://github.com/soulteary/otterio/commit/6f6d0835ddff68020f1491c403b958fade22841f),
   [PR #32](https://github.com/soulteary/otterio/pull/32): the S3 gateway integration
   fixture waits until its upstream server no longer reports storage offline,
   with a regression for HTTP listening before storage initialization. Production
   readiness behavior and the server/NAS fixtures are not changed by this commit.
+
+### Additional preparation fix after the main cutoff
+
+The preparation now also repairs `mint/build/minio-go/install.sh`. At the
+reviewed main cutoff, the Mint manifest declared the fork SDK, but installation
+still fetched upstream MinIO's latest `functional_tests.go`; that requirement
+could remain unused. The installer now resolves the Mint module's fixed SDK
+version, downloads its checksum-verified module source and copies that module's
+functional program. The independent Mint manifest/checksums are refreshed from
+the actual imports, retaining SDK `v7.3.1` and Go 1.27.1.
+
+Installation rejects a replaced SDK, disables parent workspaces, builds with
+read-only dependencies and requires the resulting binary to link the exact
+fork SDK without upstream MinIO modules or replacements. This is an additional
+harness implementation change in the preparation PR, not part of the four
+historical main commits above. The server runtime and its module pins are unchanged.
 
 Root `RELEASE_NOTES.md` is the bilingual body consumed by the release workflow.
 The October 5 and October 7 preparation documents remain historical records.
@@ -45,8 +61,9 @@ The root module and `mint/run/core/minio-go/go.mod` already require
 `github.com/soulteary/otterio-sdk/v7 v7.3.1` and Go 1.27.1. The server graph contains
 all six published kits: `crc64nvme v1.1.2`, `highwayhash v1.0.5`, `md5-simd v1.1.3`,
 `sha256-simd v1.0.2`, `simdjson-go v0.4.6` and `sio v0.5.2`.
-This documentation preparation adds no module/version changes or local module
-replacements. Published source identities and the named-type/hash-callback
+Server versions remain unchanged; only the Mint harness manifest and checksums
+are completed for the actual functional program. No local replacement is added.
+Published source identities and the named-type/hash-callback
 migration requirements are in [SDK and kits compatibility](../development/sdk-kits-migration-20261008.md).
 
 The retained SDK package name `minio` does not make old and new module types
@@ -109,6 +126,26 @@ publication or all-platform runtime acceptance:
   tests pass. The real release preflight is still pending a clean synchronized
   main and a fresh tag; it is not run on this preparation branch.
 
+### Additional Mint repair checks
+
+- All seven offline installer regression tests pass: changing the manifest pin
+  selects that exact module, workspaces are disabled, download/source failures
+  stop the build, read-only builds reject upstream imports without modifying
+  manifests, and binary inventories with missing/wrong SDK, upstream modules or
+  replacements are rejected.
+- All 14 dependency/toolchain policy tests pass, including the new check that
+  Mint and the server declare the same SDK version. The existing Go workflow
+  runs the installer regressions and a real Linux Mint build with manifest
+  equality checks; this preparation does not add a separate workflow.
+- The real revised installer passes locally with Go 1.27.1 / macOS arm64 in a
+  temporary Mint directory. Its copied source is byte-identical to published
+  SDK `v7.3.1`'s functional program. `go.mod` and `go.sum` remain unchanged during
+  installation; the binary links SDK `v7.3.1`, kits `crc64nvme v1.1.2` and
+  `md5-simd v1.1.3`, with no upstream MinIO modules or replacements.
+- Shell syntax and ShellCheck pass for the installer; workflow validation passes.
+  These checks build and identify the functional program. They do not execute
+  the full Mint suite against a live server or replace release acceptance.
+
 ## Release acceptance
 
 - [ ] Reconcile any later main commits, merge this preparation and record the
@@ -143,9 +180,13 @@ Follow [the release guide](../releasing.md) and
 本次以 10 月 7 日已发布版本及其源码 `c8a09caf` 为基线，完整覆盖截至 `6f6d083`
 的四项未发布变更：账户信息与条件写入、CLI v3、SDK/kits 迁移，以及 S3 gateway
 测试等待上游存储初始化。此前已发布的 HTTP、macOS、容器与存储加固不重复计入。
-依赖已在主分支完成升级，本准备 PR 不重复修改模块清单。
+服务端依赖已在主分支完成升级；本准备 PR 还修复 Mint 安装器的上游 latest 源码获取问题，
+按独立 Mint 清单的固定 fork SDK 获取测试程序，并补齐其真实依赖与校验和。
+该追加修复单独记录，不改写此前的 `6f6d083` 主分支核对截点。
 
 本地 Go 1.27.1 / macOS arm64 的构建、133 项 CLI 基线比较、双语工具、gateway API、
-本地生命周期与竞态回归均已通过。正式发布仍需合并后的精确 main SHA 通过门禁，
+本地生命周期与竞态回归均已通过。Mint 追加修复的七项离线回归、14 项依赖策略测试、
+实际安装构建和产物身份检查也已通过；完整 Mint 在线功能用例尚未执行。
+正式发布仍需合并后的精确 main SHA 通过门禁，
 再选取全新的 UTC 时间戳标记，并实际核对产物、摘要、晋升和部署结果。
 以上清单保持未完成状态，不以文档日期或本地测试冒充正式发布验收。

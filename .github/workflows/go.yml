@@ -79,11 +79,24 @@ jobs:
       # output is clearly separated from the build/test output in the UI.
       - name: Check dependency and toolchain version consistency
         shell: bash
-        run: python3 -m unittest discover -s buildscripts -p test_dependency_versions.py -v
+        run: |
+          python3 -m unittest discover -s buildscripts -p test_dependency_versions.py -v
+          python3 -m unittest discover -s buildscripts -p test_mint_go_installer.py -v
 
       - name: Download modules
         shell: bash
         run: go mod download
+
+      - name: Build the pinned Mint SDK functional harness
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mint_core="$RUNNER_TEMP/mint-sdk-core"
+          mkdir -p "$mint_core/minio-go"
+          cp mint/run/core/minio-go/go.mod mint/run/core/minio-go/go.sum "$mint_core/minio-go/"
+          MINT_RUN_CORE_DIR="$mint_core" bash mint/build/minio-go/install.sh
+          cmp mint/run/core/minio-go/go.mod "$mint_core/minio-go/go.mod"
+          cmp mint/run/core/minio-go/go.sum "$mint_core/minio-go/go.sum"
 
       - name: Build (windows)
         if: matrix.os == 'windows-latest'

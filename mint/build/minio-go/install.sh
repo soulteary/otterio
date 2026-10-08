@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 #
 #  Mint (C) 2017 Minio, Inc.
 #
@@ -15,12 +15,33 @@
 #  limitations under the License.
 #
 
-OTTERIO_GO_VERSION=$(curl --retry 10 -Ls -o /dev/null -w "%{url_effective}" https://github.com/minio/minio-go/releases/latest | sed "s/https:\/\/github.com\/minio\/minio-go\/releases\/tag\///")
-if [ -z "$OTTERIO_GO_VERSION" ]; then
-    echo "unable to get minio-go version from github"
+set -euo pipefail
+
+test_run_dir="${MINT_RUN_CORE_DIR:?}/minio-go"
+cd "$test_run_dir"
+export GO111MODULE=on GOWORK=off CGO_ENABLED=0
+
+sdk_module=github.com/soulteary/otterio-sdk/v7
+sdk_version=$(go list -mod=readonly -m -f '{{if .Replace}}replaced{{else}}{{.Version}}{{end}}' "$sdk_module")
+if [[ ! "$sdk_version" =~ ^v7\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+    echo "Mint SDK must be pinned to an unreplaced v7 version" >&2
     exit 1
 fi
 
-test_run_dir="$MINT_RUN_CORE_DIR/minio-go"
-curl -sL -o "${test_run_dir}/main.go" "https://raw.githubusercontent.com/minio/minio-go/${OTTERIO_GO_VERSION}/functional_tests.go"
-(cd "$test_run_dir" && GO111MODULE=on CGO_ENABLED=0 go build -o minio-go main.go)
+# Go verifies the published module against go.sum before exposing its source.
+go mod download "$sdk_module@$sdk_version"
+sdk_dir=$(go list -mod=readonly -m -f '{{.Dir}}' "$sdk_module")
+cp "$sdk_dir/functional_tests.go" main.go
+go build -mod=readonly -o minio-go main.go
+
+# The required SDK must actually be linked, with no upstream SDK or replacements.
+build_info=$(go version -m minio-go)
+if ! awk -v sdk="$sdk_module" -v version="$sdk_version" '
+    $1 == "dep" && $2 == sdk && $3 == version { found = 1 }
+    $1 == "dep" && $2 ~ /^github.com\/minio\// { upstream = 1 }
+    $1 == "=>" { replaced = 1 }
+    END { exit !(found && !upstream && !replaced) }
+' <<< "$build_info"; then
+    echo "Mint binary must link the pinned OtterIO SDK without upstream MinIO modules or replacements" >&2
+    exit 1
+fi

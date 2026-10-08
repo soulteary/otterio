@@ -3,8 +3,9 @@
 This describes the dependency migration merged in
 [PR #31](https://github.com/soulteary/otterio/pull/31), included in the
 [October 8 release preparation](../releases/2026-10-08-release-review.md).
-The root module and `mint/run/core/minio-go` already use the published SDK;
-this preparation does not repeat that migration or add local replacements.
+The root module already uses the published SDK. This preparation also repairs
+the Mint installer so its actual functional-test program uses the fixed SDK
+declared in `mint/run/core/minio-go/go.mod`, without local replacements.
 
 ## Published modules
 
@@ -28,6 +29,22 @@ The full root module graph still contains upstream
 used by the compiled server package list; the server uses the kits module above.
 Archived CLI baselines and historical upstream links may retain old module names;
 they are records of the comparison source, not current dependency instructions.
+
+## Mint functional harness
+
+The former installer fetched `functional_tests.go` from upstream MinIO's latest
+release, so the Mint manifest's fork requirement did not establish which SDK the
+test program actually used. The installer now reads the Mint module's SDK pin,
+downloads that checksum-verified Go module and copies its own
+`functional_tests.go` from the module cache. The Mint module remains independent;
+its direct requirements and checksums cover the real program's imports.
+
+Installation disables parent Go workspaces, rejects a replaced SDK, builds with
+`-mod=readonly`, and checks the binary inventory for the exact pinned fork SDK,
+no upstream MinIO modules and no replacements. Offline installer regressions
+and a real temporary Mint build with unchanged manifests are part of the
+existing Go CI workflow. Compilation and inventory checks do not run the full
+Mint functional suite, which requires a configured live server and credentials.
 
 ## Go integration changes
 
@@ -58,7 +75,10 @@ See [the release guide](../releasing.md) before publication or rollout.
 
 ## 中文迁移要点
 
-上述版本均为已发布模块；主模块和 Mint SDK 程序已完成迁移，本轮仅补齐说明与验收记录。
+上述版本均为已发布模块；主模块已完成迁移，本轮还修复 Mint 安装器实际取用的测试源码：
+从 Mint 清单中的固定 SDK 模块获取经过校验的 `functional_tests.go`，补齐真实程序的
+依赖与校验和，禁止构建时改写依赖，并检查产物中的 fork SDK 版本与模块来源。
+这项构建和身份验证不代表需要在线服务与凭据的完整 Mint 功能用例已经运行。
 Go 集成需要同时调整 SDK 根包、子包和自定义函数签名，并重新构建。SDK 仍使用 `minio`
 包名，但别名不能保持旧模块命名类型的身份；自定义 hash 回调也要改用新 kits 的
 `md5simd.Hasher`（引用路径为 `github.com/soulteary/otterio-kits/md5-simd`）。

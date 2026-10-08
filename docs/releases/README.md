@@ -16,6 +16,8 @@ after `RELEASE.2026-10-07T14-09-17Z` through
 `6f6d0835ddff68020f1491c403b958fade22841f`: account information and conditional
 writes, CLI v3, published SDK/kits and S3 gateway test readiness. It records
 local compatibility results and the publication/deployment gates still pending.
+The preparation additionally repairs the Mint installer to use checksum-verified
+functional-test source from the fixed fork SDK instead of upstream latest.
 Go integrations should also read [SDK and kits compatibility](../development/sdk-kits-migration-20261008.md)
 and [CLI migration](../cli-migration.md). Reconcile any later main changes before
 selecting a fresh UTC tag.
@@ -50,6 +52,7 @@ unless attribution is approved; do not publish contact details or correspondence
 下一版本的中英双语 Release 正文以根目录 [RELEASE_NOTES.md](../../RELEASE_NOTES.md)
 为准。本次范围、兼容检查与待执行验收见[10 月 8 日发布核对记录](2026-10-08-release-review.md)，
 覆盖账户信息与条件写入、CLI v3、SDK/kits 和 S3 gateway 测试准备过程。
+本准备过程还修复 Mint 安装器，使其使用固定 fork SDK 的已校验功能测试源码。
 上方 10 月 5 日文章及 10 月 5 日、7 日核对记录作为历史材料保留，不能代替当前正文。
 正式发布时再确定新标签和链接，不复用旧版标签。
 64 MiB 是内部缓冲 RPC 限制，不是 S3 对象大小限制；仅当清单有效且固定标签摘要一致时，

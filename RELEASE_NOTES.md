@@ -1,14 +1,17 @@
 # SDK, CLI and conditional-write update
 
-This release follows `RELEASE.2026-10-07T14-09-17Z`. The reviewed implementation
-ends at `6f6d0835ddff68020f1491c403b958fade22841f`; the complete change range and
+This release follows `RELEASE.2026-10-07T14-09-17Z`. The reviewed main implementation
+ends at `6f6d0835ddff68020f1491c403b958fade22841f`; this preparation also fixes
+the Mint SDK installer. The change range, additional fix and
 publication checklist are in [the release review](https://github.com/soulteary/otterio/blob/main/docs/releases/2026-10-08-release-review.md).
 
 ## Changes
 
 - Use the published `github.com/soulteary/otterio-sdk/v7 v7.3.1` and all six
   OtterIO kits modules in the server dependency graph. Update server imports,
-  examples and the Mint SDK harness. Custom Go consumers should follow the
+  examples and the Mint SDK harness. Mint now installs checksum-verified
+  functional-test source from its fixed SDK version, builds without changing
+  dependencies, and checks the linked SDK identity. Custom Go consumers should follow the
   [SDK and kits compatibility notes](https://github.com/soulteary/otterio/blob/main/docs/development/sdk-kits-migration-20261008.md).
 - Migrate command parsing to `urfave/cli/v3 v3.14.0`. Preserve the reviewed
   command grammar, flag scope, help output, startup configuration and signal
@@ -64,14 +67,17 @@ report, analysis and reproducer. Community contribution records remain in
 
 # SDK、CLI 与条件写入更新
 
-本次更新接续 `RELEASE.2026-10-07T14-09-17Z`，实现核对截至
-`6f6d0835ddff68020f1491c403b958fade22841f`。完整变化与发布验收步骤见
+本次更新接续 `RELEASE.2026-10-07T14-09-17Z`，主分支实现核对截至
+`6f6d0835ddff68020f1491c403b958fade22841f`，本准备过程还修正了 Mint SDK 安装器。
+完整变化、追加修复与发布验收步骤见
 [发布核对记录](https://github.com/soulteary/otterio/blob/main/docs/releases/2026-10-08-release-review.md)。
 
 ## 本次变化
 
 - 服务端使用已发布的 `github.com/soulteary/otterio-sdk/v7 v7.3.1` 及全部六个
   OtterIO kits 模块，同步更新服务端引用、示例和 Mint SDK 验证程序。
+  Mint 按固定 SDK 版本安装经过校验的 functional-test 源码，以只读依赖方式构建，
+  并检查实际链接的 SDK 身份。
   自定义 Go 集成见 [SDK 与 kits 兼容说明](https://github.com/soulteary/otterio/blob/main/docs/development/sdk-kits-migration-20261008.md)。
 - 命令解析迁移到 `urfave/cli/v3 v3.14.0`，保持已核对的命令语法、参数作用域、
   帮助输出、启动配置和信号处理。自定义 Go gateway 需要迁移到命令工厂接口，
