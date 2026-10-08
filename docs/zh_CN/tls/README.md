@@ -1,10 +1,12 @@
-# 使用TLS安全的访问Otterio服务
+# 使用 TLS 安全访问 OtterIO 服务
 
-本文，我们讲介绍如何在Linux和Windows上配置Otterio服务使用TLS。
+[English](../../tls/README.md) · [文档目录](../README.md)
+
+本文介绍如何在 Linux 和 Windows 上为 OtterIO 服务配置 TLS。
 
 ## 1. 前提条件
 
-* 下载Otterio server [这里](https://docs.min.io/docs/minio-quickstart-guide)
+* 按照[本仓库的安装说明](../../../README_zh_CN.md#安装方式)安装 OtterIO Server。
 
 ## 2. 配置已存在的证书
 

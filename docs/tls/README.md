@@ -2,6 +2,8 @@
 
 This guide explains how to configure OtterIO Server with TLS certificates on Linux and Windows platforms.
 
+[简体中文](../zh_CN/tls/README.md) · [Documentation index](../README.md)
+
 1. [Install OtterIO Server](#install-otterio-server)
 2. [Use an Existing Key and Certificate with OtterIO](#use-an-existing-key-and-certificate-with-otterio)
 3. [Generate and use Self-signed Keys and Certificates with OtterIO](#generate-use-self-signed-keys-certificates)
@@ -9,7 +11,7 @@ This guide explains how to configure OtterIO Server with TLS certificates on Lin
 
 ## <a name="install-otterio-server"></a>1. Install OtterIO Server
 
-Install OtterIO Server using the instructions in the [OtterIO Quickstart Guide](http://docs.min.io/docs/minio-quickstart-guide).
+Install OtterIO Server using the [installation instructions in this repository](../../README.md#installation).
 
 ## <a name="use-an-existing-key-and-certificate-with-otterio"></a>2. Use an Existing Key and Certificate with OtterIO
 
@@ -30,8 +32,7 @@ This section describes how to generate a self-signed certificate using various t
 
 * 3.1 [Use generate_cert.go to Generate a Certificate](#using-go)
 * 3.2 [Use OpenSSL to Generate a Certificate](#using-open-ssl)
-* 3.3 [Use OpenSSL (with IP address) to Generate a Certificate](#using-open-ssl-with-ip)
-* 3.4 [Use GnuTLS (for Windows) to Generate a Certificate](#using-gnu-tls)
+* 3.3 [Use GnuTLS (for Windows) to Generate a Certificate](#using-gnu-tls)
 
 **Note:**
 * OtterIO only supports keys and certificates in PEM format on Linux and Windows.
