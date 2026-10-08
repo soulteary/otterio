@@ -287,19 +287,30 @@ func (s *erasureSets) connectDisks() {
 func (s *erasureSets) monitorAndConnectEndpoints(ctx context.Context, monitorInterval time.Duration) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	time.Sleep(time.Duration(r.Float64() * float64(time.Second)))
+	monitor := time.NewTimer(time.Duration(r.Float64() * float64(time.Second)))
+	defer monitor.Stop()
+	select {
+	case <-ctx.Done():
+		return
+	case <-monitor.C:
+	}
+	if ctx.Err() != nil {
+		return
+	}
 
 	// Pre-emptively connect the disks if possible.
 	s.connectDisks()
 
-	monitor := time.NewTimer(monitorInterval)
-	defer monitor.Stop()
+	monitor.Reset(monitorInterval)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-monitor.C:
+			if ctx.Err() != nil {
+				return
+			}
 			// Reset the timer once fired for required interval.
 			monitor.Reset(monitorInterval)
 

@@ -1042,6 +1042,12 @@ func TestXLStorageDeleteFile(t *testing.T) {
 
 // TestXLStorageReadFile - TestXLStorages xlStorage.ReadFile with wide range of cases and asserts the result and error response.
 func TestXLStorageReadFile(t *testing.T) {
+	restoreGlobalStorageClass := globalStorageClass.Snapshot()
+	defer globalStorageClass.Update(restoreGlobalStorageClass)
+	storageClassCfg := restoreGlobalStorageClass
+	storageClassCfg.DMA = storageclass.DMAWrite
+	globalStorageClass.Update(storageClassCfg)
+
 	// create xlStorage test setup
 	xlStorage, path, err := newXLStorageTestSetup()
 	if err != nil {
@@ -1152,7 +1158,8 @@ func TestXLStorageReadFile(t *testing.T) {
 	for l := 0; l < 2; l++ {
 		// 1st loop tests with dma=write, 2nd loop tests with dma=read-write.
 		if l == 1 {
-			globalStorageClass.DMA = storageclass.DMAReadWrite
+			storageClassCfg.DMA = storageclass.DMAReadWrite
+			globalStorageClass.Update(storageClassCfg)
 		}
 		// Following block validates all ReadFile test cases.
 		for i, testCase := range testCases {
@@ -1212,7 +1219,8 @@ func TestXLStorageReadFile(t *testing.T) {
 	}
 
 	// Reset the flag.
-	globalStorageClass.DMA = storageclass.DMAWrite
+	storageClassCfg.DMA = storageclass.DMAWrite
+	globalStorageClass.Update(storageClassCfg)
 
 	// TestXLStorage for permission denied.
 	if runtime.GOOS != globalWindowsOSName {
