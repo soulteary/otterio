@@ -11,13 +11,15 @@ Preparing or merging these documents does not create a tag or publish artifacts.
 
 ## Current preparation
 
-[2026-10-08 release review](2026-10-08-release-review.md) covers all four commits
+[2026-10-08 release review](2026-10-08-release-review.md) covers all 12 commits
 after `RELEASE.2026-10-07T14-09-17Z` through
-`6f6d0835ddff68020f1491c403b958fade22841f`: account information and conditional
-writes, CLI v3, published SDK/kits and S3 gateway test readiness. It records
-local compatibility results and the publication/deployment gates still pending.
-The preparation additionally repairs the Mint installer to use checksum-verified
-functional-test source from the fixed fork SDK instead of upstream latest.
+`458b54c9bc155780c546696a12581450adfee32b`: durable lifecycle transition and
+version restore, protected tier metadata and overwrite quorum, bucket
+configuration revisions and IAM self-rotation, storage-class synchronization,
+account information and conditional writes, CLI v3, published SDK/kits, the
+fixed/checksum-verified Mint installer, image runtime refresh and reconciled
+guides. It distinguishes current regression results from historical `6f6d083`
+compatibility checks and keeps publication/deployment gates pending.
 Go integrations should also read [SDK and kits compatibility](../development/sdk-kits-migration-20261008.md)
 and [CLI migration](../cli-migration.md). Reconcile any later main changes before
 selecting a fresh UTC tag.
@@ -57,8 +59,9 @@ unless attribution is approved; do not publish contact details or correspondence
 
 下一版本的中英双语 Release 正文以根目录 [RELEASE_NOTES.md](../../RELEASE_NOTES.md)
 为准。本次范围、兼容检查与待执行验收见[10 月 8 日发布核对记录](2026-10-08-release-review.md)，
-覆盖账户信息与条件写入、CLI v3、SDK/kits 和 S3 gateway 测试准备过程。
-本准备过程还修复 Mint 安装器，使其使用固定 fork SDK 的已校验功能测试源码。
+范围已补齐至 `458b54c`：生命周期迁移与版本恢复、分层元数据与覆盖写入保护、
+桶配置修订与 IAM 自助轮换、存储类型同步，以及此前账户信息、对象条件写入、CLI、
+SDK/kits、Mint 安装器、镜像刷新与文档更新。当前回归与 `6f6d083` 历史兼容检查分开记录。
 上方 10 月 5 日文章及 10 月 5 日、7 日核对记录作为历史材料保留，不能代替当前正文。
 正式发布时再确定新标签和链接，不复用旧版标签。
 64 MiB 是内部缓冲 RPC 限制，不是 S3 对象大小限制；仅当清单有效且固定标签摘要一致时，
