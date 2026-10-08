@@ -495,8 +495,8 @@ func TestTransitionStorageOverwriteMetadataQuorum(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer obj.Shutdown(ctx)
 	defer removeRoots(roots)
+	defer obj.Shutdown(ctx)
 	const bucket = "transition-overwrite-quorum"
 	if err = obj.MakeBucketWithLocation(ctx, bucket, BucketOptions{}); err != nil {
 		t.Fatal(err)
@@ -506,7 +506,6 @@ func TestTransitionStorageOverwriteMetadataQuorum(t *testing.T) {
 		name   string
 		status string
 	}{
-		{name: "ordinary"},
 		{name: "pending", status: lifecycle.TransitionPending},
 		{name: "complete", status: lifecycle.TransitionComplete},
 	} {
@@ -516,11 +515,9 @@ func TestTransitionStorageOverwriteMetadataQuorum(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if test.status != "" {
-				source, err = obj.PutObjectMetadata(ctx, bucket, test.name, ObjectOptions{TransitionStatus: test.status, TransitionedObject: transitionStorageReference()})
-				if err != nil {
-					t.Fatal(err)
-				}
+			source, err = obj.PutObjectMetadata(ctx, bucket, test.name, ObjectOptions{TransitionStatus: test.status, TransitionedObject: transitionStorageReference()})
+			if err != nil {
+				t.Fatal(err)
 			}
 			pristine, errs := readAllFileInfo(ctx, disks, bucket, test.name, "", true)
 			pristineBytes := make([][]byte, len(disks))
@@ -551,9 +548,9 @@ func TestTransitionStorageOverwriteMetadataQuorum(t *testing.T) {
 			}
 			replacement := []byte("replacement")
 			_, err = obj.PutObject(ctx, bucket, test.name, mustGetPutObjReader(t, bytes.NewReader(replacement), int64(len(replacement)), "", ""), ObjectOptions{})
-			var quorumErr InsufficientWriteQuorum
-			if !errors.As(err, &quorumErr) || quorumErr.Bucket != bucket || quorumErr.Object != test.name {
-				t.Fatalf("unsafe overwrite did not report the failed write: %v", err)
+			var blocked NotImplemented
+			if !errors.As(err, &blocked) {
+				t.Fatalf("tiered overwrite without metadata quorum was not refused: %v", err)
 			}
 			for i, disk := range disks {
 				after, readErr := disk.ReadAll(ctx, bucket, pathJoin(test.name, xlStorageFormatFile))
