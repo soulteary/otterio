@@ -22,7 +22,6 @@ import (
 	crand "crypto/rand"
 	"errors"
 	"io"
-	"os"
 	"strconv"
 	"testing"
 
@@ -138,10 +137,12 @@ func TestErasureDeleteObjectsErasureSet(t *testing.T) {
 		if err != nil {
 			t.Fatal("Unable to initialize 'Erasure' object layer.", err)
 		}
-		// Remove all dirs.
-		for _, dir := range fsDirs {
-			defer os.RemoveAll(dir)
-		}
+		t.Cleanup(func() {
+			if err := obj.Shutdown(context.Background()); err != nil {
+				t.Errorf("Unable to shut down 'Erasure' object layer: %v", err)
+			}
+			removeRoots(fsDirs)
+		})
 		z := obj.(*erasureServerPools)
 		xl := z.serverPools[0].sets[0]
 		objs = append(objs, xl)
@@ -204,12 +205,12 @@ func TestErasureDeleteObjectsErasureSet(t *testing.T) {
 
 func TestErasureDeleteObjectDiskNotFound(t *testing.T) {
 	skipIfWindowsErasureExec(t)
-	restoreGlobalStorageClass := globalStorageClass
+	restoreGlobalStorageClass := globalStorageClass.Snapshot()
 	defer func() {
-		globalStorageClass = restoreGlobalStorageClass
+		globalStorageClass.Update(restoreGlobalStorageClass)
 	}()
 
-	globalStorageClass = storageclass.Config{}
+	globalStorageClass.Update(storageclass.Config{})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -220,8 +221,12 @@ func TestErasureDeleteObjectDiskNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Cleanup backend directories
-	defer obj.Shutdown(context.Background())
-	defer removeRoots(fsDirs)
+	defer func() {
+		if err := obj.Shutdown(context.Background()); err != nil {
+			t.Errorf("Unable to shut down 'Erasure' object layer: %v", err)
+		}
+		removeRoots(fsDirs)
+	}()
 
 	z := obj.(*erasureServerPools)
 	xl := z.serverPools[0].sets[0]
@@ -580,12 +585,12 @@ func TestObjectQuorumFromMeta(t *testing.T) {
 }
 
 func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHandler) {
-	restoreGlobalStorageClass := globalStorageClass
+	restoreGlobalStorageClass := globalStorageClass.Snapshot()
 	defer func() {
-		globalStorageClass = restoreGlobalStorageClass
+		globalStorageClass.Update(restoreGlobalStorageClass)
 	}()
 
-	globalStorageClass = storageclass.Config{}
+	globalStorageClass.Update(storageclass.Config{})
 
 	bucket := getRandomBucketName()
 
@@ -614,7 +619,7 @@ func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHa
 	}
 
 	parts1, errs1 := readAllFileInfo(ctx, erasureDisks, bucket, object1, "", false)
-	parts1SC := globalStorageClass
+	parts1SC := globalStorageClass.Snapshot()
 
 	// Object for test case 2 - No StorageClass defined, MetaData in PutObject requesting RRS Class
 	object2 := "object2"
@@ -626,7 +631,7 @@ func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHa
 	}
 
 	parts2, errs2 := readAllFileInfo(ctx, erasureDisks, bucket, object2, "", false)
-	parts2SC := globalStorageClass
+	parts2SC := globalStorageClass.Snapshot()
 
 	// Object for test case 3 - No StorageClass defined, MetaData in PutObject requesting Standard Storage Class
 	object3 := "object3"
@@ -638,17 +643,17 @@ func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHa
 	}
 
 	parts3, errs3 := readAllFileInfo(ctx, erasureDisks, bucket, object3, "", false)
-	parts3SC := globalStorageClass
+	parts3SC := globalStorageClass.Snapshot()
 
 	// Object for test case 4 - Standard StorageClass defined as Parity 6, MetaData in PutObject requesting Standard Storage Class
 	object4 := "object4"
 	metadata4 := make(map[string]string)
 	metadata4["x-amz-storage-class"] = storageclass.STANDARD
-	globalStorageClass = storageclass.Config{
+	globalStorageClass.Update(storageclass.Config{
 		Standard: storageclass.StorageClass{
 			Parity: 6,
 		},
-	}
+	})
 
 	_, err = obj.PutObject(ctx, bucket, object4, mustGetPutObjReader(t, bytes.NewReader(data), int64(len(data)), "", ""), ObjectOptions{UserDefined: metadata4})
 	if err != nil {
@@ -667,11 +672,11 @@ func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHa
 	object5 := "object5"
 	metadata5 := make(map[string]string)
 	metadata5["x-amz-storage-class"] = storageclass.RRS
-	globalStorageClass = storageclass.Config{
+	globalStorageClass.Update(storageclass.Config{
 		RRS: storageclass.StorageClass{
 			Parity: 2,
 		},
-	}
+	})
 
 	_, err = obj.PutObject(ctx, bucket, object5, mustGetPutObjReader(t, bytes.NewReader(data), int64(len(data)), "", ""), ObjectOptions{UserDefined: metadata5})
 	if err != nil {
@@ -689,11 +694,11 @@ func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHa
 	object6 := "object6"
 	metadata6 := make(map[string]string)
 	metadata6["x-amz-storage-class"] = storageclass.STANDARD
-	globalStorageClass = storageclass.Config{
+	globalStorageClass.Update(storageclass.Config{
 		RRS: storageclass.StorageClass{
 			Parity: 2,
 		},
-	}
+	})
 
 	_, err = obj.PutObject(ctx, bucket, object6, mustGetPutObjReader(t, bytes.NewReader(data), int64(len(data)), "", ""), ObjectOptions{UserDefined: metadata6})
 	if err != nil {
@@ -712,11 +717,11 @@ func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHa
 	object7 := "object7"
 	metadata7 := make(map[string]string)
 	metadata7["x-amz-storage-class"] = storageclass.STANDARD
-	globalStorageClass = storageclass.Config{
+	globalStorageClass.Update(storageclass.Config{
 		Standard: storageclass.StorageClass{
 			Parity: 5,
 		},
-	}
+	})
 
 	_, err = obj.PutObject(ctx, bucket, object7, mustGetPutObjReader(t, bytes.NewReader(data), int64(len(data)), "", ""), ObjectOptions{UserDefined: metadata7})
 	if err != nil {
@@ -749,7 +754,7 @@ func testObjectQuorumFromMeta(obj ObjectLayer, _ string, _ []string, t TestErrHa
 	for _, tt := range tests {
 		tt := tt
 		t.(*testing.T).Run("", func(t *testing.T) {
-			globalStorageClass = tt.storageClassCfg
+			globalStorageClass.Update(tt.storageClassCfg)
 			actualReadQuorum, actualWriteQuorum, err := objectQuorumFromMeta(ctx, tt.parts, tt.errs, getDefaultParityBlocks(len(erasureDisks)))
 			if tt.expectedError != nil && err == nil {
 				t.Errorf("Expected %s, got %s", tt.expectedError, err)

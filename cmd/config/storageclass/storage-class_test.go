@@ -19,8 +19,80 @@ package storageclass
 import (
 	"errors"
 	"reflect"
+	"sync"
 	"testing"
 )
+
+func TestConfigUpdateChangesReceiver(t *testing.T) {
+	var cfg Config
+	next := Config{Standard: StorageClass{Parity: 6}, RRS: StorageClass{Parity: 3}, DMA: DMAReadWrite}
+	cfg.Update(next)
+	if got := cfg.GetDMA(); got != next.DMA {
+		t.Fatalf("Update did not change DMA: got %q, want %q", got, next.DMA)
+	}
+	if got := cfg.GetParityForSC(STANDARD); got != next.Standard.Parity {
+		t.Fatalf("Update did not change standard parity: got %d, want %d", got, next.Standard.Parity)
+	}
+	if got := cfg.GetParityForSC(RRS); got != next.RRS.Parity {
+		t.Fatalf("Update did not change RRS parity: got %d, want %d", got, next.RRS.Parity)
+	}
+	cfg.Update(Config{})
+	if cfg.GetDMA() != "" || cfg.GetParityForSC(STANDARD) != 0 || cfg.GetParityForSC(RRS) != defaultRRSParity {
+		t.Fatal("Update did not restore the default configuration")
+	}
+}
+
+func TestConfigSnapshotIsIndependent(t *testing.T) {
+	cfg := Config{DMA: DMAWrite}
+	snapshot := cfg.Snapshot()
+	snapshot.DMA = DMAReadWrite
+	if got := cfg.GetDMA(); got != DMAWrite {
+		t.Fatalf("Changing a snapshot changed the configuration: %q", got)
+	}
+}
+
+func TestConfigConcurrentReadUpdate(t *testing.T) {
+	configs := [2]Config{
+		{Standard: StorageClass{Parity: 4}, RRS: StorageClass{Parity: 2}, DMA: DMAWrite},
+		{Standard: StorageClass{Parity: 6}, RRS: StorageClass{Parity: 3}, DMA: DMAReadWrite},
+	}
+	cfg := configs[0]
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			for j := 0; j < 1000; j++ {
+				cfg.Update(configs[j%len(configs)])
+			}
+		}()
+	}
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			for j := 0; j < 1000; j++ {
+				if got := cfg.GetDMA(); got != DMAWrite && got != DMAReadWrite {
+					t.Errorf("Unexpected DMA: %q", got)
+				}
+				if got := cfg.GetParityForSC(STANDARD); got != 4 && got != 6 {
+					t.Errorf("Unexpected standard parity: %d", got)
+				}
+				if got := cfg.GetParityForSC(RRS); got != 2 && got != 3 {
+					t.Errorf("Unexpected RRS parity: %d", got)
+				}
+				if got := cfg.Snapshot(); got != configs[0] && got != configs[1] {
+					t.Errorf("Snapshot contains a partial update: %+v", got)
+				}
+			}
+		}()
+	}
+	close(start)
+	wg.Wait()
+}
 
 func TestParseStorageClass(t *testing.T) {
 	tests := []struct {
