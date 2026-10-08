@@ -47,19 +47,11 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: python3 buildscripts/release-preflight.py --existing "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
       - name: Require successful main CI for the exact commit
+        timeout-minutes: 65
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ steps.meta.outputs.sha }}
-        run: |
-          set -euo pipefail
-          for workflow in go.yml lint.yml release-checks.yml; do
-            result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${RELEASE_SHA}&branch=main&event=push&per_page=1" \
-              --jq '.workflow_runs[0] | [.status, .conclusion] | @tsv')"
-            if [ "$result" != $'completed\tsuccess' ]; then
-              echo "::error::${workflow} must succeed on main at ${RELEASE_SHA}; rerun this release after CI passes."
-              exit 1
-            fi
-          done
+        run: python3 buildscripts/release-ci.py "$GITHUB_REPOSITORY" "$RELEASE_SHA" --timeout 3600 --interval 30
       - name: Reject published releases and prerelease drafts before building
         env:
           GH_TOKEN: ${{ github.token }}
