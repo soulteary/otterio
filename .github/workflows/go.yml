@@ -168,6 +168,8 @@ jobs:
   # Race detector tests are by far the slowest step, so they get their own job.
   test-race:
     name: Race detector
+    # Allow the 90-minute package budget plus setup, compilation and diagnostics.
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     env:
       CGO_ENABLED: '1'
@@ -241,7 +243,7 @@ jobs:
 
       - name: Upload race diagnostics
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: race-diagnostics-${{ github.run_attempt }}
           path: ${{ runner.temp }}/otterio-race/
@@ -354,7 +356,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24.21.0'
       - uses: oven-sh/setup-bun@v2.2.0

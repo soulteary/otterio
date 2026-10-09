@@ -30,4 +30,7 @@ fi
 # Reuse compilation, not previous successful test results. Optional arguments
 # are for local diagnostics (e.g. -json); CI never supplies test filters.
 printf 'Race testing %s packages\n' "${#packages[@]}" >&2
-exec go test -tags kqueue -race -timeout 20m -count=1 "$@" "${packages[@]}"
+# The timeout covers an entire package, not each individual test. The cmd
+# suite exercises large multipart/encrypted objects and exceeded 20 minutes
+# on the two-core hosted runner while tests were still making progress.
+exec go test -tags kqueue -race -timeout 90m -count=1 "$@" "${packages[@]}"

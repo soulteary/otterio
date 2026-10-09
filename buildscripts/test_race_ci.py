@@ -61,7 +61,7 @@ sys.exit(91)
         self.assertEqual(result.returncode, 0, result.stderr)
         calls = self.calls()
         self.assertEqual(calls[1]["args"], ["list", "-tags", "kqueue", "-race", "./..."])
-        self.assertEqual(calls[2]["args"], ["test", "-tags", "kqueue", "-race", "-timeout", "20m", "-count=1",
+        self.assertEqual(calls[2]["args"], ["test", "-tags", "kqueue", "-race", "-timeout", "90m", "-count=1",
                                          "example.test/storage", "example.test/storage/cmd", "example.test/storage/pkg/browsercache"])
         self.assertTrue(all(call["cgo"] == "1" for call in calls))
         self.assertTrue(all(call["cwd"] == str(self.root) for call in calls))

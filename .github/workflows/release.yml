@@ -104,7 +104,7 @@ jobs:
           (cd dist && sha256sum otterio-* > "otterio-${TAG}-checksums.txt")
       - name: Smoke test the release binary
         run: go run buildscripts/verify-s3-startup.go ./dist/otterio-linux-amd64
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: binaries
           path: dist/
@@ -130,7 +130,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.sha }}
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/download-artifact@v8.0.2
         with:
           name: binaries
           path: dist
@@ -230,7 +230,7 @@ jobs:
         run: |
           git fetch --no-tags --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
           python3 buildscripts/release-preflight.py --existing "$RELEASE_TAG"
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/download-artifact@v8.0.2
         with:
           name: binaries
           path: dist
