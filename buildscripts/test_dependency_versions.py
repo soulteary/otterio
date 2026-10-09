@@ -22,9 +22,14 @@ class DependencyVersionTests(unittest.TestCase):
 
     def test_generators_match_runtime_modules(self):
         make = (ROOT / "Makefile").read_text(encoding="utf-8")
-        for variable, module in (("MSGP_VERSION", "github.com/tinylib/msgp"), ("STRINGER_VERSION", "golang.org/x/tools")):
-            expected = re.search(re.escape(module) + r" (v\S+)", self.mod)[1]
-            self.assertIn(variable + " ?= " + expected, make)
+        expected = re.search(r"github\.com/tinylib/msgp (v\S+)", self.mod)[1]
+        self.assertIn("MSGP_VERSION ?= " + expected, make)
+
+    def test_stringer_has_an_explicit_tool_version(self):
+        # stringer is installed separately and has no runtime dependency in go.mod.
+        make = (ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertRegex(make, r"(?m)^STRINGER_VERSION \?= v\d+\.\d+\.\d+$")
+        self.assertIn("go install golang.org/x/tools/cmd/stringer@$(STRINGER_VERSION)", make)
 
     def test_browser_ci_uses_the_committed_lockfile(self):
         workflow = (ROOT / ".github/workflows/go.yml").read_text(encoding="utf-8")

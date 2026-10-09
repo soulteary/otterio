@@ -10,7 +10,7 @@ functional program's imports. Installation disables parent Go workspaces, builds
 with read-only dependencies and checks the binary's linked SDK version and origin.
 
 ## Adding new tests
-New tests are added to [the OtterIO SDK functional program](https://github.com/soulteary/otterio-sdk/blob/v7.3.1/functional_tests.go).
+New tests are added to [the OtterIO SDK functional program](https://github.com/soulteary/otterio-sdk/blob/v7.3.2/functional_tests.go).
 Publish an SDK version and update this module's pin/checksums to include them.
 
 ## Running tests manually
