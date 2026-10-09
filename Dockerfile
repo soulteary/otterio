@@ -22,7 +22,7 @@ RUN set -eu; \
     GOOS="$TARGETOS" GOARCH="$TARGETARCH" go build \
       -tags kqueue -trimpath -buildvcs=false -ldflags "$LDFLAGS" -o /out/otterio .
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10
 ARG VCS_REF=unknown
 LABEL maintainer="soulteary (community fork of Apache-licensed MinIO codebase, https://github.com/soulteary/otterio)" \
       org.opencontainers.image.source="https://github.com/soulteary/otterio" \

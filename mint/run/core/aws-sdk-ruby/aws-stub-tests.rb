@@ -15,7 +15,7 @@
 #  limitations under the License.
 #
 
-require 'aws-sdk'
+require 'aws-sdk-s3'
 require 'securerandom'
 require 'net/http'
 require 'multipart_body'

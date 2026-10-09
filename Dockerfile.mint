@@ -1,10 +1,10 @@
-FROM ubuntu:18.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV LANG C.UTF-8
 ENV GOROOT /usr/local/go
 ENV GOPATH /usr/local/gopath
-ENV PATH $GOPATH/bin:$GOROOT/bin:$PATH
+ENV PATH /opt/mint-venv/bin:$GOPATH/bin:$GOROOT/bin:$PATH
 ENV MINT_ROOT_DIR /mint
 COPY mint /mint
 

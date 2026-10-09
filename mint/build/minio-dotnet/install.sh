@@ -26,7 +26,7 @@ if [ -z "$OTTERIO_DOTNET_SDK_VERSION" ]; then
 fi
 
 out_dir="$OTTERIO_DOTNET_SDK_PATH/out"
-if [ -z "$out_dir" ]; then
+if [ ! -d "$out_dir" ]; then
     mkdir "$out_dir"
 fi
 
@@ -39,4 +39,4 @@ rm -fr "${temp_dir}"
 
 cd "$OTTERIO_DOTNET_SDK_PATH"
 dotnet restore /p:Configuration=Mint
-dotnet publish --runtime ubuntu.18.04-x64 --output out /p:Configuration=Mint
+dotnet publish --runtime linux-x64 --self-contained true --output out /p:Configuration=Mint

@@ -15,21 +15,21 @@
  */
 
 var mocha = require('mocha');
-module.exports = minioreporter;
+class minioreporter extends mocha.reporters.Base {
+  constructor(runner) {
+    super(runner);
 
-function minioreporter(runner) {
-  mocha.reporters.Base.call(this, runner);
-   var self = this;
+    runner.on('pass', function (test) {
+      GenerateJsonEntry(test)
+    });
 
-  runner.on('pass', function (test) {
-    GenerateJsonEntry(test)
-  });
-
-  runner.on('fail', function (test, err) {
-    GenerateJsonEntry(test, err)
-  });
-
+    runner.on('fail', function (test, err) {
+      GenerateJsonEntry(test, err)
+    });
+  }
 }
+
+module.exports = minioreporter;
 
 /**
  * Convert test result into a JSON object and print on the console.
