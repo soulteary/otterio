@@ -9,7 +9,10 @@ Chroot允许在标准的Linux上基于用户的namespace隔离。
 ## 2. 在Chroot中安装OtterIO
 ```sh
 mkdir -p /mnt/export/${USER}/bin
-wget https://dl.min.io/server/minio/release/linux-amd64/minio -O /mnt/export/${USER}/bin/otterio
+# Download and verify a reviewed OtterIO release for your platform first:
+# https://github.com/soulteary/otterio/releases
+: "${OTTERIO_BINARY:?Set the path to the verified OtterIO executable}"
+install -m 0755 "$OTTERIO_BINARY" "/mnt/export/${USER}/bin/otterio"
 chmod +x /mnt/export/${USER}/bin/otterio
 ```
 
@@ -33,8 +36,8 @@ SecretKey: X3RKxEeFOI8InuNWoPsbG+XEVoaJVCqbvxe+PTOa
 现在可以在主机的9000端口访问实例，在浏览器中输入http://127.0.0.1:9000/即可访问
 
 ## 进一步探索
-- [Otterio纠删码快速入门](https://docs.min.io/cn/minio-erasure-code-quickstart-guide)
-- [使用`mc`](https://docs.min.io/cn/minio-client-quickstart-guide)
-- [使用`aws-cli`](https://docs.min.io/cn/aws-cli-with-minio)
-- [使用`s3cmd`](https://docs.min.io/cn/s3cmd-with-minio)
-- [使用`otterio-go`SDK](https://docs.min.io/cn/golang-client-quickstart-guide)
+- [Otterio纠删码快速入门](https://github.com/soulteary/otterio/blob/main/docs/erasure/README.md)
+- [使用`oc`](https://github.com/soulteary/oc#readme)
+- [使用`aws-cli`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用`s3cmd`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用`otterio-go`SDK](https://github.com/soulteary/otterio-sdk#readme)

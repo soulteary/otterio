@@ -3,7 +3,7 @@
 Bucket replication is designed to replicate selected objects in a bucket to a destination bucket.
 存储桶复制功能可以把存储桶中选中的对象复制到目标存储桶。
 
-要想复制一个存储桶上的对象,到同一集群或者不同集群的目标站点上的目标存储桶中，首先要为源存储桶和目标存储桶启用[版本控制功能](https://docs.otterio.io/docs/otterio-bucket-versioning-guide.html)。最后，需要在源OtterIO服务器上配置目标站点和目标存储桶。
+要想复制一个存储桶上的对象,到同一集群或者不同集群的目标站点上的目标存储桶中，首先要为源存储桶和目标存储桶启用[版本控制功能](https://github.com/soulteary/otterio/blob/main/docs/bucket/versioning/README.md)。最后，需要在源OtterIO服务器上配置目标站点和目标存储桶。
 
 ##  强调
 - 和AWS S3不同，OtterIO的源存储桶和目标存储桶名字可以一样，可处理各种情况，例如*Splunk*，*Veeam*站点到站点*DR*。
@@ -80,5 +80,5 @@ Replication configuration applied successfully to myotterio/srcbucket.
 ![head](https://raw.githubusercontent.com/soulteary/OtterIO/main/docs/zh_CN/bucket/replication/HEAD_bucket_replication.png)
 
 ## 进一步探索
-- [OtterIO存储桶版本控制实现](https://docs.otterio.io/docs/otterio-bucket-versioning-guide.html)
-- [OtterIO客户端快速入门指南](https://docs.otterio.io/cn/otterio-client-quickstart-guide.html)
+- [OtterIO存储桶版本控制实现](https://github.com/soulteary/otterio/blob/main/docs/bucket/versioning/README.md)
+- [OtterIO客户端快速入门指南](https://github.com/soulteary/oc#readme)

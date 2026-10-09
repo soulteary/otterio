@@ -19,7 +19,7 @@ will increase speed when the content can be compressed.
 
 ### 1. Prerequisites
 
-Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
+Install OtterIO - [OtterIO Quickstart Guide](https://github.com/soulteary/otterio#quick-start).
 
 ### 2. Run OtterIO with compression
 
@@ -27,26 +27,26 @@ Compression can be enabled by updating the `compress` config settings for OtterI
 Config `compress` settings take extensions and mime-types to be compressed.
 
 ```bash
-~ mc admin config get myotterio compression
+~ oc admin config get myotterio compression
 compression extensions=".txt,.log,.csv,.json,.tar,.xml,.bin" mime_types="text/*,application/json,application/xml"
 ```
 
 Default config includes most common highly compressible content extensions and mime-types.
 
 ```bash
-~ mc admin config set myotterio compression extensions=".pdf" mime_types="application/pdf"
+~ oc admin config set myotterio compression extensions=".pdf" mime_types="application/pdf"
 ```
 
 To show help on setting compression config values.
 ```bash
-~ mc admin config set myotterio compression
+~ oc admin config set myotterio compression
 ```
 
 To enable compression for all content, no matter the extension and content type
 (except for the default excluded types) set BOTH extensions and mime types to empty.
 
 ```bash
-~ mc admin config set myotterio compression enable="on" extensions="" mime_types=""
+~ oc admin config set myotterio compression enable="on" extensions="" mime_types=""
 ```
 
 The compression settings may also be set through environment variables.
@@ -66,13 +66,12 @@ See [CRIME TLS](https://en.wikipedia.org/wiki/CRIME) as an example of this.
 
 Therefore, compression is disabled when encrypting by default, and must be enabled separately.
 
-Consult our security experts on [SUBNET](https://min.io/pricing) to help you evaluate if
-your setup can use this feature combination safely.
+Evaluate compression together with your encryption and threat model before enabling it.
 
 To enable compression+encryption use:
 
 ```bash
-~ mc admin config set myotterio compression allow_encryption=on
+~ oc admin config set myotterio compression allow_encryption=on
 ```
 
 Or alternatively through the environment variable `OTTERIO_COMPRESS_ALLOW_ENCRYPTION=on`.
@@ -121,13 +120,13 @@ even if compression is enabled for all types.
 
 ## To test the setup
 
-To test this setup, practice put calls to the server using `mc` and use `mc ls` on
+To test this setup, practice put calls to the server using `oc` and use `mc ls` on
 the data directory to view the size of the object.
 
 ## Explore Further
 
-- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+- [Use `oc` with OtterIO Server](https://github.com/soulteary/oc#readme)
+- [Use `aws-cli` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use `s3cmd` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use OtterIO SDK with OtterIO Server](https://github.com/soulteary/otterio-sdk#readme)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

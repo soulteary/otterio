@@ -4,15 +4,15 @@ This document explains how to configure OtterIO server with TLS certificates on 
 
 ## 1. Prerequisites
 
-- Familiarity with [OtterIO deployment process on Kubernetes](https://docs.min.io/docs/deploy-minio-on-kubernetes).
+- Familiarity with [OtterIO deployment process on Kubernetes](https://github.com/soulteary/otterio/blob/main/docs/orchestration/kubernetes/README.md).
 
 - Kubernetes cluster with `kubectl` configured.
 
-- Acquire TLS certificates, either from a CA or [create self-signed certificates](https://docs.min.io/docs/how-to-secure-access-to-minio-server-with-tls).
+- Acquire TLS certificates, either from a CA or [create self-signed certificates](https://github.com/soulteary/otterio/blob/main/docs/tls/README.md).
 
-For a [distributed OtterIO setup](https://docs.min.io/docs/distributed-minio-quickstart-guide), where there are multiple pods with different domain names expected to run, you will either need wildcard certificates valid for all the domains or have specific certificates for each domain. If you are going to use specific certificates, make sure to create Kubernetes secrets accordingly.
+For a [distributed OtterIO setup](https://github.com/soulteary/otterio/blob/main/docs/distributed/README.md), where there are multiple pods with different domain names expected to run, you will either need wildcard certificates valid for all the domains or have specific certificates for each domain. If you are going to use specific certificates, make sure to create Kubernetes secrets accordingly.
 
-For testing purposes, here is [how to create self-signed certificates](https://github.com/minio/minio/tree/master/docs/tls#3-generate-self-signed-certificates).
+For testing purposes, here is [how to create self-signed certificates](https://github.com/soulteary/otterio/tree/main/docs/tls#3-generate-self-signed-certificates).
 
 ## 2. Create Kubernetes secret
 

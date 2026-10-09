@@ -6,7 +6,7 @@ This document explains how to configure OtterIO with `Bucket lookup from DNS` st
 ## Get started
 
 ### 1. Prerequisites
-Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
+Install OtterIO - [OtterIO Quickstart Guide](https://github.com/soulteary/otterio#quick-start).
 
 ### 2. Run OtterIO in federated mode
 Bucket lookup from DNS federation requires two dependencies
@@ -16,7 +16,7 @@ Bucket lookup from DNS federation requires two dependencies
 
 ## Architecture
 
-![bucket-lookup](https://github.com/minio/minio/blob/master/docs/federation/lookup/bucket-lookup.png?raw=true)
+![bucket-lookup](https://github.com/soulteary/otterio/blob/main/docs/federation/lookup/bucket-lookup.png?raw=true)
 
 ### Environment variables
 
@@ -87,12 +87,12 @@ CoreOS team has documented the steps required to migrate existing data from `etc
 
 ### 4. Test your setup
 
-To test this setup, access the OtterIO server via browser or [`mc`](https://docs.min.io/docs/minio-client-quickstart-guide). You’ll see the uploaded files are accessible from the all the OtterIO endpoints.
+To test this setup, access the OtterIO server via browser or [`oc`](https://github.com/soulteary/oc#readme). You’ll see the uploaded files are accessible from the all the OtterIO endpoints.
 
 # Explore Further
 
-- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+- [Use `oc` with OtterIO Server](https://github.com/soulteary/oc#readme)
+- [Use `aws-cli` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use `s3cmd` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use OtterIO SDK with OtterIO Server](https://github.com/soulteary/otterio-sdk#readme)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

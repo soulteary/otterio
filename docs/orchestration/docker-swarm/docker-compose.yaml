@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   otterio1:
-    image: minio/minio:latest
+    image: soulteary/otterio:latest
     hostname: otterio1
     volumes:
       - otterio1-data:/export
@@ -15,8 +15,8 @@ services:
         aliases:
           - otterio-cluster
     environment:
-      OTTERIO_ROOT_USER: AKIAIOSFODNN7EXAMPLE
-      OTTERIO_ROOT_PASSWORD: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set OTTERIO_ROOT_USER}
+      OTTERIO_ROOT_PASSWORD: ${OTTERIO_ROOT_PASSWORD:?Set OTTERIO_ROOT_PASSWORD}
     deploy:
       restart_policy:
         delay: 10s
@@ -33,7 +33,7 @@ services:
       retries: 3
 
   otterio2:
-    image: minio/minio:latest
+    image: soulteary/otterio:latest
     hostname: otterio2
     volumes:
       - otterio2-data:/export
@@ -46,8 +46,8 @@ services:
         aliases:
           - otterio-cluster
     environment:
-      OTTERIO_ROOT_USER: AKIAIOSFODNN7EXAMPLE
-      OTTERIO_ROOT_PASSWORD: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set OTTERIO_ROOT_USER}
+      OTTERIO_ROOT_PASSWORD: ${OTTERIO_ROOT_PASSWORD:?Set OTTERIO_ROOT_PASSWORD}
     deploy:
       restart_policy:
         delay: 10s
@@ -64,7 +64,7 @@ services:
       retries: 3
 
   otterio3:
-    image: minio/minio:latest
+    image: soulteary/otterio:latest
     hostname: otterio3
     volumes:
       - otterio3-data:/export
@@ -77,8 +77,8 @@ services:
         aliases:
           - otterio-cluster
     environment:
-      OTTERIO_ROOT_USER: AKIAIOSFODNN7EXAMPLE
-      OTTERIO_ROOT_PASSWORD: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set OTTERIO_ROOT_USER}
+      OTTERIO_ROOT_PASSWORD: ${OTTERIO_ROOT_PASSWORD:?Set OTTERIO_ROOT_PASSWORD}
     deploy:
       restart_policy:
         delay: 10s
@@ -95,7 +95,7 @@ services:
       retries: 3
 
   otterio4:
-    image: minio/minio:latest
+    image: soulteary/otterio:latest
     hostname: otterio4
     volumes:
       - otterio4-data:/export
@@ -108,8 +108,8 @@ services:
         aliases:
           - otterio-cluster
     environment:
-      OTTERIO_ROOT_USER: AKIAIOSFODNN7EXAMPLE
-      OTTERIO_ROOT_PASSWORD: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set OTTERIO_ROOT_USER}
+      OTTERIO_ROOT_PASSWORD: ${OTTERIO_ROOT_PASSWORD:?Set OTTERIO_ROOT_PASSWORD}
     deploy:
       restart_policy:
         delay: 10s

@@ -4,10 +4,10 @@ When using Veeam Backup and Replication, you can use S3 compatible object storag
 
 __Prerequisites__
 - One or both of Veeam Backup and Replication with support for S3 compatible object store (e.g. 9.5.4) and Veeam Backup for Office365 (VBO)
-- OtterIO object storage set up per https://docs.min.io/docs/minio-quickstart-guide.html
-- Veeam requires TLS connections to the object storage.  This can be configured per https://docs.otterio.io/docs/how-to-secure-access-to-otterio-server-with-tls.html
+- OtterIO object storage set up per https://github.com/soulteary/otterio#quick-start
+- Veeam requires TLS connections to the object storage.  This can be configured per https://github.com/soulteary/otterio/blob/main/docs/README.md
 - The S3 bucket, Access Key and Secret Key have to be created before and outside of Veeam.
-- Configure the otterio client for the Veeam OtterIO endpoint - https://docs.min.io/docs/minio-client-quickstart-guide.html
+- Configure the otterio client for the Veeam OtterIO endpoint - https://github.com/soulteary/oc#readme
 
 ## Setting up an S3 compatible object store for Veeam Backup and Replication
 ### Create a bucket for Veeam backups
@@ -23,7 +23,7 @@ mc mb myotterio/veeambackup
 mc mb -l myotterio/veeambackup
 ```
 
-> Object locking requires erasure coding enabled on the otterio server. For more information see https://docs.otterio.io/docs/otterio-erasure-code-quickstart-guide.html.
+> Object locking requires erasure coding enabled on the otterio server. For more information see https://github.com/soulteary/otterio/blob/main/docs/README.md
 
 ### Add OtterIO as an object store for Veeam
 Follow the steps from the Veeam documentation for adding OtterIO as an object store - https://helpcenter.veeam.com/docs/backup/vsphere/adding_s3c_object_storage.html?ver=100

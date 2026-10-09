@@ -11,7 +11,7 @@ Docker Compose允许定义和运行单主机，多容器Docker应用程序。
 
 ## 2. 在Docker Compose上运行分布式OtterIO
 
-在Docker Compose上部署分布式OtterIO,请下载[docker-compose.yaml](https://github.com/minio/minio/blob/master/docs/orchestration/docker-compose/docker-compose.yaml?raw=true)到你的当前工作目录。Docker Compose会pull OtterIO Docker Image,所以你不需要手动去下载OtterIO binary。然后运行下面的命令
+在Docker Compose上部署分布式OtterIO,请下载[docker-compose.yaml](https://github.com/soulteary/otterio/blob/main/docs/orchestration/docker-compose/docker-compose.yaml?raw=true)到你的当前工作目录。Docker Compose会pull OtterIO Docker Image,所以你不需要手动去下载OtterIO binary。然后运行下面的命令
 
 ### GNU/Linux and macOS
 
@@ -31,19 +31,19 @@ docker-compose.exe up
 
 ### 注意事项
 
-* 默认情况下Docker Compose file使用的是最新版的OtterIO server的Docker镜像，你可以修改image tag来拉取指定版本的[OtterIO Docker image](https://hub.docker.com/r/minio/minio/).
+* 默认情况下Docker Compose file使用的是最新版的OtterIO server的Docker镜像，你可以修改image tag来拉取指定版本的[OtterIO Docker image](https://hub.docker.com/r/soulteary/otterio/).
 
 * 默认情况下会创建4个otterio实例，你可以添加更多的OtterIO服务（最多总共16个）到你的OtterIO Compose deployment。添加一个服务
   * 复制服务定义并适当地更改新服务的名称。
   * 更新每个服务中的命令部分。
   * 更新要为新服务公开的端口号。 另外，请确保分配给新服务的端口尚未使用。
 
-  关于分布式OtterIO的更多资料，请访问[这里](https://docs.min.io/cn/distributed-minio-quickstart-guide).
+  关于分布式OtterIO的更多资料，请访问[这里](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md).
 
 * Docker compose file中的OtterIO服务使用的端口是9001到9004，这允许多个服务在主机上运行。
 
 ### 了解更多
 - [Docker Compose概述](https://docs.docker.com/compose/overview/)
-- [OtterIO Docker快速入门](https://docs.min.io/cn/minio-docker-quickstart-guide)
-- [使用Docker Swarm部署OtterIO](https://docs.min.io/cn/deploy-minio-on-docker-swarm)
-- [OtterIO纠删码快速入门](https://docs.min.io/cn/minio-erasure-code-quickstart-guide)
+- [OtterIO Docker快速入门](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用Docker Swarm部署OtterIO](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [OtterIO纠删码快速入门](https://github.com/soulteary/otterio/blob/main/docs/erasure/README.md)

@@ -33,12 +33,12 @@ import (
 
 // Documentation links, these are part of message printing code.
 const (
-	mcQuickStartGuide     = "https://docs.min.io/docs/minio-client-quickstart-guide"
-	goQuickStartGuide     = "https://docs.min.io/docs/golang-client-quickstart-guide"
-	jsQuickStartGuide     = "https://docs.min.io/docs/javascript-client-quickstart-guide"
-	javaQuickStartGuide   = "https://docs.min.io/docs/java-client-quickstart-guide"
-	pyQuickStartGuide     = "https://docs.min.io/docs/python-client-quickstart-guide"
-	dotnetQuickStartGuide = "https://docs.min.io/docs/dotnet-client-quickstart-guide"
+	ocQuickStartGuide     = "https://github.com/soulteary/oc#readme"
+	goQuickStartGuide     = "https://github.com/soulteary/otterio-sdk#readme"
+	jsQuickStartGuide     = "https://github.com/minio/minio-js#readme"
+	javaQuickStartGuide   = "https://github.com/minio/minio-java#readme"
+	pyQuickStartGuide     = "https://github.com/minio/minio-py#readme"
+	dotnetQuickStartGuide = "https://github.com/minio/minio-dotnet#readme"
 )
 
 // generates format string depending on the string length and padding.
@@ -57,7 +57,7 @@ func printStartupMessage(apiEndpoints []string, err error) {
 	if err != nil {
 		logStartupMessage(color.RedBold("Server startup failed with '%v'", err))
 		logStartupMessage(color.RedBold("Not all features may be available on this server"))
-		logStartupMessage(color.RedBold("Please use 'mc admin' commands to further investigate this issue"))
+		logStartupMessage(color.RedBold("Please use 'oc admin' commands to further investigate this issue"))
 	}
 
 	strippedAPIEndpoints := stripStandardPorts(apiEndpoints)
@@ -190,13 +190,13 @@ func printCLIAccessMsg(endPoint string, alias string) {
 
 	// Configure 'mc', following block prints platform specific information for otterio client.
 	if color.IsTerminal() && !globalCLIContext.Anonymous {
-		logStartupMessage(color.Blue("\nCommand-line Access: ") + mcQuickStartGuide)
+		logStartupMessage(color.Blue("\nCommand-line Access: ") + ocQuickStartGuide)
 		if runtime.GOOS == globalWindowsOSName {
-			mcMessage := fmt.Sprintf("$ mc.exe alias set %s %s %s %s", alias,
+			mcMessage := fmt.Sprintf("$ oc.exe alias set %s %s %s %s", alias,
 				endPoint, cred.AccessKey, cred.SecretKey)
 			logStartupMessage(fmt.Sprintf(getFormatStr(len(mcMessage), 3), mcMessage))
 		} else {
-			mcMessage := fmt.Sprintf("$ mc alias set %s %s %s %s", alias,
+			mcMessage := fmt.Sprintf("$ oc alias set %s %s %s %s", alias,
 				endPoint, cred.AccessKey, cred.SecretKey)
 			logStartupMessage(fmt.Sprintf(getFormatStr(len(mcMessage), 3), mcMessage))
 		}
@@ -207,10 +207,10 @@ func printCLIAccessMsg(endPoint string, alias string) {
 func printObjectAPIMsg() {
 	logStartupMessage(color.Blue("\nObject API (Amazon S3 compatible):"))
 	logStartupMessage(color.Blue("   Go: ") + fmt.Sprintf(getFormatStr(len(goQuickStartGuide), 8), goQuickStartGuide))
-	logStartupMessage(color.Blue("   Java: ") + fmt.Sprintf(getFormatStr(len(javaQuickStartGuide), 6), javaQuickStartGuide))
-	logStartupMessage(color.Blue("   Python: ") + fmt.Sprintf(getFormatStr(len(pyQuickStartGuide), 4), pyQuickStartGuide))
-	logStartupMessage(color.Blue("   JavaScript: ") + jsQuickStartGuide)
-	logStartupMessage(color.Blue("   .NET: ") + fmt.Sprintf(getFormatStr(len(dotnetQuickStartGuide), 6), dotnetQuickStartGuide))
+	logStartupMessage(color.Blue("   Java (third-party MinIO SDK): ") + fmt.Sprintf(getFormatStr(len(javaQuickStartGuide), 6), javaQuickStartGuide))
+	logStartupMessage(color.Blue("   Python (third-party MinIO SDK): ") + fmt.Sprintf(getFormatStr(len(pyQuickStartGuide), 4), pyQuickStartGuide))
+	logStartupMessage(color.Blue("   JavaScript (third-party MinIO SDK): ") + jsQuickStartGuide)
+	logStartupMessage(color.Blue("   .NET (third-party MinIO SDK): ") + fmt.Sprintf(getFormatStr(len(dotnetQuickStartGuide), 6), dotnetQuickStartGuide))
 }
 
 // Get formatted disk/storage info message.
@@ -220,7 +220,7 @@ func getStorageInfoMsg(storageInfo StorageInfo) string {
 	onlineDisks, offlineDisks := getOnlineOfflineDisksStats(storageInfo.Disks)
 	if storageInfo.Backend.Type == madmin.Erasure {
 		if offlineDisks.Sum() > 0 {
-			mcMessage = "Use `mc admin info` to look for latest server/disk info\n"
+			mcMessage = "Use `oc admin info` to look for latest server/disk info\n"
 		}
 
 		diskInfo := fmt.Sprintf(" %d Online, %d Offline. ", onlineDisks.Sum(), offlineDisks.Sum())

@@ -461,9 +461,9 @@ func lookupConfigs(s config.Config, setDriveCounts []int) {
 	globalAutoEncryption = kmsCfg.AutoEncryption // Enable auto-encryption if enabled
 
 	if kmsCfg.Vault.Enabled {
-		const deprecationWarning = `Native Hashicorp Vault support is deprecated and will be removed on 2021-10-01. Please migrate to KES + Hashicorp Vault: https://github.com/minio/kes/wiki/Hashicorp-Vault-Keystore
+		const deprecationWarning = `Native Hashicorp Vault support is deprecated. Please migrate to KES + Hashicorp Vault: https://github.com/minio/kes/wiki/Hashicorp-Vault-Keystore
 Note that native Hashicorp Vault and KES + Hashicorp Vault are not compatible.
-If you need help to migrate smoothly visit: https://min.io/pricing`
+For migration guidance, see https://github.com/soulteary/otterio/blob/main/docs/kms/README.md`
 		logger.LogIf(ctx, fmt.Errorf(deprecationWarning))
 	}
 

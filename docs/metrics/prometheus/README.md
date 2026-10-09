@@ -20,7 +20,7 @@ OtterIO exports Prometheus compatible data by default as an authorized endpoint 
 - [List of metrics exposed by OtterIO](#list-of-metrics-exposed-by-otterio)
 
 ## Prerequisites
-To get started with OtterIO, refer [OtterIO QuickStart Document](https://docs.min.io/docs/minio-quickstart-guide).
+To get started with OtterIO, refer [OtterIO QuickStart Document](https://github.com/soulteary/otterio#quick-start).
 Follow below steps to get started with OtterIO monitoring using Prometheus.
 
 ### 1. Download Prometheus
@@ -58,9 +58,9 @@ otterio server ~/test
 
 #### 3.1 Authenticated Prometheus config
 
-> If OtterIO is configured to expose metrics without authentication, you don't need to use `mc` to generate prometheus config. You can skip reading further and move to 3.2 section.
+> If OtterIO is configured to expose metrics without authentication, you don't need to use `oc` to generate prometheus config. You can skip reading further and move to 3.2 section.
 
-The Prometheus endpoint in OtterIO requires authentication by default. Prometheus supports a bearer token approach to authenticate prometheus scrape requests, override the default Prometheus config with the one generated using mc. To generate a Prometheus config for an alias, use [mc](https://docs.min.io/docs/minio-client-quickstart-guide) as follows `mc admin prometheus generate <alias>`.
+The Prometheus endpoint in OtterIO requires authentication by default. Prometheus supports a bearer token approach to authenticate prometheus scrape requests, override the default Prometheus config with the one generated using mc. To generate a Prometheus config for an alias, use [mc](https://github.com/soulteary/oc#readme) as follows `mc admin prometheus generate <alias>`.
 
 The command will generate the `scrape_configs` section of the prometheus.yml as follows:
 
@@ -117,16 +117,17 @@ Here `prometheus.yml` is the name of configuration file. You can now see OtterIO
 ### 6. Configure Grafana
 
 After Prometheus is configured, you can use Grafana to visualize OtterIO metrics.
-Refer the [document here to setup Grafana with OtterIO prometheus metrics](https://github.com/minio/minio/blob/master/docs/metrics/prometheus/grafana/README.md).
+Refer the [document here to setup Grafana with OtterIO prometheus metrics](https://github.com/soulteary/otterio/blob/main/docs/metrics/prometheus/grafana/README.md).
 
 ## List of metrics exposed by OtterIO
 
-OtterIO server exposes the following metrics on `/otterio/v2/metrics/cluster` endpoint. All of these can be accessed via Prometheus dashboard. A sample list of exposed metrics along with their definition is available in the demo server at
+OtterIO server exposes the following metrics on `/otterio/v2/metrics/cluster` endpoint. All of these can be accessed via Prometheus dashboard. A sample list of exposed metrics along with their definition is available from your own configured server:
 
 ```sh
-curl https://play.min.io/minio/v2/metrics/cluster
+: "${OTTERIO_ENDPOINT:?Set your OtterIO base URL}"
+curl "${OTTERIO_ENDPOINT%/}/otterio/v2/metrics/cluster"
 ```
 
 ### List of metrics reported
 
-[The list of metrics reported can be here](https://github.com/minio/minio/blob/master/docs/metrics/prometheus/list.md)
+[The list of metrics reported can be here](https://github.com/soulteary/otterio/blob/main/docs/metrics/prometheus/list.md)

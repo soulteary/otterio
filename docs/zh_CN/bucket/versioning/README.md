@@ -60,107 +60,25 @@ OtterIO的版本控制，可以让一个存储通里的某个对象具有多个�
 
 只有具有相应的权限或者root用户才能配置任何存储桶的版本控制状态。
 
-## 使用OtterIO Java SDK启用存储通版本控制的示例
+## 使用 OC 或 OtterIO SDK 配置版本控制
 
-### EnableVersioning() API
+使用已配置的 OC 别名和已存在的存储桶：
 
-```
-import io.otterio.EnableVersioningArgs;
-import io.otterio.OtterioClient;
-import io.otterio.errors.OtterioException;
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-
-public class EnableVersioning {
-  /** OtterioClient.enableVersioning() example. */
-  public static void main(String[] args)
-      throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-    try {
-      /* play.min.io for test and development. */
-      OtterioClient otterioClient =
-          OtterioClient.builder()
-              .endpoint("https://play.min.io")
-              .credentials("Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
-              .build();
-
-      /* Amazon S3: */
-      // OtterioClient otterioClient =
-      //     OtterioClient.builder()
-      //         .endpoint("https://s3.amazonaws.com")
-      //         .credentials("YOUR-ACCESSKEY", "YOUR-SECRETACCESSKEY")
-      //         .build();
-
-      // Enable versioning on 'my-bucketname'.
-      otterioClient.enableVersioning(EnableVersioningArgs.builder().bucket("my-bucketname").build());
-
-      System.out.println("Bucket versioning is enabled successfully");
-
-    } catch (OtterioException e) {
-      System.out.println("Error occurred: " + e);
-    }
-  }
-}
+```sh
+oc version enable store/my-bucketname
+oc version info store/my-bucketname
 ```
 
-### isVersioningEnabled() API
+对已初始化的 [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk) 客户端，
+调用 `SetBucketVersioning(ctx, bucket, minio.BucketVersioningConfiguration{Status: "Enabled"})`
+并检查返回错误；`GetBucketVersioning` 可读取当前配置。
+Go 包名保留为 `minio`，导入路径为 `github.com/soulteary/otterio-sdk/v7`。
 
-```
-public class IsVersioningEnabled {
-  /** OtterioClient.isVersioningEnabled() example. */
-  public static void main(String[] args)
-      throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-    try {
-      /* play.min.io for test and development. */
-      OtterioClient otterioClient =
-          OtterioClient.builder()
-              .endpoint("https://play.min.io")
-              .credentials("Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
-              .build();
-
-      /* Amazon S3: */
-      // OtterioClient otterioClient =
-      //     OtterioClient.builder()
-      //         .endpoint("https://s3.amazonaws.com")
-      //         .credentials("YOUR-ACCESSKEY", "YOUR-SECRETACCESSKEY")
-      //         .build();
-
-      // Create bucket 'my-bucketname' if it doesn`t exist.
-      if (!otterioClient.bucketExists(BucketExistsArgs.builder().bucket("my-bucketname").build())) {
-        otterioClient.makeBucket(MakeBucketArgs.builder().bucket("my-bucketname").build());
-        System.out.println("my-bucketname is created successfully");
-      }
-
-      boolean isVersioningEnabled =
-          otterioClient.isVersioningEnabled(
-              IsVersioningEnabledArgs.builder().bucket("my-bucketname").build());
-      if (isVersioningEnabled) {
-        System.out.println("Bucket versioning is enabled");
-      } else {
-        System.out.println("Bucket versioning is disabled");
-      }
-      // Enable versioning on 'my-bucketname'.
-      otterioClient.enableVersioning(EnableVersioningArgs.builder().bucket("my-bucketname").build());
-      System.out.println("Bucket versioning is enabled successfully");
-
-      isVersioningEnabled =
-          otterioClient.isVersioningEnabled(
-              IsVersioningEnabledArgs.builder().bucket("my-bucketname").build());
-      if (isVersioningEnabled) {
-        System.out.println("Bucket versioning is enabled");
-      } else {
-        System.out.println("Bucket versioning is disabled");
-      }
-
-    } catch (OtterioException e) {
-      System.out.println("Error occurred: " + e);
-    }
-  }
-}
-```
+历史示例中的 `io.otterio` Java SDK 并非本项目提供的 SDK。Java 应用应选择
+独立维护的 S3 客户端，并验证所需操作与当前 OtterIO 部署的兼容性。
 
 ## 进一步探索
-- [使用`otterio-java` SDK](https://docs.otterio.io/cn/java-client-quickstart-guide.html)
-- [对象锁定指南](https://docs.otterio.io/docs/otterio-bucket-object-lock-guide.html)
-- [OtterIO管理指南](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [OtterIO官方文档](https://docs.min.io/cn/)
+- [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk)
+- [对象锁定指南](../../../bucket/retention/README.md)
+- [OtterIO管理指南](https://github.com/soulteary/oc/blob/main/docs/administration.md)
+- [OtterIO官方文档](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)

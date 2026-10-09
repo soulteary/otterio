@@ -38,7 +38,7 @@ time="2020-07-12T20:45:50Z" level=info msg="listening (http) on 0.0.0.0:5556"
 ```
 
 ```
-~ mc admin policy add admin allaccess.json
+~ oc admin policy add admin allaccess.json
 ```
 
 Contents of `allaccess.json`
@@ -94,5 +94,5 @@ and add relevant policies on OtterIO using `mc admin policy add myotterio/ <grou
 
 ## Explore Further
 
-- [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OtterIO STS Quickstart Guide](https://github.com/soulteary/otterio/blob/main/docs/sts/README.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

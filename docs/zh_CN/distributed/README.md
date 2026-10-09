@@ -55,6 +55,6 @@ otterio server 'http://host{1...4}:9000/export{1...4}' \
 
 ## 验证部署
 
-为面向客户端的端点配置 S3 客户端，例如 `mc`、AWS CLI 或 [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk)。验证创建桶、上传、下载内容校验和列举操作。在可丢弃的测试集群中，按集合级读写法定数量测试受控节点故障，并确认节点恢复后的数据状态。
+为面向客户端的端点配置 S3 客户端，例如 `oc`、AWS CLI 或 [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk)。验证创建桶、上传、下载内容校验和列举操作。在可丢弃的测试集群中，按集合级读写法定数量测试受控节点故障，并确认节点恢复后的数据状态。
 
 本指南以[端点分组](../../../cmd/endpoint-ellipses.go)、[存储池初始化和放置](../../../cmd/erasure-server-pool.go)及[读写法定数量](../../../cmd/erasure-metadata.go)的实现为依据。上游 MinIO 文档可以帮助理解通用 S3 工作流，但不能定义当前 OtterIO 版本的能力和限制。

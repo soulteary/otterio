@@ -1,7 +1,7 @@
 # OtterIO 网关
 OtterIO网关将Amazon S3兼容性添加到第三方云存储提供者。
-- [NAS](https://github.com/minio/minio/blob/master/docs/gateway/nas.md)
-- [S3](https://github.com/minio/minio/blob/master/docs/gateway/s3.md)
+- [NAS](https://github.com/soulteary/otterio/blob/main/docs/gateway/nas.md)
+- [S3](https://github.com/soulteary/otterio/blob/main/docs/gateway/s3.md)
 
 ## 路线图
 * OtterIO & AWS S3

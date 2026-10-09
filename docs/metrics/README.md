@@ -9,7 +9,7 @@ OtterIO server has two healthcheck related un-authenticated endpoints, a livenes
 - Liveness probe available at `/otterio/health/live`
 - Cluster probe available at `/otterio/health/cluster`
 
-Read more on how to use these endpoints in [OtterIO healthcheck guide](https://github.com/minio/minio/blob/master/docs/metrics/healthcheck/README.md).
+Read more on how to use these endpoints in [OtterIO healthcheck guide](https://github.com/soulteary/otterio/blob/main/docs/metrics/healthcheck/README.md).
 
 ### Prometheus Probe
 
@@ -19,7 +19,7 @@ OtterIO allows reading metrics for the entire cluster from any single node. This
 The additional node specific metrics which include additional go metrics or process metrics are exposed at
 `<Address for OtterIO Node>/otterio/v2/metrics/node`.
 
-To use this endpoint, setup Prometheus to scrape data from this endpoint. Read more on how to configure and use Prometheus to monitor OtterIO server in [How to monitor OtterIO server with Prometheus](https://github.com/minio/minio/blob/master/docs/metrics/prometheus/README.md).
+To use this endpoint, setup Prometheus to scrape data from this endpoint. Read more on how to configure and use Prometheus to monitor OtterIO server in [How to monitor OtterIO server with Prometheus](https://github.com/soulteary/otterio/blob/main/docs/metrics/prometheus/README.md).
 
 **Deprecated metrics monitoring**
 

@@ -9,7 +9,7 @@ Disk caching feature here refers to the use of caching disks to store content cl
 
 ### 1. Prerequisites
 
-Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
+Install OtterIO - [OtterIO Quickstart Guide](https://github.com/soulteary/otterio#quick-start).
 
 ### 2. Run OtterIO gateway with cache
 
@@ -35,13 +35,13 @@ In the example above this means that  `OTTERIO_CACHE_WATERMARK_LOW` is effective
 
 ### 3. Test your setup
 
-To test this setup, access the OtterIO gateway via browser or [`mc`](https://docs.min.io/docs/minio-client-quickstart-guide). You’ll see the uploaded files are accessible from all the OtterIO endpoints.
+To test this setup, access the OtterIO gateway via browser or [`oc`](https://github.com/soulteary/oc#readme). You’ll see the uploaded files are accessible from all the OtterIO endpoints.
 
 # Explore Further
 
-- [Disk cache design](https://github.com/minio/minio/blob/master/docs/disk-caching/DESIGN.md)
-- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+- [Disk cache design](https://github.com/soulteary/otterio/blob/main/docs/disk-caching/DESIGN.md)
+- [Use `oc` with OtterIO Server](https://github.com/soulteary/oc#readme)
+- [Use `aws-cli` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use `s3cmd` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use OtterIO SDK with OtterIO Server](https://github.com/soulteary/otterio-sdk#readme)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

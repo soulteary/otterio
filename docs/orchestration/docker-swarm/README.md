@@ -4,6 +4,12 @@ Docker Engine provides cluster management and orchestration features in Swarm mo
 
 As of [Docker Engine v1.13.0](https://blog.docker.com/2017/01/whats-new-in-docker-1-13/) (Docker Compose v3.0), Docker Swarm and Compose are [cross-compatible](https://docs.docker.com/compose/compose-file/#version-3). This allows a Compose file to be used as a template to deploy services on Swarm. We have used a Docker Compose file to create distributed OtterIO setup.
 
+Set `OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD` explicitly before rendering
+or deploying the example. Use your own credentials and pin a reviewed image tag
+or digest for persistent deployments. The secrets-based Swarm example reads
+`/run/secrets/access_key` and `/run/secrets/secret_key` through the `_FILE` variables.
+These are example topologies; validate quorum and networking for your deployment.
+
 ## 1. Prerequisites
 
 * Familiarity with [Swarm mode key concepts](https://docs.docker.com/engine/swarm/key-concepts/).
@@ -47,7 +53,7 @@ docker node update --label-add otterio4=true <DOCKER-NODE4>
 
 It is possible to run more than one otterio service on one Docker Node. Set the labels accordingly.
 
-Download the [Docker Compose file](https://github.com/minio/minio/blob/master/docs/orchestration/docker-swarm/docker-compose-secrets.yaml?raw=true) on your Swarm master. Then execute the command
+Download the [Docker Compose file](https://github.com/soulteary/otterio/blob/main/docs/orchestration/docker-swarm/docker-compose-secrets.yaml?raw=true) on your Swarm master. Then execute the command
 
 ```shell
 docker stack deploy --compose-file=docker-compose-secrets.yaml otterio_stack
@@ -55,7 +61,7 @@ docker stack deploy --compose-file=docker-compose-secrets.yaml otterio_stack
 
 This deploys services described in the Compose file as Docker stack `otterio_stack`. Look up the `docker stack` [command reference](https://docs.docker.com/engine/reference/commandline/stack/) for more info.
 
-After the stack is successfully deployed, you should be able to access OtterIO server via [OtterIO Client](https://docs.min.io/docs/minio-client-complete-guide) `mc` or your browser at http://[Node_Public_IP_Address]:[Expose_Port_on_Host]
+After the stack is successfully deployed, you should be able to access OtterIO server via [OtterIO Client](https://github.com/soulteary/oc/blob/main/docs/commands.md) `oc` or your browser at http://[Node_Public_IP_Address]:[Expose_Port_on_Host]
 
 ## 4. Remove distributed OtterIO services
 
@@ -80,7 +86,7 @@ Services in the Swarm which are attached to that network can interact with the h
 
 ### Notes
 
-* By default the Docker Compose file uses the Docker image for latest OtterIO server release. You can change the image tag to pull a specific [OtterIO Docker image](https://hub.docker.com/r/minio/minio/).
+* By default the Docker Compose file uses the Docker image for latest OtterIO server release. You can change the image tag to pull a specific [OtterIO Docker image](https://hub.docker.com/r/soulteary/otterio/).
 
 * There are 4 otterio distributed instances created by default. You can add more OtterIO services (up to total 16) to your OtterIO Swarm deployment. To add a service
   * Replicate a service definition and change the name of the new service appropriately.
@@ -88,7 +94,7 @@ Services in the Swarm which are attached to that network can interact with the h
   * Update the command section in each service. Specifically, add the drive location to be used as storage on the new service.
   * Update the port number to exposed for the new service.
 
-  Read more about distributed OtterIO [here](https://docs.min.io/docs/distributed-minio-quickstart-guide).
+  Read more about distributed OtterIO [here](https://github.com/soulteary/otterio/blob/main/docs/distributed/README.md).
 
 * By default the services use `local` volume driver. Refer to [Docker documentation](https://docs.docker.com/compose/compose-file/#/volume-configuration-reference) to explore further options.
 
@@ -98,6 +104,6 @@ Services in the Swarm which are attached to that network can interact with the h
 
 ### Explore Further
 - [Overview of Docker Swarm mode](https://docs.docker.com/engine/swarm/)
-- [OtterIO Docker Quickstart Guide](https://docs.min.io/docs/minio-docker-quickstart-guide)
-- [Deploy OtterIO on Docker Compose](https://docs.min.io/docs/deploy-minio-on-docker-compose)
-- [OtterIO Erasure Code QuickStart Guide](https://docs.min.io/docs/minio-erasure-code-quickstart-guide)
+- [OtterIO Docker Quickstart Guide](https://github.com/soulteary/otterio#docker)
+- [Deploy OtterIO on Docker Compose](https://github.com/soulteary/otterio/blob/main/docs/orchestration/docker-compose/README.md)
+- [OtterIO Erasure Code QuickStart Guide](https://github.com/soulteary/otterio/blob/main/docs/erasure/README.md)

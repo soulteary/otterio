@@ -1,6 +1,6 @@
 # OtterIO共享后端存储快速入门
 
-OtterIO共享模式可以让你使用一个[NAS](https://en.wikipedia.org/wiki/Network-attached_storage) 做为多个OtterIO服务的存储后端。我我们在设计时已经对多个OtterIO服务之间的同步做了很多的处理。更多OtterIO共享模式的设计文档，请访问[这里](https://github.com/minio/minio/blob/master/docs/shared-backend/DESIGN.md).
+OtterIO共享模式可以让你使用一个[NAS](https://en.wikipedia.org/wiki/Network-attached_storage) 做为多个OtterIO服务的存储后端。我我们在设计时已经对多个OtterIO服务之间的同步做了很多的处理。更多OtterIO共享模式的设计文档，请访问[这里](https://github.com/soulteary/otterio/blob/main/docs/shared-backend/DESIGN.md).
 
 OtterIO共享模式是为了解决在真实场景中存在的一些问题，而且不需要做额外的配置。
 如果你有下列需求，则可以考虑OtterIO共享模式
@@ -17,7 +17,7 @@ OtterIO共享模式是为了解决在真实场景中存在的一些问题，而�
 
 ## 1. 前提条件
 
-安装OtterIO - [OtterIO快速入门](https://docs.min.io/cn/).
+安装OtterIO - [OtterIO快速入门](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md).
 
 ## 2. 在共享后端存储上运行OtterIO
 
@@ -61,11 +61,11 @@ otterio.exe gateway nas M:\export
 
 ## 3. 验证
 
-为了验证部署是否成功，可能通过浏览器或者[`mc`](https://docs.min.io/cn/minio-client-quickstart-guide)访问OtterIO。你应该可以从各个OtterIO节点访问上传的文件。
+为了验证部署是否成功，可能通过浏览器或者[`oc`](https://github.com/soulteary/oc#readme)访问OtterIO。你应该可以从各个OtterIO节点访问上传的文件。
 
 ## 了解更多
-- [使用`mc`](https://docs.min.io/cn/minio-client-quickstart-guide)
-- [使用`aws-cli`](https://docs.min.io/cn/aws-cli-with-minio)
-- [使用`s3cmd`](https://docs.min.io/cn/s3cmd-with-minio)
-- [使用`otterio-go` SDK](https://docs.min.io/cn/golang-client-quickstart-guide)
+- [使用`oc`](https://github.com/soulteary/oc#readme)
+- [使用`aws-cli`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用`s3cmd`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用`otterio-go` SDK](https://github.com/soulteary/otterio-sdk#readme)
 - [OtterIO文档](https://docs.min.io)

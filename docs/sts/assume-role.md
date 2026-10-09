@@ -96,7 +96,7 @@ $ export OTTERIO_ROOT_PASSWORD=otterio123
 $ otterio server ~/test
 ```
 
-Create new users following the multi-user guide [here](https://docs.min.io/docs/minio-multi-user-quickstart-guide.html)
+Create new users following the multi-user guide [here](https://github.com/soulteary/otterio/blob/main/docs/multi-user/README.md)
 
 Testing with an example
 > Use the same username and password created in the previous steps.
@@ -126,5 +126,5 @@ $ aws --profile foobar --endpoint-url http://localhost:9000 sts assume-role --po
 ```
 
 ## Explore Further
-- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OtterIO Admin Complete Guide](https://github.com/soulteary/oc/blob/main/docs/administration.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

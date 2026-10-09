@@ -74,7 +74,7 @@ export OTTERIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
 otterio server /mnt/data
 ```
 
-Assuming that OtterIO server is configured to support STS API by following the doc [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide), execute the following command to temporary credentials from OtterIO server.
+Assuming that OtterIO server is configured to support STS API by following the doc [OtterIO STS Quickstart Guide](https://github.com/soulteary/otterio/blob/main/docs/sts/README.md), execute the following command to temporary credentials from OtterIO server.
 ```
 go run client-grants.go -cid PoEgXP6uVO45IsENRngDXj5Au5Ya -csec eKsw6z8CtOJVBtrOWvhRWL4TUCga
 
@@ -87,8 +87,8 @@ go run client-grants.go -cid PoEgXP6uVO45IsENRngDXj5Au5Ya -csec eKsw6z8CtOJVBtrO
 }
 ```
 
-These credentials can now be used to perform OtterIO API operations, these credentials automatically expire in 1hr. To understand more about credential expiry duration and client grants STS API read further [here](https://github.com/minio/minio/blob/master/docs/sts/client-grants.md).
+These credentials can now be used to perform OtterIO API operations, these credentials automatically expire in 1hr. To understand more about credential expiry duration and client grants STS API read further [here](https://github.com/soulteary/otterio/blob/main/docs/sts/client-grants.md).
 
 ## Explore Further
-- [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OtterIO STS Quickstart Guide](https://github.com/soulteary/otterio/blob/main/docs/sts/README.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

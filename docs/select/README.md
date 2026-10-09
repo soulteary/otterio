@@ -10,7 +10,7 @@ You can use the Select API to query objects with following features:
 
 Type inference and automatic conversion of values is performed based on the context when the value is un-typed (such as when reading CSV data). If present, the CAST function overrides automatic conversion.
 
-The [mc sql](https://docs.min.io/docs/minio-client-complete-guide.html#sql) command can be used for executing queries using the command line.
+The [oc sql](https://github.com/soulteary/oc/blob/main/docs/commands.md#sql) command can be used for executing queries using the command line.
 
 (*) Parquet is disabled on the OtterIO server by default. See below how to enable it.
 
@@ -24,7 +24,7 @@ To enable Parquet set the environment variable `OTTERIO_API_SELECT_PARQUET=on`.
 # Example using Python API
 
 ## 1. Prerequisites
-- Install OtterIO Server from [here](http://docs.min.io/docs/minio-quickstart-guide).
+- Install OtterIO Server from [here](https://github.com/soulteary/otterio#quick-start).
 - Familiarity with AWS S3 API.
 - Familiarity with Python and installing dependencies.
 
@@ -76,9 +76,9 @@ for event in r['Payload']:
 Upload a sample dataset to OtterIO using the following commands.
 ```sh
 $ curl "https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv" > TotalPopulation.csv
-$ mc mb myotterio/mycsvbucket
+$ oc mb myotterio/mycsvbucket
 $ gzip TotalPopulation.csv
-$ mc cp TotalPopulation.csv.gz myotterio/mycsvbucket/sampledata/
+$ oc cp TotalPopulation.csv.gz myotterio/mycsvbucket/sampledata/
 ```
 
 Now let us proceed to run our select example to query for `Location` which matches `United States`.
@@ -104,12 +104,12 @@ Stats details bytesProcessed:
 For a more detailed SELECT SQL reference, please see [here](https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html)
 
 ## 5. Explore Further
-- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `mc sql` with OtterIO Server](https://docs.min.io/docs/minio-client-complete-guide.html#sql)
-- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [The OtterIO documentation website](https://docs.min.io)
+- [Use `oc` with OtterIO Server](https://github.com/soulteary/oc#readme)
+- [Use `mc sql` with OtterIO Server](https://github.com/soulteary/oc/blob/main/docs/commands.md#sql)
+- [Use OtterIO SDK with OtterIO Server](https://github.com/soulteary/otterio-sdk#readme)
+- [Use `aws-cli` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use `s3cmd` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)
 
 ## 6. Implementation Status
 - Full AWS S3 [SELECT SQL](https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-select.html) syntax is supported.

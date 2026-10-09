@@ -1,4 +1,4 @@
-# Golang Admin Client API Reference [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
+# Golang Admin Client API Reference
 The OtterIO Admin Golang Client SDK provides APIs to manage OtterIO services.
 
 This quickstart guide will show you how to install the OtterIO Admin client SDK, connect to OtterIO admin service, and provide a walkthrough of a simple file uploader.
@@ -16,7 +16,7 @@ package main
 import (
     "fmt"
 
-    "github.com/minio/minio/pkg/madmin"
+    "github.com/soulteary/otterio/pkg/madmin"
 )
 
 func main() {

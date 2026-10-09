@@ -48,6 +48,7 @@ Feature availability depends on the running OtterIO version, backend, configurat
 - [Console server split-patch acceptance (Chinese)](console-server-acceptance.md)
 - [Server CLI migration](cli-migration.md): server CLI framework changes, separate from the OC client
 - [SDK and kits dependency migration](development/sdk-kits-migration-20261008.md)
+- [Historical RPM spec](history/otterio.spec.txt) (archived, not a supported packaging procedure)
 - [Maintainer release guide](releasing.md) and [release materials](releases/README.md)
 - [Contributor acknowledgment records](../ACKNOWLEDGMENTS.md)
 

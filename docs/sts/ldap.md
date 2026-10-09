@@ -44,7 +44,7 @@ LDAP STS configuration can be performed via OtterIO's standard configuration API
 LDAP is configured via the following environment variables:
 
 ```
-$ mc admin config set myotterio identity_ldap --env
+$ oc admin config set myotterio identity_ldap --env
 KEY:
 identity_ldap  enable LDAP SSO support
 
@@ -135,7 +135,7 @@ In the configuration variables, `%s` is substituted with the *username* from the
 
 ## Managing User/Group Access Policy
 
-Access policies may be configured on a group or on a user directly. Access policies are first defined on the OtterIO server using IAM policy JSON syntax. The `mc` tool is used to issue the necessary commands.
+Access policies may be configured on a group or on a user directly. Access policies are first defined on the OtterIO server using IAM policy JSON syntax. The `oc` tool is used to issue the necessary commands.
 
 **Note that by default no policy is set on a user**. Thus even if they successfully authenticate with AD/LDAP credentials, they have no access to object storage as the default access policy is to deny all access.
 
@@ -256,5 +256,5 @@ $ go run ldap.go -u foouser -p foopassword
 **LDAP STS credentials are not yet supported on OtterIO Browser UI, we may add this feature in future releases.**
 
 ## Explore Further
-- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OtterIO Admin Complete Guide](https://github.com/soulteary/oc/blob/main/docs/administration.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

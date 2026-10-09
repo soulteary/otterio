@@ -1,6 +1,6 @@
-# Bucket Replication Design [![slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
+# Bucket Replication Design
 
-This document explains the design approach of server side bucket replication. If you're looking to get started with replication, we suggest you go through the [Bucket replication guide](https://github.com/minio/minio/blob/master/docs/bucket/replication/README.md) first.
+This document explains the design approach of server side bucket replication. If you're looking to get started with replication, we suggest you go through the [Bucket replication guide](https://github.com/soulteary/otterio/blob/main/docs/bucket/replication/README.md) first.
 
 ## Overview
 Replication relies on immutability provided by versioning to sync objects between the configured source and replication target.
@@ -86,5 +86,5 @@ Existing object replication, replica modification sync for 2-way replication and
 ```
 
 ## Explore Further
-- [OtterIO Bucket Versioning Implementation](https://docs.otterio.io/docs/otterio-bucket-versioning-guide.html)
-- [OtterIO Client Quickstart Guide](https://docs.otterio.io/docs/otterio-client-quickstart-guide.html)
+- [OtterIO Bucket Versioning Implementation](https://github.com/soulteary/otterio/blob/main/docs/bucket/versioning/README.md)
+- [OtterIO Client Quickstart Guide](https://github.com/soulteary/oc#readme)

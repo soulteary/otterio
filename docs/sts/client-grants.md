@@ -100,7 +100,7 @@ otterio server /mnt/export
 ```
 
 Testing with an example
-> Obtaining client ID and secrets follow [Keycloak configuring documentation](https://github.com/minio/minio/blob/master/docs/sts/keycloak.md)
+> Obtaining client ID and secrets follow [Keycloak configuring documentation](https://github.com/soulteary/otterio/blob/main/docs/sts/keycloak.md)
 
 ```
 $ go run client-grants.go -cid PoEgXP6uVO45IsENRngDXj5Au5Ya -csec eKsw6z8CtOJVBtrOWvhRWL4TUCga
@@ -115,5 +115,5 @@ $ go run client-grants.go -cid PoEgXP6uVO45IsENRngDXj5Au5Ya -csec eKsw6z8CtOJVBt
 ```
 
 ## Explore Further
-- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OtterIO Admin Complete Guide](https://github.com/soulteary/oc/blob/main/docs/administration.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

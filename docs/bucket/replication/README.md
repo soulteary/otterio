@@ -1,10 +1,10 @@
-# Bucket Replication Guide [![slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
+# Bucket Replication Guide
 
 Bucket replication is designed to replicate selected objects in a bucket to a destination bucket.
 
 The contents of this page have been migrated to the new [OtterIO Baremetal Documentation: Bucket Replication](https://docs.min.io/minio/baremetal/replication/replication-overview.html#) page. The [Bucket Replication](https://docs.min.io/minio/baremetal/replication/replication-overview.html#) section includes dedicated tutorials for configuring one-way "Active-Passive" and two-way "Active-Active" bucket replication. Please update your bookmarks to use the new OtterIO documentation, as this legacy documentation will be deprecated and removed in the future.
 
-To replicate objects in a bucket to a destination bucket on a target site either in the same cluster or a different cluster, start by enabling [versioning](https://docs.otterio.io/docs/otterio-bucket-versioning-guide.html) for both source and destination buckets. Finally, the target site and the destination bucket need to be configured on the source OtterIO server.
+To replicate objects in a bucket to a destination bucket on a target site either in the same cluster or a different cluster, start by enabling [versioning](https://github.com/soulteary/otterio/blob/main/docs/bucket/versioning/README.md) for both source and destination buckets. Finally, the target site and the destination bucket need to be configured on the source OtterIO server.
 
 ## Highlights
 - Supports source and destination buckets to have the same name unlike AWS S3, addresses variety of usecases such as *Splunk*, *Veeam* site to site DR.
@@ -95,7 +95,7 @@ The access key provided for the replication *target* cluster should have these m
  ]
 }
 ```
-Please note that the permissions required by the admin user on the target cluster can be more fine grained to exclude permissions like "s3:ReplicateDelete", "s3:GetBucketObjectLockConfiguration" etc depending on whether delete replication rules are set up or if object locking is disabled on `destbucket`. The above policies assume that replication of objects, tags and delete marker replication are all enabled on object lock enabled buckets. A sample script to setup replication is provided [here](https://github.com/minio/minio/blob/master/docs/bucket/replication/setup_replication.sh)
+Please note that the permissions required by the admin user on the target cluster can be more fine grained to exclude permissions like "s3:ReplicateDelete", "s3:GetBucketObjectLockConfiguration" etc depending on whether delete replication rules are set up or if object locking is disabled on `destbucket`. The above policies assume that replication of objects, tags and delete marker replication are all enabled on object lock enabled buckets. A sample script to setup replication is provided [here](https://github.com/soulteary/otterio/blob/main/docs/bucket/replication/setup_replication.sh)
 
 Once successfully created and authorized, the `mc admin bucket remote add` command generates a replication target ARN.  This command lists all the currently authorized replication targets:
 ```
@@ -140,7 +140,7 @@ The replication configuration can now be added to the source bucket by applying 
 
 The replication configuration follows [AWS S3 Spec](https://docs.aws.amazon.com/AmazonS3/latest/dev/replication-add-config.html). Any objects uploaded to the source bucket that meet replication criteria will now be automatically replicated by the OtterIO server to the remote destination bucket. Replication can be disabled at any time by disabling specific rules in the configuration or deleting the replication configuration entirely.
 
-When object locking is used in conjunction with replication, both source and destination buckets needs to have [object locking](https://docs.min.io/docs/minio-bucket-object-lock-guide.html) enabled. Similarly objects encrypted on the server side, will be replicated if destination also supports encryption.
+When object locking is used in conjunction with replication, both source and destination buckets needs to have [object locking](https://github.com/soulteary/otterio/blob/main/docs/README.md) enabled. Similarly objects encrypted on the server side, will be replicated if destination also supports encryption.
 
 Replication status can be seen in the metadata on the source and destination objects. On the source side, the `X-Amz-Replication-Status` changes from `PENDING` to `COMPLETED` or `FAILED` after replication attempt either succeeded or failed respectively. On the destination side, a `X-Amz-Replication-Status` status of `REPLICA` indicates that the object was replicated successfully. Any replication failures are automatically re-attempted during a periodic disk scanner cycle.
 
@@ -175,7 +175,7 @@ Status of delete marker replication can be viewed by doing a GET/HEAD on the obj
 
 The status of replication can be monitored by configuring event notifications on the source and target buckets using `mc event add`.On the source side, the `s3:PutObject`, `s3:Replication:OperationCompletedReplication` and `s3:Replication:OperationFailedReplication` events show the status of replication in the `X-Amz-Replication-Status` metadata.
 
-On the target bucket, `s3:PutObject` event shows `X-Amz-Replication-Status` status of `REPLICA` in the metadata. Additional metrics to monitor backlog state for the purpose of bandwidth management and resource allocation are exposed via Prometheus - see https://github.com/minio/minio/blob/master/docs/metrics/prometheus/list.md for more details.
+On the target bucket, `s3:PutObject` event shows `X-Amz-Replication-Status` status of `REPLICA` in the metadata. Additional metrics to monitor backlog state for the purpose of bandwidth management and resource allocation are exposed via Prometheus - see https://github.com/soulteary/otterio/blob/main/docs/metrics/prometheus/list.md for more details.
 
 ### Sync/Async Replication
 By default, replication is completed asynchronously. If synchronous replication is desired, set the --sync flag while adding a
@@ -186,5 +186,5 @@ remote replication target using the `mc admin bucket remote add` command
 
 ## Explore Further
 - [OtterIO Bucket Replication Design](https://raw.githubusercontent.com/soulteary/OtterIO/main/docs/bucket/replication/DESIGN.md)
-- [OtterIO Bucket Versioning Implementation](https://docs.otterio.io/docs/otterio-bucket-versioning-guide.html)
-- [OtterIO Client Quickstart Guide](https://docs.otterio.io/docs/otterio-client-quickstart-guide.html)
+- [OtterIO Bucket Versioning Implementation](https://github.com/soulteary/otterio/blob/main/docs/bucket/versioning/README.md)
+- [OtterIO Client Quickstart Guide](https://github.com/soulteary/oc#readme)

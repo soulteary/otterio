@@ -55,6 +55,6 @@ Placement of new objects is weighted by available space in eligible pools. Withi
 
 ## Validate the deployment
 
-Configure an S3 client such as `mc`, the AWS CLI, or the [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk) for a client-facing endpoint. Verify bucket creation, upload, download checksums, and listing. In a disposable test cluster, test controlled node outages against the set-level read and write thresholds and verify recovery after the nodes return.
+Configure an S3 client such as `oc`, the AWS CLI, or the [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk) for a client-facing endpoint. Verify bucket creation, upload, download checksums, and listing. In a disposable test cluster, test controlled node outages against the set-level read and write thresholds and verify recovery after the nodes return.
 
 The [endpoint grouping](../../cmd/endpoint-ellipses.go), [pool initialization and placement](../../cmd/erasure-server-pool.go), and [quorum implementation](../../cmd/erasure-metadata.go) define the behavior described here. Upstream MinIO documentation can explain general S3 workflows, but it does not define the capabilities or limits of this OtterIO revision.

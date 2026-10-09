@@ -22,7 +22,7 @@ Otterio在Linux只支持使用PEM格式的key/certificate。
 
 #### 使用 Let's Encrypt
 
-更多信息，请访问 [这里](https://docs.min.io/cn/generate-let-s-encypt-certificate-using-concert-for-minio)
+更多信息，请访问 [这里](https://certbot.eff.org/)
 
 #### 使用 generate_cert.go (self-signed certificate)
 
@@ -129,5 +129,5 @@ Otterio可以配置成连接其它服务，不管是Otterio节点还是像NATs�
 * **Windows**: `C:\Users\<Username>\.otterio\certs\CAs`
 
 # 了解更多
-* [Otterio快速入门](https://docs.min.io/cn/minio-quickstart-guide)
-* [Otterio客户端权威指南](https://docs.min.io/cn/minio-client-complete-guide)
+* [Otterio快速入门](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+* [Otterio客户端权威指南](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)

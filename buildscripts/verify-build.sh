@@ -238,16 +238,18 @@ function __init__()
     mkdir -p "$OTTERIO_CONFIG_DIR"
     mkdir -p "$MINT_DATA_DIR"
 
-    MC_BUILD_DIR="mc-$RANDOM"
-    if ! git clone --quiet https://github.com/minio/mc "$MC_BUILD_DIR"; then
-        echo "failed to download https://github.com/minio/mc"
+    MC_BUILD_DIR="$WORK_DIR/oc-source"
+    OC_TEST_REF="c62be561ef03f9b7749c53a2e71b3886efa76db4"
+    if ! git clone --quiet https://github.com/soulteary/oc "$MC_BUILD_DIR"; then
+        echo "failed to download https://github.com/soulteary/oc"
         purge "${MC_BUILD_DIR}"
         exit 1
     fi
 
-    (cd "${MC_BUILD_DIR}" && go build -o "$WORK_DIR/mc")
+    (cd "${MC_BUILD_DIR}" && git checkout --quiet "$OC_TEST_REF" && go build -o "$WORK_DIR/mc")
+    cp "$MC_BUILD_DIR/functional-tests.sh" "$FUNCTIONAL_TESTS"
 
-    # remove mc source.
+    # Remove the pinned OC source after copying the legacy fixture.
     purge "${MC_BUILD_DIR}"
 
     shred -n 1 -s 1M - 1>"$FILE_1_MB" 2>/dev/null
@@ -255,11 +257,6 @@ function __init__()
 
     ## version is purposefully set to '3' for otterio to migrate configuration file
     echo '{"version": "3", "credential": {"accessKey": "otterio", "secretKey": "otterio123"}, "region": "us-east-1"}' > "$OTTERIO_CONFIG_DIR/config.json"
-
-    if ! wget -q -O "$FUNCTIONAL_TESTS" https://raw.githubusercontent.com/minio/mc/master/functional-tests.sh; then
-        echo "failed to download https://raw.githubusercontent.com/minio/mc/master/functional-tests.sh"
-        exit 1
-    fi
 
     sed -i 's|-sS|-sSg|g' "$FUNCTIONAL_TESTS"
     chmod a+x "$FUNCTIONAL_TESTS"

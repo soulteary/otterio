@@ -10,7 +10,7 @@ OtterIO服务器允许针对特定的对象一次写入，多次读取 (WORM),�
 
 ### 1. 前置条件
 
-- 安装 OtterIO - [OtterIO快速入门指南](https://docs.min.io/cn/minio-quickstart-guide)
+- 安装 OtterIO - [OtterIO快速入门指南](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
 - 安装 `awscli` - [Installing AWS Command Line Interface](https://docs.aws.amazon.com/zh_cn/cli/latest/userguide/cli-chap-install.html)
 
 ### 2. 设置存储桶WORM配置
@@ -53,8 +53,8 @@ aws s3api put-object --bucket testbucket --key legalhold --object-lock-legal-hol
 
 ## 进一步探索
 
-- [使用`mc`](https://docs.min.io/cn/minio-client-quickstart-guide)
-- [使用`aws-cli`](https://docs.min.io/cn/aws-cli-with-minio)
-- [使用`s3cmd`](https://docs.min.io/cn/s3cmd-with-minio)
-- [使用`otterio-go`](https://docs.min.io/cn/golang-client-quickstart-guide)
+- [使用`oc`](https://github.com/soulteary/oc#readme)
+- [使用`aws-cli`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用`s3cmd`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用`otterio-go`](https://github.com/soulteary/otterio-sdk#readme)
 - [OtterIO文档](https://docs.min.io/cn)

@@ -26,7 +26,7 @@ var (
 - LegacyObjectType (遗留的现有部署和较旧的xl.json格式)
 - DeleteMarker (一个versionId，主要是为了实现AWS规范兼容的DELETE序列)
 
-以下是个msgpack格式的`xl.meta`转为JSON后的样例,你可以通过 [xl-meta-to-json.go](https://github.com/minio/minio/blob/master/docs/zh_CN/bucket/versioning/xl-meta-to-json.go) 这个小程序把`xl.meta`转成JSON，查看里面的内容。
+以下是个msgpack格式的`xl.meta`转为JSON后的样例,你可以通过 [xl-meta-to-json.go](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/bucket/versioning/xl-meta-to-json.go) 这个小程序把`xl.meta`转成JSON，查看里面的内容。
 ```json
 {
   "Versions": [

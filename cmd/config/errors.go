@@ -99,7 +99,7 @@ var (
 	ErrInvalidCacheEncryptionKey = newErrFn(
 		"Invalid cache encryption master key value",
 		"Please check the passed value",
-		"OTTERIO_CACHE_ENCRYPTION_MASTER_KEY: For more information, please refer to https://docs.min.io/docs/minio-disk-cache-guide",
+		"OTTERIO_CACHE_ENCRYPTION_MASTER_KEY: For more information, please refer to https://github.com/soulteary/otterio/blob/main/docs/disk-caching/README.md",
 	)
 
 	ErrInvalidCacheRange = newErrFn(
@@ -158,13 +158,13 @@ var (
 	ErrInvalidErasureEndpoints = newErrFn(
 		"Invalid endpoint(s) in erasure mode",
 		"Please provide correct combination of local/remote paths",
-		"For more information, please refer to https://docs.min.io/docs/minio-erasure-code-quickstart-guide",
+		"For more information, please refer to https://github.com/soulteary/otterio/blob/main/docs/erasure/README.md",
 	)
 
 	ErrInvalidNumberOfErasureEndpoints = newErrFn(
 		"Invalid total number of endpoints for erasure mode",
 		"Please provide an even number of endpoints greater or equal to 4",
-		"For more information, please refer to https://docs.min.io/docs/minio-erasure-code-quickstart-guide",
+		"For more information, please refer to https://github.com/soulteary/otterio/blob/main/docs/erasure/README.md",
 	)
 
 	ErrStorageClassValue = newErrFn(
@@ -243,7 +243,7 @@ Example 1:
 	ErrNoCertsAndHTTPSEndpoints = newErrFn(
 		"HTTPS specified in endpoints, but no TLS certificate is found on the local machine",
 		"Please add TLS certificate or use HTTP endpoints only",
-		"Refer to https://docs.min.io/docs/how-to-secure-access-to-minio-server-with-tls for information about how to load a TLS certificate in your server",
+		"Refer to https://github.com/soulteary/otterio/blob/main/docs/tls/README.md for information about how to load a TLS certificate in your server",
 	)
 
 	ErrCertsAndHTTPEndpoints = newErrFn(
@@ -260,7 +260,7 @@ Example 1:
 
 	ErrUnexpectedError = newErrFn(
 		"Unexpected error",
-		"Please contact OtterIO at https://slack.min.io",
+		"Please report this issue at https://github.com/soulteary/otterio/issues",
 		"",
 	)
 
@@ -279,7 +279,7 @@ Example 1:
 	ErrInvalidGWSSEEnvValue = newErrFn(
 		"Invalid gateway SSE configuration",
 		"",
-		"Refer to https://docs.min.io/docs/minio-kms-quickstart-guide.html for setting up SSE",
+		"Refer to https://github.com/soulteary/otterio/blob/main/docs/kms/README.md for setting up SSE",
 	)
 
 	ErrInvalidReplicationWorkersValue = newErrFn(

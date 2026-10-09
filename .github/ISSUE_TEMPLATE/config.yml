@@ -1,8 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: OtterIO Community Support
-    url: https://slack.min.io
-    about: Join here for Community Support
-  - name: OtterIO SUBNET Support
-    url: https://min.io/pricing
-    about: Join here for Enterprise Support
+  - name: OtterIO documentation
+    url: https://github.com/soulteary/otterio/blob/main/docs/README.md
+    about: Deployment, administration and troubleshooting guides

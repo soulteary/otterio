@@ -34,7 +34,7 @@ echo "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" | docker secret create secret_ke
 
 ## 4. 部署分布式otterio服务
 
-在你的Swarm master上下载[Docker Compose file](https://github.com/minio/minio/blob/master/docs/orchestration/docker-swarm/docker-compose-secrets.yaml?raw=true) ，然后运行下面的命令
+在你的Swarm master上下载[Docker Compose file](https://github.com/soulteary/otterio/blob/main/docs/orchestration/docker-swarm/docker-compose-secrets.yaml?raw=true) ，然后运行下面的命令
 
 ```shell
 docker stack deploy --compose-file=docker-compose-secrets.yaml otterio_stack
@@ -42,7 +42,7 @@ docker stack deploy --compose-file=docker-compose-secrets.yaml otterio_stack
 
 这将把Compose file里描述的服务部署为Docker stack`otterio_stack`。 更多 `docker stack` [命令参考](https://docs.docker.com/engine/reference/commandline/stack/)。
 
-在stack成功部署之后，你可以通过[OtterIO Client](https://docs.min.io/cn/minio-client-complete-guide) `mc` 或者浏览器访问http://[Node_Public_IP_Address]:[Expose_Port_on_Host]来访问你的OtterIO server。
+在stack成功部署之后，你可以通过[OtterIO Client](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md) `oc` 或者浏览器访问http://[Node_Public_IP_Address]:[Expose_Port_on_Host]来访问你的OtterIO server。
 
 ## 4. 删除分布式OtterIO services
 
@@ -64,14 +64,14 @@ docker volume rm volume_name
 
 ### 注意事项
 
-* 默认情况下Docker Compose file使用的是最新版的OtterIO server的Docker镜像，你可以修改image tag来拉取指定版本的[OtterIO Docker image](https://hub.docker.com/r/minio/minio/).
+* 默认情况下Docker Compose file使用的是最新版的OtterIO server的Docker镜像，你可以修改image tag来拉取指定版本的[OtterIO Docker image](https://hub.docker.com/r/soulteary/otterio/).
 
 * 默认情况下会创建4个otterio实例，你可以添加更多的OtterIO服务（最多总共16个）到你的OtterIO Comose deployment。添加一个服务
   * 复制服务定义并适当地更改新服务的名称。
   * 更新每个服务中的命令部分。
   * 更新要为新服务公开的端口号。 另外，请确保分配给新服务的端口尚未使用。
 
-  关于分布式OtterIO的更多资料，请访问[这里](https://docs.min.io/cn/distributed-minio-quickstart-guide).
+  关于分布式OtterIO的更多资料，请访问[这里](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md).
 
 * 默认情况下，OtterIO服务使用的是`local` volume driver. 更多配置选项，请访问[Docker documentation](https://docs.docker.com/compose/compose-file/#/volume-configuration-reference) 。
 
@@ -81,6 +81,6 @@ docker volume rm volume_name
 
 ### 了解更多
 - [Docker Swarm mode概述](https://docs.docker.com/engine/swarm/)
-- [OtterIO Docker快速入门](https://docs.min.io/cn/minio-docker-quickstart-guide)
-- [使用Docker Compose部署OtterIO](https://docs.min.io/cn/deploy-minio-on-docker-compose)
-- [OtterIO纠删码快速入门](https://docs.min.io/cn/minio-erasure-code-quickstart-guide)
+- [OtterIO Docker快速入门](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用Docker Compose部署OtterIO](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [OtterIO纠删码快速入门](https://github.com/soulteary/otterio/blob/main/docs/erasure/README.md)

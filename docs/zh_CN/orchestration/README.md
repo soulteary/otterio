@@ -4,9 +4,9 @@ OtterIO是一个[云原生](https://baike.baidu.com/item/Cloud%20Native/19865304
 
 | Orchestration平台|
 |:---|
-| [`Docker Swarm`](https://docs.min.io/cn/deploy-minio-on-docker-swarm) |
-| [`Docker Compose`](https://docs.min.io/cn/deploy-minio-on-docker-compose) |
-| [`Kubernetes`](https://docs.min.io/cn/deploy-minio-on-kubernetes) |
+| [`Docker Swarm`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md) |
+| [`Docker Compose`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md) |
+| [`Kubernetes`](https://github.com/soulteary/otterio/blob/main/docs/orchestration/kubernetes/README.md) |
 
 ## 为什么说OtterIO是云原生的（cloud-native）?
 云原生这个词代表的是一些思想的集合，比如微服务部署，可伸缩，而不是说把一个单体应用改造成容器部署。一个云原生的应用在设计时就考虑了移植性和可伸缩性，而且可以通过简单的复制即可实现水平扩展。现在兴起的编排平台，像Swarm、Kubernetes以及DC/OS，让大规模集群的复制和管理变得前所未有的简单，哪里不会点哪里。
@@ -19,4 +19,4 @@ OtterIO是建立在云原生的基础上，有纠删码、分布式和共享存�
 
 现在的应用、数据库，key-store这些，很多都已经部署在容器中，并且通过编排平台进行管理。OtterIO提供了一个健壮的、可伸缩、AWS S3兼容的对象存储，这是OtterIO的立身之本，凭此在云原生应用中占据一席之地。
 
-![Cloud-native](https://github.com/minio/minio/blob/master/docs/screenshots/Minio_Cloud_Native_Arch.jpg?raw=true)
+See the [distributed deployment guide](../distributed/README.md) for topology requirements.

@@ -1,6 +1,6 @@
 # 磁盘缓存设计
 
-本文档介绍了一些基本假设和设计方法，以及磁盘缓存功能的限制。如果您希望入门使用磁盘缓存，建议您先阅读[入门文档](https://github.com/minio/minio/blob/master/docs/zh_CN/disk-caching/README.md)。
+本文档介绍了一些基本假设和设计方法，以及磁盘缓存功能的限制。如果您希望入门使用磁盘缓存，建议您先阅读[入门文档](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/disk-caching/README.md)。
 
 ## 命令行
 
@@ -42,8 +42,8 @@ truncate -s 4G /tmp/data
 mkfs.xfs /tmp/data     # build xfs filesystem on /tmp/data
 sudo mkdir /mnt/cache  # create mount dir
 sudo mount -o relatime /tmp/data /mnt/cache # mount xfs on /mnt/cache with atime.
-docker pull minio/minio
-docker run --net=host -e OTTERIO_ROOT_USER={s3-access-key} -e OTTERIO_ROOT_PASSWORD={s3-secret-key} -e OTTERIO_CACHE_DRIVES=/cache -e OTTERIO_CACHE_QUOTA=99 -e OTTERIO_CACHE_AFTER=0 -e OTTERIO_CACHE_WATERMARK_LOW=90 -e OTTERIO_CACHE_WATERMARK_HIGH=95  -v /mnt/cache:/cache  minio/minio:latest gateway s3
+docker pull soulteary/otterio
+docker run --net=host -e OTTERIO_ROOT_USER={s3-access-key} -e OTTERIO_ROOT_PASSWORD={s3-secret-key} -e OTTERIO_CACHE_DRIVES=/cache -e OTTERIO_CACHE_QUOTA=99 -e OTTERIO_CACHE_AFTER=0 -e OTTERIO_CACHE_WATERMARK_LOW=90 -e OTTERIO_CACHE_WATERMARK_HIGH=95  -v /mnt/cache:/cache  soulteary/otterio:latest gateway s3
 
 ```
 

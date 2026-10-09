@@ -10,7 +10,7 @@ Independent of retention, an object can also be under legal hold. This effective
 
 ### 1. Prerequisites
 
-- Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
+- Install OtterIO - [OtterIO Quickstart Guide](https://github.com/soulteary/otterio#quick-start)
 - Install `awscli` - [Installing AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
 
 ### 2. Set bucket WORM configuration
@@ -53,8 +53,8 @@ See https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock-overview.html fo
 
 ## Explore Further
 
-- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+- [Use `oc` with OtterIO Server](https://github.com/soulteary/oc#readme)
+- [Use `aws-cli` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use `s3cmd` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use OtterIO SDK with OtterIO Server](https://github.com/soulteary/otterio-sdk#readme)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

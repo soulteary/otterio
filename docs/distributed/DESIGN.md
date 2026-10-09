@@ -109,7 +109,7 @@ In above example there are two server pools
 
 > Notice the requirement of common SLA here original cluster had 1024 drives with 16 drives per erasure set with default parity of '4', second pool is expected to have a minimum of 8 drives per erasure set to match the original cluster SLA (parity count) of '4'. '12' drives stripe per erasure set in the second pool satisfies the original pool's parity count.
 
-Refer to the sizing guide with details on the default parity count chosen for different erasure stripe sizes [here](https://github.com/minio/minio/blob/master/docs/distributed/SIZING.md)
+Refer to the sizing guide with details on the default parity count chosen for different erasure stripe sizes [here](https://github.com/soulteary/otterio/blob/main/docs/distributed/SIZING.md)
 
 OtterIO places new objects in server pools based on proportionate free space, per pool. Following pseudo code demonstrates this behavior.
 ```go

@@ -10,31 +10,31 @@
 > 注意：网关或独立单磁盘模式下不支持存储桶配额。
 
 ## 前置条件
-- 安装OtterIO - [OtterIO快速入门指南](https://docs.min.io/cn/minio-quickstart-guide).
-- [`mc`和OtterIO Server一起使用](https://docs.min.io/cn/minio-client-quickstart-guide)
+- 安装OtterIO - [OtterIO快速入门指南](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md).
+- [`oc`和OtterIO Server一起使用](https://github.com/soulteary/oc#readme)
 
 ## 设置存储桶配额
 
 ### 在OtterIO对象存储上，设置存储桶`mybucket`的额度为1GB，配额类型为hard:
 
 ```sh
-$ mc admin bucket quota myotterio/mybucket --hard 1gb
+$ oc admin bucket quota myotterio/mybucket --hard 1gb
 ```
 
 ### 将OtterIO上的存储桶"mybucket"的额度设置为5GB，配额类型为FIFO，这样就会自动删除较旧的内容，以确保存储桶的空间使用保持在5GB以内
 
 ```sh
-$ mc admin bucket quota myotterio/mybucket --fifo 5gb
+$ oc admin bucket quota myotterio/mybucket --fifo 5gb
 ```
 
 ### 验证OtterIO上的存储桶`mybucket`的配额设置
 
 ```sh
-$ mc admin bucket quota myotterio/mybucket
+$ oc admin bucket quota myotterio/mybucket
 ```
 
 ### 清除OtterIO上的存储桶`mybucket`的配额设置
 
 ```sh
-$ mc admin bucket quota myotterio/mybucket --clear
+$ oc admin bucket quota myotterio/mybucket --clear
 ```

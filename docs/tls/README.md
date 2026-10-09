@@ -15,7 +15,7 @@ Install OtterIO Server using the [installation instructions in this repository](
 
 ## <a name="use-an-existing-key-and-certificate-with-otterio"></a>2. Use an Existing Key and Certificate with OtterIO
 
-This section describes how to use a private key and public certificate that have been obtained from a certificate authority (CA). If these files have not been obtained, skip to [3. Generate Self-signed Certificates](#generate-use-self-signed-keys-certificates) or generate them with [Let's Encrypt](https://letsencrypt.org) using these instructions: [Generate Let's Encrypt certificate using Certbot for OtterIO](https://docs.min.io/docs/generate-let-s-encypt-certificate-using-concert-for-minio.html).
+This section describes how to use a private key and public certificate that have been obtained from a certificate authority (CA). If these files have not been obtained, skip to [3. Generate Self-signed Certificates](#generate-use-self-signed-keys-certificates) or generate them with [Let's Encrypt](https://letsencrypt.org) using these instructions: [Generate Let's Encrypt certificate using Certbot for OtterIO](https://certbot.eff.org/).
 
 Copy the existing private key and public certificate to the `certs` directory. The default certs directory is:
 * **Linux:** `${HOME}/.otterio/certs`
@@ -234,7 +234,7 @@ OtterIO can connect to other servers, including OtterIO nodes or other server ty
 * **Windows**: `C:\Users\<Username>\.otterio\certs\CAs`
 
 # Explore Further
-* [TLS Configuration for OtterIO server on Kubernetes](https://github.com/minio/minio/tree/master/docs/tls/kubernetes)
-* [OtterIO Client Complete Guide](https://docs.min.io/docs/minio-client-complete-guide)
-* [Generate Let's Encrypt Certificate](https://docs.min.io/docs/generate-let-s-encypt-certificate-using-concert-for-minio)
-* [Setup nginx Proxy with OtterIO Server](https://docs.min.io/docs/setup-nginx-proxy-with-minio)
+* [TLS Configuration for OtterIO server on Kubernetes](https://github.com/soulteary/otterio/tree/main/docs/tls/kubernetes)
+* [OtterIO Client Complete Guide](https://github.com/soulteary/oc/blob/main/docs/commands.md)
+* [Generate Let's Encrypt Certificate](https://certbot.eff.org/)
+* [Setup nginx Proxy with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/orchestration/docker-compose/README.md)

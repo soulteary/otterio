@@ -13,7 +13,7 @@ docker run -p 9000:9000 --name nas-s3 \
  -e "OTTERIO_ROOT_USER=otterio" \
  -e "OTTERIO_ROOT_PASSWORD=otterio123" \
  -v /shared/nasvol:/container/vol \
- minio/minio gateway nas /container/vol
+ soulteary/otterio gateway nas /container/vol
 ```
 
 ### Using Binary
@@ -30,11 +30,11 @@ OtterIO Gateway comes with an embedded web based object browser. Point your web 
 
 ![Screenshot](https://raw.githubusercontent.com/soulteary/OtterIO/main/docs/screenshots/otterio-browser-gateway.png)
 
-## Test using OtterIO Client `mc`
+## Test using OtterIO Client `oc`
 
-`mc` provides a modern alternative to UNIX commands such as ls, cat, cp, mirror, diff etc. It supports filesystems and Amazon S3 compatible cloud storage services.
+`oc` provides a modern alternative to UNIX commands such as ls, cat, cp, mirror, diff etc. It supports filesystems and Amazon S3 compatible cloud storage services.
 
-### Configure `mc`
+### Configure `oc`
 
 ```
 mc alias set mynas http://gateway-ip:9000 access_key secret_key
@@ -97,6 +97,6 @@ NAS gateway implementation allows symlinks on regular files,
 *Directory symlinks is not and will not be supported as there are no safe ways to handle them.*
 
 ## Explore Further
-- [`mc` command-line interface](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [`aws` command-line interface](https://docs.min.io/docs/aws-cli-with-minio)
-- [`otterio-go` Go SDK](https://docs.min.io/docs/golang-client-quickstart-guide)
+- [`oc` command-line interface](https://github.com/soulteary/oc#readme)
+- [`aws` command-line interface](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [OtterIO Go SDK](https://github.com/soulteary/otterio-sdk#readme)

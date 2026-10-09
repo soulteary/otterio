@@ -4,9 +4,9 @@ OtterIO is a cloud-native application designed to scale in a sustainable manner 
 
 | Orchestration platforms|
 |:---|
-| [`Docker Swarm`](https://docs.min.io/docs/deploy-minio-on-docker-swarm) |
-| [`Docker Compose`](https://docs.min.io/docs/deploy-minio-on-docker-compose) |
-| [`Kubernetes`](https://docs.min.io/docs/deploy-minio-on-kubernetes) |
+| [`Docker Swarm`](https://github.com/soulteary/otterio/blob/main/docs/orchestration/docker-swarm/README.md) |
+| [`Docker Compose`](https://github.com/soulteary/otterio/blob/main/docs/orchestration/docker-compose/README.md) |
+| [`Kubernetes`](https://github.com/soulteary/otterio/blob/main/docs/orchestration/kubernetes/README.md) |
 
 ## Why is OtterIO cloud-native?
 The term cloud-native revolves around the idea of applications deployed as micro services, that scale well. It is not about just retrofitting monolithic applications onto modern container based compute environment. A cloud-native application is portable and resilient by design, and can scale horizontally by simply replicating. Modern orchestration platforms like Swarm, Kubernetes and DC/OS make replicating and managing containers in huge clusters easier than ever.
@@ -19,4 +19,4 @@ OtterIO is built ground up on the cloud-native premise. With features like erasu
 
 In a typical modern infrastructure deployment, application, database, key-store, etc. already live in containers and are managed by orchestration platforms. OtterIO brings robust, scalable, AWS S3 compatible object storage to the lot.
 
-![Cloud-native](https://github.com/minio/minio/blob/master/docs/screenshots/Minio_Cloud_Native_Arch.jpg?raw=true)
+See the [distributed deployment guide](../distributed/README.md) for topology requirements.

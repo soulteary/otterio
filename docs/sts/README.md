@@ -13,16 +13,16 @@ Following are advantages for using temporary credentials:
 ## Identity Federation
 |AuthN | Description |
 | :---------------------- | ------------------------------------------ |
-| [**Client grants**](https://github.com/minio/minio/blob/master/docs/sts/client-grants.md) | Let applications request `client_grants` using any well-known third party identity provider such as KeyCloak, Okta. This is known as the client grants approach to temporary access. Using this approach helps clients keep OtterIO credentials to be secured. OtterIO STS supports client grants, tested against identity providers such as KeyCloak, Okta. |
-| [**WebIdentity**](https://github.com/minio/minio/blob/master/docs/sts/web-identity.md) | Let users request temporary credentials using any OpenID(OIDC) compatible web identity providers such as KeyCloak, Dex, Facebook, Google etc. |
-| [**AssumeRole**](https://github.com/minio/minio/blob/master/docs/sts/assume-role.md) | Let OtterIO users request temporary credentials using user access and secret keys. |
-| [**AD/LDAP**](https://github.com/minio/minio/blob/master/docs/sts/ldap.md) | Let AD/LDAP users request temporary credentials using AD/LDAP username and password. |
+| [**Client grants**](https://github.com/soulteary/otterio/blob/main/docs/sts/client-grants.md) | Let applications request `client_grants` using any well-known third party identity provider such as KeyCloak, Okta. This is known as the client grants approach to temporary access. Using this approach helps clients keep OtterIO credentials to be secured. OtterIO STS supports client grants, tested against identity providers such as KeyCloak, Okta. |
+| [**WebIdentity**](https://github.com/soulteary/otterio/blob/main/docs/sts/web-identity.md) | Let users request temporary credentials using any OpenID(OIDC) compatible web identity providers such as KeyCloak, Dex, Facebook, Google etc. |
+| [**AssumeRole**](https://github.com/soulteary/otterio/blob/main/docs/sts/assume-role.md) | Let OtterIO users request temporary credentials using user access and secret keys. |
+| [**AD/LDAP**](https://github.com/soulteary/otterio/blob/main/docs/sts/ldap.md) | Let AD/LDAP users request temporary credentials using AD/LDAP username and password. |
 
 ### Understanding JWT Claims
 > NOTE: JWT claims are only meant for WebIdentity and ClientGrants.
 > AssumeRole or LDAP users can skip the entire portion and directly visit one of the links below.
-> - [**AssumeRole**](https://github.com/minio/minio/blob/master/docs/sts/assume-role.md)
-> - [**AD/LDAP**](https://github.com/minio/minio/blob/master/docs/sts/ldap.md)
+> - [**AssumeRole**](https://github.com/soulteary/otterio/blob/main/docs/sts/assume-role.md)
+> - [**AD/LDAP**](https://github.com/soulteary/otterio/blob/main/docs/sts/ldap.md)
 
 The access token received is a signed JSON Web Token (JWT). Use a JWT decoder to decode the access token to access the payload of the token that includes following JWT claims, `policy` claim is mandatory and should be present as part of your JWT claim. Without this claim the generated credentials will not have access to any resources on the server, using these credentials application would receive 'Access Denied' errors.
 
@@ -33,11 +33,11 @@ The access token received is a signed JSON Web Token (JWT). Use a JWT decoder to
 ## Get started
 In this document we will explain in detail on how to configure all the prerequisites.
 
-> NOTE: If you are interested in AssumeRole API only, skip to [here](https://github.com/minio/minio/blob/master/docs/sts/assume-role.md)
+> NOTE: If you are interested in AssumeRole API only, skip to [here](https://github.com/soulteary/otterio/blob/main/docs/sts/assume-role.md)
 
 ### Prerequisites
-- [Configuring keycloak](https://github.com/minio/minio/blob/master/docs/sts/keycloak.md)
-- [Configuring etcd (optional needed only in gateway or federation mode)](https://github.com/minio/minio/blob/master/docs/sts/etcd.md)
+- [Configuring keycloak](https://github.com/soulteary/otterio/blob/main/docs/sts/keycloak.md)
+- [Configuring etcd (optional needed only in gateway or federation mode)](https://github.com/soulteary/otterio/blob/main/docs/sts/etcd.md)
 
 ### Setup OtterIO with Keycloak
 Make sure we have followed the previous step and configured each software independently, once done we can now proceed to use OtterIO STS API and OtterIO server to use these credentials to perform object API operations.
@@ -101,5 +101,5 @@ These credentials can now be used to perform OtterIO API operations.
   the user should see now the buckets and objects they have access to.
 
 ## Explore Further
-- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OtterIO Admin Complete Guide](https://github.com/soulteary/oc/blob/main/docs/administration.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

@@ -77,7 +77,7 @@ OTTERIO_IDENTITY_OPENID_COMMENT       (sentence)  optionally add a comment to th
 
 Set `identity_openid` config with `config_url`, `client_id` and restart OtterIO
 ```
-~ mc admin config set myotterio identity_openid config_url="http://localhost:8080/auth/realms/otterio/.well-known/openid-configuration" client_id="account"
+~ oc admin config set myotterio identity_openid config_url="http://localhost:8080/auth/realms/otterio/.well-known/openid-configuration" client_id="account"
 ```
 > NOTE: You can configure the `scopes` parameter to restrict the OpenID scopes requested by otterio to the IdP, for example, `"openid,policy_role_attribute"`, being `policy_role_attribute` a client_scope / client_mapper that maps a role attribute called policy to a `policy` claim returned by Keycloak
 
@@ -124,5 +124,5 @@ These credentials can now be used to perform OtterIO API operations.
 
 ## Explore Further
 
-- [OtterIO STS Quickstart Guide](https://docs.min.io/docs/minio-sts-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OtterIO STS Quickstart Guide](https://github.com/soulteary/otterio/blob/main/docs/sts/README.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

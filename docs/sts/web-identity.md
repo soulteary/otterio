@@ -101,7 +101,7 @@ export OTTERIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
 otterio server /mnt/export
 ```
 
-or using `mc`
+or using `oc`
 ```
 mc admin config get myotterio identity_openid
 identity_openid config_url=https://accounts.google.com/.well-known/openid-configuration client_id=843351d4-1080-11ea-aa20-271ecba3924a
@@ -164,5 +164,5 @@ JWT token returned by the Identity Provider should include a custom claim for th
 - Upon successful login on Identity Provider page the user will be automatically logged into OtterIO Browser
 
 ## Explore Further
-- [OtterIO Admin Complete Guide](https://docs.min.io/docs/minio-admin-complete-guide.html)
-- [The OtterIO documentation website](https://docs.min.io)
+- [OtterIO Admin Complete Guide](https://github.com/soulteary/oc/blob/main/docs/administration.md)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)

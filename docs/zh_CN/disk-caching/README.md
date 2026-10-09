@@ -7,7 +7,7 @@
 ## 开始
 
 ### 1. 前置条件
-安装OtterIO - [OtterIO快速入门](https://docs.min.io/cn/minio-quickstart-guide)。
+安装OtterIO - [OtterIO快速入门](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)。
 
 ### 2. 运行带缓存的OtterIO网关
 可以通过设置`cache`环境变量为OtterIO网关启用磁盘缓存。配置`cache`环境变量需要指定磁盘路径、使用通配符方式指定的不需要进行缓存的对象、用于缓存垃圾回收的高低水位线以及缓存一个对象前的最小访问次数（译者注：就是对象被访问多少次后才缓存它）。
@@ -31,12 +31,12 @@ otterio gateway s3
 
 
 ### 3. 验证设置是否成功
-要验证是否部署成功，你可以通过浏览器或者[`mc`](https://docs.min.io/cn/minio-client-quickstart-guide)来访问刚刚部署的OtterIO网关。你应该可以看到上传的文件在所有OtterIO节点上都可以访问。
+要验证是否部署成功，你可以通过浏览器或者[`oc`](https://github.com/soulteary/oc#readme)来访问刚刚部署的OtterIO网关。你应该可以看到上传的文件在所有OtterIO节点上都可以访问。
 
 # 了解更多
-- [磁盘缓存设计](https://github.com/minio/minio/blob/master/docs/zh_CN/disk-caching/DESIGN.md)
-- [`mc`快速入门](https://docs.min.io/cn/minio-client-quickstart-guide)
-- [使用 `aws-cli`](https://docs.min.io/cn/aws-cli-with-minio)
-- [使用 `s3cmd`](https://docs.min.io/cn/s3cmd-with-minio)
-- [使用 `otterio-go` SDK](https://docs.min.io/cn/golang-client-quickstart-guide)
-- [OtterIO文档](https://docs.min.io/cn/)
+- [磁盘缓存设计](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/disk-caching/DESIGN.md)
+- [`oc`快速入门](https://github.com/soulteary/oc#readme)
+- [使用 `aws-cli`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用 `s3cmd`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用 `otterio-go` SDK](https://github.com/soulteary/otterio-sdk#readme)
+- [OtterIO文档](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)

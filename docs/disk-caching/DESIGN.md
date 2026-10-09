@@ -1,6 +1,6 @@
 # Disk Caching Design
 
-This document explains some basic assumptions and design approach, limits of the disk caching feature. If you're looking to get started with disk cache, we suggest you go through the [getting started document](https://github.com/minio/minio/blob/master/docs/disk-caching/README.md) first.
+This document explains some basic assumptions and design approach, limits of the disk caching feature. If you're looking to get started with disk cache, we suggest you go through the [getting started document](https://github.com/soulteary/otterio/blob/main/docs/disk-caching/README.md) first.
 
 ## Command-line
 
@@ -46,12 +46,12 @@ sudo mkdir /mnt/cache  # create mount dir
 
 sudo mount -o relatime /tmp/data /mnt/cache # mount xfs on /mnt/cache with atime.
 
-docker pull minio/minio
+docker pull soulteary/otterio
 
 docker run --net=host -e OTTERIO_ROOT_USER={s3-access-key} -e OTTERIO_ROOT_PASSWORD={s3-secret-key} \
     -e OTTERIO_CACHE_DRIVES=/cache -e OTTERIO_CACHE_QUOTA=99 -e OTTERIO_CACHE_AFTER=0 \
     -e OTTERIO_CACHE_WATERMARK_LOW=90 -e OTTERIO_CACHE_WATERMARK_HIGH=95 \
-    -v /mnt/cache:/cache  minio/minio:latest gateway s3
+    -v /mnt/cache:/cache  soulteary/otterio:latest gateway s3
 ```
 
 ## Assumptions

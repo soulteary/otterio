@@ -5,15 +5,15 @@ version: '3.7'
 # it through port 9000.
 services:
   otterio1:
-    image: minio/minio:latest
+    image: soulteary/otterio:latest
     volumes:
       - data1-1:/data1
       - data1-2:/data2
     expose:
       - "9000"
     environment:
-      OTTERIO_ROOT_USER: otterio
-      OTTERIO_ROOT_PASSWORD: otterio123
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set OTTERIO_ROOT_USER}
+      OTTERIO_ROOT_PASSWORD: ${OTTERIO_ROOT_PASSWORD:?Set OTTERIO_ROOT_PASSWORD}
     command: server http://otterio{1...4}/data{1...2}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/otterio/health/live"]
@@ -22,15 +22,15 @@ services:
       retries: 3
 
   otterio2:
-    image: minio/minio:latest
+    image: soulteary/otterio:latest
     volumes:
       - data2-1:/data1
       - data2-2:/data2
     expose:
       - "9000"
     environment:
-      OTTERIO_ROOT_USER: otterio
-      OTTERIO_ROOT_PASSWORD: otterio123
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set OTTERIO_ROOT_USER}
+      OTTERIO_ROOT_PASSWORD: ${OTTERIO_ROOT_PASSWORD:?Set OTTERIO_ROOT_PASSWORD}
     command: server http://otterio{1...4}/data{1...2}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/otterio/health/live"]
@@ -39,15 +39,15 @@ services:
       retries: 3
 
   otterio3:
-    image: minio/minio:latest
+    image: soulteary/otterio:latest
     volumes:
       - data3-1:/data1
       - data3-2:/data2
     expose:
       - "9000"
     environment:
-      OTTERIO_ROOT_USER: otterio
-      OTTERIO_ROOT_PASSWORD: otterio123
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set OTTERIO_ROOT_USER}
+      OTTERIO_ROOT_PASSWORD: ${OTTERIO_ROOT_PASSWORD:?Set OTTERIO_ROOT_PASSWORD}
     command: server http://otterio{1...4}/data{1...2}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/otterio/health/live"]
@@ -56,15 +56,15 @@ services:
       retries: 3
 
   otterio4:
-    image: minio/minio:latest
+    image: soulteary/otterio:latest
     volumes:
       - data4-1:/data1
       - data4-2:/data2
     expose:
       - "9000"
     environment:
-      OTTERIO_ROOT_USER: otterio
-      OTTERIO_ROOT_PASSWORD: otterio123
+      OTTERIO_ROOT_USER: ${OTTERIO_ROOT_USER:?Set OTTERIO_ROOT_USER}
+      OTTERIO_ROOT_PASSWORD: ${OTTERIO_ROOT_PASSWORD:?Set OTTERIO_ROOT_PASSWORD}
     command: server http://otterio{1...4}/data{1...2}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/otterio/health/live"]

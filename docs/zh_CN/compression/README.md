@@ -10,31 +10,31 @@ OtterIO Server 允许压缩流以确保有效使用磁盘空间。压缩是在�
 
 ### 1. 前置条件
 
-安装OtterIO - [OtterIO快速入门指南](https://docs.min.io/cn/minio-quickstart-guide).
+安装OtterIO - [OtterIO快速入门指南](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md).
 
 ### 2. 为OtterIO启用压缩
 
 可以通过更新OtterIO Server配置的`compress`设置来启用压缩。`compress`设置可以配置哪些扩展名和mime-types可以被压缩。
 
 ```
-$ mc admin config get myotterio compression
+$ oc admin config get myotterio compression
 compression extensions=".txt,.log,.csv,.json,.tar,.xml,.bin" mime_types="text/*,application/json,application/xml"
 ```
 
 默认配置包括最常见的高度可压缩的内容扩展名和mime类型。
 
 ```
-$ mc admin config set myotterio compression extensions=".pdf" mime_types="application/pdf"
+$ oc admin config set myotterio compression extensions=".pdf" mime_types="application/pdf"
 ```
 
 显示有关设置压缩配置的帮助。
 ```
-~ mc admin config set myotterio compression
+~ oc admin config set myotterio compression
 ```
 
 使用默认的扩展名和mime-types对所有内容启用压缩。
 ```
-~ mc admin config set myotterio compression enable="on"
+~ oc admin config set myotterio compression enable="on"
 ```
 
 压缩设置也可以通过环境变量来设置。设置后，环境变量将覆盖服务器配置中定义的`compress`配置设置。
@@ -80,12 +80,12 @@ export OTTERIO_COMPRESS_MIME_TYPES="application/pdf"
 
 ## 测试设置
 
-要测试设置, 使用`mc`PUT一个文件到服务器，然后在数据目录上使用 `mc ls`查看对象的大小。
+要测试设置, 使用`oc`PUT一个文件到服务器，然后在数据目录上使用 `mc ls`查看对象的大小。
 
 ## 进一步探索
 
-- [使用`mc`](https://docs.min.io/cn/minio-client-quickstart-guide)
-- [使用`aws-cli`](https://docs.min.io/cn/aws-cli-with-minio)
-- [使用`s3cmd`](https://docs.min.io/cn/s3cmd-with-minio)
-- [使用`otterio-go`](https://docs.min.io/cn/golang-client-quickstart-guide)
+- [使用`oc`](https://github.com/soulteary/oc#readme)
+- [使用`aws-cli`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用`s3cmd`](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md)
+- [使用`otterio-go`](https://github.com/soulteary/otterio-sdk#readme)
 - [OtterIO官方文档](https://docs.min.io/cn)

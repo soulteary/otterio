@@ -13,7 +13,7 @@ Console target is on always and cannot be disabled.
 ### HTTP Target
 HTTP target logs to a generic HTTP endpoint in JSON format and is not enabled by default. To enable HTTP target logging you would have to update your OtterIO server configuration using `mc admin config set` command.
 
-Assuming `mc` is already [configured](https://docs.min.io/docs/minio-client-quickstart-guide.html)
+Assuming `oc` is already [configured](https://github.com/soulteary/oc#readme)
 ```
 mc admin config get myotterio/ logger_webhook
 logger_webhook:name1 auth_token="" endpoint=""
@@ -35,7 +35,7 @@ otterio server /mnt/data
 ```
 
 ## Audit Targets
-Assuming `mc` is already [configured](https://docs.min.io/docs/minio-client-quickstart-guide.html)
+Assuming `oc` is already [configured](https://github.com/soulteary/oc#readme)
 ```
 mc admin config get myotterio/ audit_webhook
 audit_webhook:name1 enable=off endpoint= auth_token= client_cert= client_key=
@@ -120,5 +120,5 @@ NOTE:
 ```
 
 ## Explore Further
-* [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide)
-* [Configure OtterIO Server with TLS](https://docs.min.io/docs/how-to-secure-access-to-minio-server-with-tls)
+* [OtterIO Quickstart Guide](https://github.com/soulteary/otterio#quick-start)
+* [Configure OtterIO Server with TLS](https://github.com/soulteary/otterio/blob/main/docs/tls/README.md)

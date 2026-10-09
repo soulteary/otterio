@@ -2,7 +2,7 @@
 
 OtterIO shared mode lets you use single [NAS](https://en.wikipedia.org/wiki/Network-attached_storage) (like NFS, GlusterFS, and other
 distributed filesystems) as the storage backend for multiple OtterIO servers. Synchronization among OtterIO servers is taken care by design.
-Read more about the OtterIO shared mode design [here](https://github.com/minio/minio/blob/master/docs/shared-backend/DESIGN.md).
+Read more about the OtterIO shared mode design [here](https://github.com/soulteary/otterio/blob/main/docs/shared-backend/DESIGN.md).
 
 OtterIO shared mode is developed to solve several real world use cases, without any special configuration changes. Some of these are
 
@@ -18,7 +18,7 @@ If you're aware of stand-alone OtterIO set up, the installation and running rema
 
 ## 1. Prerequisites
 
-Install OtterIO - [OtterIO Quickstart Guide](https://docs.min.io/docs/minio-quickstart-guide).
+Install OtterIO - [OtterIO Quickstart Guide](https://github.com/soulteary/otterio#quick-start).
 
 ## 2. Run OtterIO on Shared Backend
 
@@ -62,11 +62,11 @@ otterio.exe gateway nas M:\export
 
 ## 3. Test your setup
 
-To test this setup, access the OtterIO server via browser or [`mc`](https://docs.min.io/docs/minio-client-quickstart-guide). You’ll see the uploaded files are accessible from the all the OtterIO shared backend endpoints.
+To test this setup, access the OtterIO server via browser or [`oc`](https://github.com/soulteary/oc#readme). You’ll see the uploaded files are accessible from the all the OtterIO shared backend endpoints.
 
 ## Explore Further
-- [Use `mc` with OtterIO Server](https://docs.min.io/docs/minio-client-quickstart-guide)
-- [Use `aws-cli` with OtterIO Server](https://docs.min.io/docs/aws-cli-with-minio)
-- [Use `s3cmd` with OtterIO Server](https://docs.min.io/docs/s3cmd-with-minio)
-- [Use `otterio-go` SDK with OtterIO Server](https://docs.min.io/docs/golang-client-quickstart-guide)
-- [The OtterIO documentation website](https://docs.min.io)
+- [Use `oc` with OtterIO Server](https://github.com/soulteary/oc#readme)
+- [Use `aws-cli` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use `s3cmd` with OtterIO Server](https://github.com/soulteary/otterio/blob/main/docs/README.md)
+- [Use OtterIO SDK with OtterIO Server](https://github.com/soulteary/otterio-sdk#readme)
+- [OtterIO documentation](https://github.com/soulteary/otterio/blob/main/docs/README.md)
