@@ -48,11 +48,11 @@ require (
 	github.com/rjeczalik/notify v0.9.3
 	github.com/secure-io/sio-go v0.3.1
 	github.com/shirou/gopsutil/v3 v3.24.5
-	github.com/soulteary/otterio-kits/highwayhash v1.0.5
+	github.com/soulteary/otterio-kits/highwayhash v1.0.6
 	github.com/soulteary/otterio-kits/sha256-simd v1.0.2
-	github.com/soulteary/otterio-kits/simdjson-go v0.4.6
-	github.com/soulteary/otterio-kits/sio v0.5.2
-	github.com/soulteary/otterio-sdk/v7 v7.3.1
+	github.com/soulteary/otterio-kits/simdjson-go v0.4.7
+	github.com/soulteary/otterio-kits/sio v0.5.3
+	github.com/soulteary/otterio-sdk/v7 v7.3.2
 	github.com/tidwall/gjson v1.20.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/tinylib/msgp v1.6.5
@@ -64,7 +64,7 @@ require (
 	go.uber.org/zap v1.28.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/net v0.60.0
-	golang.org/x/sys v0.48.0
+	golang.org/x/sys v0.49.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -109,8 +109,8 @@ require (
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/shoenig/go-m1cpu v0.2.4 // indirect
-	github.com/soulteary/otterio-kits/crc64nvme v1.1.2 // indirect
-	github.com/soulteary/otterio-kits/md5-simd v1.1.3 // indirect
+	github.com/soulteary/otterio-kits/crc64nvme v1.1.3 // indirect
+	github.com/soulteary/otterio-kits/md5-simd v1.2.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.2 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
@@ -123,7 +123,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	golang.org/x/tools v0.51.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20261005182115-fad411399dd8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261005182115-fad411399dd8 // indirect
 	google.golang.org/grpc v1.84.0 // indirect
