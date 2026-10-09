@@ -78,7 +78,7 @@ cancel already persisted work. Back up local metadata as well as remote data.
 Test conditional bucket changes and credential rotation/revocation with owner,
 restricted and delegated identities before exposing them to operators.
 
-Source builds require Go 1.27.1, as before. Running prebuilt artifacts does not
+Source builds require Go 1.27.2. Running prebuilt artifacts does not
 require the development toolchain. Go integrations must update module imports
 and SDK types together, migrate custom gateway factories, and rebuild; this is
 not a source-compatible module-path substitution.
@@ -165,7 +165,7 @@ report, analysis and reproducer. Community contribution records remain in
 同时备份本地元数据与远端数据。向运维人员开放新接口前，以 owner、受限和委派身份
 验证桶配置条件更新及凭据轮换／撤销。
 
-源码构建继续要求 Go 1.27.1，运行预编译产物不需要安装开发工具链。
+源码构建要求 Go 1.27.2，运行预编译产物不需要安装开发工具链。
 Go 集成需要同时更新模块引用与 SDK 类型、迁移自定义 gateway 工厂并重新构建；
 模块路径替换不保证源码类型兼容。
 

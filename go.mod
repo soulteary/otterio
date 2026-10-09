@@ -1,6 +1,6 @@
 module github.com/soulteary/otterio
 
-go 1.27.1
+go 1.27.2
 
 require (
 	github.com/VividCortex/ewma v1.2.0

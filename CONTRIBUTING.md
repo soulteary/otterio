@@ -21,7 +21,7 @@ upstream MinIO instructions may refer to different commands, APIs or dependencie
 
 ## Toolchain and local build
 
-Use Go **1.27.1 or newer**, Git, Make and Bash. The browser additionally needs
+Use Go **1.27.2 or newer**, Git, Make and Bash. The browser additionally needs
 Node.js **24.21.0 or newer** and Bun **1.4.2**. For race tests install a working C
 compiler; ordinary server builds use `CGO_ENABLED=0`. The pinned versions in
 [go.mod](go.mod), [Makefile](Makefile), [browser/package.json](browser/package.json)

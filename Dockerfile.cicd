@@ -1,4 +1,4 @@
-FROM golang:1.27.1-alpine as builder
+FROM golang:1.27.2-alpine as builder
 
 # community fork of Apache-licensed MinIO codebase. Not affiliated with, endorsed by, or sponsored by MinIO, Inc.
 LABEL maintainer="soulteary (community fork of Apache-licensed MinIO codebase, https://github.com/soulteary/otterio)"

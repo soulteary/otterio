@@ -1,6 +1,6 @@
 module mint.minio.io/aws-sdk-go
 
-go 1.14
+go 1.27.2
 
 require (
 	github.com/aws/aws-sdk-go v1.34.10

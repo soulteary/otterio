@@ -1,4 +1,4 @@
-FROM golang:1.27.1-bookworm AS go-toolchain
+FROM golang:1.27.2-bookworm AS go-toolchain
 FROM oven/bun:1.4.2 AS bun-toolchain
 FROM node:24.21.0-bookworm
 

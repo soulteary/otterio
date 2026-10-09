@@ -42,7 +42,7 @@ release immediately; missing or unfinished CI at the deadline also blocks it.
 After repairing CI, rerun the original `main` push run before retrying Release:
 a manually dispatched Go run does not satisfy the `push` event requirement.
 
-Go setup reads the tagged checkout's `go.mod` (currently Go 1.27.1), rather than
+Go setup reads the tagged checkout's `go.mod` (currently Go 1.27.2), rather than
 selecting an arbitrary latest Go 1.26 patch. Recheck the module and dependency
 records when preparing a later release.
 

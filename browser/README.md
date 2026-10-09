@@ -6,7 +6,7 @@ affiliated with or endorsed by MinIO, Inc.
 ## Toolchain
 
 Use Node.js 24.21.0 or newer and Bun 1.4.2. Building the Go server additionally
-requires Go 1.27.1 or newer. CI pins these toolchain versions so the committed
+requires Go 1.27.2 or newer. CI pins these toolchain versions so the committed
 lockfile and embedded production assets can be verified together.
 
 ## Install, test and build
