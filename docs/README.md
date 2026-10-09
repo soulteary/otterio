@@ -45,6 +45,7 @@ Feature availability depends on the running OtterIO version, backend, configurat
 
 - [Contributor's Guide](../CONTRIBUTING.md) and [project assessment for 2026-10-08 (Chinese)](development/project-status-20261008.md)
 - [Build from source](../README.md#build-from-source)
+- [Console server split-patch acceptance (Chinese)](console-server-acceptance.md)
 - [Server CLI migration](cli-migration.md): server CLI framework changes, separate from the OC client
 - [SDK and kits dependency migration](development/sdk-kits-migration-20261008.md)
 - [Maintainer release guide](releasing.md) and [release materials](releases/README.md)

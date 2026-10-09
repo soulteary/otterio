@@ -135,6 +135,30 @@ jobs:
           go test -v -count=1 -timeout 10m ./cmd
           -run '^(TestSignedHeaderCoverage|TestPresignedHeaderQueryCoverage|TestSignatureV4RejectsInjectedHeaders|TestPresignedHoistedHeaderSignature|TestObjectTagsDoNotMutateSignedHeaders|TestSignatureV4PayloadHeaderCompatibility|TestAPISignedHeaderCopyIsolation|TestAPICopyObjectHandler|TestAPICopyObjectPartHandler|TestAPICopyObjectPartHandlerSanity|TestDoesPresignedSignatureMatch|TestGetObjectPrecondition.*|TestHeadObjectPrecondition.*)$'
 
+      - name: Console base protocol regressions (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: >-
+          go test -v -count=1 -timeout 15m ./cmd
+          -run 'TestBucketConfig|TestSelfCredentials|TestConfiguration|TestFiber|TestGetBucket|TestPutBucket|TestDeleteBucket|TestAccountInfo|TestBucketMetadata'
+
+      - name: Lifecycle storage and restore regressions (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          go test -v -count=1 -timeout 20m ./cmd -run 'TestBucketConfig|TestSelfCredentials|TestConfiguration|TestFiber|TestGetBucket|TestPutBucket|TestDeleteBucket|TestAccountInfo|TestBucketMetadata|TestBucketTarget|TestTransition|TestXLStorageInline|TestLifecycleTransition|TestLifecycleQueues|TestScannerLifecycle|TestExpiry|TestParseRestore|TestRestoreRequest|TestBeginRestore|TestRestoredVersion|TestPutObjectExpiry|TestFindFileInfoInQuorum|TestXLV2FormatData|TestErasureDeleteObjectBasic|TestErasureDeleteObjectsErasureSet'
+          go test -v -count=1 ./pkg/bucket/lifecycle
+
+      - name: Lifecycle storage hardening regressions (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          go test -v -count=1 ./cmd/config/storageclass
+          go test -v -count=1 -timeout 15m ./cmd -run 'TestErasurePutObject|TestXLStorageReadFile|TestXLStorageHealsPendingTransitionMetadata|TestMonitorAndConnectEndpointsCanceled|TestPutObjectNoQuorum|TestObjectQuorumFromMeta|TestDisksWithAllParts'
+
+      - name: Version GET HEAD and copy-source authorization regressions (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: >-
+          go test -v -count=1 -timeout 15m ./cmd
+          -run '^TestConsoleVersionAuthorization'
+
       - name: Build & test (linux)
         if: matrix.os == 'ubuntu-latest'
         run: |

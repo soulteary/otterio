@@ -204,6 +204,10 @@ func getMetadata(objInfo ObjectInfo) map[string]string {
 	for k, v := range objInfo.UserDefined {
 		metadata[k] = v
 	}
+	// Preserve the backend's full timestamp for identity checks. The HTTP
+	// last-modified value loses subsecond precision; legacy entries without
+	// this internal field are revalidated and refilled when necessary.
+	metadata[cacheSourceModTime] = objInfo.ModTime.UTC().Format(time.RFC3339Nano)
 	return metadata
 }
 
@@ -214,8 +218,41 @@ func (c *cacheObjects) incCacheStats(size int64) {
 }
 
 func (c *cacheObjects) GetObjectNInfo(ctx context.Context, bucket, object string, rs *HTTPRangeSpec, h http.Header, lockType LockType, opts ObjectOptions) (gr *GetObjectReader, err error) {
-	if c.isCacheExclude(bucket, object) || c.skipCache() {
+	// The cache key contains no version or multipart-part identity.
+	if opts.VersionID != "" || opts.PartNumber > 0 || c.isCacheExclude(bucket, object) || c.skipCache() {
 		return c.InnerGetObjectNInfoFn(ctx, bucket, object, rs, h, lockType, opts)
+	}
+	var authoritativeInfo *ObjectInfo
+	cacheOpts := opts
+	if opts.AuthorizeReadFn != nil || opts.CheckPrecondFn != nil {
+		// Range caching may refill in a background request. Authorization and
+		// response callbacks belong to this request and must never run there.
+		if rs != nil {
+			return c.InnerGetObjectNInfoFn(ctx, bucket, object, rs, h, lockType, opts)
+		}
+		metadataOpts := opts
+		metadataOpts.AuthorizeReadFn = nil
+		metadataOpts.CheckPrecondFn = nil
+		info, lookupErr := c.InnerGetObjectInfoFn(ctx, bucket, object, metadataOpts)
+		// Protected reads never fall back to stale metadata when the backend
+		// is unavailable. Let the backend reader retain its error/auth ordering.
+		if lookupErr != nil || info.VersionID != "" || !info.IsCacheable() {
+			return c.InnerGetObjectNInfoFn(ctx, bucket, object, rs, h, lockType, opts)
+		}
+		retention := objectlock.GetObjectRetentionMeta(info.UserDefined)
+		legalHold := objectlock.GetObjectLegalHoldMeta(info.UserDefined)
+		if retention.Mode.Valid() || legalHold.Status.Valid() {
+			return c.InnerGetObjectNInfoFn(ctx, bucket, object, rs, h, lockType, opts)
+		}
+		// This read uses the authoritative metadata snapshot. Its tags are
+		// never taken from cache, even when the cached bytes still match.
+		if (opts.AuthorizeReadFn != nil && opts.AuthorizeReadFn(info)) ||
+			(opts.CheckPrecondFn != nil && opts.CheckPrecondFn(info)) {
+			return nil, PreConditionFailed{}
+		}
+		authoritativeInfo = &info
+		cacheOpts.AuthorizeReadFn = nil
+		cacheOpts.CheckPrecondFn = nil
 	}
 	var cc *cacheControl
 	var cacheObjSize int64
@@ -225,7 +262,20 @@ func (c *cacheObjects) GetObjectNInfo(ctx context.Context, bucket, object string
 		return c.InnerGetObjectNInfoFn(ctx, bucket, object, rs, h, lockType, opts)
 	}
 
-	cacheReader, numCacheHits, cacheErr := dcache.Get(ctx, bucket, object, rs, h, opts)
+	cacheReader, numCacheHits, cacheErr := dcache.Get(ctx, bucket, object, rs, h, cacheOpts)
+	if authoritativeInfo != nil && cacheErr == nil {
+		cached := cacheReader.ObjInfo
+		if cached.ETag != authoritativeInfo.ETag || cached.Size != authoritativeInfo.Size ||
+			!cached.ModTime.Equal(authoritativeInfo.ModTime) {
+			cacheReader.Close()
+			dcache.Delete(ctx, bucket, object)
+			cacheErr = ObjectNotFound{Bucket: bucket, Object: object}
+		} else {
+			cacheReader.ObjInfo = *authoritativeInfo
+			cacheReader.ObjInfo.CacheLookupStatus = CacheHit
+			cacheReader.ObjInfo.CacheStatus = CacheHit
+		}
+	}
 	if cacheErr == nil {
 		cacheObjSize = cacheReader.ObjInfo.Size
 		if rs != nil {
@@ -252,13 +302,20 @@ func (c *cacheObjects) GetObjectNInfo(ctx context.Context, bucket, object string
 			cacheReader.Close()
 			c.cacheStats.incMiss()
 			bReader, err := c.InnerGetObjectNInfoFn(ctx, bucket, object, rs, h, lockType, opts)
-			bReader.ObjInfo.CacheLookupStatus = CacheHit
-			bReader.ObjInfo.CacheStatus = CacheMiss
+			if bReader != nil {
+				bReader.ObjInfo.CacheLookupStatus = CacheHit
+				bReader.ObjInfo.CacheStatus = CacheMiss
+			}
 			return bReader, err
 		}
 	}
 
-	objInfo, err := c.InnerGetObjectInfoFn(ctx, bucket, object, opts)
+	var objInfo ObjectInfo
+	if authoritativeInfo != nil {
+		objInfo = *authoritativeInfo
+	} else {
+		objInfo, err = c.InnerGetObjectInfoFn(ctx, bucket, object, opts)
+	}
 	if backendDownError(err) && cacheErr == nil {
 		c.incCacheStats(cacheObjSize)
 		return cacheReader, nil
@@ -376,60 +433,9 @@ func (c *cacheObjects) GetObjectNInfo(ctx context.Context, bucket, object string
 
 // Returns ObjectInfo from cache if available.
 func (c *cacheObjects) GetObjectInfo(ctx context.Context, bucket, object string, opts ObjectOptions) (ObjectInfo, error) {
-	getObjectInfoFn := c.InnerGetObjectInfoFn
-
-	if c.isCacheExclude(bucket, object) || c.skipCache() {
-		return getObjectInfoFn(ctx, bucket, object, opts)
-	}
-
-	// fetch diskCache if object is currently cached or nearest available cache drive
-	dcache, err := c.getCacheToLoc(ctx, bucket, object)
-	if err != nil {
-		return getObjectInfoFn(ctx, bucket, object, opts)
-	}
-	var cc *cacheControl
-	// if cache control setting is valid, avoid HEAD operation to backend
-	cachedObjInfo, _, cerr := dcache.Stat(ctx, bucket, object)
-	if cerr == nil {
-		cc = cacheControlOpts(cachedObjInfo)
-		if cc == nil || (cc != nil && !cc.isStale(cachedObjInfo.ModTime)) {
-			// This is a cache hit, mark it so
-			c.cacheStats.incHit()
-			return cachedObjInfo, nil
-		}
-	}
-
-	objInfo, err := getObjectInfoFn(ctx, bucket, object, opts)
-	if err != nil {
-		if _, ok := err.(ObjectNotFound); ok {
-			// Delete the cached entry if backend object was deleted.
-			dcache.Delete(ctx, bucket, object)
-			c.cacheStats.incMiss()
-			return ObjectInfo{}, err
-		}
-		if !backendDownError(err) {
-			c.cacheStats.incMiss()
-			return ObjectInfo{}, err
-		}
-		if cerr == nil {
-			// This is a cache hit, mark it so
-			c.cacheStats.incHit()
-			return cachedObjInfo, nil
-		}
-		c.cacheStats.incMiss()
-		return ObjectInfo{}, BackendDown{}
-	}
-	// Reaching here implies cache miss
-	c.cacheStats.incMiss()
-	// when backend is up, do a sanity check on cached object
-	if cerr != nil {
-		return objInfo, nil
-	}
-	if cachedObjInfo.ETag != objInfo.ETag {
-		// Delete the cached entry if the backend object was replaced.
-		dcache.Delete(ctx, bucket, object)
-	}
-	return objInfo, nil
+	// HEAD and metadata callers evaluate permissions against this information.
+	// A name-only cache has neither authoritative tags nor version identity.
+	return c.InnerGetObjectInfoFn(ctx, bucket, object, opts)
 }
 
 // CopyObject reverts to backend after evicting any stale cache entries

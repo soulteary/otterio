@@ -1,0 +1,85 @@
+{
+  "dateUTC": "2026-10-09T06:54:24.679729+00:00",
+  "status": "passed",
+  "scope": "Test-helper signature-only lint fix; production source is unchanged. Prior native/build/live acceptance keeps its original source and binary identities.",
+  "previousAcceptance": {
+    "path": "/Users/soulteary/Lab/github/otterio-group/otterio/docs/console-authorization-review-results.json",
+    "sha256": "fb5df77ed3d6ff3017a0fe0d2c12e4b403872519f5a33c2a6ce6c11db162a666"
+  },
+  "previousFeaturePatch": {
+    "path": "/Users/soulteary/Lab/github/otterio-group/oc/docs/console-features-evidence/console-features-server-before-lint.patch",
+    "sha256": "2593137946949d77600b765498c26b6dd39cb6cf1271da6c9a5feba04439b6bd"
+  },
+  "featurePatch": {
+    "path": "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-features-server.patch",
+    "sha256": "ea620befaad0c09abc0f91396c04c1d7666e527ec7ed24e5916fb14bedcc1d1c"
+  },
+  "sourceRevision": "80f10b3109554efe75368a3a50b481fd4f585139",
+  "sourceTreeSHA256": "860041e350ea4afab03ea693bf9a68468d99b8fabcfd696f47876bdd6410900e",
+  "sourceTreeDigestAlgorithm": "SHA256 over relative POSIX path-sorted entries: UTF-8 path + NUL + ASCII decimal byte length + NUL + raw file bytes; all recursive Go files and root go.mod/go.sum, excluding .git; no per-entry suffix, mode or mtime",
+  "changedTestFiles": {
+    "cmd/console-version-cache-authorization_test.go": {
+      "beforeSHA256": "c7f40e3def12d90474a8d7db868e0e372b3aa358c9cf6f802654b59732e4651b",
+      "afterSHA256": "4e4f4acabb4f8eeadcf85e0e12ad562a5b1e6c7788ca0dc499b8d42a08cfd846"
+    },
+    "cmd/console-version-review-authorization_test.go": {
+      "beforeSHA256": "e9135786d9cde5f8d6528d11d03d7e1ce4b955731039c9af70d450bc08e7cb40",
+      "afterSHA256": "0db827aeceb05983a11c3de6fd30395cadd9d7a7d822a8837e1b2725989857ca"
+    },
+    "cmd/console-version-tier-authorization_test.go": {
+      "beforeSHA256": "dc4f22d0e9a9ab711a4784ab893c0472e17e1e7da434029a692b5f641efc6029",
+      "afterSHA256": "e192ed059688ceb3bbab5f3567b5954221baa48ad914e8d4dd0c4a8a4e379984"
+    }
+  },
+  "changes": [
+    "Place context.Context first in the cache fixture constructor and seed helper and update all calls.",
+    "Remove the unused bucket parameter from consoleReviewUser and update copy, range and tier calls."
+  ],
+  "staticVerification": {
+    "path": "/Users/soulteary/Lab/github/otterio-group/otterio/docs/console-authorization-lint-static-results.json",
+    "sha256": "5c8c1b6562b2bd4b2b75bb68a11aeafd060e0e1ee9d48887ec2fc5f6d6d95388"
+  },
+  "checks": [
+    {
+      "kind": "lint",
+      "command": [
+        "golangci-lint",
+        "run",
+        "--max-same-issues=100000"
+      ],
+      "exitCode": 0,
+      "issues": 0,
+      "log": {
+        "path": "/Users/soulteary/Lab/github/otterio-group/otterio/docs/console-authorization-review-evidence/lint-followup.log",
+        "sha256": "e92606b0bf483111dff0a120c315ea165821348f31365020e2468a0059095c47"
+      }
+    },
+    {
+      "kind": "affected-native-race",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "./cmd",
+        "-run",
+        "^TestConsoleVersionAuthorization(Cache.*|CopyDestinationTagsHTTPStorage|RangeHTTPStorage|TierErrorsHTTPStorage)$",
+        "-count=1",
+        "-timeout=10m"
+      ],
+      "exitCode": 0,
+      "passedHTTPLeafCases": 198,
+      "skipped": 0,
+      "compressedLog": {
+        "path": "/Users/soulteary/Lab/github/otterio-group/otterio/docs/console-authorization-review-evidence/lint-followup-tests.log.gz",
+        "sha256": "c8e4e382c95cd2948682d02780df732301459c33b44a34f67f792ce1950ea76e"
+      },
+      "uncompressedSHA256": "5d471223a2228e314d2cfdf5d5adab1318cdcc94b7892eb996b941b4ff459df2",
+      "packageElapsedSeconds": 8.262
+    }
+  ],
+  "limits": [
+    "No production behavior changed in this follow-up. Prior full topology acceptance is retained for the pre-lint source, not relabeled as a new binary run.",
+    "Patch application order and source equivalence are verified statically after the helper fix; those independent source copies were not rebuilt or retested in this follow-up."
+  ]
+}

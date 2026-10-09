@@ -49,14 +49,6 @@ func (actionSet ActionSet) Match(action Action) bool {
 			return true
 		}
 
-		// This is a special case where GetObjectVersion
-		// means GetObject is enabled implicitly.
-		switch r {
-		case GetObjectVersionAction:
-			if action == GetObjectAction {
-				return true
-			}
-		}
 	}
 
 	return false

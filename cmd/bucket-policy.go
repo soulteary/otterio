@@ -66,11 +66,27 @@ func NewPolicySys() *PolicySys {
 }
 
 type objectTaggingContextKey struct{}
+type requestObjectTaggingContextKey struct{}
+type copySourceVersionIDContextKey struct{}
+
+// withCopySourceVersionID binds source authorization to the version selected
+// by the copy handler without changing signed headers or query parameters.
+// Empty means the current source and must override any destination versionId.
+func withCopySourceVersionID(r *http.Request, versionID string) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), copySourceVersionIDContextKey{}, versionID))
+}
 
 // withObjectTags carries server-loaded tags without changing signed headers.
 // An empty stored tag set must also override any client-supplied tags.
 func withObjectTags(r *http.Request, objectTags string) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), objectTaggingContextKey{}, objectTags))
+}
+
+// withRequestObjectTags binds authorization to tags parsed by the handler.
+// PutObjectTagging writes its XML body, not an optional X-Amz-Tagging header.
+// Preserve signed headers and the distinction from existing stored tags.
+func withRequestObjectTags(r *http.Request, requestTags string) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), requestObjectTaggingContextKey{}, requestTags))
 }
 
 func getConditionValues(r *http.Request, lc string, username string, claims map[string]interface{}) map[string][]string {
@@ -87,10 +103,11 @@ func getConditionValues(r *http.Request, lc string, username string, claims map[
 		}
 	}
 
-	vid := r.URL.Query().Get("versionId")
-	if vid == "" {
-		if u, err := url.Parse(r.Header.Get(xhttp.AmzCopySource)); err == nil {
-			vid = u.Query().Get("versionId")
+	vid, isCopySource := r.Context().Value(copySourceVersionIDContextKey{}).(string)
+	if !isCopySource {
+		vid = getObjectVersionID(r)
+		if vid == "" && r.Method != http.MethodGet && r.Method != http.MethodHead {
+			_, vid = getCopySource(r)
 		}
 	}
 
@@ -146,6 +163,12 @@ func getConditionValues(r *http.Request, lc string, username string, claims map[
 	}
 
 	for key, values := range cloneHeader {
+		// s3:VersionId comes only from the parsed S3 reference. A signed raw
+		// Versionid header must not override the condition evaluator's canonical
+		// lookup and authorize a different version than the one being read.
+		if strings.EqualFold(key, "versionid") {
+			continue
+		}
 		if existingValues, found := args[key]; found {
 			args[key] = append(existingValues, values...)
 		} else {
@@ -170,6 +193,9 @@ func getConditionValues(r *http.Request, lc string, username string, claims map[
 	}
 
 	for key, values := range cloneURLValues {
+		if strings.EqualFold(key, "versionid") {
+			continue
+		}
 		if existingValues, found := args[key]; found {
 			args[key] = append(existingValues, values...)
 		} else {
@@ -179,6 +205,10 @@ func getConditionValues(r *http.Request, lc string, username string, claims map[
 
 	// JWT specific values
 	for k, v := range claims {
+		// The selected S3 version cannot be replaced by an identity claim.
+		if strings.EqualFold(k, "versionid") {
+			continue
+		}
 		vStr, ok := v.(string)
 		if ok {
 			// Special case for AD/LDAP STS users
@@ -190,30 +220,35 @@ func getConditionValues(r *http.Request, lc string, username string, claims map[
 		}
 	}
 
-	// Per-tag condition values for s3:ExistingObjectTag/<key> and
-	// s3:RequestObjectTag/<key>. The X-Amz-Tagging header is the single
-	// source for request tags. The handler supplies the existing object's
-	// tags through request context after ObjectInfo is loaded (see GetObject /
-	// HeadObject CheckPrecondFn) so policies that gate on per-object tags
-	// can be evaluated *before* checkPreconditions runs and leaks any
-	// metadata. For PutObject / PutObjectTagging the header is set by the
-	// caller and represents request tags.
-	rawTags := r.Header.Get(xhttp.AmzObjectTagging)
-	if objectTags, ok := r.Context().Value(objectTaggingContextKey{}).(string); ok {
-		rawTags = objectTags
+	// Dynamic tag conditions are derived from their authoritative sources.
+	// Neither raw headers/query keys nor identity claims may supply them.
+	existingPrefix := condition.S3ExistingObjectTag.Name()
+	requestPrefix := condition.S3RequestObjectTag.Name()
+	for key := range args {
+		lowerKey := strings.ToLower(key)
+		if strings.HasPrefix(lowerKey, strings.ToLower(existingPrefix)) || strings.HasPrefix(lowerKey, strings.ToLower(requestPrefix)) {
+			delete(args, key)
+		}
 	}
-	if rawTags != "" {
+	addTags := func(prefix, rawTags string) {
 		if parsed, err := tags.ParseObjectTags(rawTags); err == nil {
-			// Strip the "s3:" prefix because stringEqualsFunc.evaluate
-			// looks up values by Key.Name(), which itself drops "s3:".
-			existingPrefix := condition.S3ExistingObjectTag.Name()
-			requestPrefix := condition.S3RequestObjectTag.Name()
-			for k, v := range parsed.ToMap() {
-				args[existingPrefix+k] = []string{v}
-				args[requestPrefix+k] = []string{v}
+			for key, value := range parsed.ToMap() {
+				args[prefix+key] = []string{value}
 			}
 		}
 	}
+	// Existing tags come only from the selected stored object's metadata.
+	// An empty set must stay empty even if the caller sends target tags.
+	if objectTags, ok := r.Context().Value(objectTaggingContextKey{}).(string); ok {
+		addTags(existingPrefix, objectTags)
+	}
+	// Request tags continue to describe this request, including a copy's
+	// destination. They are independent of the source object's existing tags.
+	requestTags, parsedRequestTags := r.Context().Value(requestObjectTaggingContextKey{}).(string)
+	if !parsedRequestTags {
+		requestTags = r.Header.Get(xhttp.AmzObjectTagging)
+	}
+	addTags(requestPrefix, requestTags)
 
 	return args
 }

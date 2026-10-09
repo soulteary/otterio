@@ -1,0 +1,62 @@
+PASS P2 raw file upload sends original File and 100% progress does not confirm storage
+PASS P2 empty prefix plans are reviewable and complete without object deletion
+PASS P2 only explicit busy rejection permits reuse of a deletion confirmation
+PASS P2 expired recovered tasks stop polling without inventing a final outcome
+PASS known bucket settings work without bucket listing and root summaries do not gate writes
+PASS a denied setting does not prevent another kind from loading
+PASS readonly, missing conditional support, and invalid revisions cannot submit writes
+PASS review and save use immutable loaded scope, complete bytes, CSRF and revision
+PASS removal requires review and retains exact bucket/kind without fake version removal
+PASS 412 and unknown setting outcomes preserve drafts and require fresh reads without replay
+PASS closed, canceled, and superseded setting reads cannot restore stale editor content
+PASS an interrupted save requires reading storage before another write and ignores late acknowledgement
+PASS secret rotation is available only for writable enabled IAM identity
+PASS account errors and late responses cannot enable rotation or disturb browsing
+PASS secret byte limits are checked and cancel/close/logout erase input without submitting
+PASS confirmed rotation clears secret immediately and stops all session actions
+PASS unknown rotation, transport loss and page suspension stop the UI without replay
+PASS explicit zero-write 501/502/403 rotation failures retain session and refresh identity
+PASS ambiguous 5xx, explicit retirement and malformed success must still stop rotation UI
+PASS setting save displays server canonical document and uses its fresh revision for the next review
+PASS active-task rejection clears secret and requires a new human review
+PASS an invalid CSRF response clears all configuration and credential drafts
+PASS reading another setting cannot discard a dirty draft without confirmation or on failure
+PASS malformed successful setting acknowledgement blocks another confirmation and retains draft
+PASS redirects and incomplete successful setting DTOs require fresh reads without another write
+PASS logout during secret submission reports an unknown outcome and ignores late confirmation
+PASS logout clears complete configuration review text as well as editor and secret inputs
+PASS repeated confirmation cannot send concurrent settings writes or secret rotations
+PASS read confirmation keeps immutable requested scope and ignores late replies after window rotation
+PASS the DOM harness preserves the browser's getter-only textarea type
+PASS group member action switches preserve writable multiline fields
+PASS user and group policy binding action switches finish building their multiline forms
+PASS service account creation and restriction policy switches retain fields and run list loading
+PASS version-only identities can enter an exact bucket and key without bucket listing
+PASS Refresh retries a failed capability read and restores all feature controls
+PASS Refresh does not duplicate or cancel an in-flight capability read
+PASS feature capabilities keep unavailable controls hidden and read-only ZIP selection enabled
+PASS bucket deletion requires exact confirmation and never requests bucket emptying
+PASS an exact known bucket can be deleted without permission to list buckets
+PASS version history preserves exact version refs and delete markers have no actions
+PASS late share replies and session expiry cannot restore signed URLs
+PASS readonly ZIP fixes selected keys, reports progress and exposes only ready archives
+PASS IAM actions require exact targets and returned secrets are cleared on dismissal and logout
+PASS IAM users distinguish confirmed empty membership from unknown and show only listed group evidence
+PASS IAM deletion retains unknown memberships and reports authoritative rejection without replay
+PASS IAM group membership and service account restrictions use structured exact targets
+PASS all new dialogs and fields have named accessible status and confirmation controls
+PASS failed ZIP preparation never offers a partial archive download
+PASS late version reads cannot reopen a closed dialog or populate another target
+PASS IAM transport loss clears secret and stops all writes without replay
+PASS IAM policy edits require conditional support and a valid fresh revision
+PASS IAM conditional bindings capture complete policy list and block target changes and repeated writes
+PASS binding conflicts preserve drafts and fresh reads require confirmation before discarding edits
+PASS ZIP manifest shows resolved versions and download transitions consume a ready archive once
+PASS expired ZIP tasks can be replaced without offering a stale download
+PASS session restore recovers its active ZIP task without repeating preparation
+PASS a lost ZIP creation acknowledgement recovers the existing task through a read
+PASS a lost ZIP cancellation acknowledgement refreshes state without repeating cancellation
+PASS service account creation requires a known access key when a secret is supplied
+PASS a confirmed IAM creation preserves its one-time credential after the console stops
+PASS an unconfirmed IAM reply never displays claimed credentials
+61/61 console web behavior groups passed

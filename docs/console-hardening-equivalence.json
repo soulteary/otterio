@@ -1,0 +1,27 @@
+{
+  "hardening_sha256": "2a7e451617daa1895f0e7f96f86c9d08b9bf896702c4251c5bc4c7183cc14a05",
+  "features_sha256": "c938ec24d3bd48b0eed7633abe876df9dda3cee6b5facd08833aa49a6e772d4f",
+  "hardening_full_source": "/private/tmp/oc-version-final-combinations-20261009/base-storage-features",
+  "current_plus_iam_projection": "/private/tmp/oc-version-current-plus-iam-20261009",
+  "all_go_and_all_module_paths": 1038,
+  "all_go_and_all_module_differences": [
+    {
+      "path": "mint/run/core/minio-go/go.mod",
+      "combo_exists": true,
+      "current_plus_iam_exists": true,
+      "combo_sha256": "8d9c7a451a15aa6de1ee9e58fb6c48ddec2597a42a8cb7fcf6bdbc621d7df5cd",
+      "current_plus_iam_sha256": "8bbabcec4b49891f8a6e12cc075e4501a70e3a58a627a79fe38014bd8240f0b9"
+    },
+    {
+      "path": "mint/run/core/minio-go/go.sum",
+      "combo_exists": true,
+      "current_plus_iam_exists": true,
+      "combo_sha256": "a78f6d221e606426d175b924a24448c601fdc20f210a2d3ca2e603a766c815d4",
+      "current_plus_iam_sha256": "f5f5d8dc38353d5b66cae1093b9bee55e38ffb06826f3e674d5ebf2ebf1c9a05"
+    }
+  ],
+  "all_go_and_root_module_paths": 1028,
+  "all_go_and_root_module_differences": [],
+  "all_go_and_root_module_byte_identical": true,
+  "note": "This creates no mutations in actual current. It compares an independent Go/module projection of the current checkout with IAM applied to the fixed full combination. Nested mint/minio-go module files retain HEAD80-specific differences because the hardening patch intentionally excludes module changes."
+}

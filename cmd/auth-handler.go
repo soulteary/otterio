@@ -296,6 +296,11 @@ func checkRequestAuthType(ctx context.Context, r *http.Request, action policy.Ac
 // returns APIErrorCode if any to be replied to the client.
 // Additionally returns the accessKey used in the request, and if this request is by an admin.
 func checkRequestAuthTypeCredential(ctx context.Context, r *http.Request, action policy.Action, bucketName, objectName string) (cred auth.Credentials, owner bool, s3Err APIErrorCode) {
+	// GET/HEAD with an explicit version reference use the distinct history
+	// action. Never fall back to current-object authorization, including null.
+	if action == policy.GetObjectAction && (r.Method == http.MethodGet || r.Method == http.MethodHead) && getObjectVersionID(r) != "" {
+		action = policy.GetObjectVersionAction
+	}
 	switch getRequestAuthType(r) {
 	case authTypeUnknown, authTypeStreamingSigned:
 		return cred, owner, ErrSignatureVersionNotSupported
@@ -365,22 +370,6 @@ func checkRequestAuthTypeCredential(ctx context.Context, r *http.Request, action
 			return cred, owner, ErrNone
 		}
 
-		if action == policy.ListBucketVersionsAction {
-			// In AWS S3 s3:ListBucket permission is same as s3:ListBucketVersions permission
-			// verify as a fallback.
-			if globalPolicySys.IsAllowed(policy.Args{
-				AccountName:     cred.AccessKey,
-				Action:          policy.ListBucketAction,
-				BucketName:      bucketName,
-				ConditionValues: getConditionValues(r, locationConstraint, "", nil),
-				IsOwner:         false,
-				ObjectName:      objectName,
-			}) {
-				// Request is allowed return the appropriate access key.
-				return cred, owner, ErrNone
-			}
-		}
-
 		return cred, owner, ErrAccessDenied
 	}
 
@@ -398,25 +387,36 @@ func checkRequestAuthTypeCredential(ctx context.Context, r *http.Request, action
 		return cred, owner, ErrNone
 	}
 
-	if action == policy.ListBucketVersionsAction {
-		// In AWS S3 s3:ListBucket permission is same as s3:ListBucketVersions permission
-		// verify as a fallback.
-		if globalIAMSys.IsAllowed(iampolicy.Args{
-			AccountName:     cred.AccessKey,
-			Groups:          cred.Groups,
-			Action:          iampolicy.ListBucketAction,
-			BucketName:      bucketName,
-			ConditionValues: getConditionValues(r, "", cred.AccessKey, claims),
-			ObjectName:      objectName,
-			IsOwner:         owner,
-			Claims:          claims,
+	return cred, owner, ErrAccessDenied
+}
+
+// checkCopySourceAuthType authorizes exactly the version the copy handler will
+// read. CopyObject and UploadPartCopy are PUT requests, so their source action
+// cannot be inferred from the destination URL or the GET/HEAD request method.
+func checkCopySourceAuthType(ctx context.Context, r *http.Request, bucket, object, versionID, objectTags string) APIErrorCode {
+	action := policy.Action(policy.GetObjectAction)
+	if versionID != "" {
+		action = policy.GetObjectVersionAction
+	}
+	return checkRequestAuthType(ctx, withCopySourceVersionID(withObjectTags(r, objectTags), versionID), action, bucket, object)
+}
+
+// checkObjectReadAuthType evaluates source tags only after storage selected
+// the object/version. Preserve the anonymous missing-key distinction without
+// exposing other source metadata to a caller whose read policy was denied.
+func checkObjectReadAuthType(ctx context.Context, r *http.Request, bucket, object, objectTags string, lookupErr error) APIErrorCode {
+	s3Error := checkRequestAuthType(ctx, withObjectTags(r, objectTags), policy.GetObjectAction, bucket, object)
+	if s3Error == ErrAccessDenied && lookupErr != nil && getRequestAuthType(r) == authTypeAnonymous && toAPIError(ctx, lookupErr).Code == "NoSuchKey" {
+		if globalPolicySys.IsAllowed(policy.Args{
+			Action:          policy.ListBucketAction,
+			BucketName:      bucket,
+			ConditionValues: getConditionValues(r, "", "", nil),
+			IsOwner:         false,
 		}) {
-			// Request is allowed return the appropriate access key.
-			return cred, owner, ErrNone
+			return ErrNoSuchKey
 		}
 	}
-
-	return cred, owner, ErrAccessDenied
+	return s3Error
 }
 
 // Verify if request has valid AWS Signature Version '2'.

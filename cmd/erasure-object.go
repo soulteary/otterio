@@ -190,6 +190,11 @@ func (er erasureObjects) GetObjectNInfo(ctx context.Context, bucket, object stri
 	}
 
 	objInfo := fi.ToObjectInfo(bucket, object)
+	// Tier references and delete-marker errors can precede reader creation.
+	// Authorize the selected metadata before either path returns information.
+	if opts.AuthorizeReadFn != nil && opts.AuthorizeReadFn(objInfo) {
+		return nil, PreConditionFailed{}
+	}
 	if objInfo.DeleteMarker {
 		if opts.VersionID == "" {
 			return &GetObjectReader{
@@ -1417,6 +1422,9 @@ func (er erasureObjects) PutObjectTags(ctx context.Context, bucket, object strin
 	fi, err := pickValidFileInfo(ctx, metaArr, modTime, dataDir, readQuorum)
 	if err != nil {
 		return ObjectInfo{}, toObjectErr(err, bucket, object)
+	}
+	if opts.CheckPrecondFn != nil && opts.CheckPrecondFn(fi.ToObjectInfo(bucket, object)) {
+		return ObjectInfo{}, PreConditionFailed{}
 	}
 	if fi.Deleted {
 		if opts.VersionID == "" {

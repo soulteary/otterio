@@ -1,0 +1,4 @@
+ok  	github.com/soulteary/mc/internal/console	3.787s
+?   	github.com/soulteary/mc/internal/console/web	[no test files]
+ok  	github.com/soulteary/mc/internal/storageclient	34.731s
+ok  	github.com/soulteary/mc/cmd/oc-console	2.062s

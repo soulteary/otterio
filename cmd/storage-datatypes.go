@@ -104,7 +104,10 @@ func (f *FileInfoVersions) findVersionIndex(v string) int {
 		return -1
 	}
 	for i, ver := range f.Versions {
-		if ver.VersionID == v {
+		// Legacy object metadata stores an empty ID, while the S3 listing
+		// serializes it as "null". Recognize that marker rather than restarting
+		// at the newest version and producing an endless pagination cycle.
+		if ver.VersionID == v || (v == nullVersionID && ver.VersionID == "") {
 			return i
 		}
 	}

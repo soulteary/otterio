@@ -281,6 +281,8 @@ Use the credentials configured at startup. The Docker examples above pass `OTTER
 
 For the Quick Start's split listeners, open <http://127.0.0.1:9001>; for a single listener, open <http://127.0.0.1:9000>. Log in with your configured root username and password to create buckets, upload objects, and browse contents.
 
+The separate optional OC console protocols and their latest evidence are documented in [layered console acceptance](docs/console-server-acceptance.md) and the [current report entry](docs/console-server-acceptance-results.json).
+
 ### OC client
 
 Install [OC](https://github.com/soulteary/oc/blob/main/docs/installation.md), the companion client for S3 operations and OtterIO administration. The following example uses the Quick Start's two ports. When OC prompts, enter the root username and password used to start OtterIO:

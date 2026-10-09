@@ -1,0 +1,283 @@
+{
+  "dateUTC": "2026-10-09T03:54:44.718526+00:00",
+  "status": "passed",
+  "base": "6f6d0835ddff68020f1491c403b958fade22841f",
+  "source": {
+    "path": "/Users/soulteary/Lab/github/otterio-group/otterio",
+    "type": "git-archive",
+    "identityVerified": true,
+    "archivedRevision": "6f6d0835ddff68020f1491c403b958fade22841f",
+    "checkoutHead": "80f10b3109554efe75368a3a50b481fd4f585139"
+  },
+  "artifactDirectory": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36",
+  "requestedProfile": "all",
+  "patches": {
+    "console-server-p3.patch": {
+      "path": "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-server-p3.patch",
+      "sha256": "a0281fc4489fc8c145f78bd1cb50eb41ae50252b812761ccc3340d4b626e18d9"
+    },
+    "console-server-base.patch": {
+      "path": "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-server-base.patch",
+      "sha256": "8cf08e797c2d5fff2aff0fd78202bc9e94d03ecd609f26e171fc62c7b6d58d18"
+    },
+    "lifecycle-storage.patch": {
+      "path": "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/lifecycle-storage.patch",
+      "sha256": "7fc7e76a3a67968d1b3f3ac61c4a38c82c698ba3e1fd3aa6020cf07089167539"
+    }
+  },
+  "checks": [
+    {
+      "name": "base patch applies",
+      "command": [
+        "git",
+        "apply",
+        "--check",
+        "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-server-base.patch"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.012,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/01-base-patch-applies.log",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": ""
+    },
+    {
+      "name": "apply base patch",
+      "command": [
+        "git",
+        "apply",
+        "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-server-base.patch"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.011,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/02-apply-base-patch.log",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": ""
+    },
+    {
+      "name": "storage patch applies after base",
+      "command": [
+        "git",
+        "apply",
+        "--check",
+        "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/lifecycle-storage.patch"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.011,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/03-storage-patch-applies-after-base.log",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": ""
+    },
+    {
+      "name": "apply storage patch",
+      "command": [
+        "git",
+        "apply",
+        "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/lifecycle-storage.patch"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.015,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/04-apply-storage-patch.log",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": ""
+    },
+    {
+      "name": "frozen P3 reference applies",
+      "command": [
+        "git",
+        "apply",
+        "--check",
+        "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-server-p3.patch"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.011,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/05-frozen-p3-reference-applies.log",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": ""
+    },
+    {
+      "name": "apply frozen P3 reference",
+      "command": [
+        "git",
+        "apply",
+        "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-server-p3.patch"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.016,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/06-apply-frozen-p3-reference.log",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": ""
+    },
+    {
+      "name": "Go version",
+      "command": [
+        "go",
+        "version"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 0.033,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/07-go-version.log",
+      "logSHA256": "c528ba02b39880f1357f51dee70e41c1ef03e3a70c7a03055c080532b9635f58",
+      "outputTail": "go version go1.27.1 darwin/arm64\n"
+    },
+    {
+      "name": "base server build",
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/otterio-base",
+        "."
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 9.19,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/08-base-server-build.log",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": ""
+    },
+    {
+      "name": "base cmd tests",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./cmd",
+        "-run",
+        "TestBucketConfig|TestSelfCredentials|TestConfiguration|TestFiber|TestGetBucket|TestPutBucket|TestDeleteBucket|TestAccountInfo|TestBucketMetadata",
+        "-count=1"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 23.903,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/09-base-cmd-tests.log",
+      "logSHA256": "8a141ae9d05826c3f2a455f47ef4dfd9b8716ccd25da1194d8bc701eb78725ab",
+      "outputTail": "ok  \tgithub.com/soulteary/otterio/cmd\t11.670s\n"
+    },
+    {
+      "name": "lifecycle server build",
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/otterio-lifecycle",
+        "."
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 9.739,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/10-lifecycle-server-build.log",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputTail": ""
+    },
+    {
+      "name": "lifecycle cmd tests",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./cmd",
+        "-run",
+        "TestBucketConfig|TestSelfCredentials|TestConfiguration|TestFiber|TestGetBucket|TestPutBucket|TestDeleteBucket|TestAccountInfo|TestBucketMetadata|TestBucketTarget|TestTransition|TestXLStorageInline|TestLifecycleTransition|TestLifecycleQueues|TestScannerLifecycle|TestExpiry|TestParseRestore|TestRestoreRequest|TestBeginRestore|TestRestoredVersion|TestPutObjectExpiry|TestFindFileInfoInQuorum|TestXLV2FormatData|TestErasureDeleteObjectBasic|TestErasureDeleteObjectsErasureSet",
+        "-count=1"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 69.895,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/11-lifecycle-cmd-tests.log",
+      "logSHA256": "eb7c1a4ddae2382b80a6f8b89bf2bce0393e844f60de577aa24955359181f306",
+      "outputTail": "ok  \tgithub.com/soulteary/otterio/cmd\t56.613s\n"
+    },
+    {
+      "name": "lifecycle package tests",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./pkg/bucket/lifecycle",
+        "-count=1"
+      ],
+      "exitCode": 0,
+      "status": "passed",
+      "elapsedSeconds": 2.584,
+      "logPath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/logs/12-lifecycle-package-tests.log",
+      "logSHA256": "30cce06b72736647fa00e0f149ee52a502320f5d25b63383d7b0345b47920d40",
+      "outputTail": "ok  \tgithub.com/soulteary/otterio/pkg/bucket/lifecycle\t1.490s\n"
+    }
+  ],
+  "profiles": {
+    "base": {
+      "sourcePath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/base",
+      "selector": "TestBucketConfig|TestSelfCredentials|TestConfiguration|TestFiber|TestGetBucket|TestPutBucket|TestDeleteBucket|TestAccountInfo|TestBucketMetadata",
+      "status": "passed",
+      "binary": {
+        "path": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/otterio-base",
+        "sha256": "3808dffed9caeebaeaf43851a473ca2c27330214407de46a8135068086ee62ef"
+      }
+    },
+    "lifecycle": {
+      "sourcePath": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/lifecycle",
+      "selector": "TestBucketConfig|TestSelfCredentials|TestConfiguration|TestFiber|TestGetBucket|TestPutBucket|TestDeleteBucket|TestAccountInfo|TestBucketMetadata|TestBucketTarget|TestTransition|TestXLStorageInline|TestLifecycleTransition|TestLifecycleQueues|TestScannerLifecycle|TestExpiry|TestParseRestore|TestRestoreRequest|TestBeginRestore|TestRestoredVersion|TestPutObjectExpiry|TestFindFileInfoInQuorum|TestXLV2FormatData|TestErasureDeleteObjectBasic|TestErasureDeleteObjectsErasureSet",
+      "status": "passed",
+      "binary": {
+        "path": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/otterio-lifecycle",
+        "sha256": "3ecc2eea482f7c7d0a7a5ac8a9c0d8380e082b10b315f2f2b104467967042b17"
+      }
+    }
+  },
+  "runtimeTestsSkipped": false,
+  "buildsSkipped": false,
+  "race": true,
+  "scope": "fixed-pin split application, source equivalence and separate profile validation",
+  "extraPatches": [],
+  "baseBoundary": {
+    "protectedFilesUnchanged": {
+      "cmd/admin-bucket-handlers.go": true,
+      "cmd/api-headers.go": true,
+      "cmd/bucket-targets.go": true,
+      "cmd/bucket-lifecycle.go": true,
+      "cmd/data-scanner.go": true,
+      "cmd/object-api-datatypes.go": true,
+      "cmd/object-api-interface.go": true,
+      "cmd/object-handlers.go": true,
+      "cmd/object-handlers-common.go": true,
+      "cmd/erasure-object.go": true,
+      "cmd/erasure-metadata.go": true,
+      "cmd/erasure-healing.go": true,
+      "cmd/erasure-healing-common.go": true,
+      "cmd/erasure-sets.go": true,
+      "cmd/xl-storage.go": true,
+      "cmd/xl-storage-format-v2.go": true,
+      "cmd/web-handlers.go": true,
+      "pkg/bucket/lifecycle/filter.go": true,
+      "pkg/bucket/lifecycle/lifecycle.go": true
+    },
+    "bucketMethodsOnly": {
+      "cmd/fs-v1.go": [
+        "func (fs *FSObjects) DeleteBucket(ctx context.Context, bucket string, forceDelete bool) error",
+        "func (fs *FSObjects) MakeBucketWithLocation(ctx context.Context, bucket string, opts BucketOptions) error"
+      ],
+      "cmd/erasure-server-pool.go": [
+        "func (z *erasureServerPools) DeleteBucket(ctx context.Context, bucket string, forceDelete bool) error",
+        "func (z *erasureServerPools) MakeBucketWithLocation(ctx context.Context, bucket string, opts BucketOptions) error"
+      ]
+    }
+  },
+  "jointByteEquivalent": true,
+  "jointMismatches": [],
+  "moduleFilesUnchanged": true,
+  "sourceTreeSHA256": "c2b6687ee01f751a2536b36792f20a06960fae3f39e3328a3c9e6d84e4ec2e73",
+  "sourcePaths": {
+    "pin": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/pin",
+    "base": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/base",
+    "lifecycle": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/lifecycle",
+    "monolithic": "/private/var/folders/g8/0v6103r55c39jfs_ngl4fgbh0000gn/T/console-server-patches-hdprpb36/monolithic"
+  },
+  "goVersion": "go version go1.27.1 darwin/arm64"
+}

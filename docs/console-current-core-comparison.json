@@ -1,0 +1,160 @@
+{
+  "total_go_root_module_paths": 1028,
+  "byte_identical": 1013,
+  "differences": [
+    {
+      "path": "cmd/admin-iam-bindings.go",
+      "combo_exists": true,
+      "current_exists": false,
+      "combo_sha256": "ff30e27a6a7ece3a96a84ec3ba748fc3645d14ffeb5cfbeb427e55fc5a2d6d54",
+      "current_sha256": null,
+      "origin": "IAM patch is intentionally absent from current checkout"
+    },
+    {
+      "path": "cmd/admin-iam-bindings_test.go",
+      "combo_exists": true,
+      "current_exists": false,
+      "combo_sha256": "cfbb303c8f0b4cf40c7241a5587e259465f39eee92c5b44bfdd0d2ccd657e6a1",
+      "current_sha256": null,
+      "origin": "IAM patch is intentionally absent from current checkout"
+    },
+    {
+      "path": "cmd/config/storageclass/storage-class.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "337dc11f4b860f27018495eeefd89045ec2bff178667ab8eb57f2f4fe1d93de8",
+      "current_sha256": "5e71a4d73b11d39a35baaae3f0fcaba0edacdb40c33de802faadd0c06b611e85",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/config/storageclass/storage-class_test.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "583c68a75f001b65f6479f5de868025b809ec1b0130d8e5611e3a826ba12c268",
+      "current_sha256": "7de7a3bafc4ad636a6f707e829bdbda729ed838da89019d904e00d5bf7126214",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/erasure-healing-common_test.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "5718c99f4f482f5a9e70b633130fce52691a7aa8448c2f142b4caba93328bbd4",
+      "current_sha256": "19dec82ad31f81b1f0b492fdafc6c24b22b572c3e757fe48a9a34f4f7219f5e7",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/erasure-object-overwrite-read-error_test.go",
+      "combo_exists": false,
+      "current_exists": true,
+      "combo_sha256": null,
+      "current_sha256": "debf3018959f2178cdb5b83f5d4a945d0b2af467a71406b4d9912885bb67b23d",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/erasure-object-overwrite_test.go",
+      "combo_exists": false,
+      "current_exists": true,
+      "combo_sha256": null,
+      "current_sha256": "2dc3351dfb85566224e8e81a365b1134a5f84c18bf29a62ac601ca797c9d4b8e",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/erasure-object.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "82d985034b79fbf6c35e37d2411c5c8ecce1a4872b654eb67bf6d0249928749b",
+      "current_sha256": "ab2ebae64d934df8a7625c852941ac3ea32483a1807503d3bbfed29c073d164a",
+      "current_uncommitted_diff_numstat": "3\t0\tcmd/erasure-object.go",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/erasure-object_test.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "ad4388d0c3265162573f90ba033e568de16b306292d3f28151d9afc01bdfb75a",
+      "current_sha256": "f79f5d4881bbda1c4572bb9a15bfdce18cda563446300912b98ea116e10cc7f9",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/erasure-sets.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "3e0ddda5065b4def9cc2a0415f1296d92f8e6f33f47001260dc17ebb55545f52",
+      "current_sha256": "cdf2dd36513d82634edc219ee960055f212d46a82b656b8d33b500f9f8605ca7",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/erasure-sets_test.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "9dc27daac2869f09fc285fb082ca2d0b2498802a470671da7fae670e1e892e7a",
+      "current_sha256": "fe5bff8cd9db4589d76f266fdbe92cd92657144ca9a98141e26c115e42ab6db6",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/fiber_admin_router.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "1bc382a748164bc923c02a1bd46f5a3657316f754a8d6d43b9743b271d5713bc",
+      "current_sha256": "bbf46ee298e2ea72f64a2897e277f559f47755fd6ae2878a3c04bfceda61a0df",
+      "origin": "IAM patch is intentionally absent from current checkout"
+    },
+    {
+      "path": "cmd/transition-storage_test.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "27278a5bfa360a61a7dffa3caff0ba9cfd210fa0b37aa6cb64fbd7a089d49da6",
+      "current_sha256": "41b00547cfc7a0333b713a351b5b0a16cc158367688098fedd6f47299d25a195",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/xl-storage.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "5c52123e0e4eb2b7562c73758bbe65baf70f31330d76494d2083889f5ed11640",
+      "current_sha256": "5944330506c6ce8a06549537166e51bd1b31185ec41059e5213cd812cef045fd",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    },
+    {
+      "path": "cmd/xl-storage_test.go",
+      "combo_exists": true,
+      "current_exists": true,
+      "combo_sha256": "d66f064e56e0bd85225b3ecef0d51d6703bbdf6b276939522fc62b289144ffaa",
+      "current_sha256": "2769f429d8a6279a3614043a653e7085d9f23b8ecdf0f5d61072c4fc16b4423c",
+      "current_uncommitted_diff_numstat": "",
+      "origin": "HEAD80 preexisting storage changes retained"
+    }
+  ],
+  "scope": "All .go files (excluding .git) and root go.mod/go.sum; nested modules are reported separately.",
+  "assertion": "Not byte-for-byte equivalent: actual HEAD80 retains 12 preexisting Go source/test differences and omits the independent IAM patch (3 paths).",
+  "all_go_and_all_module_paths": 1038,
+  "all_go_and_all_module_differences": [
+    "cmd/admin-iam-bindings.go",
+    "cmd/admin-iam-bindings_test.go",
+    "cmd/config/storageclass/storage-class.go",
+    "cmd/config/storageclass/storage-class_test.go",
+    "cmd/erasure-healing-common_test.go",
+    "cmd/erasure-object-overwrite-read-error_test.go",
+    "cmd/erasure-object-overwrite_test.go",
+    "cmd/erasure-object.go",
+    "cmd/erasure-object_test.go",
+    "cmd/erasure-sets.go",
+    "cmd/erasure-sets_test.go",
+    "cmd/fiber_admin_router.go",
+    "cmd/transition-storage_test.go",
+    "cmd/xl-storage.go",
+    "cmd/xl-storage_test.go",
+    "mint/run/core/minio-go/go.mod",
+    "mint/run/core/minio-go/go.sum"
+  ]
+}

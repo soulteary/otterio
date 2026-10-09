@@ -1,0 +1,104 @@
+{
+  "patchSHA256": "c938ec24d3bd48b0eed7633abe876df9dda3cee6b5facd08833aa49a6e772d4f",
+  "patchPath": "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-features-server.patch",
+  "fixedBaseline": "6f6d0835ddff68020f1491c403b958fade22841f + frozen console-server-p3.patch",
+  "sourceTree": "/private/tmp/oc-version-copy-fix-20261009",
+  "actualSource": "/Users/soulteary/Lab/github/otterio-group/otterio",
+  "actualSourceBaseline": "80f10b3109554efe75368a3a50b481fd4f585139",
+  "sourceSynced": true,
+  "noCommitsCreated": true,
+  "httpStorageCases": {
+    "CopyObjectAndUploadPartCopy": 354,
+    "GetAndHead": 152,
+    "GetPutDeleteObjectTagging": 48,
+    "total": 554
+  },
+  "httpCoverage": {
+    "copy": "real Fiber routes + erasure storage; V4/V2/V4 presigned; source version UUID/null/empty/Unicode padded, current/history/both/explicit deny/version conditions, destination query/header/claims cannot replace source, actual prod/dev/untagged labels, spoofed request labels and dynamic query injection, denied copy leaves no object/part, wrong source IfMatch is denied before precondition metadata",
+    "read": "real Fiber routes + erasure storage; V4/V2/V4 presigned/anonymous GET and HEAD; actual prod permits no request label, actual dev/null/untagged rejects forged label/query; permitted 304/412 vs denied 403 before private metadata; anonymous missing-key ListBucket distinction",
+    "tagging": "real Fiber routes + FS and erasure storage; V4/V2/V4 presigned GET/PUT/DELETE; actual prod permits no request label, actual dev rejects forged prod label/query; PUT/DELETE fixture changes metadata from prod to dev after handler lookup and verifies write-lock callback rejects and leaves dev stored",
+    "copyDestinationVersioning": "The native destination fixture has versioning Enabled. Valid destination UUID query parameters therefore reach source authorization; unversioned live destinations reject non-null UUID destination parameters with InvalidArgument before the deferred source metadata authorization, and must be checked for rejection/no writes separately."
+  },
+  "patchApplies": [
+    "base + features",
+    "base + storage + features",
+    "base + features + storage",
+    "base + features + IAM",
+    "base + storage + features + IAM",
+    "base + features + storage + IAM"
+  ],
+  "combinationOrderSameContent": true,
+  "combinedGoSourceSameAsFixedP3": true,
+  "goAndAllModuleFileCountBeforeIAM": 1034,
+  "goAndAllModuleFileCountBothOrderAfterIAM": 1036,
+  "actualCurrentSameAsFullComboWithIAM": false,
+  "actualCurrentEquivalenceProof": "/private/tmp/oc-version-current-combo-equivalence.json",
+  "actualCurrentEquivalenceDiff": "/private/tmp/oc-version-current-combo-differences.patch",
+  "actualCurrentResiduals": "Frozen core comparison: 12 HEAD80 preexisting Go differences preserved; 3 independent IAM paths absent; 2 nested mint module paths also differ. 1038 all Go/module paths compared, 17 different. A separate lifecycle-storage-hardening.patch is being exported by the parent team to preserve HEAD80 storage changes without changing this versions patch.",
+  "nativeRace": {
+    "fixedP3Version": {
+      "elapsedSeconds": 14.795,
+      "log": "/private/tmp/oc-version-final-native-race.jsonl",
+      "command": "CGO_ENABLED=1 go test -race -json ./cmd -run '^(TestConsoleVersionAuthorization.*|TestGetConditionValuesExpandsObjectTagsForPolicyEvaluation|TestObjectTagsDoNotMutateSignedHeaders|TestGetObjectPreconditionDoesNotLeakOnAuthDeny|TestHeadObjectPreconditionDoesNotLeakOnAuthDeny|TestGetObjectPreconditionStillWorksOnAuthAllow)$' -count=1 -timeout=10m"
+    },
+    "actualCurrentVersion": {
+      "elapsedSeconds": 14.106,
+      "log": "/private/tmp/oc-version-final-current-native-race.jsonl",
+      "command": "CGO_ENABLED=1 go test -race -json ./cmd -run '^(TestConsoleVersionAuthorization.*|TestGetConditionValuesExpandsObjectTagsForPolicyEvaluation|TestObjectTagsDoNotMutateSignedHeaders|TestGetObjectPreconditionDoesNotLeakOnAuthDeny|TestHeadObjectPreconditionDoesNotLeakOnAuthDeny|TestGetObjectPreconditionStillWorksOnAuthAllow)$' -count=1 -timeout=10m"
+    },
+    "baseVersionWithIAM": {
+      "elapsedSeconds": 12.562,
+      "sourceTree": "/private/tmp/oc-version-final-combinations-20261009/base-features",
+      "log": "/private/tmp/oc-version-final-base-race.jsonl",
+      "command": "CGO_ENABLED=1 go test -race -json ./cmd -run '^TestConsoleVersionAuthorization.*$' -count=1 -timeout=10m"
+    },
+    "existingReadsAndCopies": {
+      "elapsedSeconds": 25.644,
+      "log": "/private/tmp/oc-version-final-existing-race.log",
+      "command": "CGO_ENABLED=1 go test -race ./cmd -run '^(TestAPIGetObjectHandler|TestAPIHeadObjectHandler|TestAPIHeadObjectHandlerWithEncryption|TestAPICopyObjectHandler|TestAPICopyObjectPartHandler|TestAPICopyObjectPartHandlerSanity|TestAPISignedHeaderCopyIsolation)$' -count=1 -timeout=10m"
+    },
+    "policyPackages": {
+      "iamElapsedSeconds": 2.469,
+      "bucketElapsedSeconds": 3.129,
+      "log": "/private/tmp/oc-version-final-policy-race.log",
+      "command": "CGO_ENABLED=1 go test -race ./pkg/iam/policy ./pkg/bucket/policy -count=1 -timeout=5m"
+    }
+  },
+  "negativeControl": {
+    "log": "/private/tmp/oc-version-copy-tags-before.log",
+    "description": "Before stored-tag repair, both V4 copy handlers rejected actual prod without client label, accepted actual dev with forged prod label, and returned 412 to denied actual dev with wrong source IfMatch. These six actual route/storage cases now pass the repaired expectations."
+  },
+  "tests": "TestConsoleVersionAuthorization.*; 14 top-level tests and 676 named passes in full regression JSON; HTTP counts are 554 leaf route/storage requests, not helper tests.",
+  "boundaries": "Fixed source export and split compatibility proven separately from actual HEAD80. Full live process/network topology acceptance is run by the parent agent and is not claimed by this Go evidence.",
+  "hardeningCurrentPlusIAMEquivalence": {
+    "hardening_sha256": "2a7e451617daa1895f0e7f96f86c9d08b9bf896702c4251c5bc4c7183cc14a05",
+    "features_sha256": "c938ec24d3bd48b0eed7633abe876df9dda3cee6b5facd08833aa49a6e772d4f",
+    "hardening_full_source": "/private/tmp/oc-version-final-combinations-20261009/base-storage-features",
+    "current_plus_iam_projection": "/private/tmp/oc-version-current-plus-iam-20261009",
+    "all_go_and_all_module_paths": 1038,
+    "all_go_and_all_module_differences": [
+      {
+        "path": "mint/run/core/minio-go/go.mod",
+        "combo_exists": true,
+        "current_plus_iam_exists": true,
+        "combo_sha256": "8d9c7a451a15aa6de1ee9e58fb6c48ddec2597a42a8cb7fcf6bdbc621d7df5cd",
+        "current_plus_iam_sha256": "8bbabcec4b49891f8a6e12cc075e4501a70e3a58a627a79fe38014bd8240f0b9"
+      },
+      {
+        "path": "mint/run/core/minio-go/go.sum",
+        "combo_exists": true,
+        "current_plus_iam_exists": true,
+        "combo_sha256": "a78f6d221e606426d175b924a24448c601fdc20f210a2d3ca2e603a766c815d4",
+        "current_plus_iam_sha256": "f5f5d8dc38353d5b66cae1093b9bee55e38ffb06826f3e674d5ebf2ebf1c9a05"
+      }
+    ],
+    "all_go_and_root_module_paths": 1028,
+    "all_go_and_root_module_differences": [],
+    "all_go_and_root_module_byte_identical": true,
+    "note": "This creates no mutations in actual current. It compares an independent Go/module projection of the current checkout with IAM applied to the fixed full combination. Nested mint/minio-go module files retain HEAD80-specific differences because the hardening patch intentionally excludes module changes."
+  },
+  "hardeningCurrentPlusIAMEquivalenceProof": "/private/tmp/oc-version-hardening-equivalence.json",
+  "hardeningCombinationOrderSameContent": true,
+  "goAndAllModuleFileCountBothOrderAfterHardeningAndIAM": 1038,
+  "hardeningPatchAppliesAfterFeaturesInBothStorageOrders": true
+}

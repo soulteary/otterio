@@ -1544,6 +1544,15 @@ func (fs *FSObjects) PutObjectTags(ctx context.Context, bucket, object string, t
 		fsMeta = fs.defaultFsJSON(object)
 	}
 
+	// Authorize the actual old metadata while the metadata write lock is held.
+	fi, err := fsStatFile(ctx, pathJoin(fs.fsPath, bucket, object))
+	if err != nil {
+		return ObjectInfo{}, toObjectErr(err, bucket, object)
+	}
+	if opts.CheckPrecondFn != nil && opts.CheckPrecondFn(fsMeta.ToObjectInfo(bucket, object, fi)) {
+		return ObjectInfo{}, PreConditionFailed{}
+	}
+
 	// clean fsMeta.Meta of tag key, before updating the new tags
 	delete(fsMeta.Meta, xhttp.AmzObjectTagging)
 
@@ -1554,12 +1563,6 @@ func (fs *FSObjects) PutObjectTags(ctx context.Context, bucket, object string, t
 
 	if _, err = fsMeta.WriteTo(wlk); err != nil {
 		return ObjectInfo{}, toObjectErr(err, bucket, object)
-	}
-
-	// Stat the file to get file size.
-	fi, err := fsStatFile(ctx, pathJoin(fs.fsPath, bucket, object))
-	if err != nil {
-		return ObjectInfo{}, err
 	}
 
 	return fsMeta.ToObjectInfo(bucket, object, fi), nil

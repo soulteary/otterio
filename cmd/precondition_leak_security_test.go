@@ -39,22 +39,22 @@ import (
 // 403 with no Last-Modified / ETag / X-Amz-Version-Id leaked.
 
 // TestGetConditionValuesExpandsObjectTagsForPolicyEvaluation pins the
-// contract that getConditionValues parses the X-Amz-Tagging header and
+// contract that getConditionValues parses stored tags and request tags into
 // surfaces each tag under the s3:-stripped lookup keys
 // "ExistingObjectTag/<k>" and "RequestObjectTag/<k>" used by
 // stringEqualsFunc.evaluate. This is the policy-side primitive that lets
 // handler-injected tags participate in IAM evaluation.
 func TestGetConditionValuesExpandsObjectTagsForPolicyEvaluation(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/bucket/object", nil)
-	r.Header.Set(xhttp.AmzObjectTagging, "dept=finance&customer=alice")
+	r.Header.Set(xhttp.AmzObjectTagging, "dept=engineering&customer=bob")
 
-	values := getConditionValues(r, "", "", nil)
+	values := getConditionValues(withObjectTags(r, "dept=finance&customer=alice"), "", "", nil)
 
 	cases := map[string]string{
 		"ExistingObjectTag/dept":     "finance",
 		"ExistingObjectTag/customer": "alice",
-		"RequestObjectTag/dept":      "finance",
-		"RequestObjectTag/customer":  "alice",
+		"RequestObjectTag/dept":      "engineering",
+		"RequestObjectTag/customer":  "bob",
 	}
 	for key, want := range cases {
 		got := values[key]

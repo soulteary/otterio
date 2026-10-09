@@ -283,6 +283,8 @@ service iptables restart
 
 快速开始示例已拆分监听器，请访问 <http://127.0.0.1:9001>；单端口部署则访问 <http://127.0.0.1:9000>。使用自己配置的 root 用户名和密码登录，即可创建桶、上传对象、浏览内容。
 
+独立的可选 OC 控制台协议及最新证据见[分层控制台验收](docs/console-server-acceptance.md)和[最新报告入口](docs/console-server-acceptance-results.json)。
+
 ### OC 客户端
 
 安装 [OC](https://github.com/soulteary/oc/blob/main/docs/zh_CN/installation.md)，用于 S3 对象操作与 OtterIO 管理。下面的示例对应快速开始中的双端口配置；OC 提示输入凭据时，请输入启动 OtterIO 所用的 root 用户名与密码：

@@ -597,7 +597,7 @@ func TestPolicyParseConfig(t *testing.T) {
 			allowed: true,
 			args: Args{
 				AccountName:     "allowed",
-				Action:          GetObjectAction,
+				Action:          GetObjectVersionAction,
 				BucketName:      "test",
 				ObjectName:      "HappyFace.jpg",
 				ConditionValues: map[string][]string{"versionid": {"AaaHbAQitwiL_h47_44lRO2DDfLlBO5e"}},
@@ -608,7 +608,7 @@ func TestPolicyParseConfig(t *testing.T) {
 			allowed: false,
 			args: Args{
 				AccountName:     "disallowed",
-				Action:          GetObjectAction,
+				Action:          GetObjectVersionAction,
 				BucketName:      "test",
 				ObjectName:      "HappyFace.jpg",
 				ConditionValues: map[string][]string{"versionid": {"AaaHbAQitwiL_h47_44lRO2DDfLlBO5f"}},

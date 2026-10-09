@@ -88,6 +88,25 @@ func setPartsCountHeaders(w http.ResponseWriter, objInfo ObjectInfo) {
 	}
 }
 
+func consoleVersionAuthorizationSupported() bool {
+	if globalIsGateway {
+		return false
+	}
+	if cache := newCachedObjectLayerFn(); cache != nil {
+		if objects, ok := cache.(*cacheObjects); !ok || objects == nil {
+			return false
+		}
+	}
+	switch object := newObjectLayerFn().(type) {
+	case *FSObjects:
+		return object != nil
+	case *erasureServerPools:
+		return object != nil
+	default:
+		return false
+	}
+}
+
 // Write object header
 func setObjectHeaders(w http.ResponseWriter, objInfo ObjectInfo, rs *HTTPRangeSpec, opts ObjectOptions) (err error) {
 	// set common headers
@@ -209,5 +228,10 @@ func setObjectHeaders(w http.ResponseWriter, objInfo ObjectInfo, rs *HTTPRangeSp
 		w.Header().Set(xhttp.AmzStorageClass, objInfo.StorageClass)
 	}
 
+	// Only emit after storage and policy authorization have succeeded. Console
+	// clients require this response capability before exposing version bytes.
+	if consoleVersionAuthorizationSupported() {
+		w.Header().Set("X-Otterio-Version-Authorization", "v1")
+	}
 	return nil
 }

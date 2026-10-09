@@ -121,6 +121,9 @@ func (api objectAPIHandlers) ListObjectVersionsHandler(w http.ResponseWriter, r 
 	response := generateListVersionsResponse(bucket, prefix, marker, versionIDMarker, delimiter, encodingType, maxkeys, listObjectVersionsInfo)
 
 	// Write success response.
+	if consoleVersionAuthorizationSupported() {
+		w.Header().Set("X-Otterio-Version-Authorization", "v1")
+	}
 	writeSuccessResponseXML(w, encodeResponse(response))
 }
 

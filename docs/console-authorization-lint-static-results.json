@@ -1,0 +1,185 @@
+{
+  "status": "passed",
+  "mainPatchInstalled": true,
+  "scope": "test-helper-lint-only",
+  "previousPatchSHA256": "2593137946949d77600b765498c26b6dd39cb6cf1271da6c9a5feba04439b6bd",
+  "previousPatchArchive": "/Users/soulteary/Lab/github/otterio-group/oc/docs/console-features-evidence/console-features-server-before-lint.patch",
+  "featurePatchSHA256": "ea620befaad0c09abc0f91396c04c1d7666e527ec7ed24e5916fb14bedcc1d1c",
+  "featurePatchPaths": [
+    "cmd/api-headers.go",
+    "cmd/auth-handler.go",
+    "cmd/bucket-listobjects-handlers.go",
+    "cmd/bucket-policy.go",
+    "cmd/console-version-authorization_test.go",
+    "cmd/console-version-cache-authorization_test.go",
+    "cmd/console-version-copy-authorization_test.go",
+    "cmd/console-version-review-authorization_test.go",
+    "cmd/console-version-tagging-authorization_test.go",
+    "cmd/console-version-tier-authorization_test.go",
+    "cmd/disk-cache-backend.go",
+    "cmd/disk-cache.go",
+    "cmd/erasure-object.go",
+    "cmd/fs-v1.go",
+    "cmd/object-api-interface.go",
+    "cmd/object-api-options.go",
+    "cmd/object-api-utils.go",
+    "cmd/object-handlers.go",
+    "cmd/precondition_leak_security_test.go",
+    "cmd/storage-datatypes.go",
+    "pkg/iam/policy/actionset.go",
+    "pkg/iam/policy/policy_test.go"
+  ],
+  "baseRevision": "6f6d0835ddff68020f1491c403b958fade22841f",
+  "actualCurrentRevision": "80f10b3109554efe75368a3a50b481fd4f585139",
+  "onlyThreeTestHelperFilesChanged": true,
+  "productionGoBytesUnchanged": true,
+  "helperTransformations": [
+    {
+      "path": "cmd/console-version-cache-authorization_test.go",
+      "oldSHA256": "c7f40e3def12d90474a8d7db868e0e372b3aa358c9cf6f802654b59732e4651b",
+      "newSHA256": "4e4f4acabb4f8eeadcf85e0e12ad562a5b1e6c7788ca0dc499b8d42a08cfd846",
+      "replacements": [
+        {
+          "old": "newConsoleVersionCacheFixture(t *testing.T, ctx context.Context,",
+          "new": "newConsoleVersionCacheFixture(ctx context.Context, t *testing.T,",
+          "count": 1
+        },
+        {
+          "old": "seed(t *testing.T, ctx context.Context,",
+          "new": "seed(ctx context.Context, t *testing.T,",
+          "count": 1
+        },
+        {
+          "old": "newConsoleVersionCacheFixture(t, ctx, obj)",
+          "new": "newConsoleVersionCacheFixture(ctx, t, obj)",
+          "count": 3
+        },
+        {
+          "old": "fixture.seed(t, ctx,",
+          "new": "fixture.seed(ctx, t,",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "cmd/console-version-review-authorization_test.go",
+      "oldSHA256": "e9135786d9cde5f8d6528d11d03d7e1ce4b955731039c9af70d450bc08e7cb40",
+      "newSHA256": "0db827aeceb05983a11c3de6fd30395cadd9d7a7d822a8837e1b2725989857ca",
+      "replacements": [
+        {
+          "old": "consoleReviewUser(t *testing.T, obj ObjectLayer, bucket, name, document string)",
+          "new": "consoleReviewUser(t *testing.T, obj ObjectLayer, name, document string)",
+          "count": 1
+        },
+        {
+          "old": "consoleReviewUser(t, obj, bucket,",
+          "new": "consoleReviewUser(t, obj,",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "path": "cmd/console-version-tier-authorization_test.go",
+      "oldSHA256": "dc4f22d0e9a9ab711a4784ab893c0472e17e1e7da434029a692b5f641efc6029",
+      "newSHA256": "e192ed059688ceb3bbab5f3567b5954221baa48ad914e8d4dd0c4a8a4e379984",
+      "replacements": [
+        {
+          "old": "consoleReviewUser(t, obj, bucket,",
+          "new": "consoleReviewUser(t, obj,",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "moduleFilesUnchanged": [
+    "go.mod",
+    "go.sum",
+    "mint/build/versioning/go.mod",
+    "mint/build/versioning/go.sum",
+    "mint/run/core/aws-sdk-go/go.mod",
+    "mint/run/core/aws-sdk-go/go.sum",
+    "mint/run/core/healthcheck/go.mod",
+    "mint/run/core/healthcheck/go.sum",
+    "mint/run/core/minio-go/go.mod",
+    "mint/run/core/minio-go/go.sum",
+    "mint/run/core/security/go.mod",
+    "mint/run/core/security/go.sum"
+  ],
+  "frozenPatchesUnchanged": {
+    "p3": "a0281fc4489fc8c145f78bd1cb50eb41ae50252b812761ccc3340d4b626e18d9",
+    "base": "8cf08e797c2d5fff2aff0fd78202bc9e94d03ecd609f26e171fc62c7b6d58d18",
+    "storage": "7fc7e76a3a67968d1b3f3ac61c4a38c82c698ba3e1fd3aa6020cf07089167539",
+    "hardening": "2a7e451617daa1895f0e7f96f86c9d08b9bf896702c4251c5bc4c7183cc14a05",
+    "iam": "a578a7bd8df24e28e5bfd429152e919c1cb5b0b539ffb80413a3047f831ad338"
+  },
+  "treeDigestAlgorithm": "sha256(concat(sorted relative UTF-8 path + NUL + ASCII decimal byte length + NUL + raw file bytes)); all .go excluding .git plus root go.mod/go.sum",
+  "sources": {
+    "base-features-iam": {
+      "path": "/private/tmp/oc-lint-helper-sources-20261009/base-features-iam",
+      "treeSHA256": "25ceaf7743a3ed9782e8b9e12eca627dfd5b26664f455209ae40a36004612026",
+      "pathCount": 1013,
+      "patchOrder": [
+        "base",
+        "features",
+        "iam"
+      ]
+    },
+    "base-storage-hardening-features-iam": {
+      "path": "/private/tmp/oc-lint-helper-sources-20261009/base-storage-hardening-features-iam",
+      "treeSHA256": "9c157c10ec3625d5ee89b79994f236dd464e101f161c9a231750d716207ecc92",
+      "pathCount": 1031,
+      "patchOrder": [
+        "base",
+        "storage",
+        "hardening",
+        "features",
+        "iam"
+      ]
+    },
+    "base-features-iam-storage-hardening": {
+      "path": "/private/tmp/oc-lint-helper-sources-20261009/base-features-iam-storage-hardening",
+      "treeSHA256": "9c157c10ec3625d5ee89b79994f236dd464e101f161c9a231750d716207ecc92",
+      "pathCount": 1031,
+      "patchOrder": [
+        "base",
+        "features",
+        "iam",
+        "storage",
+        "hardening"
+      ]
+    }
+  },
+  "twoFullApplicationOrdersEquivalent": true,
+  "currentActualLiveTreeSHA256": "860041e350ea4afab03ea693bf9a68468d99b8fabcfd696f47876bdd6410900e",
+  "actualCurrentPlusIAM": {
+    "path": "/private/tmp/oc-lint-helper-sources-20261009/current-plus-iam",
+    "treeSHA256": "9c157c10ec3625d5ee89b79994f236dd464e101f161c9a231750d716207ecc92",
+    "differences": []
+  },
+  "oldStaticProof": {
+    "path": "/private/tmp/oc-review-version-sources-20261009/static-proof.json",
+    "SHA256": "88f8413ff26f380de40341b59ec4a3288064b72d34e3650acb3abc97983e3bc9",
+    "unchanged": true
+  },
+  "oldRuntimeReportsRewritten": false,
+  "fullRuntimeMatrixReexecuted": false,
+  "rootValidationLogs": [
+    {
+      "path": "/private/tmp/otterio-console-lint-followup.log",
+      "SHA256": "e92606b0bf483111dff0a120c315ea165821348f31365020e2468a0059095c47"
+    },
+    {
+      "path": "/private/tmp/otterio-console-lint-followup-tests.log",
+      "SHA256": "5d471223a2228e314d2cfdf5d5adab1318cdcc94b7892eb996b941b4ff459df2"
+    }
+  ],
+  "rootReportedValidation": {
+    "golangciLintExitCode": 0,
+    "golangciLintIssueCount": 0,
+    "affectedHTTPLeafCases": 198,
+    "raceExitCode": 0,
+    "packageSeconds": 8.262
+  },
+  "candidatePatch": "/private/tmp/oc-lint-helper-sources-20261009/console-features-server-lint-candidate.patch",
+  "installedPatch": "/Users/soulteary/Lab/github/otterio-group/oc/buildscripts/console-features-server.patch"
+}

@@ -48,6 +48,7 @@ type ObjectOptions struct {
 	UserDefined                   map[string]string                                     // only set in case of POST/PUT operations
 	PartNumber                    int                                                   // only useful in case of GetObject/HeadObject
 	CheckPrecondFn                CheckPreconditionFn                                   // only set during GetObject/HeadObject/CopyObjectPart preconditional valuation
+	AuthorizeReadFn               CheckPreconditionFn                                   // authorize selected metadata before range/decryption; true stops the read
 	DeleteMarkerReplicationStatus string                                                // Is only set in DELETE operations
 	VersionPurgeStatus            VersionPurgeStatusType                                // Is only set in DELETE operations for delete marker version to be permanently deleted.
 	TransitionStatus              string                                                // status of the transition

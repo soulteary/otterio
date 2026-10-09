@@ -566,7 +566,7 @@ type GetObjectReader struct {
 // NewGetObjectReaderFromReader sets up a GetObjectReader with a given
 // reader. This ignores any object properties.
 func NewGetObjectReaderFromReader(r io.Reader, oi ObjectInfo, opts ObjectOptions, cleanupFns ...func()) (*GetObjectReader, error) {
-	if opts.CheckPrecondFn != nil && opts.CheckPrecondFn(oi) {
+	if (opts.AuthorizeReadFn != nil && opts.AuthorizeReadFn(oi)) || (opts.CheckPrecondFn != nil && opts.CheckPrecondFn(oi)) {
 		// Call the cleanup funcs
 		for i := len(cleanupFns) - 1; i >= 0; i-- {
 			cleanupFns[i]()
@@ -594,10 +594,6 @@ type ObjReaderFn func(inputReader io.Reader, h http.Header, pcfn CheckPreconditi
 func NewGetObjectReader(rs *HTTPRangeSpec, oi ObjectInfo, opts ObjectOptions, cleanUpFns ...func()) (
 	fn ObjReaderFn, off, length int64, err error) {
 
-	if rs == nil && opts.PartNumber > 0 {
-		rs = partNumberToRangeSpec(oi, opts.PartNumber)
-	}
-
 	// Call the clean-up functions immediately in case of exit
 	// with error
 	defer func() {
@@ -607,6 +603,15 @@ func NewGetObjectReader(rs *HTTPRangeSpec, oi ObjectInfo, opts ObjectOptions, cl
 			}
 		}
 	}()
+
+	// The selected storage snapshot must be authorized before a range or
+	// decryption error can reveal metadata or discard the snapshot's tags.
+	if opts.AuthorizeReadFn != nil && opts.AuthorizeReadFn(oi) {
+		return nil, 0, 0, PreConditionFailed{}
+	}
+	if rs == nil && opts.PartNumber > 0 {
+		rs = partNumberToRangeSpec(oi, opts.PartNumber)
+	}
 
 	_, isEncrypted := crypto.IsEncrypted(oi.UserDefined)
 	isCompressed, err := oi.IsCompressedOK()

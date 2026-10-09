@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -182,6 +183,24 @@ func getDefaultOpts(header http.Header, copySource bool, metadata map[string]str
 }
 
 // get ObjectOptions for GET calls from encryption headers
+// getObjectVersionID is the authoritative version reference used for both
+// storage lookup and authorization. Whitespace-only values select the current
+// object, exactly as getOpts has always interpreted them.
+func getObjectVersionID(r *http.Request) string {
+	return strings.TrimSpace(r.URL.Query().Get(xhttp.VersionID))
+}
+
+// getCopySource returns the same source path and normalized version reference
+// for storage lookup and authorization. The destination URL is not a source.
+func getCopySource(r *http.Request) (sourcePath, versionID string) {
+	sourcePath = r.Header.Get(xhttp.AmzCopySource)
+	if u, err := url.Parse(sourcePath); err == nil {
+		sourcePath = u.Path
+		versionID = strings.TrimSpace(u.Query().Get(xhttp.VersionID))
+	}
+	return sourcePath, versionID
+}
+
 func getOpts(ctx context.Context, r *http.Request, bucket, object string) (ObjectOptions, error) {
 	var (
 		encryption encrypt.ServerSide
@@ -204,7 +223,7 @@ func getOpts(ctx context.Context, r *http.Request, bucket, object string) (Objec
 		}
 	}
 
-	vid := strings.TrimSpace(r.URL.Query().Get(xhttp.VersionID))
+	vid := getObjectVersionID(r)
 	if vid != "" && vid != nullVersionID {
 		_, err := uuid.Parse(vid)
 		if err != nil {

@@ -88,6 +88,8 @@ func (r *RangeInfo) Empty() bool {
 	return r.Range == "" && r.File == "" && r.Size == 0
 }
 
+const cacheSourceModTime = ReservedMetadataPrefix + "cache-source-mtime"
+
 func (m *cacheMeta) ToObjectInfo(bucket, object string) (o ObjectInfo) {
 	if len(m.Meta) == 0 {
 		m.Meta = make(map[string]string)
@@ -125,10 +127,16 @@ func (m *cacheMeta) ToObjectInfo(bucket, object string) (o ObjectInfo) {
 			o.ModTime = t.UTC()
 		}
 	}
+	if mtime, ok := m.Meta[cacheSourceModTime]; ok {
+		if t, e = time.Parse(time.RFC3339Nano, mtime); e == nil {
+			o.ModTime = t.UTC()
+		}
+	}
 
 	// etag/md5Sum has already been extracted. We need to
 	// remove to avoid it from appearing as part of user-defined metadata
 	o.UserDefined = cleanMetadata(m.Meta)
+	delete(o.UserDefined, cacheSourceModTime)
 	return o
 }
 
