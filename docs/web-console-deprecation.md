@@ -43,18 +43,24 @@ uses `--entrypoint oc-console` for the Web program. Source builds remain an opti
 Back up deployment configuration and retain the current server image/binary.
 Keep data volumes and the selected identity's endpoint, addressing and CA settings.
 Start OC against the existing S3 endpoint and the actual Admin endpoint. In split
-mode, S3 is on 9000 and Admin is on 9001; neither is OC's browser endpoint.
-The OC bridge example exposes its browser only at host loopback 9090.
+mode, use the operator-configured `--address` for S3 and `--console-address` for
+Admin, or their equivalent environment settings. Preserve the actual client-facing
+URLs, including any proxy mapping; neither endpoint is OC's browser endpoint.
+The OC bridge example uses S3 on 9000, Admin on 9001 and exposes its browser only
+at host loopback 9090. These are example ports, not split-mode requirements.
 
 After verifying the replacement, set `OTTERIO_BROWSER=off` and restart/recreate
 OtterIO using the same version and data volumes. With a split listener, keep
-`--console-address :9001` and configure OC's `--admin-url` accordingly. Do not
-remove the management listener or its TLS configuration. Single-port deployments
+the existing `--console-address` value (or equivalent environment setting) and
+configure OC's `--admin-url` to the actual reachable management URL. Do not
+replace a custom address with the example's `:9001`, or remove the management
+listener or its TLS configuration. Single-port deployments
 continue using their shared endpoint. Preserve separate CA trust where configured.
 
 For UI rollback, set `OTTERIO_BROWSER=on` and restart/recreate the same server.
 If the management port was internal-only, restore the intended browser access
-mapping; the local Compose example can publish 9001 on host loopback. Do not
+mapping for its configured port; the local Compose example can publish its
+configured container port 9001 on host loopback. Do not
 expose the port more broadly as part of rollback. This restores the UI, not
 previous objects, policies, lifecycle settings or credentials. It does not require
 a server downgrade. Any storage downgrade needs separate data/configuration
@@ -119,7 +125,10 @@ route, static asset, credential handling or storage format changes here.
 
 迁移时保留数据卷、现有服务端版本、S3/Admin 地址与独立 CA 配置。
 验证 OC 后设置 `OTTERIO_BROWSER=off` 并重建／重启同版本服务。
-`--console-address` 同时承载 Admin API，不能随网页关闭一起删除。
+拆分模式应保留实际配置的 `--address`、`--console-address`（或等效环境配置）
+及代理映射，并让 OC 的 `--admin-url` 使用实际可达的管理 URL；9000／9001
+仅是 Compose 示例端口，不能覆盖已有自定义地址。`--console-address` 同时
+承载 Admin API，不能随网页关闭一起删除。
 恢复旧网页只需改回 `on` 并重启同一服务端，必要时恢复原先的浏览器访问映射；
 无需降级存储。界面回退不会撤销对象写入、策略变更、密钥轮换或生命周期转换。
 
