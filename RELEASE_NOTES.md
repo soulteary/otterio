@@ -1,3 +1,24 @@
+# Embedded Web Console deprecation notice (next release)
+
+This notice takes effect in the release that first includes it; this preparation
+PR does not publish a release. The embedded Web is deprecated for local,
+single-identity operation in favor of OC Console. `OTTERIO_BROWSER` remains `on`
+by default, and all existing routes and fallback behavior remain available.
+Independent-user/OIDC deployments should retain the old Web. No removal date
+is fixed. At least two notified release cycles and the published acceptance and
+fallback gates precede a separate default-off/removal change.
+See [migration, rollback and the unchecked acceptance list](docs/web-console-deprecation.md).
+
+# 内置 Web 控制台弃用公告（下次发行）
+
+公告从首次包含它的正式发行开始生效，本 PR 不发布版本。本机单一身份操作
+逐步迁移到 OC Console；`OTTERIO_BROWSER` 默认仍为 `on`，旧路由和回退入口
+保持可用。独立用户登录／OIDC 部署应保留旧 Web。删除日期尚未确定；至少经过
+两个已通知的正式发行周期并完成验收与回退窗口后，再单独审查默认关闭或删除。
+见[迁移、回退与待验收清单](docs/web-console-deprecation.md)。
+
+---
+
 # Object version and tag authorization update
 
 This release follows `RELEASE.2026-10-08T16-08-32Z` and includes main changes through `5995377f0ca859e521b9b7e860bbe85d457e7266` plus this release preparation.

@@ -331,6 +331,9 @@ Once set the healer settings are automatically applied without the need for serv
 
 ### Browser
 
+The embedded Web is deprecated for local single-identity use; the default remains
+unchanged during migration. See the [notice and acceptance gates](../web-console-deprecation.md).
+
 Enable or disable access to the web UI with `OTTERIO_BROWSER`; the default is `on`. Setting it to `off` does not disable the S3 or management APIs.
 
 Example:

@@ -177,6 +177,12 @@ mkdir -p "$HOME/otterio-data"
 
 ## Configuration
 
+### Embedded Web deprecation
+
+The embedded Web is deprecated for local single-identity use in favor of OC Console.
+`OTTERIO_BROWSER` still defaults to `on`; independent-user/OIDC deployments
+retain the old Web. See the [notice, migration, rollback and acceptance gates](docs/web-console-deprecation.md).
+
 ### Run S3 and Web Console on separate ports
 
 By default the web console and the S3 API share the listener bound to `--address`. OtterIO can serve the web UI and admin API on a dedicated port so that reverse proxies, firewalls, and network policies can govern S3 traffic and console traffic independently.

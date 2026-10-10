@@ -177,6 +177,11 @@ mkdir -p "$HOME/otterio-data"
 
 ## 部署配置
 
+### 内置 Web 弃用公告
+
+本机单一身份操作逐步迁移到 OC Console；`OTTERIO_BROWSER` 默认仍为 `on`，
+独立用户登录／OIDC 部署继续保留旧 Web。见[弃用公告、迁移回退与验收门槛](docs/web-console-deprecation.md)。
+
 ### 拆分 S3 与 Web 控制台端口
 
 默认情况下，Web 控制台与 S3 API 监听同一个端口（由 `--address` 指定）。OtterIO 支持把 Web UI 与 Admin API 拆分到独立的端口，方便在反向代理、防火墙或网络策略层面分别管控 S3 流量与控制台流量。
