@@ -23,7 +23,7 @@ func configurationRequestLimit(header *fasthttp.RequestHeader) int {
 	if err != nil {
 		return 0
 	}
-	if u.Path == adminPathPrefix+adminAPIVersionPrefix+"/self-credentials" {
+	if u.Path == adminPathPrefix+adminAPIVersionPrefix+"/self-credentials" || u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-user-secret" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-user-secret" {
 		return 4096
 	}
 	method := string(header.Method())

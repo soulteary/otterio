@@ -24,6 +24,7 @@ const iamRelationshipsRevision = "X-Otterio-IAM-Impact-Revision"
 var iamRelationshipSlots = make(chan struct{}, 4)
 
 type iamRelationshipsSnapshot struct {
+	CoupledUserSecret  bool      `json:"coupledUserSecret"`
 	Kind               string    `json:"kind"`
 	Target             string    `json:"target"`
 	State              string    `json:"state"`
@@ -65,7 +66,7 @@ func (sys *IAMSys) nativeRelationshipsRevisionLocked() (string, error) {
 // Caller holds store lock. Returned arrays are copied; no credential material
 // leaves this function. Empty group impact is authoritative, absent is an error.
 func (sys *IAMSys) nativeRelationshipsLocked(kind, target string, now time.Time) (iamRelationshipsSnapshot, error) {
-	result := iamRelationshipsSnapshot{Kind: kind, Target: target, State: "known", CoupledBindings: true, ExpiresAt: now.Add(30 * time.Second), AffectedAccessKeys: []string{}}
+	result := iamRelationshipsSnapshot{Kind: kind, Target: target, State: "known", CoupledBindings: true, CoupledUserSecret: true, ExpiresAt: now.Add(30 * time.Second), AffectedAccessKeys: []string{}}
 	if sys.usersSysType != OtterIOUsersSysType || !validIAMBindingName(target) {
 		return result, errIAMActionNotAllowed
 	}
