@@ -222,3 +222,51 @@ func TestConsoleIAMRelationshipServiceNativeManagerDeny(t *testing.T) {
 		t.Fatal("service actor gained management")
 	}
 }
+func TestConsoleIAMRelationshipServicePolicyDelegationRequiresParent(t *testing.T) {
+	sys, root := relationshipServiceFixture(t)
+	permission := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["admin:UpdateServiceAccount","admin:GetUser","admin:ListUsers","admin:ListServiceAccounts"],"Resource":["arn:aws:s3:::*"]},{"Effect":"Allow","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::allowed/*"]}]}`
+	parsed, err := iampolicy.ParseConfig(strings.NewReader(permission))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sys.SetPolicy("parent-full", *parsed)
+	sys.PolicyDBSet("group-parent", "parent-full", false)
+	parent := iamMutationGuard{credential: sys.iamUsersMap["group-parent"], args: iampolicy.Args{AccountName: "group-parent"}}
+	candidate := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::allowed/foo*"]}]}`
+	for _, actor := range []iamMutationGuard{parent, root} {
+		relation := serviceRelation(t, sys)
+		if _, err := sys.mutateNativeRelationshipServiceAccount(context.Background(), iamRelationshipServiceRequest{Action: "service-account.policy", Target: "managed-service", Policy: candidate}, relation.Revision, relation.ExpiresAt, actor); err != nil {
+			t.Fatalf("parent/root valid restriction denied: %v", err)
+		}
+	}
+	sys.CreateUser("delegation-manager", madmin.UserInfo{SecretKey: "delegation-manager-secret", Status: madmin.AccountEnabled})
+	for _, limited := range []string{
+		strings.ReplaceAll(permission, "allowed/*", "allowed/foo?"),
+		strings.ReplaceAll(permission, `"Resource":["arn:aws:s3:::allowed/*"]`, `"Resource":["arn:aws:s3:::allowed/*"],"Condition":{"Bool":{"aws:SecureTransport":["true"]}}`),
+	} {
+		policy, err := iampolicy.ParseConfig(strings.NewReader(limited))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sys.SetPolicy("delegate-limited", *policy)
+		sys.PolicyDBSet("delegation-manager", "delegate-limited", false)
+		manager := iamMutationGuard{credential: sys.iamUsersMap["delegation-manager"], args: iampolicy.Args{AccountName: "delegation-manager", ConditionValues: map[string][]string{"SecureTransport": {"true"}}}}
+		relation := serviceRelation(t, sys)
+		before := sys.iamUsersMap["managed-service"].SessionToken
+		if _, err := sys.mutateNativeRelationshipServiceAccount(context.Background(), iamRelationshipServiceRequest{Action: "service-account.policy", Target: "managed-service", Policy: candidate}, relation.Revision, relation.ExpiresAt, manager); !errors.Is(err, errIAMActionNotAllowed) {
+			t.Fatal("nonparent manager delegated wildcard/condition scope")
+		}
+		if sys.iamUsersMap["managed-service"].SessionToken != before {
+			t.Fatal("refused policy changed JWT")
+		}
+	}
+	relation := serviceRelation(t, sys)
+	sys.store.lock()
+	disabled := sys.iamUsersMap["group-parent"]
+	disabled.Status = auth.AccountOff
+	sys.iamUsersMap["group-parent"] = disabled
+	sys.store.unlock()
+	if _, err := sys.mutateNativeRelationshipServiceAccount(context.Background(), iamRelationshipServiceRequest{Action: "service-account.policy", Target: "managed-service", Policy: candidate}, relation.Revision, relation.ExpiresAt, parent); !errors.Is(err, errIAMActionNotAllowed) {
+		t.Fatal("disabled parent modified restriction")
+	}
+}

@@ -215,6 +215,14 @@ func (sys *IAMSys) mutateNativeRelationshipServiceAccount(ctx context.Context, a
 		return result, err
 	}
 	if args.Action == "service-account.policy" {
+		// The legacy escalation helper probes literal action/resource examples;
+		// it cannot prove subset containment for arbitrary wildcards/conditions.
+		// Only root or the authoritative parent can change this restriction. Other
+		// native administrators retain status/secret/delete capabilities, but cannot
+		// delegate the parent's data authority through a child policy.
+		if guard.credential.AccessKey != globalActiveCred.AccessKey && guard.credential.AccessKey != credential.ParentUser {
+			return result, errIAMActionNotAllowed
+		}
 		policy, err := iampolicy.ParseConfig(strings.NewReader(args.Policy))
 		if err != nil || policy.Version == "" || policy.Validate() != nil {
 			return result, errInvalidArgument
