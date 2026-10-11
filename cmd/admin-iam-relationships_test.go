@@ -152,3 +152,54 @@ func TestConsoleIAMRelationshipsSignedReadAuthorization(t *testing.T) {
 		t.Fatal("revoked reader retained relation capability")
 	}
 }
+
+func TestConsoleIAMRelationshipsRevisionCanonicalPolicySets(t *testing.T) {
+	sys := NewIAMSys()
+	sys.store = &consoleIAMBindingMemoryStore{}
+	var policy iampolicy.Policy
+	data := []byte(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject"],"Resource":["arn:aws:s3:::a/*","arn:aws:s3:::b/*"]}]}`)
+	if err := json.Unmarshal(data, &policy); err != nil {
+		t.Fatal(err)
+	}
+	sys.SetPolicy("unordered-policy", policy)
+	first, err := sys.nativeRelationshipsRevisionLocked()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for index := 0; index < 100; index++ {
+		revision, err := sys.nativeRelationshipsRevisionLocked()
+		if err != nil || revision != first {
+			t.Fatal("unchanged set order invalidated graph revision")
+		}
+	}
+	// Different array ordering encodes the same IAM graph meaning; numbers must
+	// retain precision rather than becoming float64 during canonicalization.
+	a, err := canonicalIAMGraphJSON([]byte(`{"Users":{"u":{"groups":["z","a"]}},"n":9007199254740993}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := canonicalIAMGraphJSON([]byte(`{"n":9007199254740993,"Users":{"u":{"groups":["a","z"]}}}`))
+	if err != nil || !bytes.Equal(a, b) {
+		t.Fatal("canonical graph order/number changed")
+	}
+	sys.SetPolicy("unordered-policy", iampolicy.ReadOnly)
+	changed, err := sys.nativeRelationshipsRevisionLocked()
+	if err != nil || changed == first {
+		t.Fatal("actual policy modification failed to invalidate graph")
+	}
+}
+
+func TestConsoleIAMRelationshipsCanonicalPreservesUnknownArrayOrder(t *testing.T) {
+	first, _ := canonicalIAMGraphJSON([]byte(`{"unknown":["z","a"],"Policies":{"p":{"Statement":[{"Sid":"second"},{"Sid":"first"}]}}}`))
+	var parsed struct {
+		Unknown  []string `json:"unknown"`
+		Policies map[string]struct {
+			Statements []struct {
+				SID string `json:"Sid"`
+			} `json:"Statement"`
+		} `json:"Policies"`
+	}
+	if json.Unmarshal(first, &parsed) != nil || parsed.Unknown[0] != "z" || parsed.Policies["p"].Statements[0].SID != "second" {
+		t.Fatal("ordered/unknown arrays were reordered")
+	}
+}

@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -49,6 +50,10 @@ func (sys *IAMSys) nativeRelationshipsRevisionLocked() (string, error) {
 		Policies      map[string]iampolicy.Policy
 	}{sys.iamUsersMap, sys.iamGroupsMap, sys.iamUserPolicyMap, sys.iamGroupPolicyMap, sys.iamPolicyDocsMap})
 	if err != nil || len(data) > 4<<20 {
+		return "", errIAMActionNotAllowed
+	}
+	data, err = canonicalIAMGraphJSON(data)
+	if err != nil {
 		return "", errIAMActionNotAllowed
 	}
 	digest := hmac.New(sha256.New, iamBindingRevisionKey[:])
@@ -182,4 +187,65 @@ func (sys *IAMSys) nativeRelationshipTokenLocked(kind, target string, expires ti
 		return "", err
 	}
 	return iamBindingsRevision("native-relationships:"+kind, target, []string{graph, expires.UTC().Format(time.RFC3339Nano)}, nil), nil
+}
+
+// IAM policy ActionSet/ResourceSet marshal map-backed sets as arrays in random
+// order. Normalize only fields with known set semantics: credential groups,
+// group members and policy action/resource/condition alternatives. Statement
+// ordering and any unknown arrays retain their original ordering.
+func canonicalIAMGraphJSON(data []byte) ([]byte, error) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return nil, err
+	}
+	var canonicalize func(any, []string) error
+	canonicalize = func(value any, path []string) error {
+		switch typed := value.(type) {
+		case map[string]any:
+			for key, item := range typed {
+				if err := canonicalize(item, append(append([]string{}, path...), key)); err != nil {
+					return err
+				}
+			}
+		case []any:
+			type encodedValue struct {
+				value   any
+				encoded string
+			}
+			encoded := make([]encodedValue, len(typed))
+			for index, item := range typed {
+				if err := canonicalize(item, append(append([]string{}, path...), "[]")); err != nil {
+					return err
+				}
+				data, err := json.Marshal(item)
+				if err != nil {
+					return err
+				}
+				encoded[index] = encodedValue{item, string(data)}
+			}
+			if iamGraphArrayIsSet(path) {
+				sort.Slice(encoded, func(i, j int) bool { return encoded[i].encoded < encoded[j].encoded })
+			}
+			for index, item := range encoded {
+				typed[index] = item.value
+			}
+		}
+		return nil
+	}
+	if err := canonicalize(value, nil); err != nil {
+		return nil, err
+	}
+	return json.Marshal(value)
+}
+
+func iamGraphArrayIsSet(path []string) bool {
+	if len(path) == 3 && (path[0] == "Users" && path[2] == "groups" || path[0] == "Groups" && path[2] == "members") {
+		return true
+	}
+	if len(path) == 5 && path[0] == "Policies" && path[2] == "Statement" && path[3] == "[]" && (path[4] == "Action" || path[4] == "Resource") {
+		return true
+	}
+	return len(path) == 7 && path[0] == "Policies" && path[2] == "Statement" && path[3] == "[]" && path[4] == "Condition"
 }
