@@ -442,7 +442,14 @@ func TestNativeServiceCreationProtectedSignedCollisionZeroWrite(t *testing.T) {
 	globalIAMSys.store.lock()
 	globalIAMSys.iamUsersMap["collision-sts"] = auth.Credentials{AccessKey: "collision-sts", SecretKey: "collision-sts-secret", ParentUser: "collision-parent", SessionToken: "test-sts-token", Expiration: time.Now().Add(time.Hour), Status: auth.AccountOn}
 	globalIAMSys.store.unlock()
-	for _, key := range []string{"collision-parent", "collision-user", "collision-service", "collision-sts", globalActiveCred.AccessKey} {
+	const longNativeKey = "rel-12345678-unrelated"
+	if len(longNativeKey) <= 20 {
+		t.Fatal("fixture must exceed service credential key length")
+	}
+	if err = globalIAMSys.CreateUser(longNativeKey, madmin.UserInfo{SecretKey: "collision-long-native-secret", Status: madmin.AccountEnabled}); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"collision-parent", "collision-user", longNativeKey, "collision-service", "collision-sts", globalActiveCred.AccessKey} {
 		t.Run(key, func(t *testing.T) {
 			globalIAMSys.store.rlock()
 			relation, err := globalIAMSys.nativeRelationshipsLocked("user", "collision-parent", time.Now())

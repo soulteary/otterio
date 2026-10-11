@@ -1236,6 +1236,14 @@ func (sys *IAMSys) newServiceAccountLocked(parentUser string, groups []string, o
 	)
 
 	if len(opts.accessKey) > 0 {
+		// Explicit keys must satisfy namespace absence before credential generation:
+		// native user keys can exceed the generated service-key length limit.
+		if opts.accessKey == globalActiveCred.AccessKey {
+			return auth.Credentials{}, errIAMActionNotAllowed
+		}
+		if _, exists := sys.iamUsersMap[opts.accessKey]; exists {
+			return auth.Credentials{}, errIAMCreateExists
+		}
 		cred, err = auth.CreateNewCredentialsWithMetadata(opts.accessKey, opts.secretKey, m, globalActiveCred.SecretKey)
 	} else {
 		cred, err = auth.GetNewCredentialsWithMetadata(m, globalActiveCred.SecretKey)
