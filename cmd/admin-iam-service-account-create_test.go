@@ -419,3 +419,72 @@ func TestNativeServiceCreationPartialParentDeleteRejectsOldRequest(t *testing.T)
 		t.Fatal("partially deleted parent accepted old request")
 	}
 }
+
+func TestNativeServiceCreationProtectedSignedCollisionZeroWrite(t *testing.T) {
+	skipIfWindowsAdminErasureTestBed(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	bed, err := prepareAdminErasureTestBed(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bed.TearDown()
+	globalIAMSys.InitStore(bed.objLayer)
+	if err = globalIAMSys.CreateUser("collision-parent", madmin.UserInfo{SecretKey: "collision-parent-secret", Status: madmin.AccountEnabled}); err != nil {
+		t.Fatal(err)
+	}
+	if err = globalIAMSys.CreateUser("collision-user", madmin.UserInfo{SecretKey: "collision-user-secret", Status: madmin.AccountEnabled}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = globalIAMSys.NewServiceAccount(ctx, "collision-parent", nil, newServiceAccountOpts{accessKey: "collision-service", secretKey: "collision-service-secret"}); err != nil {
+		t.Fatal(err)
+	}
+	globalIAMSys.store.lock()
+	globalIAMSys.iamUsersMap["collision-sts"] = auth.Credentials{AccessKey: "collision-sts", SecretKey: "collision-sts-secret", ParentUser: "collision-parent", SessionToken: "test-sts-token", Expiration: time.Now().Add(time.Hour), Status: auth.AccountOn}
+	globalIAMSys.store.unlock()
+	for _, key := range []string{"collision-parent", "collision-user", "collision-service", "collision-sts", globalActiveCred.AccessKey} {
+		t.Run(key, func(t *testing.T) {
+			globalIAMSys.store.rlock()
+			relation, err := globalIAMSys.nativeRelationshipsLocked("user", "collision-parent", time.Now())
+			before, hashErr := globalIAMSys.nativeRelationshipsRevisionLocked()
+			globalIAMSys.store.runlock()
+			if err != nil || hashErr != nil {
+				t.Fatal(err, hashErr)
+			}
+			rootBefore := globalActiveCred
+			data, err := json.Marshal(madmin.AddServiceAccountReq{TargetUser: "collision-parent", AccessKey: key, SecretKey: "overwriting-secret"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			body, err := madmin.EncryptData(globalActiveCred.SecretKey, data)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req, err := newTestSignedRequestV4(http.MethodPut, adminPathPrefix+adminAPIVersionPrefix+"/add-service-account", int64(len(body)), bytes.NewReader(body), globalActiveCred.AccessKey, globalActiveCred.SecretKey, map[string]string{iamServiceCreationCapability: "v1", iamImpactCondition: relation.Revision, iamImpactExpires: relation.ExpiresAt.Format(time.RFC3339Nano)})
+			if err != nil {
+				t.Fatal(err)
+			}
+			response := httptest.NewRecorder()
+			adminAPIHandlers{}.AddServiceAccount(response, req)
+			want := http.StatusPreconditionFailed
+			if key == globalActiveCred.AccessKey {
+				want = http.StatusForbidden
+			}
+			if response.Code != want {
+				t.Fatalf("existing namespace not explicitly rejected: %d want %d", response.Code, want)
+			}
+			if want == http.StatusPreconditionFailed && !strings.Contains(response.Body.String(), `"Code":"PreconditionFailed"`) {
+				t.Fatal("absence CAS failed with ambiguous code")
+			}
+			globalIAMSys.store.rlock()
+			after, err := globalIAMSys.nativeRelationshipsRevisionLocked()
+			globalIAMSys.store.runlock()
+			if err != nil || after != before || rootBefore.SecretKey != globalActiveCred.SecretKey || rootBefore.AccessKey != globalActiveCred.AccessKey {
+				t.Fatal("collision changed existing namespace or root")
+			}
+			if response.Header().Get(iamServiceCreationCapability) != "" || strings.Contains(response.Body.String(), "overwriting-secret") {
+				t.Fatal("rejected creation acknowledged or leaked credential")
+			}
+		})
+	}
+}

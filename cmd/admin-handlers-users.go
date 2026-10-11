@@ -632,7 +632,7 @@ func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Reque
 	} else {
 		newCred, err = globalIAMSys.NewServiceAccount(ctx, targetUser, targetGroups, opts)
 	}
-	if errors.Is(err, errIAMBindingConflict) {
+	if errors.Is(err, errIAMBindingConflict) || (protectedCreation && errors.Is(err, errIAMCreateExists)) {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
 		return
 	}
