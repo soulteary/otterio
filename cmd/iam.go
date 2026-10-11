@@ -2237,6 +2237,32 @@ func (sys *IAMSys) IsAllowedSTS(args iampolicy.Args, parentUser string) bool {
 	sys.store.rlock()
 	defer sys.store.runlock()
 
+	if parentUser != "" {
+		// Native AssumeRole children retain an issuance policy, but that snapshot
+		// cannot outlive the authoritative parent or exceed its current authority.
+		// WebIdentity has no stored native parent; LDAP returned above.
+		parent, exists := sys.iamUsersMap[parentUser]
+		child, childExists := sys.iamUsersMap[args.AccountName]
+		if !exists || !parent.IsValid() || parent.IsTemp() || parent.IsServiceAccount() || parent.ParentUser != "" ||
+			!childExists || !child.IsValid() || !child.IsTemp() || child.ParentUser != parentUser {
+			return false
+		}
+		parentArgs := args
+		parentArgs.AccountName = parentUser
+		parentArgs.Groups = parent.Groups
+		parentArgs.ConditionValues = make(map[string][]string, len(args.ConditionValues)+2)
+		for key, values := range args.ConditionValues {
+			parentArgs.ConditionValues[key] = append([]string(nil), values...)
+		}
+		parentArgs.ConditionValues["username"] = []string{parentUser}
+		parentArgs.ConditionValues["userid"] = []string{parentUser}
+		// Evaluates current direct/group policies under this same read lock,
+		// with positive allow required even for own-account operations.
+		if !sys.nativePolicyAllowsLocked(parentArgs) {
+			return false
+		}
+	}
+
 	// If policy is available for given user, check the policy.
 	mp, ok := sys.iamUserPolicyMap[args.AccountName]
 	if !ok {
