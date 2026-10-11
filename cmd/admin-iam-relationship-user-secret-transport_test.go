@@ -24,3 +24,15 @@ func TestConsoleIAMRelationshipSecretHeaderBodyLimit(t *testing.T) {
 		t.Fatal("object upload inherited secret body cap")
 	}
 }
+
+func TestConsoleIAMRelationshipGroupHeaderBodyLimit(t *testing.T) {
+	for _, version := range []string{adminAPIVersionPrefix, adminAPIVersionV2Prefix} {
+		var header fasthttp.RequestHeader
+		header.SetMethod("PUT")
+		header.SetRequestURI(adminPathPrefix + version + "/iam-relationship-groups?kind=group&target=native-group")
+		config := configurationRequestConfig(&header)
+		if configurationRequestLimit(&header) != 32*1024 || config.MaxRequestBodySize != 32*1024 || config.ReadTimeout != 15*time.Second {
+			t.Fatal("group mutation missing header read limit")
+		}
+	}
+}

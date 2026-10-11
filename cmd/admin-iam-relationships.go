@@ -12,6 +12,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/cmd/logger"
 	"github.com/soulteary/otterio/pkg/auth"
 	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
@@ -24,6 +25,7 @@ const iamRelationshipsRevision = "X-Otterio-IAM-Impact-Revision"
 var iamRelationshipSlots = make(chan struct{}, 4)
 
 type iamRelationshipsSnapshot struct {
+	CoupledGroups      bool      `json:"coupledGroups"`
 	CoupledUserSecret  bool      `json:"coupledUserSecret"`
 	Kind               string    `json:"kind"`
 	Target             string    `json:"target"`
@@ -40,7 +42,7 @@ type iamRelationshipsSnapshot struct {
 // Any legacy mutation invalidates a draft. This deliberately prefers conflicts
 // over missing an indirect permission/identity change. Caller holds store lock.
 func (sys *IAMSys) nativeRelationshipsRevisionLocked() (string, error) {
-	if len(sys.iamUsersMap)+len(sys.iamGroupsMap)+len(sys.iamUserPolicyMap)+len(sys.iamGroupPolicyMap)+len(sys.iamPolicyDocsMap) > 4096 {
+	if len(sys.iamUsersMap)+len(sys.iamGroupsMap)+len(sys.iamUserPolicyMap)+len(sys.iamGroupPolicyMap)+len(sys.iamPolicyDocsMap)+len(sys.iamUserGroupMemberships) > 4096 {
 		return "", errIAMActionNotAllowed
 	}
 	data, err := json.Marshal(struct {
@@ -49,7 +51,8 @@ func (sys *IAMSys) nativeRelationshipsRevisionLocked() (string, error) {
 		UserPolicies  map[string]MappedPolicy
 		GroupPolicies map[string]MappedPolicy
 		Policies      map[string]iampolicy.Policy
-	}{sys.iamUsersMap, sys.iamGroupsMap, sys.iamUserPolicyMap, sys.iamGroupPolicyMap, sys.iamPolicyDocsMap})
+		Memberships   map[string]set.StringSet
+	}{sys.iamUsersMap, sys.iamGroupsMap, sys.iamUserPolicyMap, sys.iamGroupPolicyMap, sys.iamPolicyDocsMap, sys.iamUserGroupMemberships})
 	if err != nil || len(data) > 4<<20 {
 		return "", errIAMActionNotAllowed
 	}
@@ -66,11 +69,11 @@ func (sys *IAMSys) nativeRelationshipsRevisionLocked() (string, error) {
 // Caller holds store lock. Returned arrays are copied; no credential material
 // leaves this function. Empty group impact is authoritative, absent is an error.
 func (sys *IAMSys) nativeRelationshipsLocked(kind, target string, now time.Time) (iamRelationshipsSnapshot, error) {
-	result := iamRelationshipsSnapshot{Kind: kind, Target: target, State: "known", CoupledBindings: true, CoupledUserSecret: true, ExpiresAt: now.Add(30 * time.Second), AffectedAccessKeys: []string{}}
+	result := iamRelationshipsSnapshot{Kind: kind, Target: target, State: "known", CoupledBindings: true, CoupledGroups: true, CoupledUserSecret: true, ExpiresAt: now.Add(30 * time.Second), AffectedAccessKeys: []string{}}
 	if sys.usersSysType != OtterIOUsersSysType || !validIAMBindingName(target) {
 		return result, errIAMActionNotAllowed
 	}
-	if len(sys.iamUsersMap)+len(sys.iamGroupsMap)+len(sys.iamPolicyDocsMap) > 4096 {
+	if len(sys.iamUsersMap)+len(sys.iamGroupsMap)+len(sys.iamPolicyDocsMap)+len(sys.iamUserGroupMemberships) > 4096 {
 		return result, errIAMActionNotAllowed
 	}
 	parents := map[string]bool{}
@@ -95,6 +98,17 @@ func (sys *IAMSys) nativeRelationshipsLocked(kind, target string, now time.Time)
 				return result, errIAMActionNotAllowed
 			}
 			parents[member] = true
+		}
+		// Effective policy evaluation also consults this index. Include its
+		// members conservatively even if a stale group description omitted one.
+		for user, memberships := range sys.iamUserGroupMemberships {
+			if memberships.Contains(target) {
+				credential, ok := sys.iamUsersMap[user]
+				if !ok || credential.IsTemp() || credential.IsServiceAccount() {
+					return result, errIAMActionNotAllowed
+				}
+				parents[user] = true
+			}
 		}
 	case "service-account":
 		credential, ok := sys.iamUsersMap[target]

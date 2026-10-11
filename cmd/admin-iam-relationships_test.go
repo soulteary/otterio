@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/soulteary/otterio-sdk/v7/pkg/set"
 	"github.com/soulteary/otterio/pkg/auth"
 	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 	"github.com/soulteary/otterio/pkg/madmin"
@@ -201,5 +202,22 @@ func TestConsoleIAMRelationshipsCanonicalPreservesUnknownArrayOrder(t *testing.T
 	}
 	if json.Unmarshal(first, &parsed) != nil || parsed.Unknown[0] != "z" || parsed.Policies["p"].Statements[0].SID != "second" {
 		t.Fatal("ordered/unknown arrays were reordered")
+	}
+}
+
+func TestConsoleIAMRelationshipsCoversEffectiveMembershipIndex(t *testing.T) {
+	sys := NewIAMSys()
+	sys.store = &consoleIAMBindingMemoryStore{}
+	sys.CreateUser("index-user", madmin.UserInfo{SecretKey: "index-user-secret", Status: madmin.AccountEnabled})
+	sys.AddUsersToGroup("index-group", nil)
+	before, _ := sys.nativeRelationshipsRevisionLocked()
+	sys.iamUserGroupMemberships["index-user"] = set.CreateStringSet("index-group")
+	after, _ := sys.nativeRelationshipsRevisionLocked()
+	if before == after {
+		t.Fatal("effective policy index missing from graph CAS")
+	}
+	relation, err := sys.nativeRelationshipsLocked("group", "index-group", time.Now())
+	if err != nil || len(relation.AffectedAccessKeys) != 1 || relation.AffectedAccessKeys[0] != "index-user" {
+		t.Fatal("effective inherited user omitted from group impact")
 	}
 }
