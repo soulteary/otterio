@@ -28,6 +28,12 @@ func configurationTestReadTimeout(t *testing.T, app *fiber.App) {
 		uri   string
 		limit int
 	}{
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-policy-bindings", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionV2Prefix + "/iam-policy-bindings", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-create", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionV2Prefix + "/iam-create", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-user-secret", 2048},
+		{adminPathPrefix + adminAPIVersionV2Prefix + "/iam-user-secret", 2048},
 		{adminPathPrefix + adminAPIVersionPrefix + "/self-credentials", 4096},
 		{adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-bindings", 32 * 1024},
 		{adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-users", 4096},
@@ -64,6 +70,9 @@ func TestBucketConfigTransportPreReadDeadline(t *testing.T) {
 		name, uri, extra string
 		length           int
 	}{
+		{"policy-bindings-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-policy-bindings", "", 1024},
+		{"create-small", adminPathPrefix + adminAPIVersionV2Prefix + "/iam-create", "", 1024},
+		{"user-secret-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-user-secret", "", 1024},
 		{"self-small", adminPathPrefix + adminAPIVersionPrefix + "/self-credentials", "", 1024},
 		{"bindings-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-bindings", "", 1024},
 		{"users-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-users", "", 1024},

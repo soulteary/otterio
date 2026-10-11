@@ -129,7 +129,7 @@ func TestConsoleIAMRelationshipUserCASAndFreshActor(t *testing.T) {
 		t.Fatal("expiry extension accepted")
 	}
 	sys.CreateUser("status-manager", madmin.UserInfo{SecretKey: "status-manager-secret", Status: madmin.AccountEnabled})
-	p, err := iampolicy.ParseConfig(strings.NewReader(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["admin:EnableUser","admin:DeleteUser","admin:GetUser","admin:ListUsers"],"Resource":["arn:aws:s3:::*"]}]}`))
+	p, err := iampolicy.ParseConfig(strings.NewReader(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["admin:EnableUser","admin:DisableUser","admin:DeleteUser","admin:GetUser","admin:ListUsers"],"Resource":["arn:aws:s3:::*"]}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestConsoleIAMRelationshipUserCASAndFreshActor(t *testing.T) {
 			sys.iamUsersMap[c.AccessKey] = c
 		}
 		if change == "deny" {
-			p, _ := iampolicy.ParseConfig(strings.NewReader(`{"Version":"2012-10-17","Statement":[{"Effect":"Deny","Action":["admin:EnableUser"],"Resource":["arn:aws:s3:::*"]}]}`))
+			p, _ := iampolicy.ParseConfig(strings.NewReader(`{"Version":"2012-10-17","Statement":[{"Effect":"Deny","Action":["admin:DisableUser"],"Resource":["arn:aws:s3:::*"]}]}`))
 			sys.SetPolicy("status-manager-deny", *p)
 			sys.AddUsersToGroup("status-deny", []string{"status-manager"})
 			sys.PolicyDBSet("status-deny", "status-manager-deny", true)
@@ -238,6 +238,40 @@ func TestConsoleIAMRelationshipUserRejectsUnknownCascadeAndNonNative(t *testing.
 		}
 		if _, err := sys.mutateNativeRelationshipUser(context.Background(), iamRelationshipUserRequest{Action: "user.disable", Target: target}, token, expiry, guard); !errors.Is(err, errIAMActionNotAllowed) {
 			t.Fatalf("non-native/root target accepted: %s %v", target, err)
+		}
+	}
+}
+
+func TestConsoleIAMRelationshipUserEnableDisablePermissions(t *testing.T) {
+	for _, granted := range []string{"admin:EnableUser", "admin:DisableUser"} {
+		for _, action := range []string{"user.enable", "user.disable"} {
+			t.Run(granted+"/"+action, func(t *testing.T) {
+				sys, _ := relationshipGroupFixture(t)
+				if err := sys.CreateUser("status-delegate", madmin.UserInfo{SecretKey: "delegate-secret", Status: madmin.AccountEnabled}); err != nil {
+					t.Fatal(err)
+				}
+				policy, err := iampolicy.ParseConfig(strings.NewReader(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["` + granted + `","admin:GetUser","admin:ListUsers"],"Resource":["arn:aws:s3:::*"]}]}`))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := sys.SetPolicy("delegate-status", *policy); err != nil {
+					t.Fatal(err)
+				}
+				if err := sys.PolicyDBSet("status-delegate", "delegate-status", false); err != nil {
+					t.Fatal(err)
+				}
+				guard := iamMutationGuard{credential: sys.iamUsersMap["status-delegate"], args: iampolicy.Args{AccountName: "status-delegate"}}
+				relation := userRelation(t, sys)
+				before := sys.iamUsersMap["group-parent"].Status
+				_, err = sys.mutateNativeRelationshipUser(context.Background(), iamRelationshipUserRequest{Action: action, Target: "group-parent"}, relation.Revision, relation.ExpiresAt, guard)
+				allowed := (granted == "admin:EnableUser" && action == "user.enable") || (granted == "admin:DisableUser" && action == "user.disable")
+				if allowed && err != nil {
+					t.Fatalf("matching permission denied: %v", err)
+				}
+				if !allowed && (!errors.Is(err, errIAMActionNotAllowed) || sys.iamUsersMap["group-parent"].Status != before) {
+					t.Fatalf("wrong permission changed status: %v", err)
+				}
+			})
 		}
 	}
 }

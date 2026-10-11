@@ -35,8 +35,10 @@ type iamRelationshipUserResult struct {
 
 func relationshipUserAction(action string) (iampolicy.AdminAction, bool) {
 	switch action {
-	case "user.enable", "user.disable":
+	case "user.enable":
 		return iampolicy.EnableUserAdminAction, true
+	case "user.disable":
+		return iampolicy.DisableUserAdminAction, true
 	case "user.delete":
 		return iampolicy.DeleteUserAdminAction, true
 	}

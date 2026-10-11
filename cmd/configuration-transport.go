@@ -23,6 +23,14 @@ func configurationRequestLimit(header *fasthttp.RequestHeader) int {
 	if err != nil {
 		return 0
 	}
+	for _, version := range []string{adminAPIVersionPrefix, adminAPIVersionV2Prefix} {
+		switch u.Path {
+		case adminPathPrefix + version + "/iam-policy-bindings", adminPathPrefix + version + "/iam-create":
+			return 32 * 1024
+		case adminPathPrefix + version + "/iam-user-secret":
+			return 2048
+		}
+	}
 	if (u.Path == adminPathPrefix+adminAPIVersionPrefix+"/add-service-account" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/add-service-account") && len(header.PeekAll(iamServiceCreationCapability)) != 0 {
 		return 32 * 1024
 	}
