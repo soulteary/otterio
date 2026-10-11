@@ -1,14 +1,11 @@
 // Copyright 2026 soulteary. Licensed under the Apache License, Version 2.0.
+
 package cmd
 
 import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/soulteary/otterio/pkg/auth"
-	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
-	"github.com/soulteary/otterio/pkg/madmin"
-	"github.com/valyala/fasthttp"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -16,6 +13,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/soulteary/otterio/pkg/auth"
+	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
+	"github.com/soulteary/otterio/pkg/madmin"
+	"github.com/valyala/fasthttp"
 )
 
 func userRelation(t *testing.T, sys *IAMSys) iamRelationshipsSnapshot {

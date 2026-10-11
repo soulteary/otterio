@@ -1,20 +1,22 @@
 // Copyright 2026 soulteary. Licensed under the Apache License, Version 2.0.
+
 package cmd
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/soulteary/otterio/pkg/auth"
-	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
-	"github.com/soulteary/otterio/pkg/madmin"
-	"github.com/valyala/fasthttp"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/soulteary/otterio/pkg/auth"
+	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
+	"github.com/soulteary/otterio/pkg/madmin"
+	"github.com/valyala/fasthttp"
 )
 
 func TestNativeServiceCreationRejectsStaleParentAndActor(t *testing.T) {

@@ -1,4 +1,5 @@
 // Copyright 2026 soulteary. Licensed under the Apache License, Version 2.0.
+
 package cmd
 
 import (
@@ -148,7 +149,6 @@ func (a adminAPIHandlers) IAMRelationshipUserSecret(w http.ResponseWriter, r *ht
 		return
 	}
 	result, err := globalIAMSys.rotateNativeRelationshipUserSecret(ctx, target, bindingRevision, impactRevision, expires, secret, newIAMMutationGuard(r, credential, iampolicy.CreateUserAdminAction))
-	secret = ""
 	if errors.Is(err, errIAMBindingConflict) {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
 		return

@@ -1,10 +1,12 @@
 // Copyright 2026 soulteary. Licensed under the Apache License, Version 2.0.
+
 package cmd
 
 import (
-	"github.com/valyala/fasthttp"
 	"testing"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 func TestConsoleIAMRelationshipSecretHeaderBodyLimit(t *testing.T) {

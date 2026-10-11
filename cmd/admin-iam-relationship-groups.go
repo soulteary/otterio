@@ -1,4 +1,5 @@
 // Copyright 2026 soulteary. Licensed under the Apache License, Version 2.0.
+
 package cmd
 
 import (
@@ -91,7 +92,7 @@ func decodeIAMRelationshipGroupBody(data []byte) (iamRelationshipGroupRequest, e
 		return result, errInvalidArgument
 	}
 	membership := result.Action == "group.add-members" || result.Action == "group.remove-members"
-	if membership && (result.Members == nil || len(result.Members) == 0) {
+	if membership && len(result.Members) == 0 {
 		return result, errInvalidArgument
 	}
 	if !membership && len(result.Members) != 0 {

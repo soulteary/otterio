@@ -1,4 +1,5 @@
 // Copyright 2026 soulteary. Licensed under the Apache License, Version 2.0.
+
 package cmd
 
 import (
@@ -6,13 +7,14 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/dustin/go-humanize"
 	"github.com/soulteary/otterio/pkg/auth"
 	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 	"github.com/soulteary/otterio/pkg/madmin"
-	"net/http"
-	"strings"
-	"time"
 )
 
 // The epoch is process-local: in-flight requests cannot survive a restart.

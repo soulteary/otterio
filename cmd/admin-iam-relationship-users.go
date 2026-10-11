@@ -1,4 +1,5 @@
 // Copyright 2026 soulteary. Licensed under the Apache License, Version 2.0.
+
 package cmd
 
 import (
@@ -7,14 +8,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/soulteary/otterio/cmd/logger"
-	"github.com/soulteary/otterio/pkg/auth"
-	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 	"io"
 	"net/http"
 	"net/url"
 	"sort"
 	"time"
+
+	"github.com/soulteary/otterio/cmd/logger"
+	"github.com/soulteary/otterio/pkg/auth"
+	iampolicy "github.com/soulteary/otterio/pkg/iam/policy"
 )
 
 type iamRelationshipUserRequest struct {
