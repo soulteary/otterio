@@ -275,3 +275,24 @@ func TestConsoleIAMRelationshipUserEnableDisablePermissions(t *testing.T) {
 		}
 	}
 }
+
+func TestConsoleIAMRelationshipUserCascadeDeletesServiceMappings(t *testing.T) {
+	sys, guard := userFixture(t)
+	store := &serviceDeletionStore{mapping: map[string]MappedPolicy{"managed-service": newMappedPolicy("old-policy")}}
+	sys.store = store
+	sys.iamUserPolicyMap["managed-service"] = store.mapping["managed-service"]
+	relation := userRelation(t, sys)
+	_, err := sys.mutateNativeRelationshipUser(context.Background(), iamRelationshipUserRequest{Action: "user.delete", Target: "group-parent"}, relation.Revision, relation.ExpiresAt, guard)
+	if err != nil || len(store.mapping) != 0 {
+		t.Fatalf("cascade retained persisted service mapping: %v", err)
+	}
+	if err := sys.CreateUser("managed-service", madmin.UserInfo{SecretKey: "replacement-secret", Status: madmin.AccountEnabled}); err != nil {
+		t.Fatal(err)
+	}
+	for key, policy := range store.mapping {
+		sys.iamUserPolicyMap[key] = policy
+	}
+	if _, ok := sys.iamUserPolicyMap["managed-service"]; ok {
+		t.Fatal("reused cascade key inherited stale policy")
+	}
+}

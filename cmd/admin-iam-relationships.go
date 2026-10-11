@@ -159,6 +159,8 @@ func (a adminAPIHandlers) IAMRelationships(w http.ResponseWriter, r *http.Reques
 	action := iampolicy.AdminAction(iampolicy.GetUserAdminAction)
 	if kind == "group" {
 		action = iampolicy.GetGroupAdminAction
+	} else if kind == "service-account" {
+		action = iampolicy.ListServiceAccountsAdminAction
 	}
 	// Relations expose child keys; require list authorization in addition to
 	// target detail authorization, rather than silently elevating a detail reader.

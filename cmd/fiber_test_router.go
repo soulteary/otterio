@@ -19,6 +19,7 @@ package cmd
 
 import (
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"regexp"
@@ -175,7 +176,13 @@ func fiberHTTPTestHandler(app *fiber.App) http.Handler {
 			return
 		}
 		remoteAddr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:0")
-		fctx.Init(fasthttpReq, remoteAddr, nil)
+		// Init's address-only fake connection embeds a nil net.Conn. Supply
+		// deadline-capable transport methods for configuration middleware.
+		serverConn, peerConn := net.Pipe()
+		defer serverConn.Close()
+		defer peerConn.Close()
+		fctx.Init2(&fiberTestConnection{Conn: serverConn, address: remoteAddr}, log.Default(), true)
+		fasthttpReq.CopyTo(&fctx.Request)
 
 		if r.ContentLength < 0 {
 			fctx.SetUserValue(testContentLengthKey{}, int64(-1))
@@ -266,3 +273,11 @@ func initTestWebRPCEndPoint(objLayer ObjectLayer) http.Handler {
 	}
 	return fiberHTTPTestHandler(app)
 }
+
+type fiberTestConnection struct {
+	net.Conn
+	address net.Addr
+}
+
+func (c *fiberTestConnection) LocalAddr() net.Addr  { return c.address }
+func (c *fiberTestConnection) RemoteAddr() net.Addr { return c.address }

@@ -167,8 +167,12 @@ func (sys *IAMSys) mutateNativeRelationshipUser(ctx context.Context, args iamRel
 			if sys.iamUsersMap[key].IsTemp() {
 				kind = stsUser
 			}
+			mappingKind := regularUser
+			if kind == stsUser {
+				mappingKind = stsUser
+			}
 			if _, mapped := sys.iamUserPolicyMap[key]; mapped {
-				if err := sys.store.deleteMappedPolicy(ctx, key, kind, false); err != nil && !errors.Is(err, errNoSuchPolicy) {
+				if err := sys.store.deleteMappedPolicy(ctx, key, mappingKind, false); err != nil && !errors.Is(err, errNoSuchPolicy) {
 					return result, errIAMRelationshipCommitted
 				}
 				delete(sys.iamUserPolicyMap, key)

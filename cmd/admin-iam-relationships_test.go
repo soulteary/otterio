@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -220,5 +221,56 @@ func TestConsoleIAMRelationshipsCoversEffectiveMembershipIndex(t *testing.T) {
 	relation, err := sys.nativeRelationshipsLocked("group", "index-group", time.Now())
 	if err != nil || len(relation.AffectedAccessKeys) != 1 || relation.AffectedAccessKeys[0] != "index-user" {
 		t.Fatal("effective inherited user omitted from group impact")
+	}
+}
+
+func TestConsoleIAMServiceRelationshipsRequireServicePermission(t *testing.T) {
+	skipIfWindowsAdminErasureTestBed(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	bed, err := prepareAdminErasureTestBed(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bed.TearDown()
+	globalIAMSys.InitStore(bed.objLayer)
+	for _, key := range []string{"service-reader", "service-parent"} {
+		if err := globalIAMSys.CreateUser(key, madmin.UserInfo{SecretKey: key + "-secret", Status: madmin.AccountEnabled}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, err = globalIAMSys.NewServiceAccount(ctx, "service-parent", nil, newServiceAccountOpts{accessKey: "service-child", secretKey: "service-child-secret"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader := globalIAMSys.iamUsersMap["service-reader"]
+	for _, servicePermission := range []bool{false, true} {
+		actions := `"admin:GetUser","admin:ListUsers"`
+		if servicePermission {
+			actions += `,"admin:ListServiceAccounts"`
+		}
+		policy, err := iampolicy.ParseConfig(strings.NewReader(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":[` + actions + `],"Resource":["arn:aws:s3:::*"]}]}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := globalIAMSys.SetPolicy("service-relations-read", *policy); err != nil {
+			t.Fatal(err)
+		}
+		if err := globalIAMSys.PolicyDBSet(reader.AccessKey, "service-relations-read", false); err != nil {
+			t.Fatal(err)
+		}
+		path := adminPathPrefix + adminAPIVersionPrefix + "/iam-relationships?" + url.Values{"kind": {"service-account"}, "target": {"service-child"}}.Encode()
+		r, err := newTestSignedRequestV4(http.MethodGet, path, 0, bytes.NewReader(nil), reader.AccessKey, reader.SecretKey, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		response := httptest.NewRecorder()
+		bed.router.ServeHTTP(response, r)
+		if !servicePermission && (response.Code != 403 || response.Header().Get(iamRelationshipsCapability) != "") {
+			t.Fatal("regular-user reader received service identity")
+		}
+		if servicePermission && response.Code != 200 {
+			t.Fatalf("service reader rejected: %d %s", response.Code, response.Body.String())
+		}
 	}
 }
