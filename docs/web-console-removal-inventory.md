@@ -131,6 +131,16 @@ IAM 客户端/计划复查基线为 OC `33274003775a0684a4c93c113a470ee7e384afdd
   （binding/group/service）及15秒读取上限；固定 ContentLength、完整 payload
   hash、EOF/加密 envelope 校验先于 persistence。通用 object upload 不继承小限额。
 
+## 仍须单独判断的旧 native IAM 路径
+
+本复查的原子关系协议结论仅覆盖 binding、user secret、group 修改和已有
+service-account 修改。OC 基线 allowlist 仍有 user.disable/delete，走
+`native_iam_retirement.go:retireNativeUser` 的直接目标 retirement 而非关系
+snapshot/CAS；该路径不能证明父用户的所有 service/STS 子身份会话已捕获。
+user.enable 和 service-account.create 也不是本次新增 coupled mutation。
+这些范围已报告协调 agent，删除旧 Web 前应采用已验证的保守拒绝或完成独立
+原子协议/会话影响证据，不能把新增协议测试推广成全部 IAM 关系安全保证。
+
 ## 删除变更的提交顺序与验收
 
 1. 先完成以上发布/fallback 门禁；单独评审删除范围和 CLI 兼容承诺。
