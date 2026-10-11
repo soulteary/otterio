@@ -30,6 +30,7 @@ func configurationTestReadTimeout(t *testing.T, app *fiber.App) {
 	}{
 		{adminPathPrefix + adminAPIVersionPrefix + "/self-credentials", 4096},
 		{adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-bindings", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-users", 4096},
 		{"/bucket?policy", int(maxBucketPolicySize)},
 		{"/bucket?lifecycle", int(maxBucketVersioningConfigSize)},
 		{"/bucket?versioning", int(maxBucketVersioningConfigSize)},
@@ -65,6 +66,7 @@ func TestBucketConfigTransportPreReadDeadline(t *testing.T) {
 	}{
 		{"self-small", adminPathPrefix + adminAPIVersionPrefix + "/self-credentials", "", 1024},
 		{"bindings-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-bindings", "", 1024},
+		{"users-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-users", "", 1024},
 		{"bindings-large", adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-bindings", "", 9000},
 		{"policy-large", "/bucket?policy", bucketConfigIfMatchHeader + ": " + strings.Repeat("0", 64) + "\r\n", 9000},
 		{"lifecycle-small", "/bucket?lifecycle", bucketConfigIfMatchHeader + ": " + strings.Repeat("0", 64) + "\r\n", 1024},

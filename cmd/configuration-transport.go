@@ -23,7 +23,7 @@ func configurationRequestLimit(header *fasthttp.RequestHeader) int {
 	if err != nil {
 		return 0
 	}
-	if u.Path == adminPathPrefix+adminAPIVersionPrefix+"/self-credentials" || u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-user-secret" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-user-secret" {
+	if u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-users" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-users" || u.Path == adminPathPrefix+adminAPIVersionPrefix+"/self-credentials" || u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-user-secret" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-user-secret" {
 		return 4096
 	}
 	if u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-bindings" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-bindings" || u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-groups" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-groups" || u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-service-accounts" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-service-accounts" {
