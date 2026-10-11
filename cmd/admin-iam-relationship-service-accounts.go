@@ -259,10 +259,18 @@ func (sys *IAMSys) mutateNativeRelationshipServiceAccount(ctx context.Context, a
 		credential.Status = auth.AccountOff
 	}
 	if args.Action == "service-account.delete" {
+		// Legacy PolicyDBSet persists direct service mappings in regularUser.
+		// Remove them before freeing the key for reuse by another identity.
+		if err := sys.store.deleteMappedPolicy(ctx, args.Target, regularUser, false); err != nil && !errors.Is(err, errNoSuchPolicy) {
+			return result, errIAMRelationshipCommitted
+		}
+		delete(sys.iamUserPolicyMap, args.Target)
+		sys.nativeIdentityEpoch++
 		if err := sys.store.deleteUserIdentity(ctx, args.Target, srvAccUser); err != nil && !errors.Is(err, errNoSuchUser) {
-			return result, err
+			return result, errIAMRelationshipCommitted
 		}
 		delete(sys.iamUsersMap, args.Target)
+		sys.nativeIdentityEpoch++
 		delete(sys.iamUserPolicyMap, args.Target)
 		delete(sys.iamUserGroupMemberships, args.Target)
 		info.Status = "deleted"

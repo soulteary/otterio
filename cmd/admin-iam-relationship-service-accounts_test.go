@@ -271,3 +271,96 @@ func TestConsoleIAMRelationshipServicePolicyDelegationRequiresParent(t *testing.
 		t.Fatal("disabled parent modified restriction")
 	}
 }
+
+type serviceDeletionStore struct {
+	consoleIAMBindingMemoryStore
+	mapping      map[string]MappedPolicy
+	failIdentity bool
+	failMapping  bool
+}
+
+func (s *serviceDeletionStore) deleteMappedPolicy(_ context.Context, key string, kind IAMUserType, group bool) error {
+	if kind != regularUser || group {
+		return errors.New("wrong service mapping namespace")
+	}
+	if s.failMapping {
+		return errors.New("injected mapping deletion failure")
+	}
+	delete(s.mapping, key)
+	return nil
+}
+func (s *serviceDeletionStore) deleteUserIdentity(context.Context, string, IAMUserType) error {
+	if s.failIdentity {
+		return errors.New("injected identity deletion failure")
+	}
+	return nil
+}
+
+func TestConsoleIAMRelationshipServiceDeletePersistedMapping(t *testing.T) {
+	for _, failure := range []string{"none", "mapping", "identity"} {
+		t.Run(failure, func(t *testing.T) {
+			sys, guard := relationshipServiceFixture(t)
+			store := &serviceDeletionStore{mapping: map[string]MappedPolicy{"managed-service": newMappedPolicy("old-policy")}, failMapping: failure == "mapping", failIdentity: failure == "identity"}
+			sys.store = store
+			sys.iamUserPolicyMap["managed-service"] = store.mapping["managed-service"]
+			relation := serviceRelation(t, sys)
+			_, err := sys.mutateNativeRelationshipServiceAccount(context.Background(), iamRelationshipServiceRequest{Action: "service-account.delete", Target: "managed-service"}, relation.Revision, relation.ExpiresAt, guard)
+			if failure != "none" {
+				if !errors.Is(err, errIAMRelationshipCommitted) {
+					t.Fatalf("partial deletion not reported: %v", err)
+				}
+				if _, ok := sys.iamUsersMap["managed-service"]; !ok {
+					t.Fatal("key freed before mapping and identity deletion completed")
+				}
+				return
+			}
+			if err != nil || len(store.mapping) != 0 {
+				t.Fatalf("persisted mapping retained: %v", err)
+			}
+			if err := sys.CreateUser("managed-service", madmin.UserInfo{SecretKey: "replacement-secret", Status: madmin.AccountEnabled}); err != nil {
+				t.Fatal(err)
+			}
+			// Simulate reloading the persisted mappings after access-key reuse.
+			for key, policy := range store.mapping {
+				sys.iamUserPolicyMap[key] = policy
+			}
+			if _, ok := sys.iamUserPolicyMap["managed-service"]; ok {
+				t.Fatal("recreated user inherited service account policy")
+			}
+		})
+	}
+}
+
+func TestNativeServiceCreationRejectsDeletedServiceProof(t *testing.T) {
+	for _, deletion := range []string{"legacy", "conditional"} {
+		t.Run(deletion, func(t *testing.T) {
+			sys, guard := relationshipServiceFixture(t)
+			actor := sys.iamUsersMap["group-parent"]
+			proof, err := sys.captureNativeServiceCreation(actor)
+			if err != nil {
+				t.Fatal(err)
+			}
+			proof, err = sys.captureNativeServiceParent(proof, actor.AccessKey)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if deletion == "legacy" {
+				err = sys.DeleteServiceAccount(context.Background(), "managed-service")
+			} else {
+				relation := serviceRelation(t, sys)
+				_, err = sys.mutateNativeRelationshipServiceAccount(context.Background(), iamRelationshipServiceRequest{Action: "service-account.delete", Target: "managed-service"}, relation.Revision, relation.ExpiresAt, guard)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			args := iampolicy.Args{AccountName: actor.AccessKey, Action: iampolicy.CreateServiceAccountAdminAction, DenyOnly: true}
+			_, err = sys.createNativeServiceAccount(context.Background(), proof, nil, newServiceAccountOpts{accessKey: "managed-service", secretKey: "replacement-secret"}, iamMutationGuard{credential: actor, args: args}, args)
+			if !errors.Is(err, errIAMActionNotAllowed) {
+				t.Fatalf("deleted key resurrected: %v", err)
+			}
+			if _, ok := sys.iamUsersMap["managed-service"]; ok {
+				t.Fatal("deleted service recreated")
+			}
+		})
+	}
+}
