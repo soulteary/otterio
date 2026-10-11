@@ -267,6 +267,9 @@ func registerAdminIAMRoutes(app *fiber.App, verPrefix, adminVersion string, admi
 	registerAdminRoute(app, verPrefix+"/remove-user", []routeRule{
 		adminRule(http.MethodDelete, adminAPI.RemoveUser, true, map[string]string{"accessKey": ".*"}),
 	})
+	registerAdminRoute(app, verPrefix+"/iam-relationships", []routeRule{
+		adminRule(http.MethodGet, adminAPI.IAMRelationships, true, nil),
+	})
 	registerAdminRoute(app, verPrefix+"/iam-policy-bindings", []routeRule{
 		adminRule(http.MethodGet, adminAPI.IAMPolicyBindings, true, nil),
 		adminRule(http.MethodPut, adminAPI.IAMPolicyBindings, true, nil),
