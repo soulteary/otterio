@@ -2,6 +2,9 @@
 package cmd
 
 import (
+	"bytes"
+	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -141,7 +144,27 @@ func (a adminAPIHandlers) IAMRelationshipBindings(w http.ResponseWriter, r *http
 	var body struct {
 		Policies []string `json:"policies"`
 	}
-	decoder := json.NewDecoder(io.LimitReader(r.Body, 32*1024+1))
+	sha := r.Header.Values("X-Amz-Content-Sha256")
+	if r.ContentLength <= 0 || r.ContentLength > 32*1024 || len(sha) != 1 || len(sha[0]) != 64 {
+		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrInvalidRequest), r.URL)
+		return
+	}
+	if _, err := hex.DecodeString(sha[0]); err != nil {
+		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrContentSHA256Mismatch), r.URL)
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	data, err := readConfigurationBody(ctx, r, 32*1024)
+	if err != nil {
+		writeErrorResponseJSON(ctx, w, toAPIError(ctx, err), r.URL)
+		return
+	}
+	if int64(len(data)) != r.ContentLength {
+		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrInvalidRequest), r.URL)
+		return
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if decoder.Decode(&body) != nil || decoder.Decode(new(any)) != io.EOF || body.Policies == nil {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrAdminInvalidArgument), r.URL)
@@ -171,6 +194,6 @@ func (a adminAPIHandlers) IAMRelationshipBindings(w http.ResponseWriter, r *http
 	w.Header().Set(iamRelationshipsRevision, result.Impact.Revision)
 	w.Header().Set(iamBindingCapability, "v1")
 	w.Header().Set(iamBindingRevision, result.Bindings.Revision)
-	data, _ := json.Marshal(result)
+	data, _ = json.Marshal(result)
 	writeSuccessResponseJSON(w, data)
 }

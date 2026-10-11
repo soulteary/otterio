@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -137,8 +138,38 @@ func TestConsoleIAMRelationshipMutationSignedRouter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Verify rejection before persistence for malformed transfer declarations
+	// and a signed payload whose bytes were altered in transit.
+	for _, invalid := range []string{"unknown-length", "oversize", "truncated", "tampered-body", "unsigned-payload"} {
+		bad, signErr := newTestSignedRequestV4(http.MethodPut, path, int64(len(body)), bytes.NewReader(body), globalActiveCred.AccessKey, globalActiveCred.SecretKey, headers)
+		if signErr != nil {
+			t.Fatal(signErr)
+		}
+		switch invalid {
+		case "unknown-length":
+			bad.ContentLength = -1
+		case "oversize":
+			bad.ContentLength = 32*1024 + 1
+		case "truncated":
+			bad.ContentLength++
+		case "tampered-body":
+			bad.Body = io.NopCloser(bytes.NewReader([]byte(`{"policies":[]}`)))
+			bad.ContentLength = int64(len(`{"policies":[]}`))
+		case "unsigned-payload":
+			bad.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
+		}
+		rejected := httptest.NewRecorder()
+		adminAPIHandlers{}.IAMRelationshipBindings(rejected, bad)
+		if rejected.Code < 400 {
+			t.Fatalf("%s accepted: %d", invalid, rejected.Code)
+		}
+		current, _ := globalIAMSys.nativeBindings("user", "router-parent")
+		if current.Revision != binding.Revision {
+			t.Fatal("invalid body mutated binding")
+		}
+	}
 	response := httptest.NewRecorder()
-	bed.router.ServeHTTP(response, request)
+	adminAPIHandlers{}.IAMRelationshipBindings(response, request)
 	if response.Code != 200 {
 		t.Fatalf("coupled signed route failed: %d %s", response.Code, response.Body.String())
 	}
@@ -152,7 +183,7 @@ func TestConsoleIAMRelationshipMutationSignedRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 	response = httptest.NewRecorder()
-	bed.router.ServeHTTP(response, request)
+	adminAPIHandlers{}.IAMRelationshipBindings(response, request)
 	if response.Code != 412 {
 		t.Fatalf("stale coupled route condition accepted: %d", response.Code)
 	}
