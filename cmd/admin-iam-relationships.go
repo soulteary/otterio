@@ -25,16 +25,17 @@ const iamRelationshipsRevision = "X-Otterio-IAM-Impact-Revision"
 var iamRelationshipSlots = make(chan struct{}, 4)
 
 type iamRelationshipsSnapshot struct {
-	CoupledGroups      bool      `json:"coupledGroups"`
-	CoupledUserSecret  bool      `json:"coupledUserSecret"`
-	Kind               string    `json:"kind"`
-	Target             string    `json:"target"`
-	State              string    `json:"state"`
-	CoupledBindings    bool      `json:"coupledBindings"`
-	Revision           string    `json:"revision"`
-	ExpiresAt          time.Time `json:"expiresAt"`
-	NativeParent       string    `json:"nativeParent,omitempty"`
-	AffectedAccessKeys []string  `json:"affectedAccessKeys"`
+	CoupledServiceAccounts bool      `json:"coupledServiceAccounts"`
+	CoupledGroups          bool      `json:"coupledGroups"`
+	CoupledUserSecret      bool      `json:"coupledUserSecret"`
+	Kind                   string    `json:"kind"`
+	Target                 string    `json:"target"`
+	State                  string    `json:"state"`
+	CoupledBindings        bool      `json:"coupledBindings"`
+	Revision               string    `json:"revision"`
+	ExpiresAt              time.Time `json:"expiresAt"`
+	NativeParent           string    `json:"nativeParent,omitempty"`
+	AffectedAccessKeys     []string  `json:"affectedAccessKeys"`
 }
 
 // A process-keyed fingerprint binds the entire native IAM graph, including
@@ -69,7 +70,7 @@ func (sys *IAMSys) nativeRelationshipsRevisionLocked() (string, error) {
 // Caller holds store lock. Returned arrays are copied; no credential material
 // leaves this function. Empty group impact is authoritative, absent is an error.
 func (sys *IAMSys) nativeRelationshipsLocked(kind, target string, now time.Time) (iamRelationshipsSnapshot, error) {
-	result := iamRelationshipsSnapshot{Kind: kind, Target: target, State: "known", CoupledBindings: true, CoupledGroups: true, CoupledUserSecret: true, ExpiresAt: now.Add(30 * time.Second), AffectedAccessKeys: []string{}}
+	result := iamRelationshipsSnapshot{Kind: kind, Target: target, State: "known", CoupledBindings: true, CoupledGroups: true, CoupledServiceAccounts: true, CoupledUserSecret: true, ExpiresAt: now.Add(30 * time.Second), AffectedAccessKeys: []string{}}
 	if sys.usersSysType != OtterIOUsersSysType || !validIAMBindingName(target) {
 		return result, errIAMActionNotAllowed
 	}
