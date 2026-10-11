@@ -212,9 +212,12 @@ func TestConsoleIAMRelationshipUserRejectsUnknownCascadeAndNonNative(t *testing.
 	child.SessionToken = ""
 	sys.iamUsersMap[child.AccessKey] = child
 	r := userRelation(t, sys)
-	if _, err := sys.mutateNativeRelationshipUser(context.Background(), iamRelationshipUserRequest{Action: "user.delete", Target: "group-parent"}, r.Revision, r.ExpiresAt, guard); !errors.Is(err, errIAMActionNotAllowed) {
-		t.Fatal("unknown linked credential cascaded")
+	for _, action := range []string{"user.enable", "user.disable", "user.delete"} {
+		if _, err := sys.mutateNativeRelationshipUser(context.Background(), iamRelationshipUserRequest{Action: action, Target: "group-parent"}, r.Revision, r.ExpiresAt, guard); !errors.Is(err, errIAMActionNotAllowed) {
+			t.Fatalf("unknown linked credential changed by %s", action)
+		}
 	}
+
 	if len(sys.iamGroupsMap["mutable-group"].Members) != 1 {
 		t.Fatal("preflight rejection changed group")
 	}

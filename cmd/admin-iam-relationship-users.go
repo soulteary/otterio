@@ -113,6 +113,21 @@ func (sys *IAMSys) mutateNativeRelationshipUser(ctx context.Context, args iamRel
 		return result, err
 	}
 	credential := sys.iamUsersMap[args.Target]
+	if credential.ParentUser != "" {
+		return result, errIAMActionNotAllowed
+	}
+	// Every action needs an authoritative child set, including status changes:
+	// malformed linked regular credentials do not obey service/STS parent rules.
+	children := []string{}
+	for key, child := range sys.iamUsersMap {
+		if child.ParentUser == args.Target {
+			if !child.IsTemp() && !child.IsServiceAccount() {
+				return result, errIAMActionNotAllowed
+			}
+			children = append(children, key)
+		}
+	}
+	sort.Strings(children)
 	if args.Action == "user.delete" {
 		// Preflight the full cascade before the first persistence call. Group detail
 		// and effective membership index may diverge; remove both representations.
@@ -127,16 +142,6 @@ func (sys *IAMSys) mutateNativeRelationshipUser(ctx context.Context, args iamRel
 			}
 		}
 		sort.Strings(groups)
-		children := []string{}
-		for key, child := range sys.iamUsersMap {
-			if child.ParentUser == args.Target {
-				if !child.IsTemp() && !child.IsServiceAccount() {
-					return result, errIAMActionNotAllowed
-				}
-				children = append(children, key)
-			}
-		}
-		sort.Strings(children)
 		for _, name := range groups {
 			group := sys.iamGroupsMap[name]
 			members := []string{}
