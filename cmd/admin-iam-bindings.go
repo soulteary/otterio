@@ -290,6 +290,7 @@ func (sys *IAMSys) createNativeIAM(kind, target string, args iamCreateRequest, g
 			return err
 		}
 		sys.iamUsersMap[target] = identity.Credentials
+		sys.nativeIdentityEpoch++
 		return nil
 	}
 	if kind != "group" || args.SecretKey != "" || len(args.Members) > 100 {
@@ -422,6 +423,7 @@ func (sys *IAMSys) rotateNativeIAMSecret(target, secret string, guards ...iamMut
 		return err
 	}
 	sys.iamUsersMap[target] = credential
+	sys.nativeIdentityEpoch++
 	return nil
 }
 

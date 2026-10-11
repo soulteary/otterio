@@ -485,8 +485,37 @@ func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	password := cred.SecretKey
-	reqBytes, err := madmin.DecryptData(password, io.LimitReader(r.Body, r.ContentLength))
+	lockedNative := globalIAMSys.usersSysType == OtterIOUsersSysType && !globalLDAPConfig.Enabled && globalPolicyOPA == nil && !cred.IsTemp() && !cred.IsServiceAccount()
+	protectedCreation := len(r.Header.Values(iamServiceCreationCapability)) != 0
+	if protectedCreation {
+		if err := signedNativeServiceCreation(r); err != nil {
+			writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
+			return
+		}
+		if !lockedNative || !iamBindingSupported() {
+			writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL)
+			return
+		}
+	}
+	var proof nativeServiceCreationProof
+	if lockedNative {
+		var captureErr error
+		proof, captureErr = globalIAMSys.captureNativeServiceCreation(cred)
+		if captureErr != nil {
+			writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, captureErr), r.URL)
+			return
+		}
+	}
+	var reqBytes []byte
+	var err error
+	if protectedCreation {
+		proof.revision, proof.expires, err = signedGroupRelationshipCondition(r)
+		if err == nil {
+			reqBytes, err = readProtectedServiceCreation(ctx, r, cred.SecretKey)
+		}
+	} else {
+		reqBytes, err = madmin.DecryptData(cred.SecretKey, io.LimitReader(r.Body, r.ContentLength))
+	}
 	if err != nil {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErrWithErr(ErrAdminConfigBadJSON, err), r.URL)
 		return
@@ -496,6 +525,20 @@ func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Reque
 	if err = json.Unmarshal(reqBytes, &createReq); err != nil {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErrWithErr(ErrAdminConfigBadJSON, err), r.URL)
 		return
+	}
+
+	if protectedCreation {
+		if !validIAMBindingName(createReq.TargetUser) {
+			writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrAdminInvalidArgument), r.URL)
+			return
+		}
+		select {
+		case iamRelationshipSlots <- struct{}{}:
+			defer func() { <-iamRelationshipSlots }()
+		default:
+			writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrSlowDown), r.URL)
+			return
+		}
 	}
 
 	// Disallow creating service accounts by root user.
@@ -578,11 +621,28 @@ func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Reque
 		targetGroups = cred.Groups
 	}
 
-	opts := newServiceAccountOpts{sessionPolicy: createReq.Policy, accessKey: createReq.AccessKey, secretKey: createReq.SecretKey}
-	newCred, err := globalIAMSys.NewServiceAccount(ctx, targetUser, targetGroups, opts)
+	opts := newServiceAccountOpts{sessionPolicy: createReq.Policy, accessKey: createReq.AccessKey, secretKey: createReq.SecretKey, allowExternalParent: cred.IsTemp() && cred.ParentUser == "" && targetUser == cred.AccessKey}
+	var newCred auth.Credentials
+	if lockedNative {
+		proof, err = globalIAMSys.captureNativeServiceParent(proof, targetUser)
+		if err == nil {
+			args := iampolicy.Args{AccountName: cred.AccessKey, Action: iampolicy.CreateServiceAccountAdminAction, ConditionValues: getConditionValues(r, "", cred.AccessKey, claims), IsOwner: owner, Claims: claims, DenyOnly: ownAccountOp}
+			newCred, err = globalIAMSys.createNativeServiceAccount(ctx, proof, targetGroups, opts, iamMutationGuard{credential: cred, args: args}, args)
+		}
+	} else {
+		newCred, err = globalIAMSys.NewServiceAccount(ctx, targetUser, targetGroups, opts)
+	}
+	if errors.Is(err, errIAMBindingConflict) {
+		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
+		return
+	}
 	if err != nil {
 		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
 		return
+	}
+
+	if protectedCreation {
+		w.Header().Set(iamServiceCreationCapability, "v1")
 	}
 
 	// Notify all other Otterio peers to reload user the service account
@@ -600,13 +660,17 @@ func (a adminAPIHandlers) AddServiceAccount(w http.ResponseWriter, r *http.Reque
 		},
 	}
 
+	if protectedCreation {
+		createResp.Credentials.ParentUser = newCred.ParentUser
+	}
+
 	data, err := json.Marshal(createResp)
 	if err != nil {
 		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
 		return
 	}
 
-	encryptedData, err := madmin.EncryptData(password, data)
+	encryptedData, err := madmin.EncryptData(cred.SecretKey, data)
 	if err != nil {
 		writeErrorResponseJSON(ctx, w, toAdminAPIErr(ctx, err), r.URL)
 		return

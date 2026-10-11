@@ -23,6 +23,9 @@ func configurationRequestLimit(header *fasthttp.RequestHeader) int {
 	if err != nil {
 		return 0
 	}
+	if (u.Path == adminPathPrefix+adminAPIVersionPrefix+"/add-service-account" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/add-service-account") && len(header.PeekAll(iamServiceCreationCapability)) != 0 {
+		return 32 * 1024
+	}
 	if u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-users" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-users" || u.Path == adminPathPrefix+adminAPIVersionPrefix+"/self-credentials" || u.Path == adminPathPrefix+adminAPIVersionPrefix+"/iam-relationship-user-secret" || u.Path == adminPathPrefix+adminAPIVersionV2Prefix+"/iam-relationship-user-secret" {
 		return 4096
 	}

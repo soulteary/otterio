@@ -155,3 +155,25 @@ user.enable 和 service-account.create 也不是本次新增 coupled mutation。
    记录 exact source/tree/dirty、binary hash、镜像 digest 和可重放验收报告。
 
 本次只提交依赖清单。没有关闭/删除旧 Web、改运行默认、裁剪认证或承诺删除版本。
+
+## 原生服务账号创建的并发边界
+
+原生普通用户/root 的旧 AddServiceAccount 请求，在认证后捕获进程内身份版本，
+持久化写锁内重新确认操作者凭据、当前 CreateServiceAccount 权限（自身操作仍
+使用 DenyOnly）、父用户存活/启用及身份指纹。身份创建/删除/状态/密钥的成功
+持久化步骤递增版本；相同用户名和密钥重建也使旧请求和旧关系 revision 失效。
+版本仅参与内部不透明 graph 指纹，不响应、不持久化、不改变 30 秒有效期。
+
+LDAP/OPA、临时或服务凭据调用保留原有授权和 session policy 限制；不能将它们
+描述为完成了原生操作者的同锁重新授权。共同创建写锁仍拒绝失效/停用/不存在的
+原生父身份。旧 OpenID 临时身份以自身 access key 为父的模式，只由服务端已验证
+的 temporary、自身 target、空 ParentUser 条件开启，不能通过请求选择任意临时父。
+该兼容分支不构成新 coupled 协议的 native parent 映射。
+
+OC 新创建能力要求关系查询声明 `coupledServiceCreation`，并发送 SigV4 覆盖的
+`X-Otterio-IAM-Service-Creation: v1` 与 graph If-Match/Expires；同一写锁校验
+用户关系 review revision（目标为加密 body 的 TargetUser），缺少或过期 proof
+不得写入。同名父身份在 preflight 后重建也返回条件失败。protected encrypted
+响应只增加权威 ParentUser，不包含 JWT。能力声明路径仅在本地原生 supported
+环境生效；声明后不支持的 external/OPA/etcd 模式拒绝，不能回落旧创建。
+marker 路径在 header 接收阶段限定 32 KiB/15 秒，旧无 marker 传输行为保留。

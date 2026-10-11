@@ -25,6 +25,7 @@ const iamRelationshipsRevision = "X-Otterio-IAM-Impact-Revision"
 var iamRelationshipSlots = make(chan struct{}, 4)
 
 type iamRelationshipsSnapshot struct {
+	CoupledServiceCreation bool      `json:"coupledServiceCreation"`
 	CoupledUsers           bool      `json:"coupledUsers"`
 	CoupledServiceAccounts bool      `json:"coupledServiceAccounts"`
 	CoupledGroups          bool      `json:"coupledGroups"`
@@ -48,13 +49,14 @@ func (sys *IAMSys) nativeRelationshipsRevisionLocked() (string, error) {
 		return "", errIAMActionNotAllowed
 	}
 	data, err := json.Marshal(struct {
-		Users         map[string]auth.Credentials
-		Groups        map[string]GroupInfo
-		UserPolicies  map[string]MappedPolicy
-		GroupPolicies map[string]MappedPolicy
-		Policies      map[string]iampolicy.Policy
-		Memberships   map[string]set.StringSet
-	}{sys.iamUsersMap, sys.iamGroupsMap, sys.iamUserPolicyMap, sys.iamGroupPolicyMap, sys.iamPolicyDocsMap, sys.iamUserGroupMemberships})
+		NativeIdentityEpoch uint64
+		Users               map[string]auth.Credentials
+		Groups              map[string]GroupInfo
+		UserPolicies        map[string]MappedPolicy
+		GroupPolicies       map[string]MappedPolicy
+		Policies            map[string]iampolicy.Policy
+		Memberships         map[string]set.StringSet
+	}{sys.nativeIdentityEpoch, sys.iamUsersMap, sys.iamGroupsMap, sys.iamUserPolicyMap, sys.iamGroupPolicyMap, sys.iamPolicyDocsMap, sys.iamUserGroupMemberships})
 	if err != nil || len(data) > 4<<20 {
 		return "", errIAMActionNotAllowed
 	}
@@ -71,7 +73,7 @@ func (sys *IAMSys) nativeRelationshipsRevisionLocked() (string, error) {
 // Caller holds store lock. Returned arrays are copied; no credential material
 // leaves this function. Empty group impact is authoritative, absent is an error.
 func (sys *IAMSys) nativeRelationshipsLocked(kind, target string, now time.Time) (iamRelationshipsSnapshot, error) {
-	result := iamRelationshipsSnapshot{Kind: kind, Target: target, State: "known", CoupledUsers: true, CoupledBindings: true, CoupledGroups: true, CoupledServiceAccounts: true, CoupledUserSecret: true, ExpiresAt: now.Add(30 * time.Second), AffectedAccessKeys: []string{}}
+	result := iamRelationshipsSnapshot{Kind: kind, Target: target, State: "known", CoupledServiceCreation: true, CoupledUsers: true, CoupledBindings: true, CoupledGroups: true, CoupledServiceAccounts: true, CoupledUserSecret: true, ExpiresAt: now.Add(30 * time.Second), AffectedAccessKeys: []string{}}
 	if sys.usersSysType != OtterIOUsersSysType || !validIAMBindingName(target) {
 		return result, errIAMActionNotAllowed
 	}

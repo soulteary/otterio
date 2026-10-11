@@ -155,6 +155,7 @@ func (sys *IAMSys) mutateNativeRelationshipUser(ctx context.Context, args iamRel
 				return result, errIAMRelationshipCommitted
 			}
 			sys.iamGroupsMap[name] = group
+			sys.nativeIdentityEpoch++
 			sys.iamUserGroupMemberships[args.Target].Remove(name)
 		}
 		for _, key := range children {
@@ -167,11 +168,13 @@ func (sys *IAMSys) mutateNativeRelationshipUser(ctx context.Context, args iamRel
 					return result, errIAMRelationshipCommitted
 				}
 				delete(sys.iamUserPolicyMap, key)
+				sys.nativeIdentityEpoch++
 			}
 			if err := sys.store.deleteUserIdentity(ctx, key, kind); err != nil && !errors.Is(err, errNoSuchUser) {
 				return result, errIAMRelationshipCommitted
 			}
 			delete(sys.iamUsersMap, key)
+			sys.nativeIdentityEpoch++
 			delete(sys.iamUserPolicyMap, key)
 			delete(sys.iamUserGroupMemberships, key)
 		}
@@ -179,10 +182,12 @@ func (sys *IAMSys) mutateNativeRelationshipUser(ctx context.Context, args iamRel
 			return result, errIAMRelationshipCommitted
 		}
 		delete(sys.iamUserPolicyMap, args.Target)
+		sys.nativeIdentityEpoch++
 		if err := sys.store.deleteUserIdentity(ctx, args.Target, regularUser); err != nil && !errors.Is(err, errNoSuchUser) {
 			return result, errIAMRelationshipCommitted
 		}
 		delete(sys.iamUsersMap, args.Target)
+		sys.nativeIdentityEpoch++
 		delete(sys.iamUserGroupMemberships, args.Target)
 		result.User = iamRelationshipUserInfo{AccessKey: args.Target, Status: "deleted"}
 	} else {
@@ -197,6 +202,7 @@ func (sys *IAMSys) mutateNativeRelationshipUser(ctx context.Context, args iamRel
 			return result, errIAMRelationshipCommitted
 		}
 		sys.iamUsersMap[args.Target] = credential
+		sys.nativeIdentityEpoch++
 		result.User = iamRelationshipUserInfo{AccessKey: args.Target, Status: status}
 		after, err := sys.nativeRelationshipsLocked("user", args.Target, now)
 		if err != nil {

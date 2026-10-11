@@ -69,6 +69,7 @@ func (sys *IAMSys) rotateNativeRelationshipUserSecret(ctx context.Context, targe
 		return result, err
 	}
 	sys.iamUsersMap[target] = credential
+	sys.nativeIdentityEpoch++
 	result.Bindings, err = sys.nativeBindingsLocked("user", target)
 	if err != nil {
 		return result, errIAMRelationshipCommitted
