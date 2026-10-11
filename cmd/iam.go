@@ -1633,6 +1633,9 @@ func (sys *IAMSys) AddUsersToGroup(group string, members []string) error {
 	}
 
 	sys.iamGroupsMap[group] = gi
+	if !ok {
+		sys.nativeIdentityEpoch++
+	}
 
 	// update user-group membership map
 	for _, member := range members {
@@ -1701,6 +1704,7 @@ func (sys *IAMSys) RemoveUsersFromGroup(group string, members []string) error {
 
 		// Delete from server memory
 		delete(sys.iamGroupsMap, group)
+		sys.nativeIdentityEpoch++
 		delete(sys.iamGroupPolicyMap, group)
 		return nil
 	}

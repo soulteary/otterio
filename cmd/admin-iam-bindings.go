@@ -317,6 +317,7 @@ func (sys *IAMSys) createNativeIAM(kind, target string, args iamCreateRequest, g
 		return err
 	}
 	sys.iamGroupsMap[target] = group
+	sys.nativeIdentityEpoch++
 	for _, member := range members {
 		membership := sys.iamUserGroupMemberships[member]
 		if membership == nil {

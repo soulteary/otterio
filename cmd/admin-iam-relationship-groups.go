@@ -174,6 +174,7 @@ func (sys *IAMSys) mutateNativeRelationshipGroup(ctx context.Context, args iamRe
 			return result, errIAMRelationshipCommitted
 		}
 		delete(sys.iamGroupsMap, args.Target)
+		sys.nativeIdentityEpoch++
 		for user, membership := range sys.iamUserGroupMemberships {
 			if membership.Contains(args.Target) {
 				membership.Remove(args.Target)

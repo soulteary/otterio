@@ -206,3 +206,41 @@ func TestConsoleIAMRelationshipGroupsSignedHandlerAndBodyValidation(t *testing.T
 		}
 	}
 }
+
+func TestConsoleIAMGroupReplacementInvalidatesRelationship(t *testing.T) {
+	for _, deletion := range []string{"legacy", "conditional"} {
+		for _, creation := range []string{"legacy", "conditional"} {
+			t.Run(deletion+"/"+creation, func(t *testing.T) {
+				sys, guard := relationshipGroupFixture(t)
+				if err := sys.AddUsersToGroup("replace-empty", nil); err != nil {
+					t.Fatal(err)
+				}
+				relation := groupRelation(t, sys, "replace-empty")
+				var err error
+				if deletion == "legacy" {
+					err = sys.RemoveUsersFromGroup("replace-empty", nil)
+				} else {
+					_, err = sys.mutateNativeRelationshipGroup(context.Background(), iamRelationshipGroupRequest{Action: "group.delete", Target: "replace-empty"}, relation.Revision, relation.ExpiresAt, guard)
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				if creation == "legacy" {
+					err = sys.AddUsersToGroup("replace-empty", nil)
+				} else {
+					err = sys.createNativeIAM("group", "replace-empty", iamCreateRequest{})
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, err = sys.mutateNativeRelationshipGroup(context.Background(), iamRelationshipGroupRequest{Action: "group.delete", Target: "replace-empty"}, relation.Revision, relation.ExpiresAt, guard)
+				if !errors.Is(err, errIAMBindingConflict) {
+					t.Fatalf("old proof accepted replacement group: %v", err)
+				}
+				if _, ok := sys.iamGroupsMap["replace-empty"]; !ok {
+					t.Fatal("replacement group deleted")
+				}
+			})
+		}
+	}
+}
