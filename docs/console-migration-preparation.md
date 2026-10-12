@@ -51,8 +51,10 @@ and the [production router](../cmd/fiber_router.go).
 
 ## Select the identity and acceptance scope
 
-Use [OC's Console guide](https://github.com/soulteary/oc/blob/main/docs/console.md)
-for the exact selected program. Local mode shares one configured alias identity;
+Use [OC's Console guide](https://github.com/soulteary/oc/blob/dc8ddfbbabe09b5acc1d90a4b5bdc82175f4c14d/docs/console.md)
+for the selected program. This documentation commit's production Go sources,
+`go.mod` and `go.sum` are unchanged from the tested OC `26a0fa6` candidate.
+Local mode shares one configured alias identity;
 native IAM and OIDC provide independent sessions with the user's own backend
 permissions. Native/OIDC mode requires browser HTTPS and fixed HTTPS S3/Admin
 endpoints. Keep a fixed OIDC issuer and its CA/client configuration; its callback
