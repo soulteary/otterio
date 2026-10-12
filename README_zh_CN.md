@@ -16,7 +16,7 @@
 
 OtterIO 是一个高性能、S3 兼容的对象存储服务，适合用于机器学习、数据分析、备份归档及通用应用数据等场景。
 
-本文档涵盖裸金属、Docker 与源码运行方式。[文档索引](./docs/zh_CN/README.md)按部署、管理、安全与开发整理了阅读入口；[OC](https://github.com/soulteary/oc) 是配套命令行客户端，[OtterIO SDK](https://github.com/soulteary/otterio-sdk) 是 Go 客户端。
+本文档涵盖裸金属、Docker 与源码运行方式。[文档索引](./docs/zh_CN/README.md)按部署、管理、安全与开发整理了阅读入口；[OC](https://github.com/soulteary/oc) 提供配套命令行客户端和独立 Web Console，[OtterIO SDK](https://github.com/soulteary/otterio-sdk) 是 Go 客户端。
 
 > [!IMPORTANT]
 > OtterIO 是一个独立的、由社区维护的 MinIO 分支。本项目**未**获得 MinIO, Inc. 的关联、认可或赞助。部署前请阅读[商标与上游声明](#商标与上游声明)与[安全公告](#安全公告)。
@@ -52,7 +52,7 @@ docker run -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
   soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-控制台地址为 <http://127.0.0.1:9001>，请使用刚才配置的用户名和密码登录。OC 连接及上传、下载检查见[验证部署](#验证部署)。
+`9000` 是 S3 端口，`9001` 是 Admin API 端口。网页由独立的 `oc-console` 提供，OC 接入和上传、下载检查见[验证部署](#验证部署)。本源码分支移除内置 Web；已发布镜像仍保持其对应版本的行为。选择替代版本前请阅读[删除候选与迁移状态](docs/web-console-removal.md)。
 
 > [!IMPORTANT]
 > 容器启动现在会拒绝缺失凭据或默认密码。升级前请修正旧的不带凭据的 Docker 启动命令。`_FILE` Secret、非 root Compose 配置和迁移步骤见 [Docker 安全指南](./README_DOCKER_SECURITY.md)。仅本地开发演示可显式设置 `OTTERIO_ALLOW_DEFAULT_CREDENTIALS=1` 允许默认凭据，并应将端口绑定到回环地址。生产部署请固定经过验证的版本标签或镜像 digest，而不是使用 `latest`。
@@ -177,16 +177,19 @@ mkdir -p "$HOME/otterio-data"
 
 ## 部署配置
 
-### 内置 Web 弃用公告
+### 独立 Web Console
 
-本机单一身份操作逐步迁移到 OC Console；`OTTERIO_BROWSER` 默认仍为 `on`，
-独立用户登录／OIDC 部署继续保留旧 Web。见[弃用公告、迁移回退与验收门槛](docs/web-console-deprecation.md)。
+浏览器操作使用 [OC Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)。本分支移除 OtterIO 的内置页面、Web RPC 和 Web 专用上传、下载、ZIP 路由。OC 当前源码已实现独立 native IAM 与 OIDC 会话；部署时选择包含所需模式的版本和兼容服务端，保留每个用户自身的后端权限。共享启动 alias 会共享一个身份，不能代替独立用户登录。
 
-### 拆分 S3 与 Web 控制台端口
+本分支是删除候选，尚未完成正式发行迁移认证。可安装替代组合、平台与升级验收，以及历史通知／回退窗口仍有未完成项。见[删除分析](docs/web-console-removal.md)和[弃用历史](docs/web-console-deprecation.md)。
 
-默认情况下，Web 控制台与 S3 API 监听同一个端口（由 `--address` 指定）。OtterIO 支持把 Web UI 与 Admin API 拆分到独立的端口，方便在反向代理、防火墙或网络策略层面分别管控 S3 流量与控制台流量。
+省略 `OTTERIO_BROWSER` 或设置为 `off` 可启动；显式 `on` 报错并引导迁移，不能恢复已删除的网页。
 
-通过 `--console-address` 命令行参数或 `OTTERIO_BROWSER_ADDRESS` 环境变量启用：
+### 拆分 S3 与 Admin 端口
+
+默认情况下，S3 与 Admin API 共用 `--address` 指定的监听器。可以将 Admin 拆分到独立端口，在反向代理、防火墙或网络策略层面分别管控存储与管理流量。
+
+沿用兼容配置名 `--console-address` 或 `OTTERIO_BROWSER_ADDRESS` 启用 Admin 监听器：
 
 ```sh
 otterio server --address ":9000" --console-address ":9001" /data
@@ -201,19 +204,19 @@ otterio server --address ":9000" /data
 
 启用拆分模式后：
 
-- `:9000` 仅承载 S3 API、STS、HealthCheck、Metrics；浏览器请求不会再被重定向到 Web UI。
-- `:9001` 承载 Web 控制台（`/otterio/`）以及 Admin API（`/otterio/admin/v3/*`）。
+- `:9000` 承载 S3 API、STS、HealthCheck、Metrics。
+- `:9001` 承载 Admin API（`/otterio/admin/v3/*`），不再提供内置网页。
 - 两个端口不能相同，否则启动会直接失败。
 - `Ctrl+C` / `SIGTERM` 会同时优雅关停两个监听器。
 
 > [!NOTE]
-> 开启拆分模式后，Admin API（即 `oc admin ...` 使用的接口）位于控制台端口。OC 可在同一别名中保存 S3 URL 与独立的 `--admin-url`，见[验证部署](#验证部署)。普通 S3 操作（`oc cp`、`oc ls` 等）仍然走 S3 端口。两个端点的私有 CA 也可分别配置，见 [OC 配置指南](https://github.com/soulteary/oc/blob/main/docs/zh_CN/configuration.md)。
+> 开启拆分模式后，`oc admin ...` 和 OC Console 中获授权的管理操作使用独立 Admin 端口。OC 可在同一别名中保存 S3 URL 与独立的 `--admin-url`，见[验证部署](#验证部署)。普通 S3 操作（`oc cp`、`oc ls` 等）仍然走 S3 端口。两个端点的私有 CA 也可分别配置，见 [OC 配置指南](https://github.com/soulteary/oc/blob/main/docs/zh_CN/configuration.md)。
 
 如未指定 `--console-address`，则保持原行为，二者共用同一个端口。
 
-### 控制台监听器使用独立 TLS 证书
+### Admin 监听器使用独立 TLS 证书
 
-在拆分监听器的基础上，还可以通过 `--console-certs-dir`（或环境变量 `OTTERIO_BROWSER_CERTS_DIR`）让控制台使用独立的 TLS 证书，这样 S3 API 与 Web 控制台可以分别使用不同的证书（例如 `:9000` 用内部 CA 签发的证书，`:9001` 用公网证书）：
+拆分监听器后，S3 与 Admin 可以使用独立证书和 CA 信任。沿用兼容配置名 `--console-certs-dir` 或 `OTTERIO_BROWSER_CERTS_DIR`；它们配置 OtterIO 的 Admin TLS，不配置 OC Console 的浏览器 TLS：
 
 ```sh
 otterio server \
@@ -227,13 +230,13 @@ otterio server \
 `--console-certs-dir` 指向的目录必须包含 `public.crt` 与 `private.key`，目录结构与 `--certs-dir` 相同。注意：
 
 - `--console-certs-dir` 必须在已设置 `--console-address` 的情况下使用，否则启动会直接失败。
-- 未指定 `--console-certs-dir` 时，控制台监听器复用 `--certs-dir` 加载的证书（与旧行为一致）。
-- S3 监听器始终使用 `--certs-dir`，只有控制台监听器会读取 `--console-certs-dir`。
+- 未指定 `--console-certs-dir` 时，Admin 监听器复用 `--certs-dir` 加载的证书。
+- S3 监听器始终使用 `--certs-dir`，只有 Admin 监听器会读取 `--console-certs-dir`。
 - 两套证书都由同一个证书管理器监视并热加载。
 
 ### 防火墙
 
-OtterIO 默认监听端口 `9000`（拆分控制台后还会监听 `9001`）。某些系统会默认阻止这些端口，需要手动放行。
+OtterIO 默认监听 S3 端口 `9000`；拆分后还会监听配置的 Admin 端口，示例为 `9001`。Admin 应限制在管理网络或本机 OC 进程可达的范围；浏览器入口属于 OC Console。某些系统会默认阻止这些端口，需要手动放行。
 
 <details>
 <summary><strong>ufw</strong>（Debian / Ubuntu）</summary>
@@ -284,11 +287,11 @@ service iptables restart
 
 请使用启动时配置的凭据。上面的 Docker 示例传入 `OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD`，不使用默认密码。在新终端执行下面的客户端命令前，请恢复同一组已保存的值。裸金属二进制不受容器入口脚本检查约束，但部署前也应通过这两个环境变量设置非默认凭据。
 
-### Web 控制台
+### OC Web Console
 
-快速开始示例已拆分监听器，请访问 <http://127.0.0.1:9001>；单端口部署则访问 <http://127.0.0.1:9000>。使用自己配置的 root 用户名和密码登录，即可创建桶、上传对象、浏览内容。
+按 [OC Console 指南](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)安装兼容的 `oc-console`，配置实际 S3 与 Admin 地址，再访问 OC 输出的浏览器地址。OtterIO 的 `9000`／`9001` 不提供 Web Console。独立用户选择 native IAM 或 OIDC 模式，保留每个用户自身的后端权限，不共享管理员 alias。
 
-独立的可选 OC 控制台协议及最新证据见[分层控制台验收](docs/console-server-acceptance.md)和[最新报告入口](docs/console-server-acceptance-results.json)。
+[删除分析](docs/web-console-removal.md)区分源码验收与正式替代版本的可用性。可选服务端协议另有[分层验收](docs/console-server-acceptance.md)和[报告入口](docs/console-server-acceptance-results.json)。
 
 ### OC 客户端
 

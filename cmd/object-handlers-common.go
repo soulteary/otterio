@@ -83,7 +83,7 @@ func checkCopyObjectPreconditions(ctx context.Context, w http.ResponseWriter, r 
 			if !ifModifiedSince(objInfo.ModTime, givenTime) {
 				// If the object is not modified since the specified time.
 				writeHeaders()
-				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL, guessIsBrowserReq(r))
+				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
 				return true
 			}
 		}
@@ -97,7 +97,7 @@ func checkCopyObjectPreconditions(ctx context.Context, w http.ResponseWriter, r 
 			if ifModifiedSince(objInfo.ModTime, givenTime) {
 				// If the object is modified since the specified time.
 				writeHeaders()
-				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL, guessIsBrowserReq(r))
+				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
 				return true
 			}
 		}
@@ -110,7 +110,7 @@ func checkCopyObjectPreconditions(ctx context.Context, w http.ResponseWriter, r 
 		if !isETagEqual(objInfo.ETag, ifMatchETagHeader) {
 			// If the object ETag does not match with the specified ETag.
 			writeHeaders()
-			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
 			return true
 		}
 	}
@@ -122,7 +122,7 @@ func checkCopyObjectPreconditions(ctx context.Context, w http.ResponseWriter, r 
 		if isETagEqual(objInfo.ETag, ifNoneMatchETagHeader) {
 			// If the object ETag matches with the specified ETag.
 			writeHeaders()
-			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
 			return true
 		}
 	}
@@ -165,7 +165,7 @@ func checkPreconditions(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	// Check if the part number is correct.
 	if opts.PartNumber > 1 && opts.PartNumber > len(objInfo.Parts) {
 		// According to S3 we don't need to set any object information here.
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrInvalidPartNumber), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrInvalidPartNumber), r.URL)
 		return true
 	}
 
@@ -191,7 +191,7 @@ func checkPreconditions(ctx context.Context, w http.ResponseWriter, r *http.Requ
 			if ifModifiedSince(objInfo.ModTime, givenTime) {
 				// If the object is modified since the specified time.
 				writeHeaders()
-				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL, guessIsBrowserReq(r))
+				writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
 				return true
 			}
 		}
@@ -204,7 +204,7 @@ func checkPreconditions(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		if !isETagEqual(objInfo.ETag, ifMatchETagHeader) {
 			// If the object ETag does not match with the specified ETag.
 			writeHeaders()
-			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrPreconditionFailed), r.URL)
 			return true
 		}
 	}

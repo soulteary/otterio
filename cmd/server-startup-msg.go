@@ -73,7 +73,7 @@ func printStartupMessage(apiEndpoints []string, err error) {
 		printStorageInfo(mustGetStorageInfo(objAPI))
 	}
 
-	// Prints credential, region and browser access.
+	// Prints credential, region and API access.
 	printServerCommonMsg(strippedAPIEndpoints)
 
 	// Prints `mc` cli configuration message chooses
@@ -128,7 +128,7 @@ func stripStandardPorts(apiEndpoints []string) (newAPIEndpoints []string) {
 	return newAPIEndpoints
 }
 
-// Prints common server startup message. Prints credential, region and browser access.
+// Prints common server startup message. Prints credential, region and API access.
 func printServerCommonMsg(apiEndpoints []string) {
 	// Get saved credentials.
 	cred := globalActiveCred
@@ -149,17 +149,8 @@ func printServerCommonMsg(apiEndpoints []string) {
 	}
 	printEventNotifiers()
 
-	if globalBrowserEnabled {
-		logStartupMessage(color.Blue("\nBrowser Access:"))
-		if globalOtterioConsoleEndpoint != "" {
-			// Console runs on a dedicated listener; show that endpoint
-			// instead of the S3 endpoints. Append the reserved bucket path
-			// so users can copy/paste straight into a browser.
-			consoleURL := globalOtterioConsoleEndpoint + otterioReservedBucketPath + "/"
-			logStartupMessage(fmt.Sprintf(getFormatStr(len(consoleURL), 3), consoleURL))
-		} else {
-			logStartupMessage(fmt.Sprintf(getFormatStr(len(apiEndpointStr), 3), apiEndpointStr))
-		}
+	if globalOtterioConsoleEndpoint != "" {
+		logStartupMessage(color.Blue("Admin API: ") + color.Bold(globalOtterioConsoleEndpoint))
 	}
 }
 

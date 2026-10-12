@@ -1,0 +1,1106 @@
+[
+  {
+    "path": "browser/.babelrc",
+    "sha256": null
+  },
+  {
+    "path": "browser/.editorconfig",
+    "sha256": null
+  },
+  {
+    "path": "browser/.esformatter",
+    "sha256": null
+  },
+  {
+    "path": "browser/.gitignore",
+    "sha256": null
+  },
+  {
+    "path": "browser/.prettierrc",
+    "sha256": null
+  },
+  {
+    "path": "browser/README.md",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/css/loader.css",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/fonts/lato/lato-normal.woff",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/fonts/lato/lato-normal.woff2",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/arrow.svg",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/browsers/chrome.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/browsers/firefox.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/browsers/safari.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/favicon/favicon-16x16.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/favicon/favicon-32x32.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/favicon/favicon-96x96.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/login-img-bck.svg",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/logo.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/more-h-light.svg",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/more-h.svg",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/img/select-caret.svg",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/index.html",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/index.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/App.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/__tests__/App.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/__tests__/jsonrpc-test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/__tests__/navigation.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/alert/Alert.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/alert/AlertContainer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/alert/__tests__/Alert.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/alert/__tests__/AlertContainer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/alert/__tests__/actions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/alert/__tests__/reducer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/alert/actions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/alert/reducer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/AboutModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/Browser.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/BrowserDropdown.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/ChangePasswordModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/ConfirmModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/Header.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/Host.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/InputGroup.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/Login.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/MainActions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/MainContent.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/MobileHeader.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/OpenIDLogin.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/OpenIDLoginButton.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/SideBar.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/StorageInfo.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/AboutModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/Browser.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/BrowserDropdown.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/ChangePasswordModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/ConfirmModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/Header.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/Host.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/InputGroup.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/Login.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/MainActions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/MainContent.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/MobileHeader.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/OpenIDLoginButton.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/SideBar.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/StorageInfo.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/actions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/__tests__/reducer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/actions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/reducer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/selectors.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/browser/utils.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/Bucket.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/BucketContainer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/BucketDropdown.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/BucketList.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/BucketPolicyModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/BucketSearch.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/MakeBucketModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/Policy.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/PolicyInput.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/Bucket.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/BucketContainer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/BucketDropdown.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/BucketList.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/BucketPolicyModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/BucketSearch.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/MakeBucketModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/Policy.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/PolicyInput.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/actions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/reducer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/__tests__/selectors.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/actions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/reducer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/buckets/selectors.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/components/BrowserUpdate.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/components/__tests__/BrowserUpdate.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/constants.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/history.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/jest/__mocks__/fileMock.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/jest/setup.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/jest/test-utils.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/jsonrpc.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/loader.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/mime.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/navigation.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/DeleteObjectConfirmModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectActions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectContainer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectItem.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectsBulkActions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectsHeader.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectsList.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectsListContainer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectsSearch.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ObjectsSection.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/Path.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/PrefixActions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/PrefixContainer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/PreviewObjectModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/ShareObjectModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/DeleteObjectConfirmModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectActions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectContainer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectItem.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectsBulkActions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectsHeader.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectsList.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectsListContainer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectsSearch.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ObjectsSection.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/Path.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/PrefixActions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/PrefixContainer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/PreviewObjectModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/ShareObjectModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/actions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/__tests__/reducer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/actions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/reducer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/objects/selectors.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/reducers.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/store/configure-store.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/AbortConfirmModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/Dropzone.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/UploadModal.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/__tests__/AbortConfirmModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/__tests__/Dropzone.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/__tests__/UploadModal.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/__tests__/actions.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/__tests__/reducer.test.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/actions.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/uploads/reducer.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/utils.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/utils/alertDispatch.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/utils/dropdownToggle.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/utils/listOps.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/utils/theme.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/utils/useOnClickOutside.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/js/web.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/alert.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/animate/animate.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/animate/fadeIn.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/animate/fadeInDown.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/animate/fadeInUp.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/animate/fadeOut.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/animate/fadeOutDown.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/animate/fadeOutUp.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/animate/zoomIn.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/base.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/bs3-compat.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/buttons.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/dropdown.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/file-explorer.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/font.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/form.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/generics.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/header.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/list.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/login.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/misc.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/mixin.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/modal.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/sidebar.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/theme.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/inc/variables.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/app/less/main.less",
+    "sha256": null
+  },
+  {
+    "path": "browser/assets.go",
+    "sha256": null
+  },
+  {
+    "path": "browser/build.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/bun.lock",
+    "sha256": null
+  },
+  {
+    "path": "browser/package.json",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/favicon-16x16.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/favicon-32x32.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/favicon-96x96.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/fonts/fa-brands-400.41062cae.woff2",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/fonts/fa-regular-400.fa2e58ed.woff2",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/fonts/fa-solid-900.dcef2f69.woff2",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/fonts/lato-normal.49184434.woff2",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/index.html",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/index_bundle.css",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/index_bundle.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/loader.css",
+    "sha256": null
+  },
+  {
+    "path": "browser/production/logo.png",
+    "sha256": null
+  },
+  {
+    "path": "browser/staticcheck.conf",
+    "sha256": null
+  },
+  {
+    "path": "browser/webpack.common.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/webpack.dev.js",
+    "sha256": null
+  },
+  {
+    "path": "browser/webpack.prod.js",
+    "sha256": null
+  },
+  {
+    "path": "cmd/acl-handlers.go",
+    "sha256": "f8589e7d783dd8cbfbc1a464194b6c354943ba94726810f4dc35e5e27676a3e4"
+  },
+  {
+    "path": "cmd/admin-bucket-handlers.go",
+    "sha256": "b99e2797a70b523b74c68c3aa5a77b6e253c0382577476b871a8b786cd80daf0"
+  },
+  {
+    "path": "cmd/admin-handlers-users.go",
+    "sha256": "45ce6737c80690433aef743710aefe785d75cbc92f2ba9c4b9059409eacdbabe"
+  },
+  {
+    "path": "cmd/api-response.go",
+    "sha256": "e7bb6472150c3a8ae18d3336f8609a2019465686e373ee5d7f271abacd38b668"
+  },
+  {
+    "path": "cmd/api-router.go",
+    "sha256": "d76abdb47fb3d45b9f08a7e06168d2cf0d87dfa54d5deb3d5961a423ac3e45e3"
+  },
+  {
+    "path": "cmd/auth-handler.go",
+    "sha256": "d70cd74e10fe1a3544ed45d9e8ae6613b28e4be31812faf77ffb4d4adb4a2e39"
+  },
+  {
+    "path": "cmd/bucket-config-conditional.go",
+    "sha256": "2e933a3b1fc3b1aec725a2a837df4248102aa5c2551f1eaeb3767374b0d4128c"
+  },
+  {
+    "path": "cmd/bucket-config-validation.go",
+    "sha256": "935f2db427d5d43f29e9322d423bb40b3c399bbea863c0884ebf927c760073c9"
+  },
+  {
+    "path": "cmd/bucket-encryption-handlers.go",
+    "sha256": "4f9b513b30b86d58606472b8415946344012e3b50d3786aeabcd8e217982ab2d"
+  },
+  {
+    "path": "cmd/bucket-handlers.go",
+    "sha256": "0d7433e1b5cfd085e40a99ce57e115e46783159991c355ddc172b1ef614dbdf1"
+  },
+  {
+    "path": "cmd/bucket-lifecycle-handlers.go",
+    "sha256": "32815e2f2cc40c375450cbfead13253affe2422426bfbf9b4cc885112847106c"
+  },
+  {
+    "path": "cmd/bucket-lifecycle-transition_test.go",
+    "sha256": "07153f9f3a7a086ec09f40c70b202dc4eefd925858df90959c477428422d277b"
+  },
+  {
+    "path": "cmd/bucket-listobjects-handlers.go",
+    "sha256": "438c3b934ebfe373118dbc4c3bce212e7ae83cea47203f7b4884183ac7b74399"
+  },
+  {
+    "path": "cmd/bucket-notification-handlers.go",
+    "sha256": "9a919d99c4326a51d1a21501e43067cf06cea142d6677ed11e3c6b5f4f4f7294"
+  },
+  {
+    "path": "cmd/bucket-policy-handlers.go",
+    "sha256": "365120fab3cdc5c948ae3c3d94266dcd1a65f5e50f6a4dcb12c406612a2d7f43"
+  },
+  {
+    "path": "cmd/bucket-replication.go",
+    "sha256": "0d2717e9a2cb3e90502264cf65104e4fe8367492e543d9aa123f183f92452038"
+  },
+  {
+    "path": "cmd/bucket-versioning-handler.go",
+    "sha256": "5f018052aaa1dc996a57521b0632cea762d0ff846ded82751ddee023b572c034"
+  },
+  {
+    "path": "cmd/common-main.go",
+    "sha256": "27bf18b16c5a96fd5509f906fa4e55c91329399790b49178eaa15e23bf537caf"
+  },
+  {
+    "path": "cmd/config/errors.go",
+    "sha256": "7fe1eb3af183391ad7cd88bfac1c7312ff385128cc6ace1d9ee10487befafecb"
+  },
+  {
+    "path": "cmd/copy-part-range.go",
+    "sha256": "329029c1ef00e16125340b79849200df2a2920d96c32a616444b9f75bdbe5b1d"
+  },
+  {
+    "path": "cmd/dummy-handlers.go",
+    "sha256": "3a6d2d3cd079ac48a12abf4f459f46f469d1e1ba043b8a0d169cb9a82cdc4b2d"
+  },
+  {
+    "path": "cmd/embedded-web-removal_test.go",
+    "sha256": "79be85df7ea23c0c0139080efea9b048021250af681b692691951191c3bd3919"
+  },
+  {
+    "path": "cmd/fiber_api_router.go",
+    "sha256": "1dd21c3a4cdf6b9cc2980d53f00a4363ef2dd561830972b1238de7416ce263f6"
+  },
+  {
+    "path": "cmd/fiber_ctx.go",
+    "sha256": "313186ae3c4d7c0e3b894ffa301cfbfb8fb7632eee856348ff69dbd81789a7e9"
+  },
+  {
+    "path": "cmd/fiber_dispatch.go",
+    "sha256": "76d4feec2f559a89c1927f65295ad57715593cf0f38e40b73e11edfa1d928a4f"
+  },
+  {
+    "path": "cmd/fiber_middleware.go",
+    "sha256": "36fb4626295d2b7af51d72fe35542fb0705aaee835369093845119fabb8fc763"
+  },
+  {
+    "path": "cmd/fiber_response.go",
+    "sha256": "630470fc32f02738c0363a210b2863a01d500dd46297cd834ab8e78ea96cba18"
+  },
+  {
+    "path": "cmd/fiber_router.go",
+    "sha256": "63cb205bdac205fe58bf746fc5613e9675e1732b567ebfa2ba025ba08a100605"
+  },
+  {
+    "path": "cmd/fiber_test_router.go",
+    "sha256": "b82fdd10cbde155a4706cf83f00b2736e9934f4f62e3b7818303a792b2805f48"
+  },
+  {
+    "path": "cmd/fiber_web_router.go",
+    "sha256": null
+  },
+  {
+    "path": "cmd/gateway-common.go",
+    "sha256": "1395e32bc80fc898406cd5606e5346dbc143652db257197a034fee8fec5839f3"
+  },
+  {
+    "path": "cmd/gateway-startup-msg.go",
+    "sha256": "1ffcb979d7fcfe00b9eb867bc47a8a50ecfbb541d6357cf468f163d818b7de83"
+  },
+  {
+    "path": "cmd/generic-handlers.go",
+    "sha256": "dd45d87e3a89054c0fa3e7241b31f7f651366cbd402e823f72f23e47c468f4fa"
+  },
+  {
+    "path": "cmd/generic-handlers_test.go",
+    "sha256": "f56dfe153b2bef8ee3c535c43ae6b4870b9b716ec5c7c5bc12308a9b56e740f2"
+  },
+  {
+    "path": "cmd/globals.go",
+    "sha256": "d86db4243276bf1e3881d413be320fe89c0de304f4fb70d055244cf97d82df8c"
+  },
+  {
+    "path": "cmd/handler-api.go",
+    "sha256": "aae422b10266cfafdcc66ad73d6f53bf5d5b208fb238c3da174b1c3f03bb931c"
+  },
+  {
+    "path": "cmd/handler-utils.go",
+    "sha256": "0b6bb733aea5ce7aea3851d20ad0366ec2c75466ff3f7755299eacad9595ce8b"
+  },
+  {
+    "path": "cmd/http-tracer.go",
+    "sha256": "098bd54d3a9e7da16df3976a6e37a0249b748e752504fcca1aa42b92ca1c39fa"
+  },
+  {
+    "path": "cmd/jwt.go",
+    "sha256": "bb289df097434930bec4f5a3a2d7c0d71e7e86c9a5fafc44bc604e9ba2e17963"
+  },
+  {
+    "path": "cmd/jwt_test.go",
+    "sha256": "53b83f443e69384a65ac9804e414495deab87fcf0af8332f70cea007b70f16d9"
+  },
+  {
+    "path": "cmd/listen-notification-handlers.go",
+    "sha256": "3002794372aaa683aff1b4d0d3285b4e8cffedbb1c30edf6d284ca0527ab11b0"
+  },
+  {
+    "path": "cmd/logger/logger.go",
+    "sha256": "4b595e228cd24c333f5007d346a07c229e71605485bf67edbc13905e2c5fb6a6"
+  },
+  {
+    "path": "cmd/metrics.go",
+    "sha256": "058d90e342c4980560715b9dbdbb34cfcfa82364fe4b0a82283063359749d56c"
+  },
+  {
+    "path": "cmd/object-handlers-common.go",
+    "sha256": "d2bbf45d3737d14b0e1c0b01922a1f8438dd1ab8066ca01b37582a17ef579cce"
+  },
+  {
+    "path": "cmd/object-handlers.go",
+    "sha256": "ad46f4cfce379661e2f2d98d62ea38c8d533ce23fca52801bedc9fd630ff292c"
+  },
+  {
+    "path": "cmd/routers.go",
+    "sha256": "a0a9d959458d8779e25902c7137737a66fe8c35e0b66e9055ac7ce530659b325"
+  },
+  {
+    "path": "cmd/server-main.go",
+    "sha256": "17f79ddacc3fd2842155818228d1daf8326287b015e4390c8a4f3611fbe42191"
+  },
+  {
+    "path": "cmd/server-startup-msg.go",
+    "sha256": "1bee92548828a42635a0287de6f52c1a097d40739b17af32461311d66486e042"
+  },
+  {
+    "path": "cmd/test-utils_test.go",
+    "sha256": "75f78333deb9a28cffdfe58f1e538b7a1afc3018e8d369ab0d6bdb5d9f720d7a"
+  },
+  {
+    "path": "cmd/typed-errors.go",
+    "sha256": "aaf24192b0e47889a2be118ee20dd4e096c0621d72c79d2cd12dd442c9bc47b9"
+  },
+  {
+    "path": "cmd/web-handler-context.go",
+    "sha256": null
+  },
+  {
+    "path": "cmd/web-handler-context_test.go",
+    "sha256": null
+  },
+  {
+    "path": "cmd/web-handlers.go",
+    "sha256": null
+  },
+  {
+    "path": "cmd/web-handlers_test.go",
+    "sha256": null
+  },
+  {
+    "path": "cmd/web-router.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/LICENSE",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/LICENSE.ORIG",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/README.md",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/compression_selector.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/doc.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/encoder_selector.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/json2/client.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/json2/error.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/json2/json_test.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/json2/server.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/map.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/server.go",
+    "sha256": null
+  },
+  {
+    "path": "pkg/rpc/server_test.go",
+    "sha256": null
+  }
+]

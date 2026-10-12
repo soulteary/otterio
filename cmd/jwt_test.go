@@ -20,78 +20,15 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
+
+	jwtgo "github.com/dgrijalva/jwt-go"
 
 	xjwt "github.com/soulteary/otterio/cmd/jwt"
-	"github.com/soulteary/otterio/pkg/auth"
 )
 
-func testAuthenticate(authType string, t *testing.T) {
-	obj, fsDir, err := prepareFS(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
-		t.Fatal(err)
-	}
-
-	cred, err := auth.GetNewCredentials()
-	if err != nil {
-		t.Fatalf("Error getting new credentials: %s", err)
-	}
-
-	globalActiveCred = cred
-
-	// Define test cases.
-	testCases := []struct {
-		accessKey   string
-		secretKey   string
-		expectedErr error
-	}{
-		// Access key (less than 3 chrs) too small.
-		{"u1", cred.SecretKey, auth.ErrInvalidAccessKeyLength},
-		// Secret key (less than 8 chrs) too small.
-		{cred.AccessKey, "pass", auth.ErrInvalidSecretKeyLength},
-		// Authentication error.
-		{"myuser", "mypassword", errInvalidAccessKeyID},
-		// Authentication error.
-		{cred.AccessKey, "mypassword", errAuthentication},
-		// Success.
-		{cred.AccessKey, cred.SecretKey, nil},
-	}
-
-	// Run tests.
-	for _, testCase := range testCases {
-		var err error
-		if authType == "web" {
-			_, err = authenticateWeb(testCase.accessKey, testCase.secretKey)
-		} else if authType == "url" {
-			_, err = authenticateURL(testCase.accessKey, testCase.secretKey)
-		}
-
-		if testCase.expectedErr != nil {
-			if err == nil {
-				t.Fatalf("%+v: expected: %s, got: <nil>", testCase, testCase.expectedErr)
-			}
-			if testCase.expectedErr.Error() != err.Error() {
-				t.Fatalf("%+v: expected: %s, got: %s", testCase, testCase.expectedErr, err)
-			}
-		} else if err != nil {
-			t.Fatalf("%+v: expected: <nil>, got: %s", testCase, err)
-		}
-	}
-}
-
-func TestAuthenticateWeb(t *testing.T) {
-	testAuthenticate("web", t)
-}
-
-func TestAuthenticateURL(t *testing.T) {
-	testAuthenticate("url", t)
-}
-
-// Tests web request authenticator.
-func TestWebRequestAuthenticate(t *testing.T) {
+// Tests the shared metrics/request bearer authenticator.
+func TestBearerRequestAuthenticate(t *testing.T) {
 	obj, fsDir, err := prepareFS(t)
 	if err != nil {
 		t.Fatal(err)
@@ -138,7 +75,7 @@ func TestWebRequestAuthenticate(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		_, _, gotErr := webRequestAuthenticate(testCase.req)
+		_, _, gotErr := authenticateBearerRequest(testCase.req)
 		if testCase.expectedErr != gotErr {
 			t.Errorf("Test %d, expected err %s, got %s", i+1, testCase.expectedErr, gotErr)
 		}
@@ -221,20 +158,9 @@ func BenchmarkAuthenticateNode(b *testing.B) {
 	}
 }
 
-func BenchmarkAuthenticateWeb(b *testing.B) {
-	obj, fsDir, err := prepareFS(b)
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer os.RemoveAll(fsDir)
-	if err = newTestConfig(globalOtterioDefaultRegion, obj); err != nil {
-		b.Fatal(err)
-	}
-
-	creds := globalActiveCred
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		authenticateWeb(creds.AccessKey, creds.SecretKey)
-	}
+func getTokenString(accessKey, secretKey string) (string, error) {
+	claims := xjwt.NewMapClaims()
+	claims.SetExpiry(UTCNow().Add(time.Hour))
+	claims.SetAccessKey(accessKey)
+	return jwtgo.NewWithClaims(jwtgo.SigningMethodHS512, claims).SignedString([]byte(secretKey))
 }

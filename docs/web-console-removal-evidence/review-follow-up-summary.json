@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "dateUTC": "2026-10-12T15:21:00.505534+00:00",
+  "status": "passed-with-recorded-limits",
+  "scope": "OC PR #45 review follow-up; native darwin/arm64 source candidate; not production-rollout certification",
+  "reviewComment": "https://github.com/soulteary/oc/pull/45#discussion_r4249561639",
+  "ocHarnessCommit": "555c1812fb4820893420ec0ca7940913c24d1de5",
+  "report": "native-review-follow-up.json",
+  "reportSHA256": "766c515cf75ddc587159d53cf39877cf60a920a70bdd629acb721bfeae5858e4",
+  "runtimeManifest": "runtime-source-manifest.json",
+  "runtimeManifestSHA256": "320e3ffdc9659c09c818672553d93dbcff46bab31c1f421229d170d645df9e37",
+  "binaries": {
+    "oc": {
+      "sha256": "1fe54d23ec4e2af50e305b2a02d7938f7776724b858cfca0bdc003c270ac549a"
+    },
+    "oc-console": {
+      "sha256": "e846fa6a76339e3e196f126582ea5161e3f21c892dc7fab361eb570da8808683"
+    },
+    "otterio": {
+      "sha256": "4f53709351d03fa7a604e341c770fef5529c7f24cec79aff537f8509c0851638"
+    }
+  },
+  "checks": {
+    "nativeHTTPSGroupsPassed": 50,
+    "nativeHarnessRegressionPassed": 8,
+    "binaryIdentityRegressionPassed": 4,
+    "coupledScope": "exact fixture parent and service-child identities; reject missing/extra/duplicate/malformed entries",
+    "signedServiceChildAuthorization": "200 initially, 403 after parent disable, 200 after enable, 403 after delete and same-name/secret parent recreation"
+  },
+  "history": "native.json and summary.json retain their original earlier harness fingerprints and weaker assertions; this follow-up does not replace historical results",
+  "limits": "No production Go code changes; existing release, image/platform, deployment, upgrade/rollback and third-party browser gates remain outstanding. No complete STS-child-scope certification.",
+  "windowsCLIContract": {
+    "status": "artifact-replay and fresh Windows CI passed",
+    "fixedBaseline": "52e2d95b7d4fb58fb212f4a2ce3f351b891e0343",
+    "cases": 133,
+    "approvedHelpChanges": 35,
+    "unexpectedDifferences": 0,
+    "comparator": "exact per-platform fields_before and fields_after; invocation, environment, exits, stderr and side effects are not waived",
+    "units": {
+      "passed": 29,
+      "skipped": 5,
+      "skipScope": "four native Windows checks plus one opt-in real-binary check on local Darwin"
+    },
+    "before": {
+      "pr": 41,
+      "run": 38177267915,
+      "artifact": 11716875491,
+      "job": 114582182555,
+      "buildSource": "d14ce6da102216bfd3b554d1d2b77a47e1e675ec",
+      "sourceState": "modified; synthetic PR merge, not the archived baseline",
+      "binarySHA256": "710fd5931902c46e8ddfcef681c85f464080df28dd5154394ebbc6394d04911d",
+      "reportSHA256": "cd579414e30855dd88b79aff92821feb1a9d4c2868b15f55e3bee298d4e0eee2",
+      "proof": "Job verified the fixed 52e2d95 baseline identity and strictly matched all 133 cases with no approved-deltas file. The candidate observations are baseline-equivalent; no direct baseline report was uploaded."
+    },
+    "after": {
+      "pr": 42,
+      "run": 38268280288,
+      "artifact": 11756046340,
+      "job": 114875920190,
+      "buildSource": "2c7321b3e82bfde99447e8a203230356db931d57",
+      "sourceState": "modified; synthetic PR merge",
+      "binarySHA256": "035584614dc95fd0be1a78d0ee3aa0aa20883d5c3b538e34ac56371d66716680",
+      "reportSHA256": "4a51d55b41e408d790a3ab749900a4c4f198398672edf4a5f2cfcb308e288c82"
+    },
+    "platform": "Windows amd64, Go 1.27.2, CGO=0",
+    "baselineArchive": "unchanged",
+    "newCI": {
+      "status": "passed",
+      "commit": "308263fb1fb36e66781eb04175ba697de194913c",
+      "run": 38271297327,
+      "job": 114885922231,
+      "url": "https://github.com/soulteary/otterio/actions/runs/38271297327/job/114885922231",
+      "otherPlatforms": "Linux and macOS CLI checks on the same commit also passed"
+    }
+  },
+  "cascadeInventoryFollowUp": {
+    "dateUTC": "2026-10-12T15:32:08.850212+00:00",
+    "status": "passed",
+    "reviewComment": "https://github.com/soulteary/oc/pull/45#discussion_r4249720452",
+    "ocHarnessCommit": "c379e31f651a690b2e75483773664977263900d0",
+    "report": "native-cascade-inventory.json",
+    "reportSHA256": "9f7c9d1b19cec85032effa457254ace34c019e554408ab53e5fb6b9634f1de33",
+    "harnesses": [
+      {
+        "name": "test-console-integration.py",
+        "sha256": "eb1d2436efecf184dfeaea91d4519c2c3f2194bc0f161c05696f6094566c05ed"
+      },
+      {
+        "name": "console_write_acceptance.py",
+        "sha256": "67e326e7f3e1ee484c1b2dc7e58bbb3583373ef29519bbe0680d48337e721c8c"
+      },
+      {
+        "name": "console_acceptance_protocol.py",
+        "sha256": "2fad03751d8c3f9344bf28680b099c1661cb7296a2762fe5f4fd0777464a78e1"
+      },
+      {
+        "name": "local_http.py",
+        "sha256": "8d9ae2287186726711458bff030de76f2d805dfa1a0be32d5354c41f721fe24f"
+      },
+      {
+        "name": "console_native_acceptance.py",
+        "sha256": "a23c86f03decdad0d6b2aaecd6c6d2aa9260af4ddf5013014ee3cb70493ecc26"
+      }
+    ],
+    "nativeHTTPSGroupsPassed": 50,
+    "nativeHarnessRegressionPassed": 11,
+    "binaryIdentityRegressionPassed": 4,
+    "managementInventory": "authenticated HTTP200 and matching parent/DTO; child present after create, absent after delete, absent after same-name/secret parent recreation; failed reads and malformed results cannot prove removal",
+    "productionBinaries": "same hashes as original summary and preceding review report; no production Go code changes"
+  },
+  "directChildInfoFollowUp": {
+    "dateUTC": "2026-10-12T15:48:06.473571+00:00",
+    "status": "passed",
+    "reviewComment": "https://github.com/soulteary/oc/pull/45#discussion_r4249811333",
+    "ocHarnessCommit": "d7269c1ba18e84a30c070166394318883b00c1b7",
+    "report": "native-direct-child-info.json",
+    "reportSHA256": "59f4faff9132c40b54e447865e78016b62bb26abd67c86e67d5cca0362c10aad",
+    "harnesses": [
+      {
+        "name": "test-console-integration.py",
+        "sha256": "eb1d2436efecf184dfeaea91d4519c2c3f2194bc0f161c05696f6094566c05ed"
+      },
+      {
+        "name": "console_write_acceptance.py",
+        "sha256": "67e326e7f3e1ee484c1b2dc7e58bbb3583373ef29519bbe0680d48337e721c8c"
+      },
+      {
+        "name": "console_acceptance_protocol.py",
+        "sha256": "2fad03751d8c3f9344bf28680b099c1661cb7296a2762fe5f4fd0777464a78e1"
+      },
+      {
+        "name": "local_http.py",
+        "sha256": "8d9ae2287186726711458bff030de76f2d805dfa1a0be32d5354c41f721fe24f"
+      },
+      {
+        "name": "console_native_acceptance.py",
+        "sha256": "8dff7fd4fe6287eb3034d2508a1e792e30484aa9385a102c8c1b0d7e1019a45d"
+      }
+    ],
+    "nativeHTTPSGroupsPassed": 50,
+    "nativeHarnessRegressionPassed": 16,
+    "binaryIdentityRegressionPassed": 4,
+    "directInfo": "manager SigV4 GET by child accessKey, independent Admin CA: 200 at creation, exact service-account-not-found 404 after parent delete and identical parent recreation; reject auth errors, generic404, malformed JSON and transport failure",
+    "historicalScope": "parent-filtered inventory alone did not establish direct-key absence; preceding reports are not upgraded to prove this check",
+    "firstFailure": {
+      "report": "native-direct-child-info-first-failure.json",
+      "reportSHA256": "778f16348f948bcd088d100dceef6484567e795bac931b70f0c2b79aedfaa4d7",
+      "reason": "strict message assertion omitted the underlying cause appended by toAdminAPIErr; no unknown404 was accepted; full source-derived wire message checked in the successful run"
+    },
+    "productionBinaries": "same hashes as original summary and preceding reports; no production Go changes"
+  }
+}

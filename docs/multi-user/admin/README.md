@@ -10,7 +10,7 @@ Install [OtterIO](../../../README.md) and the current [OC client](https://github
 oc alias set myotterio http://localhost:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD" --api s3v4 --path on
 ```
 
-If the server has a separate console listener on port 9001, add `--admin-url http://localhost:9001` to this alias command and the `admin1` alias command below. Management URLs are root URLs without `/otterio/` or `/otterio/admin/v3`. OC uses the OtterIO `/otterio/admin/v3` API; upstream `mc admin` compatibility is not assumed.
+If the server has a separate Admin listener on port 9001 via `--console-address`, add `--admin-url http://localhost:9001` to this alias command and the `admin1` alias command below, using the actual deployment address. Management URLs are root URLs without `/otterio/` or `/otterio/admin/v3`. Configure S3/Admin CA trust separately when needed. This is an Admin endpoint; browser access uses the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md). OC uses the OtterIO `/otterio/admin/v3` API; upstream `mc admin` compatibility is not assumed.
 
 ## Create the administration policy and user
 

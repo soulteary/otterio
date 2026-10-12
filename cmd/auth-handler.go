@@ -507,7 +507,7 @@ func setAuthHandler(h http.Handler) http.Handler {
 			return
 		} else if aType == authTypeJWT {
 			// Validate Authorization header if its valid for JWT request.
-			if _, _, authErr := webRequestAuthenticate(r); authErr != nil {
+			if _, _, authErr := authenticateBearerRequest(r); authErr != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte(authErr.Error()))
 				return
@@ -518,7 +518,7 @@ func setAuthHandler(h http.Handler) http.Handler {
 			h.ServeHTTP(w, r)
 			return
 		}
-		writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrSignatureVersionNotSupported), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrSignatureVersionNotSupported), r.URL)
 		atomic.AddUint64(&globalHTTPStats.rejectedRequestsAuth, 1)
 	})
 }

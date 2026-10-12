@@ -17,7 +17,7 @@ package_list=$(go list -tags kqueue -race ./...)
 packages=()
 while IFS= read -r package; do
     case "$package" in
-        ""|"$module_path/browser"|"$module_path/browser/"*) continue ;;
+        "") continue ;;
     esac
     packages+=("$package")
 done <<< "$package_list"

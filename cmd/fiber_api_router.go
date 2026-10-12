@@ -41,7 +41,7 @@ var (
 )
 
 func notImplementedHandlerFiber(c fiber.Ctx) error {
-	writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrNotImplemented), guessIsBrowserReqFiber(c))
+	writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrNotImplemented))
 	return nil
 }
 

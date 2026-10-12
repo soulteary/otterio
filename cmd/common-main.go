@@ -229,9 +229,8 @@ func handleCommonEnvVars() {
 		logger.Fatal(errors.New("WORM is deprecated"), "global OTTERIO_WORM support is removed, please downgrade your server or migrate to https://github.com/soulteary/otterio/tree/master/docs/retention")
 	}
 
-	globalBrowserEnabled, err = config.ParseBool(env.Get(config.EnvBrowser, config.EnableOn))
-	if err != nil {
-		logger.Fatal(config.ErrInvalidBrowserValue(err), "Invalid OTTERIO_BROWSER value in environment variable")
+	if err = validateEmbeddedBrowserSetting(env.Get(config.EnvBrowser, config.EnableOff)); err != nil {
+		logger.Fatal(err, "Unable to configure Web Console")
 	}
 
 	globalFSOSync, err = config.ParseBool(env.Get(config.EnvFSOSync, config.EnableOff))
@@ -480,4 +479,17 @@ func contextCanceled(ctx context.Context) bool {
 	default:
 		return false
 	}
+}
+
+// validateEmbeddedBrowserSetting accepts the legacy off setting and rejects
+// explicit enablement because the embedded UI is no longer part of OtterIO.
+func validateEmbeddedBrowserSetting(value string) error {
+	enabled, err := config.ParseBool(value)
+	if err != nil {
+		return config.ErrInvalidBrowserValue(err)
+	}
+	if enabled {
+		return errors.New("OTTERIO_BROWSER=on is no longer supported: the embedded Web Console has been removed; use the independent OC Console (oc-console)")
+	}
+	return nil
 }

@@ -261,19 +261,6 @@ func initTestAPIEndPoints(objLayer ObjectLayer, apiFunctions []string) http.Hand
 	return fiberHTTPTestHandler(app)
 }
 
-// initTestWebRPCEndPoint registers web RPC handlers for unit tests.
-func initTestWebRPCEndPoint(objLayer ObjectLayer) http.Handler {
-	globalObjLayerMutex.Lock()
-	globalObjectAPI = objLayer
-	globalObjLayerMutex.Unlock()
-
-	app := newFiberApp()
-	if err := registerWebRouterFiber(app); err != nil {
-		panic(err)
-	}
-	return fiberHTTPTestHandler(app)
-}
-
 type fiberTestConnection struct {
 	net.Conn
 	address net.Addr

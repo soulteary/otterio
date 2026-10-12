@@ -35,7 +35,7 @@ In the example above this means that  `OTTERIO_CACHE_WATERMARK_LOW` is effective
 
 ### 3. Test your setup
 
-To test this setup, access the OtterIO gateway via browser or [`oc`](https://github.com/soulteary/oc#readme). You’ll see the uploaded files are accessible from all the OtterIO endpoints.
+To test this setup, use [`oc`](https://github.com/soulteary/oc#readme) to upload and read an object through the configured gateway endpoints. Browser access uses the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md), subject to the gateway's supported protocols and the configured identity's permissions. The gateway itself does not serve a Web UI.
 
 # Explore Further
 

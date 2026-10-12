@@ -33,7 +33,7 @@ SecretKey: X3RKxEeFOI8InuNWoPsbG+XEVoaJVCqbvxe+PTOa
 ...
 ```
 
-现在可以在主机的9000端口访问实例，在浏览器中输入http://127.0.0.1:9000/即可访问
+实例的 S3 端点为 `http://127.0.0.1:9000`，使用 [OC](https://github.com/soulteary/oc#readme)验证访问。浏览器访问请运行独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)，服务端不再提供 Web UI。
 
 ## 进一步探索
 - [Otterio纠删码快速入门](https://github.com/soulteary/otterio/blob/main/docs/erasure/README.md)

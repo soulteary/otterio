@@ -73,7 +73,7 @@ otterio server --address 127.0.0.1:9000 \
 ```
 
 This starts a local OtterIO server using HTTPS/mTLS to KES. The local S3 and
-console listeners use HTTP; use the [OtterIO TLS guide](../tls/README.md) for an
+Admin listeners use HTTP; use the [OtterIO TLS guide](../tls/README.md) for an
 HTTPS deployment. The KES CA setting trusts the KES server and does not configure
 TLS on OtterIO's listeners. A CA path may be a PEM file or a directory of PEM
 certificates. Multiple KES endpoints may be comma-separated and must reach the

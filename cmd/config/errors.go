@@ -16,12 +16,12 @@
 
 package config
 
-// UI errors
+// Configuration errors
 var (
 	ErrInvalidBrowserValue = newErrFn(
 		"Invalid browser value",
 		"Please check the passed value",
-		"Browser can only accept `on` and `off` values. To disable web browser access, set this value to `off`",
+		"The embedded Web Console has been removed. Keep this legacy setting `off` and use the independent OC Console (`oc-console`).",
 	)
 
 	ErrInvalidFSOSyncValue = newErrFn(

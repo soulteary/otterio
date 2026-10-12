@@ -51,7 +51,7 @@ docker run -d --name otterio `
   soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-S3 端点为 <http://127.0.0.1:9000>，控制台及管理端点为 <http://127.0.0.1:9001>，请使用已配置的凭据登录。通过 OC [验证上传与下载](../../../README_zh_CN.md#验证部署)，同一别名可保存两个端点。
+S3 端点为 <http://127.0.0.1:9000>，Admin 端点为 <http://127.0.0.1:9001>。使用已配置的凭据，通过 OC [验证上传与下载](../../../README_zh_CN.md#验证部署)，同一别名可保存两个端点。浏览器访问由独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)提供，使用自己的监听地址。连接 OC 时保留现有 S3/Admin 端口、代理映射和各自的 CA 设置。
 
 命名卷不会随容器删除。重新创建容器时，应使用同一数据卷与凭据。临时测试可去掉 `--mount` 和 `-d`，加上 `--rm`；Docker 会在删除该容器时清理匿名数据卷。若已有实例运行，请使用不同容器名和空闲端口。
 

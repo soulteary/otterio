@@ -31,7 +31,7 @@ otterio gateway s3
 
 
 ### 3. 验证设置是否成功
-要验证是否部署成功，你可以通过浏览器或者[`oc`](https://github.com/soulteary/oc#readme)来访问刚刚部署的OtterIO网关。你应该可以看到上传的文件在所有OtterIO节点上都可以访问。
+使用 [`oc`](https://github.com/soulteary/oc#readme)通过配置的网关端点上传和读取对象，验证部署。浏览器访问由独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)提供，受网关支持的协议及所用身份权限约束；网关本身不再提供 Web UI。
 
 # 了解更多
 - [磁盘缓存设计](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/disk-caching/DESIGN.md)

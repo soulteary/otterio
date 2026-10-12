@@ -66,7 +66,7 @@ const (
 func setRequestHeaderSizeLimitHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isHTTPHeaderSizeTooLarge(r.Header) {
-			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrMetadataTooLarge), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrMetadataTooLarge), r.URL)
 			atomic.AddUint64(&globalHTTPStats.rejectedRequestsHeader, 1)
 			return
 		}
@@ -138,7 +138,7 @@ var reservedMetadataPrefixesLower = []string{
 func filterReservedMetadata(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if containsReservedMetadata(r.Header) {
-			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrUnsupportedMetadata), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrUnsupportedMetadata), r.URL)
 			return
 		}
 		h.ServeHTTP(w, r)
@@ -175,13 +175,12 @@ func containsReservedMetadata(header http.Header) bool {
 const (
 	otterioReservedBucket     = "otterio"
 	otterioReservedBucketPath = SlashSeparator + otterioReservedBucket
-	loginPathPrefix           = SlashSeparator + "login"
 )
 
 //nolint:unused
 func setRedirectHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !shouldProxy() || guessIsRPCReq(r) || guessIsBrowserReq(r) ||
+		if !shouldProxy() || guessIsRPCReq(r) ||
 			guessIsHealthCheckReq(r) || guessIsMetricsReq(r) || isAdminReq(r) {
 			h.ServeHTTP(w, r)
 			return
@@ -197,65 +196,11 @@ func setRedirectHandler(h http.Handler) http.Handler {
 	})
 }
 
-//nolint:unused
-func setBrowserRedirectHandler(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Re-direction is handled specifically for browser requests.
-		if globalBrowserEnabled && guessIsBrowserReq(r) {
-			// Fetch the redirect location if any.
-			redirectLocation := getRedirectLocation(r.URL.Path)
-			if redirectLocation != "" {
-				// Employ a temporary re-direct.
-				http.Redirect(w, r, redirectLocation, http.StatusTemporaryRedirect)
-				return
-			}
-		}
-		h.ServeHTTP(w, r)
-	})
-}
-
 func shouldProxy() bool {
 	if newObjectLayerFn() == nil {
 		return true
 	}
 	return !globalIAMSys.Initialized()
-}
-
-// Fetch redirect location if urlPath satisfies certain
-// criteria. Some special names are considered to be
-// redirectable, this is purely internal function and
-// serves only limited purpose on redirect-handler for
-// browser requests.
-func getRedirectLocation(urlPath string) (rLocation string) {
-	if urlPath == otterioReservedBucketPath {
-		rLocation = otterioReservedBucketPath + SlashSeparator
-	}
-	if contains([]string{
-		SlashSeparator,
-		"/webrpc",
-		"/login",
-		"/favicon-16x16.png",
-		"/favicon-32x32.png",
-		"/favicon-96x96.png",
-	}, urlPath) {
-		rLocation = otterioReservedBucketPath + urlPath
-	}
-	return rLocation
-}
-
-// guessIsBrowserReq - returns true if the request is browser.
-// This implementation just validates user-agent and
-// looks for "Mozilla" string. This is no way certifiable
-// way to know if the request really came from a browser
-// since User-Agent's can be arbitrary. But this is just
-// a best effort function.
-func guessIsBrowserReq(req *http.Request) bool {
-	if req == nil {
-		return false
-	}
-	aType := getRequestAuthType(req)
-	return strings.Contains(req.Header.Get("User-Agent"), "Mozilla") && globalBrowserEnabled &&
-		(aType == authTypeJWT || aType == authTypeAnonymous)
 }
 
 // guessIsHealthCheckReq - returns true if incoming request looks
@@ -285,36 +230,18 @@ func guessIsMetricsReq(req *http.Request) bool {
 		req.URL.Path == otterioReservedBucketPath+prometheusMetricsV2NodePath
 }
 
-// guessIsRPCReq - returns true if the request is for an RPC endpoint.
+// guessIsRPCReq identifies the retained inter-node REST namespaces. Legacy
+// Web POST routes must not inherit the reserved-bucket exception.
 func guessIsRPCReq(req *http.Request) bool {
-	if req == nil {
+	if req == nil || req.Method != http.MethodPost {
 		return false
 	}
-	return req.Method == http.MethodPost &&
-		strings.HasPrefix(req.URL.Path, otterioReservedBucketPath+SlashSeparator)
-}
-
-// Adds Cache-Control header
-//
-//nolint:unused
-func setBrowserCacheControlHandler(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if globalBrowserEnabled && r.Method == http.MethodGet && guessIsBrowserReq(r) {
-			// For all browser requests set appropriate Cache-Control policies
-			if HasPrefix(r.URL.Path, otterioReservedBucketPath+SlashSeparator) {
-				if HasSuffix(r.URL.Path, ".js") || r.URL.Path == otterioReservedBucketPath+"/favicon.ico" {
-					// For assets set cache expiry of one year. For each release, the name
-					// of the asset name will change and hence it can not be served from cache.
-					w.Header().Set(xhttp.CacheControl, "max-age=31536000")
-				} else {
-					// For non asset requests we serve index.html which will never be cached.
-					w.Header().Set(xhttp.CacheControl, "no-store")
-				}
-			}
+	for _, prefix := range []string{storageRESTPrefix, peerRESTPrefix, lockRESTPrefix, bootstrapRESTPrefix} {
+		if strings.HasPrefix(req.URL.Path, prefix+SlashSeparator) {
+			return true
 		}
-
-		h.ServeHTTP(w, r)
-	})
+	}
+	return false
 }
 
 // Check to allow access to the reserved "bucket" `/otterio` for Admin
@@ -323,14 +250,13 @@ func isAdminReq(r *http.Request) bool {
 	return strings.HasPrefix(r.URL.Path, adminPathPrefix)
 }
 
-// guessIsLoginSTSReq - returns true if incoming request is Login STS user
-func guessIsLoginSTSReq(req *http.Request) bool {
+// guessIsSTSReq identifies STS calls that bypass S3 bucket federation.
+func guessIsSTSReq(req *http.Request) bool {
 	if req == nil {
 		return false
 	}
-	return strings.HasPrefix(req.URL.Path, loginPathPrefix) ||
-		(req.Method == http.MethodPost && req.URL.Path == SlashSeparator &&
-			getRequestAuthType(req) == authTypeSTS)
+	return req.Method == http.MethodPost && req.URL.Path == SlashSeparator &&
+		getRequestAuthType(req) == authTypeSTS
 }
 
 // Adds verification for incoming paths.
@@ -341,8 +267,8 @@ func setReservedBucketHandler(h http.Handler) http.Handler {
 		// For all other requests reject access to reserved buckets
 		bucketName, _ := request2BucketObjectName(r)
 		if isOtterioReservedBucket(bucketName) || isOtterioMetaBucket(bucketName) {
-			if !guessIsRPCReq(r) && !guessIsBrowserReq(r) && !guessIsHealthCheckReq(r) && !guessIsMetricsReq(r) && !isAdminReq(r) {
-				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrAllAccessDisabled), r.URL, guessIsBrowserReq(r))
+			if !guessIsRPCReq(r) && !guessIsHealthCheckReq(r) && !guessIsMetricsReq(r) && !isAdminReq(r) {
+				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrAllAccessDisabled), r.URL)
 				return
 			}
 		}
@@ -401,7 +327,7 @@ func setTimeValidityHandler(h http.Handler) http.Handler {
 				// All our internal APIs are sensitive towards Date
 				// header, for all requests where Date header is not
 				// present we will reject such clients.
-				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(errCode), r.URL, guessIsBrowserReq(r))
+				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(errCode), r.URL)
 				atomic.AddUint64(&globalHTTPStats.rejectedRequestsTime, 1)
 				return
 			}
@@ -409,7 +335,7 @@ func setTimeValidityHandler(h http.Handler) http.Handler {
 			// or in the future, reject request otherwise.
 			curTime := UTCNow()
 			if curTime.Sub(amzDate) > globalMaxSkewTime || amzDate.Sub(curTime) > globalMaxSkewTime {
-				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrRequestTimeTooSkewed), r.URL, guessIsBrowserReq(r))
+				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrRequestTimeTooSkewed), r.URL)
 				atomic.AddUint64(&globalHTTPStats.rejectedRequestsTime, 1)
 				return
 			}
@@ -481,7 +407,7 @@ func setRequestValidityHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check for bad components in URL path.
 		if hasBadPathComponent(r.URL.Path) {
-			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInvalidResourceName), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInvalidResourceName), r.URL)
 			atomic.AddUint64(&globalHTTPStats.rejectedRequestsInvalid, 1)
 			return
 		}
@@ -489,14 +415,14 @@ func setRequestValidityHandler(h http.Handler) http.Handler {
 		for _, vv := range r.URL.Query() {
 			for _, v := range vv {
 				if hasBadPathComponent(v) {
-					writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInvalidResourceName), r.URL, guessIsBrowserReq(r))
+					writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInvalidResourceName), r.URL)
 					atomic.AddUint64(&globalHTTPStats.rejectedRequestsInvalid, 1)
 					return
 				}
 			}
 		}
 		if hasMultipleAuth(r) {
-			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInvalidRequest), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInvalidRequest), r.URL)
 			atomic.AddUint64(&globalHTTPStats.rejectedRequestsInvalid, 1)
 			return
 		}
@@ -513,56 +439,7 @@ func setBucketForwardingHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if globalDNSConfig == nil || len(globalDomainNames) == 0 || !globalBucketFederation ||
 			guessIsHealthCheckReq(r) || guessIsMetricsReq(r) ||
-			guessIsRPCReq(r) || guessIsLoginSTSReq(r) || isAdminReq(r) {
-			h.ServeHTTP(w, r)
-			return
-		}
-
-		// For browser requests, when federation is setup we need to
-		// specifically handle download and upload for browser requests.
-		if guessIsBrowserReq(r) {
-			var bucket, _ string
-			switch r.Method {
-			case http.MethodPut:
-				if getRequestAuthType(r) == authTypeJWT {
-					bucket, _ = path2BucketObjectWithBasePath(otterioReservedBucketPath+"/upload", r.URL.Path)
-				}
-			case http.MethodGet:
-				if t := r.URL.Query().Get("token"); t != "" {
-					bucket, _ = path2BucketObjectWithBasePath(otterioReservedBucketPath+"/download", r.URL.Path)
-				} else if getRequestAuthType(r) != authTypeJWT && !strings.HasPrefix(r.URL.Path, otterioReservedBucketPath) {
-					bucket, _ = request2BucketObjectName(r)
-				}
-			}
-			if bucket == "" {
-				h.ServeHTTP(w, r)
-				return
-			}
-			sr, err := globalDNSConfig.Get(bucket)
-			if err != nil {
-				if err == dns.ErrNoEntriesFound {
-					writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrNoSuchBucket),
-						r.URL, guessIsBrowserReq(r))
-				} else {
-					writeErrorResponse(r.Context(), w, toAPIError(r.Context(), err),
-						r.URL, guessIsBrowserReq(r))
-				}
-				return
-			}
-			if globalDomainIPs.Intersection(set.CreateStringSet(getHostsSlice(sr)...)).IsEmpty() {
-				r.URL.Scheme = "http"
-				if globalIsTLS {
-					r.URL.Scheme = "https"
-				}
-				r.URL.Host = getHostFromSrv(sr)
-				// Make sure we remove any existing headers before
-				// proxying the request to another node.
-				for k := range w.Header() {
-					w.Header().Del(k)
-				}
-				globalForwarder.ServeHTTP(w, r)
-				return
-			}
+			guessIsRPCReq(r) || guessIsSTSReq(r) || isAdminReq(r) {
 			h.ServeHTTP(w, r)
 			return
 		}
@@ -598,9 +475,9 @@ func setBucketForwardingHandler(h http.Handler) http.Handler {
 		sr, err := globalDNSConfig.Get(bucket)
 		if err != nil {
 			if err == dns.ErrNoEntriesFound {
-				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrNoSuchBucket), r.URL, guessIsBrowserReq(r))
+				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrNoSuchBucket), r.URL)
 			} else {
-				writeErrorResponse(r.Context(), w, toAPIError(r.Context(), err), r.URL, guessIsBrowserReq(r))
+				writeErrorResponse(r.Context(), w, toAPIError(r.Context(), err), r.URL)
 			}
 			return
 		}
@@ -659,7 +536,7 @@ type criticalErrorHandler struct{ handler http.Handler }
 func (h criticalErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err == logger.ErrCritical { // handle
-			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInternalError), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInternalError), r.URL)
 			return
 		} else if err != nil {
 			panic(err) // forward other panic calls
@@ -676,7 +553,7 @@ func setSSETLSHandler(h http.Handler) http.Handler {
 			if r.Method == http.MethodHead {
 				writeErrorResponseHeadersOnly(w, errorCodes.ToAPIErr(ErrInsecureSSECustomerRequest))
 			} else {
-				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInsecureSSECustomerRequest), r.URL, guessIsBrowserReq(r))
+				writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInsecureSSECustomerRequest), r.URL)
 			}
 			return
 		}

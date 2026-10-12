@@ -131,6 +131,58 @@ class CLIContractRunnerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             cli_contract.differences(before, after, {"unrelated": changes["health"]})
 
+    def test_platform_reviewed_delta_requires_exact_before_and_after(self):
+        old = {"id": "help/server", "argv": ["server", "--help"], "exit_code": 0,
+               "stdout": "otterio.exe server [%OTTERIO_BROWSER_ADDRESS%] web console\n",
+               "stderr": "", "side_effects": []}
+        new = dict(old, stdout="otterio.exe server [%OTTERIO_BROWSER_ADDRESS%] admin API\n")
+        before = {"platform_family": "windows", "cases": [old]}
+        after = {"platform_family": "windows", "cases": [new]}
+        change = {"reason": "rename the retained management listener",
+                  "fields_before": {"stdout": "otterio server [$OTTERIO_BROWSER_ADDRESS] web console\n"},
+                  "fields_after": {"stdout": "otterio server [$OTTERIO_BROWSER_ADDRESS] admin API\n"},
+                  "fields_before_by_platform": {"windows": {"stdout": old["stdout"]}},
+                  "fields_after_by_platform": {"windows": {"stdout": new["stdout"]}}}
+        self.assertFalse(cli_contract.differences(before, after, {old["id"]: change}))
+        unix_before = dict(before, platform_family="unix", cases=[dict(old, **change["fields_before"])])
+        unix_after = dict(after, platform_family="unix", cases=[dict(new, **change["fields_after"])])
+        self.assertFalse(cli_contract.differences(unix_before, unix_after, {old["id"]: change}))
+        with self.assertRaisesRegex(ValueError, "does not match the archived case"):
+            cli_contract.differences(dict(before, platform_family="unix"),
+                                     dict(after, platform_family="unix"), {old["id"]: change})
+        for field, value in (("stdout", new["stdout"] + "unexpected\n"), ("stderr", "error\n"),
+                             ("exit_code", 1), ("side_effects", [{"path": "config"}]),
+                             ("argv", ["server"])):
+            with self.subTest(field=field):
+                changed = dict(after, cases=[dict(new, **{field: value})])
+                self.assertTrue(cli_contract.differences(before, changed, {old["id"]: change}))
+        with self.assertRaisesRegex(ValueError, "does not match the archived case"):
+            changed = dict(before, cases=[dict(old, stdout=old["stdout"] + "unexpected\n")])
+            cli_contract.differences(changed, after, {old["id"]: change})
+        with self.assertRaisesRegex(ValueError, "does not match the archived case"):
+            missing_before = dict(change)
+            del missing_before["fields_before_by_platform"]
+            cli_contract.differences(before, after, {old["id"]: missing_before})
+        self.assertTrue(cli_contract.differences(dict(before, platform_family="unix"), after,
+                                                {old["id"]: change}))
+
+    def test_platform_reviewed_delta_rejects_policy_and_field_scope_changes(self):
+        old = {"id": "help/server", "argv": ["server", "--help"], "stdout": "old\n"}
+        new = dict(old, stdout="new\n")
+        before = {"platform_family": "windows", "cases": [old]}
+        after = {"platform_family": "windows", "cases": [new]}
+        change = {"reason": "reviewed help wording", "fields_before": {"stdout": "old Unix\n"},
+                  "fields_after": {"stdout": "new Unix\n"},
+                  "fields_before_by_platform": {"windows": {"stdout": "old\n"}},
+                  "fields_after_by_platform": {"windows": {"stdout": "new\n"}}}
+        for after_fields, error in (({"stderr": "new\n"}, "invalid approved delta"),
+                                    ({"argv": ["server"]}, "cannot change invocation")):
+            invalid = dict(change, fields_after_by_platform={"windows": after_fields})
+            if "argv" in after_fields:
+                invalid["fields_before_by_platform"] = {"windows": {"argv": old["argv"]}}
+            with self.subTest(fields=after_fields), self.assertRaisesRegex(ValueError, error):
+                cli_contract.differences(before, after, {old["id"]: invalid})
+
     def test_manifest_and_baseline_case_ids_are_unique(self):
         manifest = cli_contract.load(cli_contract.CONTRACT_DIR / "cases.json")
         baseline = cli_contract.load(cli_contract.CONTRACT_DIR / "baseline.json")

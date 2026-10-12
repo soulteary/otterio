@@ -608,20 +608,6 @@ func fiberRequest(c fiber.Ctx) (*http.Request, error) {
 	return r, nil
 }
 
-// guessIsBrowserReqFiber checks if the request is from a browser.
-func guessIsBrowserReqFiber(c fiber.Ctx) bool {
-	// Cheap precondition straight off the fasthttp request; only build an
-	// *http.Request for the auth-type classification when it can still match.
-	if !globalBrowserEnabled || !strings.Contains(c.Get("User-Agent"), "Mozilla") {
-		return false
-	}
-	r, err := fiberRequest(c)
-	if err != nil {
-		return false
-	}
-	return guessIsBrowserReq(r)
-}
-
 //nolint:unused
 func guessIsHealthCheckReqFiber(c fiber.Ctx) bool {
 	if method := c.Method(); method != fiber.MethodGet && method != fiber.MethodHead {

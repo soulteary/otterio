@@ -66,23 +66,6 @@ var matchingFuncNames = [...]string{
 	"http.HandlerFunc.ServeHTTP",
 	"cmd.serverMain",
 	"cmd.StartGateway",
-	"cmd.(*webAPIHandlers).ListBuckets",
-	"cmd.(*webAPIHandlers).MakeBucket",
-	"cmd.(*webAPIHandlers).DeleteBucket",
-	"cmd.(*webAPIHandlers).ListObjects",
-	"cmd.(*webAPIHandlers).RemoveObject",
-	"cmd.(*webAPIHandlers).Login",
-	"cmd.(*webAPIHandlers).SetAuth",
-	"cmd.(*webAPIHandlers).CreateURLToken",
-	"cmd.(*webAPIHandlers).Upload",
-	"cmd.(*webAPIHandlers).Download",
-	"cmd.(*webAPIHandlers).DownloadZip",
-	"cmd.(*webAPIHandlers).GetBucketPolicy",
-	"cmd.(*webAPIHandlers).ListAllBucketPolicies",
-	"cmd.(*webAPIHandlers).SetBucketPolicy",
-	"cmd.(*webAPIHandlers).PresignedGet",
-	"cmd.(*webAPIHandlers).ServerInfo",
-	"cmd.(*webAPIHandlers).StorageInfo",
 	// add more here ..
 }
 

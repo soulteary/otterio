@@ -61,7 +61,7 @@ otterio.exe gateway nas M:\export
 
 ## 3. 验证
 
-为了验证部署是否成功，可能通过浏览器或者[`oc`](https://github.com/soulteary/oc#readme)访问OtterIO。你应该可以从各个OtterIO节点访问上传的文件。
+使用 [`oc`](https://github.com/soulteary/oc#readme)上传对象，并通过各个已配置的共享后端端点核对内容。浏览器访问由独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)提供，使用实际的 S3/Admin 端点和配置身份的权限；服务端不再提供 Web UI。
 
 ## 了解更多
 - [使用`oc`](https://github.com/soulteary/oc#readme)

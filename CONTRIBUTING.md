@@ -10,10 +10,10 @@ upstream MinIO instructions may refer to different commands, APIs or dependencie
 - `main.go` enters `cmd.Main`; `cmd/` implements the CLI, HTTP routing,
   authentication, administration, storage backends and background workers.
 - `cmd/gateway/` registers the remaining NAS and S3 gateways.
-- `pkg/` contains policy, lifecycle, notification, encryption, RPC and other
+- `pkg/` contains policy, lifecycle, notification, encryption and other
   supporting packages; `internal/clisupport/` maintains CLI compatibility helpers.
-- `browser/` holds the console source and committed production assets embedded
-  in the Go binary. See the [browser guide](browser/README.md).
+- The standalone Web Console is maintained in [OC](https://github.com/soulteary/oc),
+  outside this server repository. See the [OC Console guide](https://github.com/soulteary/oc/blob/main/docs/console.md).
 - `buildscripts/`, `.github/workflows/` and `testdata/cli/` define checks, release
   tooling and the CLI compatibility contract.
 - `docs/` and `docs/zh_CN/` contain operational guides and translations;
@@ -21,11 +21,9 @@ upstream MinIO instructions may refer to different commands, APIs or dependencie
 
 ## Toolchain and local build
 
-Use Go **1.27.2 or newer**, Git, Make and Bash. The browser additionally needs
-Node.js **24.21.0 or newer** and Bun **1.4.2**. For race tests install a working C
+Use Go **1.27.2 or newer**, Git, Make and Bash. For race tests install a working C
 compiler; ordinary server builds use `CGO_ENABLED=0`. The pinned versions in
-[go.mod](go.mod), [Makefile](Makefile), [browser/package.json](browser/package.json)
-and CI are the source of truth.
+[go.mod](go.mod), [Makefile](Makefile) and CI are the source of truth.
 
 ```sh
 make build
@@ -33,7 +31,7 @@ make build
 ./otterio server --help
 ```
 
-`make build` includes committed console assets; it does not rebuild the browser.
+`make build` builds the server binary. Build and run `oc-console` separately for browser access.
 Configure your own root credentials before starting a manual deployment. Follow
 [Quick Start](README.md#quick-start) for the credential and listener setup.
 
@@ -60,7 +58,7 @@ contains additional checks beyond the Makefile targets.
 # Full Go verification: pinned tools, lint, generated-code check, build and tests.
 make test
 
-# Uncached race tests with CGO, excluding the browser asset package.
+# Uncached race tests with CGO.
 make test-race
 
 # Container credential policy and executable documentation examples.
@@ -71,7 +69,7 @@ python3 -m unittest discover -s buildscripts -p 'test_release_*.py' -v
 ```
 
 `make test` installs the tool versions declared in the Makefile and may download
-dependencies. It does not run the browser suite or the Python CLI/release suites.
+dependencies. It does not run the Python CLI/release suites.
 Container tests that need a compiled CLI use `OTTERIO_TEST_BINARY`; tests without
 that input may skip their real-binary cases. Consult
 [container CI](.github/workflows/container-security-checks.yml) for that setup.
@@ -81,12 +79,11 @@ For CLI behavior changes, use the archived contract and fixture checks in
 [CLI migration notes](docs/cli-migration.md). Do not regenerate a baseline merely
 to hide a compatibility failure.
 
-For browser changes, run the install/test/release commands in
-[browser/README.md](browser/README.md). Commit source changes, the dependency
-manifest/lockfile when changed, and regenerated `browser/production/` assets.
-Use the development server for iteration and `bun run release` for final assets;
-the build script clears existing development and production output directories.
-CI rebuilds production assets and checks for differences.
+For Web Console changes, follow the contribution and test instructions in
+[OC](https://github.com/soulteary/oc). Server integration changes should preserve
+the S3, Admin and STS protocols, authentication, separate listener addresses and
+independent S3/Admin CA configuration. Verify the affected operations using
+the actual backend identity and permissions.
 
 Linux CI runs the full Go suite and race checks. Windows runs a build, focused
 directory regressions and a real server startup/S3 smoke test; it does not run

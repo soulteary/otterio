@@ -329,12 +329,9 @@ Once set the healer settings are automatically applied without the need for serv
 
 ## Environment only settings (not in config)
 
-### Browser
+### Legacy browser setting
 
-The embedded Web is deprecated for local single-identity use; the default remains
-unchanged during migration. See the [notice and acceptance gates](../web-console-deprecation.md).
-
-Enable or disable access to the web UI with `OTTERIO_BROWSER`; the default is `on`. Setting it to `off` does not disable the S3 or management APIs.
+The embedded Web Console has been removed. Leave `OTTERIO_BROWSER` unset or set it to `off`; explicitly setting it to `on` fails startup with migration guidance. This setting does not disable the S3 or Admin APIs. Use the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md) for browser access. See the [removal scope and release gates](../web-console-removal.md) before selecting a release.
 
 Example:
 
@@ -343,11 +340,11 @@ export OTTERIO_BROWSER=off
 otterio server /data
 ```
 
-### Browser Address (separate console listener)
+### Admin address (legacy console flag names)
 
-By default the web console and S3 API share the listener bound to `--address`. To serve the web UI and the admin API on a dedicated port, pass `--console-address` to `server`/`gateway`, or set the `OTTERIO_BROWSER_ADDRESS` environment variable. The S3 listener stops redirecting browser requests to the web UI in this mode; clients hitting the S3 port with a browser receive standard S3 error responses.
+By default S3 and Admin APIs share the listener bound to `--address`. To serve Admin APIs on a dedicated port, pass `--console-address` to `server`/`gateway`, or set `OTTERIO_BROWSER_ADDRESS`. These compatibility names configure the Admin listener; neither listener serves the Web Console. OC uses the actual S3 URL and a separate `--admin-url` for this deployment, while `oc-console` has its own browser listener. See [separate S3 and Admin listeners](../../README.md#run-s3-and-admin-on-separate-ports).
 
-The console port must be different from the S3 port, otherwise the server refuses to start.
+The Admin port must be different from the S3 port, otherwise the server refuses to start. The example ports below do not override existing deployment ports or proxy mappings.
 
 Example:
 
@@ -360,9 +357,9 @@ export OTTERIO_BROWSER_ADDRESS=":9001"
 otterio server --address ":9000" /data
 ```
 
-### Browser Certs Dir (separate TLS for the console listener)
+### Admin certificate directory (legacy console flag names)
 
-When using `--console-address`, you can also point the console listener at its own TLS keypair via `--console-certs-dir` (or the `OTTERIO_BROWSER_CERTS_DIR` environment variable). The directory must contain `public.crt` and `private.key`, mirroring the layout of `--certs-dir`. Without this flag, the console listener reuses the certificates loaded from `--certs-dir`.
+When using `--console-address`, you can point the Admin listener at its own TLS keypair via `--console-certs-dir` (or `OTTERIO_BROWSER_CERTS_DIR`). The directory must contain `public.crt` and `private.key`, mirroring the layout of `--certs-dir`. Without this flag, the Admin listener reuses the certificates loaded from `--certs-dir`. Configure OC's S3 and Admin CA trust separately when the endpoints use different CAs; OC Web Console HTTPS certificates are configured in `oc-console`, independently of these server certificate directories.
 
 Example:
 

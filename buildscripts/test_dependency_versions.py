@@ -11,7 +11,7 @@ class DependencyVersionTests(unittest.TestCase):
         self.version = re.search(r"^go (\S+)$", self.mod, re.M)[1]
 
     def test_go_build_images_match_module_minimum(self):
-        for name in ("Dockerfile", "Dockerfile.cicd", "Dockerfile.release", "Dockerfile.dev.browser"):
+        for name in ("Dockerfile", "Dockerfile.cicd", "Dockerfile.release"):
             with self.subTest(file=name):
                 self.assertIn(self.version, (ROOT / name).read_text(encoding="utf-8"))
 
@@ -30,11 +30,6 @@ class DependencyVersionTests(unittest.TestCase):
         make = (ROOT / "Makefile").read_text(encoding="utf-8")
         self.assertRegex(make, r"(?m)^STRINGER_VERSION \?= v\d+\.\d+\.\d+$")
         self.assertIn("go install golang.org/x/tools/cmd/stringer@$(STRINGER_VERSION)", make)
-
-    def test_browser_ci_uses_the_committed_lockfile(self):
-        workflow = (ROOT / ".github/workflows/go.yml").read_text(encoding="utf-8")
-        self.assertIn("bun install --frozen-lockfile", workflow)
-        self.assertIn("git diff --exit-code -- production", workflow)
 
     def test_mint_sdk_pin_matches_server(self):
         sdk = "github.com/soulteary/otterio-sdk/v7"

@@ -14,7 +14,7 @@
 - [Sample Response](#sample-response)
 - [Using WebIdentity API](#using-webidentity-api)
 - [Authorization Flow](#authorization-flow)
-- [Using OtterIO Browser](#using-otterio-browser)
+- [Browser access with OC OIDC](#browser-access-with-oc-oidc)
 - [Explore Further](#explore-further)
 
 ## Introduction
@@ -141,15 +141,18 @@ $ go run web-identity.go -cid 204367807228-ok7601k6gj1pgge7m09h7d79co8p35xx.apps
 - Once obtained the JWT id_token is further sent to STS endpoint i.e OtterIO to retrieve temporary credentials.
 - Temporary credentials are displayed on the browser upon successful retrieval.
 
-## Using OtterIO Browser
-To support WebIdentity login on OtterIO Browser, set openid configuration and restart OtterIO
+## Browser access with OC OIDC
+
+The server does not provide an embedded OpenID login page. Browser access uses the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md) from source or a release containing `--auth-mode oidc`. The administrator configures OC's fixed issuer/client ID, browser HTTPS origin and callback, and actual S3/Admin HTTPS URLs with independent CA trust. Register OC's callback with the IdP and validate its profile against the selected OC version. Each browser session uses that user's STS credentials and server policy, without a shared administrator identity. See [removal scope and release gates](../web-console-removal.md); older releases do not acquire OIDC browser login automatically.
+
+The server's STS endpoint still needs OpenID configuration. Use an OC alias authorized for administration, with its separate `--admin-url` if the server uses `--console-address`, then restart OtterIO after applying the configuration:
 
 ```
-mc admin config set myotterio identity_openid config_url="<CONFIG_URL>" client_id="<client_identifier>"
+oc admin config set myotterio identity_openid config_url="<CONFIG_URL>" client_id="<client_identifier>"
 ```
 
 ```
-mc admin service restart myotterio
+oc admin service restart myotterio
 ```
 
 Sample URLs for Keycloak are
@@ -158,10 +161,7 @@ Sample URLs for Keycloak are
 
 JWT token returned by the Identity Provider should include a custom claim for the policy, this is required to create a STS user in OtterIO. The name of the custom claim could be either `policy` or `<NAMESPACE_PREFIX>policy`.  If there is no namespace then `claim_prefix` can be ignored. For example if the custom claim name is `https://min.io/policy` then, `claim_prefix` should be set as `https://min.io/`.
 
-- Open OtterIO Browser and click `Log in with OpenID`
-- Enter the `Client ID` obtained from Identity Provider and press ENTER, if not you can set a `client_id` on server to avoid this step.
-- The user will be redirected to the Identity Provider login page
-- Upon successful login on Identity Provider page the user will be automatically logged into OtterIO Browser
+The earlier sample application and STS API flow remain separate from OC's browser login. Do not use the sample application's callback URL as OC's callback or assume its HTTP IdP example meets OC's HTTPS requirements.
 
 ## Explore Further
 - [OtterIO Admin Complete Guide](https://github.com/soulteary/oc/blob/main/docs/administration.md)

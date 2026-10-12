@@ -35,7 +35,7 @@ if sys.argv[1:3] == ["list", "-m"]:
     print(os.environ.get("FAKE_MODULE", "example.test/storage"))
     sys.exit(int(os.environ.get("FAKE_MODULE_EXIT", "0")))
 if sys.argv[1] == "list":
-    print(os.environ.get("FAKE_PACKAGES", "example.test/storage\\nexample.test/storage/cmd\\nexample.test/storage/browser\\nexample.test/storage/browser/assets\\nexample.test/storage/pkg/browsercache"))
+    print(os.environ.get("FAKE_PACKAGES", "example.test/storage\\nexample.test/storage/cmd\\nexample.test/storage/pkg/storagecache"))
     sys.exit(int(os.environ.get("FAKE_LIST_EXIT", "0")))
 if sys.argv[1] == "test":
     sys.exit(int(os.environ.get("FAKE_TEST_EXIT", "0")))
@@ -62,7 +62,7 @@ sys.exit(91)
         calls = self.calls()
         self.assertEqual(calls[1]["args"], ["list", "-tags", "kqueue", "-race", "./..."])
         self.assertEqual(calls[2]["args"], ["test", "-tags", "kqueue", "-race", "-timeout", "90m", "-count=1",
-                                         "example.test/storage", "example.test/storage/cmd", "example.test/storage/pkg/browsercache"])
+                                         "example.test/storage", "example.test/storage/cmd", "example.test/storage/pkg/storagecache"])
         self.assertTrue(all(call["cgo"] == "1" for call in calls))
         self.assertTrue(all(call["cwd"] == str(self.root) for call in calls))
 
@@ -75,8 +75,8 @@ sys.exit(91)
         self.assertEqual(self.run_script(FAKE_MODULE_EXIT="43").returncode, 43)
         self.assertEqual(len(self.calls()), 1)
 
-    def test_empty_or_browser_only_selection_is_an_error(self):
-        for packages in ("", "example.test/storage/browser\nexample.test/storage/browser/assets"):
+    def test_empty_selection_is_an_error(self):
+        for packages in ("", "\n"):
             with self.subTest(packages=packages):
                 self.assertNotEqual(self.run_script(FAKE_PACKAGES=packages).returncode, 0)
         self.assertFalse(any(call["args"][0] == "test" for call in self.calls()))

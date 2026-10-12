@@ -114,12 +114,12 @@ func lifecycleNativeDestination(_ TestErrHandler, dest ObjectLayer) *lifecycleDe
 			}
 			if r.Method == http.MethodGet && r.URL.Query().Has("versioning") {
 				if code := checkRequestAuthType(r.Context(), r, policy.GetBucketVersioningAction, bucket, ""); code != ErrNone {
-					writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(code), r.URL, false)
+					writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(code), r.URL)
 					return
 				}
 				meta, err := loadBucketMetadata(r.Context(), dest, bucket)
 				if err != nil {
-					writeErrorResponse(r.Context(), w, toAPIError(r.Context(), err), r.URL, false)
+					writeErrorResponse(r.Context(), w, toAPIError(r.Context(), err), r.URL)
 					return
 				}
 				writeSuccessResponseXML(w, meta.VersioningConfigXML)
@@ -158,7 +158,7 @@ func lifecycleNativeDestination(_ TestErrHandler, dest ObjectLayer) *lifecycleDe
 			}
 		}
 		if failed {
-			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInternalError), r.URL, false)
+			writeErrorResponse(r.Context(), w, errorCodes.ToAPIErr(ErrInternalError), r.URL)
 			return
 		}
 		switch r.Method {

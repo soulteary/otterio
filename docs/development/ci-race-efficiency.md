@@ -33,14 +33,14 @@ Other jobs retain setup-go's built-in module AND build-output caching.
 metadata is evaluated only when a build uses it. Ordinary builds, cross-compiles,
 healing verification, Linux/Windows tests, security regressions and release gates
 are retained. The launcher uses one `go test` invocation, the original `kqueue`
-tag and 20-minute per-package timeout, `CGO_ENABLED=1`, and `-count=1`. The latter
+tag and 90-minute per-package timeout, `CGO_ENABLED=1`, and `-count=1`. The latter
 forces tests to execute but does not discard compilation caches; honest fresh
 race execution may take longer than a previous cached-result run.
 
 Package discovery uses the same race/tag/CGO settings and must succeed before any
-test starts. An empty selection is an error. Only the module's `browser` subtree
-is excluded, not arbitrary package names containing the word `browser`. No test
-filters, `-short`, timeout relaxation, `t.Parallel()` changes, race suppression,
+test starts. An empty selection is an error. All packages returned by the module's
+`go list -tags kqueue -race ./...` are selected; the removed browser package has no exclusion rule.
+No test filters, `-short`, `t.Parallel()` changes, race suppression,
 KDF changes or sharding are introduced. PR and main both keep the full race run.
 
 ## Inspect a run

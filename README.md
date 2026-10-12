@@ -16,7 +16,7 @@ English · [简体中文](./README_zh_CN.md)
 
 OtterIO is a high-performance, S3-compatible object storage server. It is suitable for building infrastructure for machine learning, analytics, backup, and general application data workloads.
 
-This README covers running OtterIO on bare metal, Docker, and from source. The [documentation index](./docs/README.md) links deployment, administration, security, and development guides; [OC](https://github.com/soulteary/oc) is the companion CLI, and [OtterIO SDK](https://github.com/soulteary/otterio-sdk) is the Go client.
+This README covers running OtterIO on bare metal, Docker, and from source. The [documentation index](./docs/README.md) links deployment, administration, security, and development guides; [OC](https://github.com/soulteary/oc) provides the companion CLI and independent Web Console, and [OtterIO SDK](https://github.com/soulteary/otterio-sdk) is the Go client.
 
 > [!IMPORTANT]
 > OtterIO is an independent, community-maintained fork of the upstream Apache-licensed MinIO codebase. It is **not** affiliated with, endorsed by, or sponsored by MinIO, Inc. See [Trademark & Upstream Notice](#trademark--upstream-notice) and the [Security Advisory](#security-advisory) before deploying.
@@ -52,7 +52,7 @@ docker run -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
   soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-The console is at <http://127.0.0.1:9001>; sign in with the credentials you configured. See [Verify](#verify) to connect OC and check an upload and download.
+Port `9000` serves S3 and port `9001` serves the Admin API. The Web interface runs separately in `oc-console`; see [Verify](#verify) for OC setup and an upload/download check. This source branch removes the embedded Web; published images retain their own version's behavior. See the [removal candidate and migration status](docs/web-console-removal.md) before selecting a replacement release.
 
 > [!IMPORTANT]
 > Container startup now rejects missing or default credentials. Older no-credential Docker examples must be updated before upgrading. For `_FILE` secrets, a non-root Compose profile, and migration instructions, see [Docker security](./README_DOCKER_SECURITY.md). Only an explicit local-development opt-in, `OTTERIO_ALLOW_DEFAULT_CREDENTIALS=1`, permits default credentials; keep such demos bound to loopback. Production deployments should pin a reviewed release tag or digest instead of `latest`.
@@ -177,17 +177,19 @@ mkdir -p "$HOME/otterio-data"
 
 ## Configuration
 
-### Embedded Web deprecation
+### Independent Web Console
 
-The embedded Web is deprecated for local single-identity use in favor of OC Console.
-`OTTERIO_BROWSER` still defaults to `on`; independent-user/OIDC deployments
-retain the old Web. See the [notice, migration, rollback and acceptance gates](docs/web-console-deprecation.md).
+Use [OC Console](https://github.com/soulteary/oc/blob/main/docs/console.md) for browser access. This branch removes OtterIO's embedded page, Web RPC and Web-specific upload/download/ZIP routes. OC's current source supports independent native IAM and OIDC sessions; use a version containing the required mode and a compatible backend. Browser users retain their own backend permissions. A shared startup alias shares one identity and must not substitute for independent users.
 
-### Run S3 and Web Console on separate ports
+This is a removal candidate, not a certified release migration. Published replacement pairs, platform/upgrade checks and the historical notification/fallback windows remain incomplete. See the [removal assessment](docs/web-console-removal.md) and [deprecation history](docs/web-console-deprecation.md).
 
-By default the web console and the S3 API share the listener bound to `--address`. OtterIO can serve the web UI and admin API on a dedicated port so that reverse proxies, firewalls, and network policies can govern S3 traffic and console traffic independently.
+Omit `OTTERIO_BROWSER` or set it to `off`. Explicit `on` fails with migration guidance; it cannot restore the removed Web.
 
-Enable the dedicated console listener via the `--console-address` flag or the `OTTERIO_BROWSER_ADDRESS` environment variable:
+### Run S3 and Admin on separate ports
+
+By default S3 and Admin share the listener bound to `--address`. OtterIO can serve Admin on a dedicated port so that reverse proxies, firewalls, and network policies can govern storage and management traffic independently.
+
+Enable the dedicated Admin listener via the compatibility name `--console-address` or `OTTERIO_BROWSER_ADDRESS`:
 
 ```sh
 # CLI flag
@@ -198,21 +200,21 @@ export OTTERIO_BROWSER_ADDRESS=":9001"
 otterio server --address ":9000" /data
 ```
 
-When the dedicated console listener is enabled:
+When the dedicated Admin listener is enabled:
 
-- `:9000` only serves the S3 API, STS, health, and metrics. Browser requests are no longer redirected to the web UI.
-- `:9001` serves the web console (`/otterio/`) and the admin API (`/otterio/admin/v3/*`).
-- The console port must differ from the S3 port; otherwise startup fails fast.
+- `:9000` serves the S3 API, STS, health, and metrics.
+- `:9001` serves the Admin API (`/otterio/admin/v3/*`), without an embedded Web page.
+- The Admin port must differ from the S3 port; otherwise startup fails fast.
 - `Ctrl+C` / `SIGTERM` shuts down both listeners gracefully.
 
 > [!NOTE]
-> The admin API (used by `oc admin ...`) is served from the console port in this mode. OC keeps the S3 URL and an independent `--admin-url` in one alias; see [Verify](#verify). Regular S3 operations (`oc cp`, `oc ls`, etc.) continue to use the S3 port. Private CAs can be configured independently for each endpoint; see [OC configuration](https://github.com/soulteary/oc/blob/main/docs/configuration.md).
+> The Admin API (used by `oc admin ...` and OC Console's permitted management operations) uses the dedicated Admin port. OC keeps the S3 URL and an independent `--admin-url` in one alias; see [Verify](#verify). Regular S3 operations (`oc cp`, `oc ls`, etc.) continue to use the S3 port. Private CAs can be configured independently for each endpoint; see [OC configuration](https://github.com/soulteary/oc/blob/main/docs/configuration.md).
 
 If `--console-address` is not provided, both surfaces share a single port (the original behaviour).
 
-### Dedicated TLS certificates for the console listener
+### Dedicated TLS certificates for the Admin listener
 
-When you split listeners, you can also point the console at its own TLS keypair so the S3 API and the web console can use different certificates (e.g. an internal CA-signed cert for `:9000` and a public cert for `:9001`). Use `--console-certs-dir` or `OTTERIO_BROWSER_CERTS_DIR`:
+When you split listeners, S3 and Admin can use independent TLS keypairs and CA trust. The compatibility names remain `--console-certs-dir` and `OTTERIO_BROWSER_CERTS_DIR`; they configure OtterIO's Admin listener, not OC Console's browser TLS:
 
 ```sh
 otterio server \
@@ -226,13 +228,13 @@ otterio server \
 The directory pointed to by `--console-certs-dir` must contain `public.crt` and `private.key`, the same layout used by `--certs-dir`. Notes:
 
 - `--console-certs-dir` requires `--console-address`; otherwise startup fails fast.
-- If `--console-certs-dir` is not set, the console listener reuses the certificates loaded from `--certs-dir` (the legacy behaviour).
-- The S3 listener always uses `--certs-dir`; only the console listener honours `--console-certs-dir`.
+- If `--console-certs-dir` is not set, the Admin listener reuses the certificates loaded from `--certs-dir`.
+- The S3 listener always uses `--certs-dir`; only the Admin listener honours `--console-certs-dir`.
 - Both keypairs are watched and hot-reloaded by the same certificate manager used for `--certs-dir`.
 
 ### Firewall
 
-By default OtterIO listens on port `9000` for S3 traffic (and `9001` if the console listener is split out). Some platforms block these ports until you explicitly open them.
+By default OtterIO listens on port `9000` for S3 traffic (and the configured Admin port, `9001` in these examples, when split). Restrict Admin access to the management network or local OC process; the browser endpoint belongs to OC Console. Some platforms block these ports until you explicitly open them.
 
 <details>
 <summary><strong>ufw</strong> (Debian / Ubuntu)</summary>
@@ -283,11 +285,11 @@ When deployed on a single drive, OtterIO server lets clients access any pre-exis
 
 Use the credentials configured at startup. The Docker examples above pass `OTTERIO_ROOT_USER` and `OTTERIO_ROOT_PASSWORD`; they do not use a default password. In a new shell, restore those same saved values before running the client commands below. Bare-metal binaries are not subject to the container entrypoint check, but should also be configured with non-default credentials before deployment.
 
-### Web console
+### OC Web Console
 
-For the Quick Start's split listeners, open <http://127.0.0.1:9001>; for a single listener, open <http://127.0.0.1:9000>. Log in with your configured root username and password to create buckets, upload objects, and browse contents.
+Install a compatible `oc-console` using the [OC Console guide](https://github.com/soulteary/oc/blob/main/docs/console.md), configure the actual S3 and Admin endpoints, then open the browser address printed by OC. OtterIO's `9000` and `9001` endpoints do not serve the Web Console. Select native IAM or OIDC mode for independent users and retain each user's backend permissions; do not share an administrator alias among them.
 
-The separate optional OC console protocols and their latest evidence are documented in [layered console acceptance](docs/console-server-acceptance.md) and the [current report entry](docs/console-server-acceptance-results.json).
+The [removal assessment](docs/web-console-removal.md) distinguishes source acceptance from published replacement availability. The optional backend protocols have separate [layered acceptance](docs/console-server-acceptance.md) and a [report entry](docs/console-server-acceptance-results.json).
 
 ### OC client
 
