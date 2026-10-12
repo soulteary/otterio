@@ -108,7 +108,7 @@ changes and results. These exact program hashes passed:
 - [Features and version-copy authorization](web-console-removal-evidence/features.json):
   20 groups per single HTTP, dual HTTP and dual TLS; 60 groups and 372 copy requests,
   including explicit denials and ZIP read authorization.
-- [Native IAM](web-console-removal-evidence/native.json): 25 groups in each of
+- [Initial corrected native IAM](web-console-removal-evidence/native.json): 25 groups in each of
   single/dual HTTPS; 50 groups. Independent permissions, session retirement,
   secret rotation, conditional IAM changes and cascade deletion are verified.
 - [Range, diagnostics and OIDC/STS](web-console-removal-evidence/protocol.json):
@@ -136,10 +136,44 @@ Five harness regression checks and four binary-identity checks passed. Only Pyth
 acceptance code changed in OC; the Go programs above were not replaced. Original
 failed runs remain historical evidence and are not counted as successes.
 
+OC PR #45's [review follow-up](https://github.com/soulteary/oc/pull/45#discussion_r4249561639)
+strengthens this fixture at `555c1812`: acknowledgement keys must match the full
+expected parent/service-child set, and the same signed service-child read must
+return 403 after parent disable and 200 after enable. Missing, extra, duplicate
+and malformed scope entries are rejected. The [new native report](web-console-removal-evidence/native-review-follow-up.json)
+passed 25 groups each in single/dual HTTPS against the same program hashes;
+eight native fixture regressions and four binary-identity checks passed.
+The [follow-up summary](web-console-removal-evidence/review-follow-up-summary.json)
+records the new report and harness fingerprints. Original reports and the recorded
+patch keep their historical scope. This verifies the fixture's known service child,
+not complete coverage of every STS child or a new production binary.
+
+The [next review](https://github.com/soulteary/oc/pull/45#discussion_r4249720452)
+also requires inventory evidence of deletion, since a 403 alone only establishes
+revoked access. At OC `c379e31f`, successful authenticated management reads confirm
+the known service child exists after creation, disappears after parent deletion,
+and remains absent after identical parent recreation. Failed reads or malformed
+responses cannot establish removal. The [inventory follow-up report](web-console-removal-evidence/native-cascade-inventory.json)
+again passed 25 groups per HTTPS listener arrangement; 11 native regressions and
+four binary-identity checks passed. Its new fingerprints and scope are recorded
+separately in the follow-up summary, with earlier reports preserved.
+
 The CLI archive comparison has four local DNS differences in 133 cases; the same
 four responses occur on unchanged current OtterIO main. Comparing against that
 same-source baseline yields no unexpected differences after 35 intentional help
 text changes. The archive is retained; no DNS behavior is waived or changed here.
+
+The initial [Windows CLI check](https://github.com/soulteary/otterio/actions/runs/38268280288/job/114875920190)
+failed because those approved help snapshots only recorded Unix output. Exact
+Windows before/after snapshots now preserve `.exe`, `%ENV%` and `C:\\>` formatting;
+the comparator selects both sides for the same platform and still rejects
+unapproved output, invocation, exit-status and side-effect changes. The 133-case
+Windows artifact replay has no unexpected differences after the same 35 help
+changes; 29 local comparator units passed, with five optional/platform skips.
+The before observations are PR #41's candidate artifact, strictly matched against
+the fixed `52e2d95` baseline by its successful CI job with no delta exemptions;
+they are not presented as a direct baseline build. Artifact identities and this
+scope are recorded in the follow-up summary. Fresh Windows CI remains pending.
 
 Packaging/entrypoint unit checks passed with two optional image checks skipped;
 five optional CLI-contract unit fixtures were also skipped. Linux image runtime,

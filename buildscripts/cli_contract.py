@@ -463,9 +463,13 @@ def differences(expected, actual, approved_changes=None):
         new_case = comparison_view(new.get(case_id))
         if approved_changes and case_id in approved_changes:
             change = dict(approved_changes[case_id])
-            platform_fields = change.get("fields_after_by_platform", {}).get(actual["platform_family"])
-            if platform_fields is not None:
-                change["fields_after"] = platform_fields
+            # Help output includes native executable names, environment-variable
+            # syntax and examples. Keep exact reviewed snapshots for both sides
+            # rather than normalizing away those observable platform differences.
+            for fields in ("fields_before", "fields_after"):
+                platform_fields = change.get(fields + "_by_platform", {}).get(actual["platform_family"])
+                if platform_fields is not None:
+                    change[fields] = platform_fields
             if not change.get("reason") or change.get("fields_before", {}).keys() != change.get("fields_after", {}).keys():
                 raise ValueError(f"invalid approved delta: {case_id}")
             if not change["fields_after"].keys() <= {"exit_code", "stdout", "stderr", "side_effects"}:
