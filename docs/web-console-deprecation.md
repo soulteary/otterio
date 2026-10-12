@@ -8,10 +8,20 @@ See the [candidate assessment and configuration](web-console-removal.md).
 Technical migration preparation now targets the October 10 stable server to
 Web-free main `c3b3665` and newer OC `26a0fa6`. Follow the
 [configuration preflight and real upgrade/rollback rehearsal](console-migration-preparation.md).
-This acceleration does not waive the original notice/fallback policy. A public
-Web-free release still requires that sequence or an explicit, documented policy
-decision with its supported scope and replacement rollback boundary. New code
-and green source CI cannot complete a historical release window.
+The accelerated migration decision is now authorized: explicit notice plus
+verified older-server/snapshot rollback replaces the original sequence for the
+first approved public Web-free release containing the notice. Its revision
+becomes effective only at that publication. New code and green source CI cannot
+complete a historical release window or enact publication.
+
+The [English announcement draft](releases/console-migration-announcement.en.md)
+states the selected accelerated departure explicitly. Its replacement gate
+is acceptance of the actual packaged pair, limited support, a tested retained-old
+program/snapshot restore boundary and operator approval of publication. The notice
+is not issued and its revision is not effective until the first approved public Web-free release is published
+with that announcement. The published history below remains unchanged and its
+old windows are not marked complete. Current draft/publication/promotion steps
+are documented in the [release guide](releasing.md).
 
 ## Published history
 
@@ -74,6 +84,13 @@ requires a retained supported version and prior data/configuration compatibility
 validation; do not require or assume an unverified storage downgrade.
 
 ## Remaining release gates
+
+The checklist below preserves the original outstanding commitments. The
+selected accelerated decision records an explicit departure from that sequence
+rather than completing or silently deleting it. Its revision becomes effective
+only at the first approved public Web-free release containing the notice.
+An official successful packaged-pair run is a prerequisite for publication;
+it does not authorize publication or make the selected revision effective by itself.
 
 The newer [darwin/arm64 source rehearsal](console-migration-preparation.md#verified-development-upgrade-on-2026-10-13-asiashanghai)
 now verifies the October 10 published programs → clean candidate → old-program

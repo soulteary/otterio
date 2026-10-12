@@ -1,7 +1,7 @@
 name: Release
 
-# Publish fixed-version artifacts first. Only the separately serialized promotion
-# workflow may move latest aliases, using the recorded, smoke-tested digest.
+# Build fixed-version artifacts and stop at a verified stable draft.
+# Publication requires separate manual packaged-pair acceptance; latest is manual.
 on:
   push:
     tags:
@@ -12,11 +12,6 @@ on:
         description: 'Existing RELEASE.YYYY-MM-DDTHH-MM-SSZ tag'
         required: true
         type: string
-      promote_latest:
-        description: 'Promote only if this is the newest published stable release'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -35,7 +30,6 @@ jobs:
       tag: ${{ steps.meta.outputs.tag }}
       version: ${{ steps.meta.outputs.version }}
       sha: ${{ steps.meta.outputs.sha }}
-      latest: ${{ github.event_name == 'push' || inputs.promote_latest }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -87,27 +81,14 @@ jobs:
           CGO_ENABLED: '0'
           GO111MODULE: 'on'
           OTTERIO_RELEASE: RELEASE
-          VERSION: ${{ needs.prepare.outputs.version }}
           TAG: ${{ needs.prepare.outputs.tag }}
-        run: |
-          set -euo pipefail
-          LDFLAGS="$(go run buildscripts/gen-ldflags.go "$VERSION")"
-          mkdir -p dist
-          for p in linux/amd64 linux/arm64 linux/ppc64le darwin/amd64 darwin/arm64 windows/amd64; do
-            os="${p%/*}"
-            arch="${p#*/}"
-            out="dist/otterio-${os}-${arch}"
-            if [ "$os" = windows ]; then out="${out}.exe"; fi
-            GOOS="$os" GOARCH="$arch" go build \
-              -tags kqueue -trimpath -ldflags "$LDFLAGS" -o "$out" .
-          done
-          (cd dist && sha256sum otterio-* > "otterio-${TAG}-checksums.txt")
+        run: python3 buildscripts/build-release.py "$TAG" --output "$RUNNER_TEMP/release-binaries"
       - name: Smoke test the release binary
-        run: go run buildscripts/verify-s3-startup.go ./dist/otterio-linux-amd64
+        run: go run buildscripts/verify-s3-startup.go "$RUNNER_TEMP/release-binaries/otterio-linux-amd64"
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: binaries
-          path: dist/
+          path: ${{ runner.temp }}/release-binaries/
           if-no-files-found: error
           retention-days: 7
 
@@ -205,12 +186,11 @@ jobs:
         run: bash buildscripts/verify-release-image.sh "$IMAGE_REF"
 
   release:
-    name: Verify draft assets and publish without moving latest
+    name: Verify candidate assets and retain the stable draft
     runs-on: ubuntu-latest
     needs: [prepare, binaries, docker]
-    # A new published release invalidates an older promotion plan. Serialize
-    # publication with the ENTIRE promotion workflow, even when latest=false.
-    # Keep this at job scope: the caller must release the lock before promotion.
+    # Serialize draft mutations with manual publication and promotion, so neither
+    # can consume assets while a candidate build replaces them.
     concurrency:
       group: otterio-stable-promotion
       cancel-in-progress: false
@@ -226,7 +206,7 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           fetch-depth: 0
-      - name: Recheck the remote tag before publishing
+      - name: Recheck the remote tag before staging
         run: |
           git fetch --no-tags --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
           python3 buildscripts/release-preflight.py --existing "$RELEASE_TAG"
@@ -247,6 +227,15 @@ jobs:
             --source-sha "$RELEASE_SHA" --repository "$GITHUB_REPOSITORY" \
             --digest "$IMAGE_DIGEST" --dockerhub-published "$DOCKERHUB_PUBLISHED" \
             --dockerhub-user "$DOCKERHUB_USERNAME"
+          # The new candidate checksum binds the actual manifest, not its local placeholder.
+          (cd dist && sha256sum \
+            otterio-linux-amd64 otterio-linux-arm64 otterio-linux-ppc64le \
+            otterio-darwin-amd64 otterio-darwin-arm64 otterio-windows-amd64.exe \
+            release-manifest.json > "otterio-${RELEASE_TAG}-checksums.txt")
+      - name: Prepare the full tagged migration announcement and commit-bound notes
+        run: |
+          python3 buildscripts/release-notes.py --source-sha "$RELEASE_SHA" \
+            --output "$RUNNER_TEMP/release-notes.md"
       - name: Upload only to a draft and verify downloaded assets
         run: |
           set -euo pipefail
@@ -256,25 +245,15 @@ jobs:
             jq -se 'length == 1 and .[0].draft == true and .[0].prerelease == false' "$RUNNER_TEMP/release-state.json" >/dev/null || {
               echo '::error::Expected one non-prerelease draft; refusing to change release assets or publication state.'; exit 1;
             }
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
           else
             gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
-              --target "$RELEASE_SHA" --title "Version $RELEASE_TAG" --notes-file RELEASE_NOTES.md --latest=false
+              --target "$RELEASE_SHA" --title "Version $RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md" --latest=false
           fi
           gh release upload "$RELEASE_TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
           verify_dir="$(mktemp -d)"
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir "$verify_dir"
           diff <(find dist -maxdepth 1 -type f -printf '%f\n' | sort) <(find "$verify_dir" -maxdepth 1 -type f -printf '%f\n' | sort)
           for asset in dist/*; do cmp "$asset" "$verify_dir/$(basename "$asset")"; done
-          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest=false
-
-  promote:
-    name: Promote verified stable digests
-    needs: [prepare, release]
-    if: needs.prepare.outputs.latest == 'true'
-    permissions:
-      contents: write
-      packages: write
-    uses: ./.github/workflows/promote-release.yml
-    with:
-      tag: ${{ needs.prepare.outputs.tag }}
-    secrets: inherit
+          echo "Verified stable draft $RELEASE_TAG; publication and latest promotion require separate manual workflows." >> "$GITHUB_STEP_SUMMARY"

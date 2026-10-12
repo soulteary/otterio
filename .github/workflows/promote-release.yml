@@ -1,15 +1,9 @@
 name: Stable release promotion
 
-# This workflow never builds, creates tags, changes version tags, or uploads
-# release assets. Automatic/manual promotion and Release's publication job
-# share this lock from release-list validation through the final alias update.
+# This manual workflow never builds, creates tags, changes version tags, or uploads
+# release assets. Draft staging, publication and promotion share this lock.
 # A newer release cannot be published while an older promotion plan is in use.
 on:
-  workflow_call:
-    inputs:
-      tag:
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       tag:
@@ -25,6 +19,7 @@ concurrency:
   queue: max
 jobs:
   promote:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
