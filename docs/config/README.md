@@ -12,6 +12,27 @@ otterio server /data
 
 When root credentials are supplied through environment variables, OtterIO uses them to encrypt backend configuration, IAM data and policies. Keep these credentials available when restarting or migrating the deployment.
 
+### Console migration compatibility checks
+
+Before changing from a Web-bearing release to the removal candidate, inspect the
+actual deployment configuration:
+
+- Omit `OTTERIO_BROWSER` or set `off`; explicit `on`/`true`/`1` refuses startup.
+- Preserve S3/Admin addresses, volumes, root encryption credentials and proxy
+  mappings. The old `console` flag and `OTTERIO_BROWSER_ADDRESS`/
+  `OTTERIO_BROWSER_CERTS_DIR` environment names still configure Admin, not a browser service.
+- A separate Admin port must differ from S3; `--console-certs-dir` requires
+  `--console-address`. Keep S3 and Admin CA trust independent where configured.
+- Configure OC's separate Web endpoint and the actual S3/Admin URLs and CA files.
+  Select local, native IAM or OIDC according to the intended identity model;
+  independent users must use their own backend permissions.
+- Retain the old verified program and rehearse data/configuration rollback on
+  isolated data. An environment toggle cannot restore deleted Web code, and a UI
+  rollback does not undo writes or credential changes.
+
+The [migration rehearsal guide](../console-migration-preparation.md) records the
+exact old/new source baseline, checks and remaining release-policy decision.
+
 ### Certificate Directory
 
 TLS certificates by default are stored under ``${HOME}/.otterio/certs`` directory. You need to place certificates here to enable `HTTPS` based access. See the local [TLS guide](../tls/README.md).

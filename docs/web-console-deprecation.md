@@ -5,6 +5,14 @@ This source branch is a removal candidate requested for review. It does not cert
 a released replacement, completed notice cycles or a completed fallback window.
 See the [candidate assessment and configuration](web-console-removal.md).
 
+Technical migration preparation now targets the October 10 stable server to
+Web-free main `c3b3665` and newer OC `26a0fa6`. Follow the
+[configuration preflight and real upgrade/rollback rehearsal](console-migration-preparation.md).
+This acceleration does not waive the original notice/fallback policy. A public
+Web-free release still requires that sequence or an explicit, documented policy
+decision with its supported scope and replacement rollback boundary. New code
+and green source CI cannot complete a historical release window.
+
 ## Published history
 
 The original notice shipped in
@@ -67,6 +75,12 @@ validation; do not require or assume an unverified storage downgrade.
 
 ## Remaining release gates
 
+The newer [darwin/arm64 source rehearsal](console-migration-preparation.md#verified-development-upgrade-on-2026-10-13-asiashanghai)
+now verifies the October 10 published programs → clean candidate → old-program
+rollback, with the recorded four-directory/TLS/identity fixture and one new-object
+write. It supplies that limited upgrade evidence; it does not complete the
+released-pair, other promised-profile or notification/fallback gates below.
+
 The [published-pair evidence](https://github.com/soulteary/oc/blob/d944a0508942b278934a37908f4afc798e84504b/docs/console-released-pair.md)
 certifies only the exact older versions and profiles it records. Its IAM creation
 gap is addressed by newer development protocols, which still require a compatible
@@ -98,6 +112,11 @@ removal is documented separately from these outstanding release requirements.
 不表示正式替代发行、通知周期或回退窗口已经完成。配置与删除边界见
 [删除分析](web-console-removal.md)。
 
+本轮提前做技术适配，以 10 月 10 日稳定版到 `c3b3665` 和 OC `26a0fa6` 为
+基线，按[配置预检与真实升级回退指南](console-migration-preparation.md)演练。
+这不废除历史通知／回退策略；若提前公开发行无内置 Web 版本，须明确记录策略
+调整、支持范围与替代回退边界，不能用源码或 CI 通过代替已承诺的发行窗口。
+
 首次公告已随 `RELEASE.2026-10-10T16-38-05Z` 发布，发布时间为北京时间
 2026-10-11 00:46:29。这只是第一个通知发行周期；该旧发行物仍默认开启内置网页。
 历史要求至少两个已通知发行周期、解决迁移阻塞后单独审查默认关闭，再公布有期限
@@ -118,3 +137,8 @@ OC 最新源码已实现 native IAM、浏览器 OIDC 独立会话与条件 IAM �
 上方清单仍要求新的正式配对、能力与权限矩阵、全平台和双架构运行、真实升级回退、
 稳定性、通知周期与回退期限。开发证据不能替代发行认证。保留 S3/Admin/STS、
 health/metrics、节点通信、共享 JWT、终端打印及管理日志。
+
+新的 [darwin/arm64 源码演练](console-migration-preparation.md#verified-development-upgrade-on-2026-10-13-asiashanghai)
+已完成报告所列四目录／TLS／身份样本的真实跨版本升级、旧程序回退和新增对象／
+快照检查；它补足这一限定开发范围，不代表上方正式配对、其他支持场景和历史
+通知／回退窗口已完成。

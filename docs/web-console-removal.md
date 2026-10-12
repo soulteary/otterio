@@ -6,6 +6,27 @@ protocols. The removal reduces maintenance of the embedded front end
 and the storage server's exposed Web handlers. Release migration gates remain
 open; this candidate is not a claim that production retirement is certified.
 
+## Current migration preparation
+
+The removal is now in main at `c3b3665154264993fa06a28e95ab25fdd03d7c0c`.
+The [current migration guide](console-migration-preparation.md) covers configuration
+preflight and actual October 10 stable → candidate → rollback rehearsal with
+OC `26a0fa6c4d2f380ff9eba84c9dcb91a378b73c27`. The
+[release body](../RELEASE_NOTES.md) covers the full production delta from that
+stable baseline, including native IAM/STS authority. A new
+[darwin/arm64 rehearsal](console-migration-preparation.md#verified-development-upgrade-on-2026-10-13-asiashanghai)
+passed actual published-old → clean candidate → published-old on a four-directory
+erasure fixture and both TLS profiles, including one new-object write and snapshot
+recovery. This source result does not certify new release artifacts, all
+platforms or OIDC upgrades. It is recorded separately; all dated assessments and reports below remain evidence
+of their original program/source identities. Merging removal code does not
+complete the published notice/default-off/fallback sequence or authorize release.
+
+当前迁移指南已补入 darwin/arm64 四目录纠删码样本、单／双 TLS 的真实旧正式版 →
+候选 → 旧正式版结果，包括新增对象后的回退读取及快照恢复。以下有日期的
+评估和报告保留其原程序／脚本身份；新结果不代表正式产物、全平台或 OIDC
+升级已验收，也不完成通知／默认关闭／回退窗口。
+
 ## Assessment as of 2026-10-12
 
 The reviewed bases are OtterIO `703eef50e36c3ef163810561c8cd4f7f8c7c1d28`
