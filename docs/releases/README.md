@@ -11,6 +11,25 @@ Preparing or merging these documents does not create a tag or publish artifacts.
 
 ## Current preparation
 
+[Console migration preparation](../console-migration-preparation.md) covers the
+October 10 stable server `RELEASE.2026-10-10T16-38-05Z` (`8cc518b3`) to
+`c3b3665`, with OC `26a0fa6` source. The root release body records the complete
+production delta: conditional native IAM and live-parent STS authority (#41),
+then embedded Web removal (#42). Configuration preflight preserves storage,
+credentials, S3/Admin listeners and CA trust; actual previous-release upgrade and
+rollback evidence is recorded separately from older development results.
+The [new darwin/arm64 report](../console-migration-preparation.md#verified-development-upgrade-on-2026-10-13-asiashanghai)
+passed both TLS profiles on a four-directory erasure fixture, including a new-object write,
+old-program rollback and snapshot recovery. It remains source-build evidence.
+
+The two-notice/default-off/fallback commitment is still incomplete. Public
+Web-free release requires completion of that policy or an explicit documented
+decision changing it, with a supported scope and rollback boundary. This work
+prepares technical adaptation; it does not publish, merge or promise a new tag.
+Reconcile any later main changes and verify the resulting release artifacts.
+
+## Historical preparation reviews
+
 [2026-10-08 release review](2026-10-08-release-review.md) covers all 12 commits
 after `RELEASE.2026-10-07T14-09-17Z` through
 `458b54c9bc155780c546696a12581450adfee32b`: durable lifecycle transition and
@@ -25,10 +44,10 @@ and [CLI migration](../cli-migration.md). Reconcile any later main changes befor
 selecting a fresh UTC tag.
 
 The [project assessment for 2026-10-08](../development/project-status-20261008.md)
-is a historical snapshot at `8ead9fb`, an ancestor of the current `458b54c` cutoff.
-Its implementation range is included in the preparation above and root release
-notes. Publication and deployment acceptance remain pending as recorded in the
-release review.
+is a historical snapshot at `8ead9fb`, an ancestor of that `458b54c` cutoff.
+Its implementation range is included in the October 8 preparation. Its
+publication and deployment acceptance status remains as recorded in the
+historical release review.
 
 ## Historical announcement draft
 
@@ -58,13 +77,16 @@ unless attribution is approved; do not publish contact details or correspondence
 ## 中文说明
 
 下一版本的中英双语 Release 正文以根目录 [RELEASE_NOTES.md](../../RELEASE_NOTES.md)
-为准。本次范围、兼容检查与待执行验收见[10 月 8 日发布核对记录](2026-10-08-release-review.md)，
-范围已补齐至 `458b54c`：生命周期迁移与版本恢复、分层元数据与覆盖写入保护、
-桶配置修订与 IAM 自助轮换、存储类型同步，以及此前账户信息、对象条件写入、CLI、
-SDK/kits、Mint 安装器、镜像刷新与文档更新。当前回归与 `6f6d083` 历史兼容检查分开记录。
-[10 月 8 日项目现状分析](../development/project-status-20261008.md)是 `8ead9fb` 的历史快照，
-其实现范围已纳入当前 `458b54c` 发布准备；正式发布与部署验收仍以核对记录中的待办为准。
-上方 10 月 5 日文章及 10 月 5 日、7 日核对记录作为历史材料保留，不能代替当前正文。
+为准。本次[迁移准备](../console-migration-preparation.md)以 10 月 10 日稳定版
+`8cc518b3` 到 `c3b3665` 为范围，OC 源码为 `26a0fa6`：包含条件 native IAM、
+STS 当前父账户权限检查和内置 Web 移除。保留数据、凭据、S3/Admin 端口与 CA，
+真实旧版升级／回退报告单独记录，不改写原开发证据。
+新的 darwin/arm64 四目录纠删码样本、单／双 TLS 演练已通过新增对象后的旧程序回退
+及升级前快照恢复；它仍是报告限定的源码构建证据。
+两次通知、默认关闭和回退窗口仍未满足，公开发行无内置 Web 版本须完成原策略
+或明确记录调整决定、支持范围及回退边界。本准备不执行发布／合并。
+10 月 5 日文章和 5 日、7 日、8 日核对记录及项目现状分析作为历史材料保留，
+不能代替当前正文或证明新发行产物已经通过。
 正式发布时再确定新标签和链接，不复用旧版标签。
 64 MiB 是内部缓冲 RPC 限制，不是 S3 对象大小限制；仅当清单有效且固定标签摘要一致时，
 才能单独恢复晋升。清单损坏或缺失，应修复后使用新标签完整发布。

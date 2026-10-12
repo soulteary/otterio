@@ -12,6 +12,23 @@ otterio server /data
 
 通过环境变量设置 root 凭据时，OtterIO 会使用这些凭据加密后端配置、IAM 数据和策略。重启或迁移部署时，需要保留对应的凭据。
 
+### Console 迁移兼容预检
+
+从含旧 Web 的发行版更换到删除候选前，检查实际部署配置：
+
+- 省略 `OTTERIO_BROWSER` 或设置 `off`，显式 `on`／`true`／`1` 会拒绝启动。
+- 保留 S3/Admin 地址、数据卷、root 加密凭据和代理映射。旧 `console` 参数及
+  `OTTERIO_BROWSER_ADDRESS`／`OTTERIO_BROWSER_CERTS_DIR` 仍配置 Admin，不是网页。
+- Admin 独立端口不能与 S3 相同；`--console-certs-dir` 要求
+  `--console-address`。已有 S3/Admin 独立 CA 信任继续分别配置。
+- OC 单独提供网页端点，使用实际 S3/Admin URL 和 CA 文件。按身份需求选择
+  local、native IAM 或 OIDC；独立用户使用自身后端权限。
+- 保留经校验的旧程序，在隔离数据上演练数据／配置回退。环境开关不能恢复已
+  删除网页，网页回退也不会撤销写入或凭据变更。
+
+[迁移演练指南](../../console-migration-preparation.md)记录旧／新源码基线、
+检查方式及仍待决定的发行策略。
+
 ### 证书目录
 TLS 证书默认保存在 `${HOME}/.otterio/certs`。将 `public.crt` 和 `private.key` 放入该目录可启用 HTTPS，详见[本项目 TLS 指南](../tls/README.md)。
 

@@ -12,12 +12,18 @@ loads that file from the tagged commit; automatic PR/commit excerpts are disable
 An article or date-named file under `docs/releases/` is supporting material,
 not an automatically selected release body or proof that its version exists.
 Choose a fresh UTC tag after merge and verification, not while drafting notes.
-For the current preparation, review the [baseline-to-main change inventory and
-release checklist](releases/2026-10-08-release-review.md), including lifecycle
-transition/restore, tier metadata and overwrite protection, configuration and
-credential operations, SDK/kits, CLI and conditional writes after
-`RELEASE.2026-10-07T14-09-17Z`, reconciled through `458b54c`. Reconcile any later main commits
-before tagging; a fixed review cutoff is not permission to omit later changes.
+For the current preparation, review the [Console migration and rollback guide](console-migration-preparation.md)
+and root release body. The production range is after
+`RELEASE.2026-10-10T16-38-05Z` (`8cc518b3`) through `c3b3665`: conditional native
+IAM/current-parent STS authorization and embedded Web removal. Reconcile later
+main commits before tagging. Older dated reviews retain their original scope;
+they are not the current release inventory.
+
+The [published notice/default-off/fallback policy](web-console-deprecation.md)
+is not enforced by the automated tag gate and remains incomplete. Before a
+public Web-free release, record either its completion or an explicit policy
+decision with a supported migration and rollback boundary. Technical preparation
+or green source CI alone does not authorize a release or waive that commitment.
 
 Keep reporter acknowledgements anonymous unless public attribution has been
 approved. Never copy private email addresses, mail headers or correspondence into
