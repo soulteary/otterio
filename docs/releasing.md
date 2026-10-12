@@ -5,12 +5,31 @@ The runtime uses an RFC3339 build version; this workflow deliberately does not
 advertise `v1.2.3`/SemVer builds. No hard-coded runtime version needs updating:
 `buildscripts/gen-ldflags.go` derives it from the validated tag.
 
+The current process has three explicit operations: build a verified stable
+draft, publish its accepted unchanged bytes, then optionally promote the newest
+public stable release. `release.yml` and `publish-release.yml` never call
+promotion. A stable GitHub draft is not an RC; fixed-version registry images may
+already be public. The Chinese summary at the end is retained as a historical
+pre-staging record. Current operation follows the English procedure below.
+
 ## 1. Prepare and merge
 
 Review and update the root `RELEASE_NOTES.md` for each release. The release job
-loads that file from the tagged commit; automatic PR/commit excerpts are disabled.
+combines it with the **full** English migration announcement at
+`docs/releases/console-migration-announcement.en.md`, reading both directly from
+the selected tagged commit. `buildscripts/release-notes.py` requires that exact
+source checkout and rewrites each document's relative Markdown links to
+`soulteary/otterio/blob/<source SHA>/...`, while preserving external/anchor links
+and code examples. The source notice's preparation-status lead is rendered as a
+conditional release notice: publication of this approved Web-free release makes
+the policy revision effective; draft preparation alone does not. The source
+draft status remains unchanged. The prepared body is used when creating or updating only a
+stable draft; acceptance binds the resulting `releaseNotesSHA256`, and publication
+refuses changes to that accepted body. Automatic PR/commit excerpts are disabled.
 An article or date-named file under `docs/releases/` is supporting material,
 not an automatically selected release body or proof that its version exists.
+The fixed English migration announcement above is the explicit exception,
+not a date-based file selection.
 Choose a fresh UTC tag after merge and verification, not while drafting notes.
 For the current preparation, review the [Console migration and rollback guide](console-migration-preparation.md)
 and root release body. The production range is after
@@ -21,9 +40,14 @@ they are not the current release inventory.
 
 The [published notice/default-off/fallback policy](web-console-deprecation.md)
 is not enforced by the automated tag gate and remains incomplete. Before a
-public Web-free release, record either its completion or an explicit policy
-decision with a supported migration and rollback boundary. Technical preparation
-or green source CI alone does not authorize a release or waive that commitment.
+public Web-free release, preserve that history and document the selected
+accelerated notice plus verified older-server/snapshot rollback boundary.
+Technical preparation or green source CI alone does not publish a release.
+The [English migration announcement](releases/console-migration-announcement.en.md)
+records the approved accelerated decision explicitly. The notice is not issued
+and its revision is not effective through a merge, tag build or acceptance run.
+The operator must review the actual supported scope and acceptance before the
+first approved public Web-free release containing it makes the revision effective.
 
 Keep reporter acknowledgements anonymous unless public attribution has been
 approved. Never copy private email addresses, mail headers or correspondence into
@@ -83,9 +107,9 @@ Without a signing key, use `git tag -a "$TAG" -m "OtterIO $TAG"` instead of the
 sign/verify pair. An annotated tag is not a cryptographically signed tag, and a
 verified commit does not automatically make its tag verified. Never force-push,
 move or delete a published release tag. Do not also create a release manually:
-pushing the tag triggers the publication workflow.
+pushing the tag triggers draft preparation, not public release or promotion.
 
-## 3. What the workflow publishes
+## 3. What the draft workflow prepares
 
 The workflow validates and peels the tag to a commit, requires that commit to be
 on `origin/main` with passing main CI, and refuses to overwrite an already
@@ -94,7 +118,7 @@ published GitHub Release. Every build checkout uses that fixed commit SHA.
 | Output | Platforms / behavior |
 | --- | --- |
 | Standalone binaries | Linux amd64/arm64/ppc64le; macOS amd64/arm64; Windows amd64 |
-| Checksums | `otterio-<TAG>-checksums.txt`, SHA-256 for all six binaries |
+| Checksums | `otterio-<TAG>-checksums.txt`, seven SHA-256 entries covering the six binaries and the final release manifest |
 | Release manifest | `release-manifest.json`, containing the release tag, source SHA and configured image repository/digest pairs |
 | GHCR image | `ghcr.io/soulteary/otterio:<TAG>`, Linux amd64/arm64/ppc64le |
 | Docker Hub image | `<DOCKERHUB_USERNAME>/otterio:<TAG>` when both Docker Hub secrets are configured; `soulteary/otterio:<TAG>` for the project's usual namespace |
@@ -126,7 +150,7 @@ a failed release green. This prevents new malformed manifests; it does not
 repair an already uploaded one. The workflow does not sign release assets with
 GPG; optional Git tag signing is a separate mechanism.
 
-### Publication order
+### Draft, acceptance, publication and promotion order
 
 1. Validate source, notes and exact-commit main CI; reject an already published
    release or a prerelease draft.
@@ -135,16 +159,29 @@ GPG; optional Git tag signing is a separate mechanism.
    changing `latest`. Authentication/network errors are not evidence of absence.
    Run the real S3 startup/create/put/get/delete probe against the pushed GHCR
    digest on Linux amd64; this does not exercise every image architecture.
-4. Generate and validate `release-manifest.json`, then upload the eight expected files to a stable
-   draft, download them again and compare filenames and every file's bytes.
-   Publish only after verification, with GitHub's latest marker unchanged.
-5. For tag pushes, automatically call **Stable release promotion**. Manual
-   Release runs do this only with `promote_latest=true`. Promotion validates the
+4. Generate and validate `release-manifest.json` with the registry identities,
+   regenerate the checksum file to cover the six binaries and that manifest,
+   then upload the eight expected files to a stable draft. Download them again
+   and compare filenames and every file's bytes.
+   Stop at that verified draft. No tag-push or manual build invokes publication
+   or stable promotion.
+5. Prepare the compatible OC draft and run the official
+   [`soulteary/oc` packaged-pair acceptance](https://github.com/soulteary/oc/blob/main/docs/console-release-acceptance.md)
+   from `main` for the actual two tags. Review its successful run, exact assets,
+   extracted programs, immutable images, runtime and upgrade scope, and the
+   attestation SHA-256. Local candidate or packaged reports do not unlock publication.
+6. Review the release notes, selected migration policy and restore
+   boundary. Manually publish OC first, then run `publish-release.yml` on `main`
+   for OtterIO with `tag`, `acceptance_run_id` and `attestation_sha256`. Publication
+   rechecks unchanged accepted bytes and fixed-image identities, and requires
+   the accepted OC partner to be public. It never rebuilds or replaces assets
+   and leaves GitHub latest unchanged.
+7. Separately dispatch **Stable release promotion**, if requested. It validates the
    published release, source identity, allowed repositories and recorded digests;
    only the newest published stable timestamp release may move `latest`.
    Update and verify registry aliases first, then GitHub's latest marker.
 
-Publication and promotion share the repository-wide `otterio-stable-promotion`
+Draft asset mutation, publication and promotion share the repository-wide `otterio-stable-promotion`
 concurrency group. Promotion uses the recorded digest without rebuilding or
 changing version tags. The policy prevents older delayed jobs from rolling
 aliases back; it does not protect against out-of-band administrator changes.
@@ -155,7 +192,18 @@ temporarily inconsistent. Inspect all outputs before announcing.
 
 ## 4. Verify before announcing
 
-Confirm the Release workflow and its requested promotion completed successfully.
+Before public release, confirm the draft build and official packaged-pair
+acceptance completed successfully and independently review the attestation hash.
+The `CONSOLE_RELEASE_TOKEN` secret needs Contents read on both repositories for
+cross-repository draft access and Actions read on both for official run/artifact reads;
+the own-repository token does not imply partner-draft access. Publication uses
+the reader secret only for reads and the repository's own `GITHUB_TOKEN` for
+the final release mutation. The reader does not need Contents write.
+This guide does not assert that those secrets
+or registry permissions have already been configured.
+
+After publication, confirm the manual publication completed; confirm separate
+promotion only if it was explicitly requested.
 Check the six binaries, checksum file and `release-manifest.json` (eight uploaded
 assets, excluding GitHub's automatically generated source archives), the release
 body and reporter-approved credit. Confirm the manifest's tag/source SHA match
@@ -172,13 +220,17 @@ The image's `--version` command does not require server credentials. For startup
 and S3 tests, use non-default credentials and follow the
 [container migration guide](../README_DOCKER_SECURITY.md).
 
-Download binaries and checksums from the matching GitHub Release into one clean
+Download binaries, manifest and checksums from the matching GitHub Release into one clean
 directory. On Linux run `sha256sum --check "otterio-${TAG}-checksums.txt"`;
 on macOS run `shasum -a 256 --check "otterio-${TAG}-checksums.txt"`. Download all
-listed binaries to verify the full checksum file, or verify a selected binary
-against its entry. This checksum file covers the six binaries, not the later
-created `release-manifest.json`. The manifest records identity; it is not a
-signature or attestation.
+listed files to verify the full seven-entry checksum file, or verify a selected
+file against its entry. The current staged build refreshes checksums after
+manifest generation, so the final registry-bound manifest is covered. The
+independently identified October 10 previous release instead has six executable
+entries and excludes its later-created manifest; its upgrade verification uses
+the independently trusted official asset digest. Preserve that historical
+checksum rather than fabricating a missing entry. The manifest records identity;
+it is not a signature or attestation.
 
 ### Read-only manifest and fixed-tag verification
 
@@ -251,6 +303,8 @@ workflow status:
 | Failure before image tags were pushed | Prefer **Re-run failed jobs** on the original run, preserving successful binary outputs. Inspect registry state if a push was attempted. |
 | Versioned image push partly succeeded, or pushed-image smoke failed | Investigate; normally repair on main and use a **new tag**. Do not delete or overwrite image tags just to bypass the guard. |
 | Images succeeded; draft upload/download verification failed | Prefer **Re-run failed jobs** on the original run, reusing successful image/binary outputs. Only stable draft assets may be replaced by the workflow. |
+| Verified drafts exist; acceptance failed, is incomplete or expired | Keep the drafts and prior reports, investigate, then dispatch a fresh official manual acceptance run for unchanged identities and review its new run ID/hash. Do not overwrite the old attestation. Changed source/artifacts require a fresh tag and complete acceptance. |
+| Acceptance passed; publication failed before making the release public | Inspect current draft/assets/images and retry manual publication with the accepted run/hash. Do not rebuild or replace accepted bytes. |
 | GitHub Release published; manifest is valid, all intended repositories are present, and fixed tags match recorded digests; only promotion failed or was omitted | Run **Stable release promotion** for the newest published stable tag after resolving its operational failure. Do not rerun Release to rebuild or re-upload it. |
 | Manifest is malformed, empty, missing an expected registry, or does not match the source/fixed-tag digest | Stop. Investigate and fix on main, then publish a **new tag** through the full pipeline. Re-running promotion does not repair metadata. Do not overwrite published assets or relax the allowlist. |
 | Older release has no `release-manifest.json` | The new promotion workflow refuses it. Do not fabricate a manifest; publish a new release through the complete verified pipeline. |
@@ -269,13 +323,32 @@ The workflow checks out `refs/tags/<tag>` and never creates a tag. A fresh manua
 run can encounter existing-image guards; it is not a substitute for resuming
 only the failed jobs of a partially completed publication.
 
-Manual Release runs default to **not** promoting `latest`. Enable
-`promote_latest` only for the intended newest stable release. Optional CLI:
+Manual draft builds do not publish or promote. Optional CLI for an existing
+unpublished tag:
 
 ```sh
 gh workflow run release.yml --repo soulteary/otterio --ref main \
-  -f tag="$TAG" -F promote_latest=true
+  -f tag="$TAG"
 ```
+
+For a verified stable draft whose unchanged pair passed official OC acceptance,
+publish OC first, review the migration announcement and actual scope, then:
+
+```sh
+gh workflow run publish-release.yml --repo soulteary/otterio --ref main \
+  -f tag="$TAG" -f acceptance_run_id="$ACCEPTANCE_RUN_ID" \
+  -f attestation_sha256="$ATTESTATION_SHA256"
+```
+
+Use the actual successful `soulteary/oc` main `console-release-acceptance.yml` run
+and independently reviewed attestation SHA-256, not a local report hash. The
+publisher refuses changed accepted assets rather than repairing or replacing
+them. Its official run/evidence checks are not a new Cosign/Sigstore signature.
+
+The publication helper is checked out at the exact `main` dispatch commit,
+`${{ github.sha }}`. It does not follow a newer `main` while waiting for the shared
+lock. The main-only guard remains; a newer reviewed helper requires a new
+dispatch rather than silently changing this run's validation code.
 
 For an **already published** stable release with a verified manifest, use
 **Actions → Stable release promotion → Run workflow** on `main`, or:
@@ -287,13 +360,20 @@ gh workflow run promote-release.yml --repo soulteary/otterio --ref main \
 
 Promotion checks release ordering again; an older stable release is not eligible
 to replace a newer one. It does not create tags, build images or replace assets.
-If artifacts expired, source/workflow changes are required or a clean rebuild
+If build artifacts expired, source/workflow changes are required or a clean rebuild
 is necessary, merge the changes and use a fresh tag. Never move the old tag.
 
 Do not mix a new release workflow with an older tag lacking its helpers. Git tag
 signing, binary checksums, image provenance and artifact signing are separate
 mechanisms; this workflow does not add Cosign signatures or claim reproducible
 binary rebuilds.
+
+## Historical Chinese operating summary
+
+The following Chinese text is preserved unchanged from the earlier publication
+workflow. Its automatic publish/promotion sequence and `promote_latest` advice
+are historical. The current English instructions above require separate manual
+publication and promotion; no old notice or fallback window is marked completed.
 
 ## 中文操作摘要
 

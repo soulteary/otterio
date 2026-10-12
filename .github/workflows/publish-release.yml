@@ -1,0 +1,50 @@
+name: Publish accepted release candidate
+
+# Consume the verified candidate bytes and the successful paired acceptance.
+# This workflow does not build, upload assets, change tags, or promote latest.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing verified stable draft RELEASE tag'
+        required: true
+        type: string
+      acceptance_run_id:
+        description: 'Successful soulteary/oc console-release-acceptance.yml main run'
+        required: true
+        type: string
+      attestation_sha256:
+        description: 'SHA-256 of console-release-acceptance attestation'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: otterio-stable-promotion
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Publish only the accepted existing candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONSOLE_RELEASE_TOKEN: ${{ secrets.CONSOLE_RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          ACCEPTANCE_RUN_ID: ${{ inputs.acceptance_run_id }}
+          ATTESTATION_SHA256: ${{ inputs.attestation_sha256 }}
+        run: |
+          python3 buildscripts/release-stage.py publish \
+            --repository "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG" \
+            --acceptance-run-id "$ACCEPTANCE_RUN_ID" \
+            --attestation-sha256 "$ATTESTATION_SHA256"

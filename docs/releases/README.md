@@ -1,13 +1,25 @@
 # Release materials / 发布材料
 
-The reviewed bilingual body for the next release is
-[RELEASE_NOTES.md](../../RELEASE_NOTES.md). The workflow reads that root file from
-the exact tagged commit; it does not automatically select a date-named article
-or another file in this directory.
+The root body for the next release is [RELEASE_NOTES.md](../../RELEASE_NOTES.md),
+with current English guidance and the retained historical Chinese preparation
+record. The workflow reads that root file and the full fixed
+`console-migration-announcement.en.md` notice from the exact tagged commit,
+combines them into the actual draft Release body, and binds relative links to
+that source commit. It does not automatically select a date-named article or
+another file in this directory. Acceptance binds the prepared body hash before
+manual publication.
 
 The [maintainer release guide](../releasing.md) covers tag creation, exact-commit
 main CI, staged publication, artifact verification and separate digest promotion.
 Preparing or merging these documents does not create a tag or publish artifacts.
+
+[Move the Web Console to OC](console-migration-announcement.en.md) is the current
+English announcement draft. It records the approved accelerated decision and
+limited support/restore boundary, and remains unissued; the revision becomes
+effective at the first approved public Web-free release containing it. No tag,
+removal deadline or completed historical window is invented by the draft.
+The [official packaged-pair acceptance guide](https://github.com/soulteary/oc/blob/main/docs/console-release-acceptance.md)
+separates local evidence from the main-branch attestation required for publication.
 
 ## Current preparation
 
@@ -22,10 +34,11 @@ The [new darwin/arm64 report](../console-migration-preparation.md#verified-devel
 passed both TLS profiles on a four-directory erasure fixture, including a new-object write,
 old-program rollback and snapshot recovery. It remains source-build evidence.
 
-The two-notice/default-off/fallback commitment is still incomplete. Public
-Web-free release requires completion of that policy or an explicit documented
-decision changing it, with a supported scope and rollback boundary. This work
-prepares technical adaptation; it does not publish, merge or promise a new tag.
+The two-notice/default-off/fallback commitment is still incomplete. The approved
+accelerated decision explicitly changes that sequence to notice plus verified
+older-server/snapshot rollback; it becomes effective only at the first approved
+public Web-free release containing the announcement. This preparation does not
+publish or promise a new tag, or mark the old windows complete.
 Reconcile any later main changes and verify the resulting release artifacts.
 
 ## Historical preparation reviews

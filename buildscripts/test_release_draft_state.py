@@ -15,7 +15,7 @@ import unittest
 WORKFLOW = Path(__file__).resolve().parents[1] / ".github/workflows/release.yml"
 TAG = "RELEASE.2026-10-04T07-00-00Z"
 PREPARE = "Reject published releases and prerelease drafts before building"
-PUBLISH = "Upload only to a draft and verify downloaded assets"
+STAGE = "Upload only to a draft and verify downloaded assets"
 
 
 def workflow_shell(name):
@@ -56,7 +56,13 @@ elif args[:2] == ["release", "download"]:
         shutil.copyfile(source, destination / source.name)
     if os.environ.get("CORRUPT_ASSET") == "1":
         (destination / "fixture.bin").write_bytes(b"corrupt")
-elif args[:2] not in (["release", "create"], ["release", "upload"], ["release", "edit"]):
+elif args[:2] in (["release", "create"], ["release", "edit"]):
+    notes = pathlib.Path(args[args.index("--notes-file") + 1]).read_text()
+    if notes != "fixture notes\n\nFull fixture migration announcement\n":
+        raise SystemExit("release must use the full prepared announcement")
+    if args[:2] == ["release", "edit"] and any(arg.startswith(("--draft", "--latest")) for arg in args):
+        raise SystemExit("draft notes refresh must not publish or promote")
+elif args[:2] != ["release", "upload"]:
     raise SystemExit("unexpected gh fixture invocation: " + repr(args))
 '''
 
@@ -72,11 +78,13 @@ class ReleaseDraftStateTests(unittest.TestCase):
             (root / "dist").mkdir()
             (root / "dist/fixture.bin").write_bytes(b"verified fixture")
             (root / "RELEASE_NOTES.md").write_text("fixture notes\n")
+            (root / "release-notes.md").write_text("fixture notes\n\nFull fixture migration announcement\n")
             stub = root / "gh"
             stub.write_text("#!" + sys.executable + "\n" + STUB)
             stub.chmod(0o755)
             env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ.get("PATH", ""),
                        RUNNER_TEMP=str(root), TMPDIR=str(root), CALL_LOG=str(root / "calls"),
+                       GITHUB_STEP_SUMMARY=str(root / "summary"),
                        GITHUB_REPOSITORY="soulteary/otterio", GH_TOKEN="test-only",
                        RELEASE_TAG=TAG, RELEASE_SHA="a" * 40,
                        RELEASE_PAGES=json.dumps(pages), **settings)
@@ -118,51 +126,58 @@ class ReleaseDraftStateTests(unittest.TestCase):
         unrelated = dict(draft(), tag_name="RELEASE.2026-09-01T00-00-00Z")
         self.assert_refused_without_mutation(PREPARE, [[unrelated], [], [dict(draft(), prerelease=True)]])
 
-    def test_publish_rejects_prerelease_before_upload(self):
-        self.assert_refused_without_mutation(PUBLISH, [[dict(draft(), prerelease=True)]])
+    def test_stage_rejects_prerelease_before_upload(self):
+        self.assert_refused_without_mutation(STAGE, [[dict(draft(), prerelease=True)]])
 
-    def test_publish_rejects_missing_state(self):
+    def test_stage_rejects_missing_state(self):
         for field in ("draft", "prerelease"):
             value = draft()
             del value[field]
             with self.subTest(field=field):
-                self.assert_refused_without_mutation(PUBLISH, [[value]])
+                self.assert_refused_without_mutation(STAGE, [[value]])
 
-    def test_publish_rejects_already_published(self):
-        self.assert_refused_without_mutation(PUBLISH, [[dict(draft(), draft=False)]])
+    def test_stage_rejects_already_published(self):
+        self.assert_refused_without_mutation(STAGE, [[dict(draft(), draft=False)]])
 
-    def test_publish_creates_and_verifies_a_new_draft(self):
-        result, calls = self.run_step(PUBLISH, [[]])
+    def test_stage_creates_and_verifies_a_new_draft(self):
+        result, calls = self.run_step(STAGE, [[]])
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual([c[1] for c in calls if c[0] == "release"],
-                         ["create", "upload", "download", "edit"])
-        create, edit = calls[1], calls[-1]
+                         ["create", "upload", "download"])
+        create = calls[1]
         self.assertIn("--draft", create)
-        self.assertIn("--draft=false", edit)
-        self.assertIn("--latest=false", edit)
+        self.assertIn("--latest=false", create)
+        self.assertEqual(Path(create[create.index("--notes-file") + 1]).name, "release-notes.md")
+        self.assertNotIn(["release", "edit"], [c[:2] for c in calls])
 
-    def test_publish_resumes_only_a_stable_draft(self):
-        result, calls = self.run_step(PUBLISH, [[draft()]])
+    def test_stage_resumes_only_a_stable_draft(self):
+        result, calls = self.run_step(STAGE, [[draft()]])
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual([c[1] for c in calls if c[0] == "release"], ["upload", "download", "edit"])
+        self.assertEqual([c[1] for c in calls if c[0] == "release"], ["edit", "upload", "download"])
+        edit = calls[1]
+        self.assertIn("--notes-file", edit)
+        self.assertFalse(any(arg.startswith(("--draft", "--latest")) for arg in edit))
 
-    def test_publish_rejects_ambiguous_multiple_matches(self):
-        self.assert_refused_without_mutation(PUBLISH, [[dict(draft(), prerelease=True)], [draft()]])
+    def test_stage_rejects_ambiguous_multiple_matches(self):
+        self.assert_refused_without_mutation(STAGE, [[dict(draft(), prerelease=True)], [draft()]])
 
     def test_api_failure_is_not_a_missing_release(self):
-        for name in (PREPARE, PUBLISH):
+        for name in (PREPARE, STAGE):
             with self.subTest(step=name):
                 self.assert_refused_without_mutation(name, [[]], API_FAIL="1")
 
-    def test_asset_mismatch_prevents_publication(self):
-        result, calls = self.run_step(PUBLISH, [[draft()]], CORRUPT_ASSET="1")
+    def test_asset_mismatch_fails_draft_verification(self):
+        result, calls = self.run_step(STAGE, [[draft()]], CORRUPT_ASSET="1")
         self.assertNotEqual(result.returncode, 0)
-        self.assertNotIn(["release", "edit"], [c[:2] for c in calls])
+        edits = [call for call in calls if call[:2] == ["release", "edit"]]
+        self.assertEqual(len(edits), 1)
+        self.assertIn("--notes-file", edits[0])
+        self.assertFalse(any(arg.startswith(("--draft", "--latest")) for arg in edits[0]))
 
     def test_state_is_rechecked_after_preparation(self):
         result, _ = self.run_step(PREPARE, [[]])
         self.assertEqual(result.returncode, 0)
-        self.assert_refused_without_mutation(PUBLISH, [[], [dict(draft(), prerelease=True)]])
+        self.assert_refused_without_mutation(STAGE, [[], [dict(draft(), prerelease=True)]])
 
 
 if __name__ == "__main__":

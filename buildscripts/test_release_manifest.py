@@ -145,11 +145,14 @@ class WorkflowManifestTests(unittest.TestCase):
         )
         dist = self.root / "dist"
         dist.mkdir()
-        payload = b"offline release binary fixture\n"
-        (dist / "otterio-linux-amd64").write_bytes(payload)
-        (dist / ("otterio-" + TAG + "-checksums.txt")).write_text(
-            hashlib.sha256(payload).hexdigest() + "  otterio-linux-amd64\n"
-        )
+        names = ("otterio-linux-amd64", "otterio-linux-arm64", "otterio-linux-ppc64le",
+                 "otterio-darwin-amd64", "otterio-darwin-arm64", "otterio-windows-amd64.exe")
+        for name in names:
+            (dist / name).write_bytes(("offline release fixture: " + name + "\n").encode())
+        (dist / ("otterio-" + TAG + "-checksums.txt")).write_text("".join(
+            hashlib.sha256((dist / name).read_bytes()).hexdigest() + "  " + name + "\n"
+            for name in names
+        ))
         self.output = self.root / "outputs"
         self.env = dict(os.environ, GITHUB_REPOSITORY="SoulTeary/OtterIO",
                         RELEASE_TAG=TAG, RELEASE_SHA=SHA, IMAGE_DIGEST=DIGEST,
@@ -206,6 +209,22 @@ class WorkflowManifestTests(unittest.TestCase):
                 result = self.write_manifest()
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "dist/release-manifest.json").exists())
+
+    def test_candidate_checksum_binds_all_six_binaries_and_the_final_manifest(self):
+        self.env["DOCKERHUB_PUBLISHED"] = "false"
+        result = self.write_manifest()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        dist = self.root / "dist"
+        entries = dict((name, digest) for digest, name in (
+            line.split("  ") for line in
+            (dist / ("otterio-" + TAG + "-checksums.txt")).read_text().splitlines()
+        ))
+        expected = {"otterio-linux-amd64", "otterio-linux-arm64", "otterio-linux-ppc64le",
+                    "otterio-darwin-amd64", "otterio-darwin-arm64", "otterio-windows-amd64.exe",
+                    "release-manifest.json"}
+        self.assertEqual(set(entries), expected)
+        for name, digest in entries.items():
+            self.assertEqual(hashlib.sha256((dist / name).read_bytes()).hexdigest(), digest)
 
     def test_cross_job_wiring_does_not_transport_repository_names(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")

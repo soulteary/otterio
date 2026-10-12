@@ -40,53 +40,58 @@ class ReleaseSerializationTests(unittest.TestCase):
     def setUp(self):
         self.release = (WORKFLOWS / "release.yml").read_text(encoding="utf-8")
         self.promotion = (WORKFLOWS / "promote-release.yml").read_text(encoding="utf-8")
-        self.publish = job_block(self.release, "release")
-        self.caller = job_block(self.release, "promote")
+        self.publication = (WORKFLOWS / "publish-release.yml").read_text(encoding="utf-8")
+        self.stage = job_block(self.release, "release")
 
     def test_publication_and_promotion_share_one_literal_global_lock(self):
-        publication = literal_concurrency(self.publish, 4)
+        publication = literal_concurrency(self.publication.split("\njobs:\n")[0], 0)
         promotion = literal_concurrency(self.promotion.split("\njobs:\n")[0], 0)
         self.assertEqual(publication["group"], GROUP)
         self.assertEqual(publication, promotion)
+        self.assertEqual(literal_concurrency(self.stage, 4), publication)
         self.assertNotIn("${{", publication["group"])
 
     def test_global_lock_does_not_cancel_running_or_replace_pending_work(self):
-        for text, indent in ((self.publish, 4), (self.promotion.split("\njobs:\n")[0], 0)):
+        for text, indent in ((self.stage, 4),
+                             (self.publication.split("\njobs:\n")[0], 0),
+                             (self.promotion.split("\njobs:\n")[0], 0)):
             with self.subTest(indent=indent):
                 concurrency = literal_concurrency(text, indent)
                 self.assertEqual(concurrency["cancel-in-progress"], "false")
                 self.assertEqual(concurrency["queue"], "max")
 
-    def test_disabling_promotion_does_not_bypass_publication_lock(self):
-        self.assertEqual(literal_concurrency(self.publish, 4)["group"], GROUP)
-        self.assertIsNone(re.search(r"(?m)^    if:", self.publish))
-        self.assertNotIn("promote_latest", self.publish)
-        self.assertIn("if: needs.prepare.outputs.latest == 'true'", self.caller)
-        self.assertIn("--draft=false --latest=false", self.publish)
+    def test_tag_pushes_and_manual_builds_cannot_publish_or_promote(self):
+        self.assertEqual(literal_concurrency(self.stage, 4)["group"], GROUP)
+        self.assertIsNone(re.search(r"(?m)^    if:", self.stage))
+        self.assertNotIn("promote_latest", self.release)
+        self.assertNotIn("--draft=false", self.release)
+        self.assertNotIn("uses: ./.github/workflows/promote-release.yml", self.release)
+        self.assertNotRegex(self.release, r"(?m)^  promote:")
 
-    def test_caller_does_not_hold_the_callee_lock(self):
-        # Lock publication at job scope; locking the entire Release workflow or
-        # the reusable-workflow caller would deadlock its promotion child.
+    def test_manual_workflows_do_not_call_each_other_while_holding_the_lock(self):
         outer = literal_concurrency(self.release.split("\njobs:\n")[0], 0)
         self.assertNotEqual(outer["group"], GROUP)
         self.assertIn("release-${{", outer["group"])
-        self.assertNotIn("concurrency:", self.caller)
-        self.assertIn("needs: [prepare, release]", self.caller)
-        self.assertIn("uses: ./.github/workflows/promote-release.yml", self.caller)
+        self.assertNotIn("workflow_call:", self.promotion)
+        self.assertNotIn("workflow_call:", self.publication)
+        self.assertNotRegex(self.release + self.promotion + self.publication,
+                            r"uses: \./\.github/workflows/(?:promote|publish)-release.yml")
         self.assertNotIn("concurrency:", job_block(self.promotion, "promote"))
+        self.assertNotIn("concurrency:", job_block(self.publication, "publish"))
 
     def test_builds_remain_outside_the_global_lock(self):
         for name in ("prepare", "binaries", "docker"):
             with self.subTest(job=name):
                 self.assertNotIn(GROUP, job_block(self.release, name))
-        self.assertIn("needs: [prepare, binaries, docker]", self.publish)
+        self.assertIn("needs: [prepare, binaries, docker]", self.stage)
 
-    def test_release_mutations_are_inside_the_locked_publication_job(self):
-        # All draft creation/upload/publication calls must remain in this job.
+    def test_draft_mutations_are_inside_the_locked_staging_job(self):
         pattern = r"gh release (?:create|upload|edit)\b"
         self.assertEqual(len(re.findall(pattern, self.release)), 3)
-        self.assertEqual(len(re.findall(pattern, self.publish)), 3)
-        self.assertEqual(literal_concurrency(self.publish, 4)["group"], GROUP)
+        self.assertEqual(len(re.findall(pattern, self.stage)), 3)
+        self.assertEqual(literal_concurrency(self.stage, 4)["group"], GROUP)
+        self.assertRegex(self.stage, r'gh release edit "\$RELEASE_TAG"[^\n]*\\\n\s+--notes-file "\$RUNNER_TEMP/release-notes.md"')
+        self.assertNotIn("--draft=false", self.stage)
 
     def test_promotion_lock_covers_listing_checks_and_both_alias_writes(self):
         self.assertEqual(literal_concurrency(self.promotion.split("\njobs:\n")[0], 0)["group"], GROUP)
@@ -100,8 +105,8 @@ class ReleaseSerializationTests(unittest.TestCase):
         self.assertLess(validation, image_check)
         self.assertLess(image_check, registry_write)
         self.assertLess(registry_write, github_write)
-        self.assertIn("workflow_call:", self.promotion)
         self.assertIn("workflow_dispatch:", self.promotion)
+        self.assertIn("if: github.ref == 'refs/heads/main'", steps)
 
     def test_release_checks_discover_this_regression(self):
         checks = (WORKFLOWS / "release-checks.yml").read_text(encoding="utf-8")

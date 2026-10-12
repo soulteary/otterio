@@ -180,17 +180,34 @@ only for its declared path.
 The [original notice](web-console-deprecation.md#published-history) requires at
 least two notified releases, a separately reviewed default-off transition and
 a completed opt-in fallback window with a published deadline before deletion.
-Only the first notified release is recorded. Technical acceleration is authorized;
-public release, merge and a policy waiver are not authorized by that work alone.
-Either fulfill the original sequence or obtain and record an explicit policy
-decision that describes the departure, supported scope and replacement rollback
-boundary. A Web-free binary cannot supply the promised `on` fallback window.
+Only the first notified release is recorded. The selected accelerated policy is
+explicit notice plus verified older-server/snapshot rollback, authorized as a
+departure from the original sequence. Its revision becomes effective at the
+first approved public Web-free release containing the notice. A Web-free binary
+cannot supply the old `on` fallback window; that window is not relabelled complete.
+Final packaged acceptance and approval of publication remain separate.
 
 After the preparation is reviewed and merged, require new checks on the exact
 resulting main commits. Use the [release workflow](releasing.md) to generate
-verified archives/manifests and fixed image digests. Recheck the offered profiles
-on the resulting OC/OtterIO artifacts before separate promotion. Historical
-development acceptance does not certify those new artifacts.
+verified stable drafts, archives/manifests and fixed image digests. Those images
+may already be public; a GitHub draft is not an RC or a private-artifact promise.
+Neither the tag build nor manual publication invokes latest promotion.
+
+The [English announcement](releases/console-migration-announcement.en.md)
+records the approved accelerated policy, limited scope and retained-old-program/
+snapshot restore boundary. Its revision is not effective through preparation or
+acceptance; the operator must review the actual acceptance and approve publication. The
+October 10 notice and unfulfilled old windows remain historical facts.
+
+Run the [official OC packaged-pair acceptance](https://github.com/soulteary/oc/blob/main/docs/console-release-acceptance.md)
+on `main` for the actual two tags. Independently review its successful run,
+attestation SHA-256 and actual passed platform/runtime/upgrade scope. Local source
+and local packaged execution reports cannot unlock publication. Publish OC first,
+then manually publish OtterIO from the same accepted unchanged pair using `tag`,
+`acceptance_run_id` and `attestation_sha256`. The publisher rechecks assets/images
+without rebuilding or replacing them. Separately request stable promotion only
+after the release is public. Historical development acceptance does not certify
+those new artifacts.
 
 ---
 

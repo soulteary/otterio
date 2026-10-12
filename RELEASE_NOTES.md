@@ -27,6 +27,13 @@ removal (#42). It does not create a release or certify future release artifacts.
   prefix-policy summaries formerly exposed through Web RPC. These disclosures
   are deliberately outside the replacement scope.
 
+Release workflow preparation is separate from that production source range:
+the tag build now stops at a verified stable draft, while fixed-version images
+may already be public. Manual publication consumes official successful OC
+packaged-pair acceptance and rechecks the same accepted bytes without rebuilding
+or replacing assets. OC is published first; OtterIO requires that accepted OC
+partner to be public. Only separate manual stable promotion can change `latest`.
+
 Conditional IAM is declared only for an initialized, single-writer native IAM
 object store without distributed erasure, shared etcd or external OPA. Legacy
 Admin clients remain compatible; OC must refuse unsupported conditional writes
@@ -64,21 +71,41 @@ this is candidate source evidence, not new release or all-platform/OIDC-upgrade 
 
 The first deprecation notice shipped in the October 10 stable release. The
 published two-notice requirement, separately reviewed default-off transition and
-completed fallback window have not been fulfilled. Accelerating technical
-adaptation does not waive that policy: a public Web-free release needs either its
-completion or an explicit, documented policy decision and replacement rollback
-boundary. No new removal date is promised. See the
+completed fallback window have not been fulfilled. The selected accelerated
+policy explicitly replaces that sequence with notice and verified
+older-server/snapshot rollback for the first public Web-free release containing
+the announcement. Its revision becomes effective only at that publication;
+source acceptance does not enact it or complete the old windows.
+No new removal date is promised. See the
 [notice history and outstanding gates](docs/web-console-deprecation.md).
+
+The [English migration announcement](docs/releases/console-migration-announcement.en.md)
+records the approved accelerated decision explicitly. Exact packaged-pair
+acceptance, the limited support scope, retained-prior-program/snapshot restore
+boundary and operator review remain required before publication. The decision
+is authorized, but the notice is not issued and its revision is not effective
+through this preparation, a tag build or an acceptance run. It becomes effective
+only with the first approved public Web-free release containing the announcement; the earlier notice sequence
+and fallback window remain unfulfilled history, not completed gates.
 
 Go 1.27.2 and the earlier version/tag/cache authorization fixes are retained from
 the stable baseline, not new dependency or permission changes in this range.
 Source validation applies only to its named programs and profiles. Follow the
 [release guide](docs/releasing.md) for checks on the eventual exact main commit,
 archive checksums, source manifest and immutable image digests; repeat applicable
-acceptance on the resulting artifacts before promotion. The release pipeline's
+acceptance on the resulting artifacts before publication. The official
+`soulteary/oc` main `console-release-acceptance.yml` run and independently reviewed
+attestation SHA-256 are required publication inputs; local candidate or packaged
+reports cannot replace that proof. A stable draft is not an RC or a guarantee
+of private image delivery. The release pipeline's
 Linux amd64 smoke test does not certify every cross-compiled platform or deployment.
 
 ---
+
+The Chinese preparation record below is retained unchanged as historical
+context. Current release operations and the selected policy revision
+follow the English text above; this preservation does not mark old windows
+complete or declare that final packaged acceptance or publication has occurred.
 
 # OC Console 迁移与原生 IAM 权限更新——发布准备
 
