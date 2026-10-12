@@ -13,6 +13,18 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/publish-release.yml"
 
 
+def dispatch_checkout_errors(text):
+    matches = list(re.finditer(r'(?m)^      - uses: actions/checkout@[^\n]+\n', text))
+    if len(matches) != 1:
+        return ['publication must have one exact dispatch checkout']
+    rest = text[matches[0].end():]
+    block = re.split(r'(?m)^      - ', rest, maxsplit=1)[0]
+    refs = re.findall(r'(?m)^          ref: ([^\n]+)$', block)
+    if refs != ['${{ github.sha }}'] or re.search(r'(?m)^          repository:', block):
+        return ['publication helper must come from the exact dispatched main commit']
+    return []
+
+
 class PublishWorkflowTests(unittest.TestCase):
     def setUp(self):
         self.text = WORKFLOW.read_text()
@@ -22,11 +34,24 @@ class PublishWorkflowTests(unittest.TestCase):
         for event in ("push", "pull_request", "workflow_call", "workflow_run"):
             self.assertNotRegex(self.text, rf"(?m)^  {event}:")
         self.assertIn("    if: github.ref == 'refs/heads/main'", self.text)
-        self.assertIn("          ref: main", self.text)
+        self.assertEqual(dispatch_checkout_errors(self.text), [])
         for name in ("tag", "acceptance_run_id", "attestation_sha256"):
             field = re.search(rf"(?ms)^      {name}:\n(.*?)(?=^      \w+:|\npermissions:)", self.text)
             self.assertIsNotNone(field)
             self.assertIn("        required: true", field[1])
+
+    def test_publication_rejects_moving_or_tag_controlled_checkout_refs(self):
+        for ref in ('main', '${{ github.ref }}', '${{ inputs.tag }}', 'a' * 40):
+            with self.subTest(ref=ref):
+                changed = self.text.replace('ref: ${{ github.sha }}', 'ref: ' + ref)
+                self.assertTrue(dispatch_checkout_errors(changed))
+
+    def test_publication_rejects_replacing_its_source_with_another_checkout(self):
+        second = self.text + '\n      - uses: actions/checkout@v7.0.1\n        with:\n          ref: main\n'
+        self.assertTrue(dispatch_checkout_errors(second))
+        other = self.text.replace('          ref: ${{ github.sha }}',
+                                  '          repository: untrusted/other\n          ref: ${{ github.sha }}')
+        self.assertTrue(dispatch_checkout_errors(other))
 
     def test_publication_has_no_build_upload_or_latest_side_effects(self):
         for mutation in ("go build", "docker/build-push-action", "release upload", "release create",

@@ -345,6 +345,11 @@ and independently reviewed attestation SHA-256, not a local report hash. The
 publisher refuses changed accepted assets rather than repairing or replacing
 them. Its official run/evidence checks are not a new Cosign/Sigstore signature.
 
+The publication helper is checked out at the exact `main` dispatch commit,
+`${{ github.sha }}`. It does not follow a newer `main` while waiting for the shared
+lock. The main-only guard remains; a newer reviewed helper requires a new
+dispatch rather than silently changing this run's validation code.
+
 For an **already published** stable release with a verified manifest, use
 **Actions → Stable release promotion → Run workflow** on `main`, or:
 

@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - name: Publish only the accepted existing candidate
         env:

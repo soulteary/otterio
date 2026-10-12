@@ -105,7 +105,7 @@ def inventory(directory, repository, tag, require_images=True):
                     f'oc-{tag}-' + r['target'].replace('/', '-') + ('.zip' if r['target'].startswith('windows/') else '.tar.gz')
                     for r in rows), 'archive manifest mismatch')
     images = manifest.get('images', [])
-    require(isinstance(images, list) and (not require_images or 1 <= len(images) <= 2), 'candidate image identity missing')
+    require(isinstance(images, list) and len(images) <= 2 and (not require_images or images), 'candidate image identity missing')
     seen = set()
     for row in images:
         name, digest = row.get('repository'), row.get('digest')
@@ -114,6 +114,10 @@ def inventory(directory, repository, tag, require_images=True):
                 name not in seen and isinstance(digest, str) and re.fullmatch(r'sha256:[0-9a-f]{64}', digest), 'invalid candidate image')
         seen.add(name)
     require(not require_images or 'ghcr.io/' + repository in seen, 'primary image identity missing')
+    if images:
+        require(images[0]['repository'] == 'ghcr.io/' + repository and
+                all(row['digest'] == images[0]['digest'] for row in images),
+                'registry mirror differs from the exercised primary image')
     return {'repository': repository, 'tag': tag, 'sourceSHA': source, 'assets': actual, 'images': images}
 
 
@@ -164,6 +168,9 @@ def snapshot(repository, tag, destination, draft=True):
 
 
 def verify_images(release):
+    images = release.get('images', [])
+    require(images and all(row.get('digest') == images[0].get('digest') for row in images),
+            'registry mirror differs from the exercised primary image')
     for row in release['images']:
         actual = json.loads(command(['docker', 'buildx', 'imagetools', 'inspect',
                                     row['repository'] + ':' + release['tag'], '--format', '{{json .Manifest}}']))
@@ -199,8 +206,10 @@ def extract_attestation(archive, destination):
             (Path(destination) / row.filename).write_bytes(data.read(row))
 
 
-def load_pair_validator(path):
-    spec = importlib.util.spec_from_file_location('verified_pair_validator', path)
+def load_pair_validator():
+    # Only sibling code reviewed with this dispatched publication commit executes.
+    path = Path(__file__).with_name('console_pair_evidence.py')
+    spec = importlib.util.spec_from_file_location('local_pair_validator', path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -225,7 +234,7 @@ def validate_evidence(document, directory, validator=None):
         require(reports.get(row.get('report')) == row.get('reportSHA256'), 'original child report not bound')
         for extra in row.get('additionalReports', []):
             require(reports.get(extra.get('report')) == extra.get('reportSHA256'), 'additional child report not bound')
-    validator = validator or load_pair_validator(Path(__file__).with_name('test-console-migration-pair.py'))
+    validator = validator or load_pair_validator()
     for row in pair['checks']:
         child = json.loads((Path(directory) / row['report']).read_text())
         if row['name'] == 'real-protocol':
@@ -271,6 +280,10 @@ def validate_evidence(document, directory, validator=None):
             'previous program tuple mismatch')
     programs = pair.get('programs', {})
     releases = document['releases']
+    for release in releases.values():
+        images = release.get('images', [])
+        require(images and all(row.get('digest') == images[0].get('digest') for row in images),
+                'registry mirror differs from the exercised primary image')
     for key, repository in [('oc', 'soulteary/oc'), ('console', 'soulteary/oc'), ('server', 'soulteary/otterio')]:
         row = programs.get(key, {})
         require(row.get('source') == releases[repository].get('sourceSHA') and row.get('binaryVCSModified') is False and
@@ -314,13 +327,17 @@ def verified_attestation(run_id, expected, directory):
     require(provenance == {'repository': ACCEPTANCE_REPOSITORY, 'workflowPath': ACCEPTANCE_WORKFLOW,
                           'runID': int(run_id), 'runAttempt': run['run_attempt'], 'headSHA': run['head_sha'],
                           'event': 'workflow_dispatch', 'ref': 'refs/heads/main'}, 'acceptance workflow identity mismatch')
-    source = api(f'repos/{ACCEPTANCE_REPOSITORY}/contents/buildscripts/test-console-migration-pair.py?ref={run["head_sha"]}')
-    require(source.get('encoding') == 'base64', 'trusted validator source missing')
-    validator_path = Path(directory) / 'trusted-pair-validator.py'
-    validator_path.write_bytes(base64.b64decode(source['content']))
     pair = json.loads((Path(directory) / 'pair.json').read_text())
-    require(pair.get('harnesses', {}).get('buildscripts/test-console-migration-pair.py') == sha256(validator_path), 'acceptance verifier does not match trusted workflow source')
-    validate_evidence(doc, directory, load_pair_validator(validator_path))
+    for filename in ('buildscripts/test-console-migration-pair.py', 'buildscripts/console_pair_evidence.py'):
+        source = api(f'repos/{ACCEPTANCE_REPOSITORY}/contents/{filename}?ref={run["head_sha"]}')
+        require(source.get('encoding') == 'base64', 'trusted verifier source missing')
+        digest = hashlib.sha256(base64.b64decode(source['content'], validate=False)).hexdigest()
+        require(pair.get('harnesses', {}).get(filename) == digest, 'acceptance verifier does not match trusted workflow source')
+        if filename.endswith('/console_pair_evidence.py'):
+            require(digest == sha256(Path(__file__).with_name('console_pair_evidence.py')),
+                    'acceptance schema differs from locally reviewed validator')
+    # Downloaded source is fingerprinted as data; it is never imported or executed.
+    validate_evidence(doc, directory)
     return doc
 
 
