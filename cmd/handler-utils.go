@@ -223,7 +223,7 @@ func getReqAccessCred(r *http.Request, region string) (cred auth.Credentials) {
 		cred, _, _ = getReqAccessKeyV2(r)
 	}
 	if cred.AccessKey == "" {
-		claims, owner, _ := webRequestAuthenticate(r)
+		claims, owner, _ := authenticateBearerRequest(r)
 		if owner {
 			return globalActiveCred
 		}
@@ -502,7 +502,7 @@ func methodNotAllowedHandler(_ string) func(w http.ResponseWriter, r *http.Reque
 				Description: fmt.Sprintf("An error occurred when parsing the HTTP request %s at '%s'",
 					r.Method, r.URL.Path),
 				HTTPStatusCode: http.StatusBadRequest,
-			}, r.URL, guessIsBrowserReq(r))
+			}, r.URL)
 		}
 	}
 }
@@ -557,7 +557,7 @@ func errorResponseHandler(w http.ResponseWriter, r *http.Request) {
 			Description: fmt.Sprintf("An error occurred when parsing the HTTP request %s at '%s'",
 				r.Method, r.URL.Path),
 			HTTPStatusCode: http.StatusBadRequest,
-		}, r.URL, guessIsBrowserReq(r))
+		}, r.URL)
 	}
 
 }

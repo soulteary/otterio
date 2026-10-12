@@ -1,139 +1,120 @@
-# Embedded Web Console deprecation notice
+# Embedded Web Console deprecation history and migration gates
 
-The embedded Web Console is deprecated in favor of the independently delivered
-OC Console for local, single-identity operation. This notice takes effect when
-it is included in a published OtterIO release; merging this document is not a
-release or the start of a completed deprecation cycle.
+OtterIO's embedded Web is being replaced by the independently delivered OC Console.
+This source branch is a removal candidate requested for review. It does not certify
+a released replacement, completed notice cycles or a completed fallback window.
+See the [candidate assessment and configuration](web-console-removal.md).
 
-## What remains available
+## Published history
 
-`OTTERIO_BROWSER` still defaults to `on`. Existing deployments keep the embedded
-page, browser login, OpenID login and legacy Web routes. Set it to `off` only
-after validating your replacement. No removal date or removal release is fixed.
+The original notice shipped in
+[OtterIO `RELEASE.2026-10-10T16-38-05Z`](https://github.com/soulteary/otterio/releases/tag/RELEASE.2026-10-10T16-38-05Z),
+source `8cc518b31ac8b69c8f855e19b4bd027f44275c47`, published at
+`2026-10-10T16:46:29Z` (2026-10-11 00:46:29 Asia/Shanghai).
+That is the first notified release cycle. Its browser default remains `on`, and its
+embedded login, OpenID login and legacy Web routes remain available. A source change
+does not update those existing release assets.
 
-This deprecation concerns the embedded page, its static assets, Web JSON-RPC
-and Web-specific upload/download/ZIP routes. It does not deprecate S3, Admin,
-STS, health, metrics, node communication, terminal printing or admin log streams.
-`--console-address` and `--console-certs-dir` remain supported: the dedicated
-listener also serves Admin, including when the embedded Web is disabled.
-Shared JWT authentication is still used outside the Web and must be retained.
+The original notice required at least two notified OtterIO release cycles, resolved
+migration blockers, a separately reviewed default-off change and an opt-in fallback
+window with a published end release/date before physical deletion. As checked on
+2026-10-12, a second notified release and a completed fallback window have not been
+recorded. No replacement removal date or release is promised here. Preparing this
+candidate does not mark those historical requirements complete.
 
-## Replacement scope and installation
+## Replacement capability and delivery
 
-Read the [OC Console guide](https://github.com/soulteary/oc/blob/main/docs/console.md)
+OC `RELEASE.2026-10-10T11-42-18Z` distributes both `oc` and `oc-console`.
+The image's default entry point remains `oc`; use `--entrypoint oc-console` for
+the browser program. Select actual archive/checksum/source-manifest and immutable
+image identities rather than inferring availability from a merged PR.
+
+OC's newer [source candidate](https://github.com/soulteary/oc/commit/d944a0508942b278934a37908f4afc798e84504b)
+implements independent native IAM and browser OIDC sessions, conditional IAM writes,
+and Range downloads. [Development evidence](https://github.com/soulteary/oc/blob/d944a0508942b278934a37908f4afc798e84504b/docs/console-parallel-plans/next-iteration/handoff.md)
+includes native IAM and real-browser OIDC runs against identified development
+binaries. Those results do not upgrade the earlier published artifacts or certify
+all capabilities on a new released pair.
+
+Use native IAM or OIDC mode when users need separate identities. Local alias mode
+shares the startup identity across browser sessions; it is suitable only where that
+sharing is intended. Retain each user's actual backend permissions, including
+explicit denies. Missing atomic backend capabilities must refuse writes; an OIDC
+identity without an authoritative native-parent mapping cannot be granted native
+IAM management by substituting administrator credentials.
+
+## Migration and rollback boundaries
+
+Follow the [OC Console guide](https://github.com/soulteary/oc/blob/main/docs/console.md)
 and [release gates](https://github.com/soulteary/oc/blob/main/docs/console-release-migration.md).
-OC provides browsing, object writes, downloads, ZIP, presigned sharing, bucket
-settings and IAM management, subject to permissions and server capabilities.
+Preserve data volumes, deployment configuration, actual S3/Admin endpoints, proxy
+mappings, credential identity and both CA trust settings. In split mode,
+`--console-address` and `--console-certs-dir` still configure OtterIO's Admin
+listener. The environment equivalents `OTTERIO_BROWSER_ADDRESS` and
+`OTTERIO_BROWSER_CERTS_DIR` remain compatible. Example ports 9000/9001 do not
+override an existing deployment's addresses; OC's browser endpoint is separate.
 
-The console runs with one startup alias identity; all its browser sessions share
-that identity. It is not a replacement for independent-user browser login or
-OIDC/centralized deployments. Keep the embedded Web for those deployments until
-a replacement or an explicit supported-scope decision is published. Do not
-relabel container wildcard listening as multi-user deployment support.
+On a version that still includes the embedded Web, opt-in migration uses
+`OTTERIO_BROWSER=off`; same-server UI rollback uses `on` and restores the intended
+access mapping. This restores only the UI. It does not undo objects, policies,
+secret rotation or lifecycle transitions.
 
-OC PR #19 adds both executables to the timestamp release builder and release
-image. Do not infer availability from the merged PR: select a published release
-containing `oc-console`, check its checksums/source manifest and image digest,
-and pin both OC and OtterIO versions. Older releases are unchanged. The archive
-contains both executables; the image keeps `oc` as its default entry point and
-uses `--entrypoint oc-console` for the Web program. Source builds remain an option.
+In this removal candidate, omission or `OTTERIO_BROWSER=off` permits startup;
+explicit `on` fails with guidance to OC. The old webpage cannot be restored with
+an environment toggle after its code has been removed. A server rollback therefore
+requires a retained supported version and prior data/configuration compatibility
+validation; do not require or assume an unverified storage downgrade.
 
-## Opt-in migration and rollback
+## Remaining release gates
 
-Back up deployment configuration and retain the current server image/binary.
-Keep data volumes and the selected identity's endpoint, addressing and CA settings.
-Start OC against the existing S3 endpoint and the actual Admin endpoint. In split
-mode, use the operator-configured `--address` for S3 and `--console-address` for
-Admin, or their equivalent environment settings. Preserve the actual client-facing
-URLs, including any proxy mapping; neither endpoint is OC's browser endpoint.
-The OC bridge example uses S3 on 9000, Admin on 9001 and exposes its browser only
-at host loopback 9090. These are example ports, not split-mode requirements.
+The [published-pair evidence](https://github.com/soulteary/oc/blob/d944a0508942b278934a37908f4afc798e84504b/docs/console-released-pair.md)
+certifies only the exact older versions and profiles it records. Its IAM creation
+gap is addressed by newer development protocols, which still require a compatible
+published replacement pair. The [28-entry capability gate](https://github.com/soulteary/oc/blob/d944a0508942b278934a37908f4afc798e84504b/docs/console-parity-gate.md)
+has not certified a complete released replacement.
 
-After verifying the replacement, set `OTTERIO_BROWSER=off` and restart/recreate
-OtterIO using the same version and data volumes. With a split listener, keep
-the existing `--console-address` value (or equivalent environment setting) and
-configure OC's `--admin-url` to the actual reachable management URL. Do not
-replace a custom address with the example's `:9001`, or remove the management
-listener or its TLS configuration. Single-port deployments
-continue using their shared endpoint. Preserve separate CA trust where configured.
+- [ ] Publish and verify the new OC/OtterIO pair, exact source commits, archive
+      checksums and image digests; run supported native platforms and both Linux
+      amd64/arm64 container architectures.
+- [ ] Validate promised single/dual HTTP/TLS, independent CAs, proxies, server/gateway
+      modes and identity profiles against those actual release programs.
+- [ ] Complete object/settings/IAM, permission/deny, cancellation, uncertain outcome,
+      OIDC lifecycle and resource-stability acceptance; record deliberate scope changes.
+- [ ] Complete previous-version upgrades, preferences/data persistence and supported
+      UI/server/TLS/access rollback with clear compatibility boundaries.
+- [ ] Complete at least two notified release cycles and resolve active migration
+      blockers, then review default-off separately with a published fallback deadline.
+- [ ] Complete that fallback window before release approval of physical Web deletion.
 
-For UI rollback, set `OTTERIO_BROWSER=on` and restart/recreate the same server.
-If the management port was internal-only, restore the intended browser access
-mapping for its configured port; the local Compose example can publish its
-configured container port 9001 on host loopback. Do not
-expose the port more broadly as part of rollback. This restores the UI, not
-previous objects, policies, lifecycle settings or credentials. It does not require
-a server downgrade. Any storage downgrade needs separate data/configuration
-compatibility verification, especially for lifecycle transition references.
-
-## Acceptance checklist before changing defaults or deleting routes
-
-Record results against exact release tags, source commits, binary SHA-256 values
-and image digests. An unchecked item is pending, not a supported compatibility
-claim. Historical source/patch-profile results cannot establish a new released pair.
-
-- [ ] Publish OC archives containing both executables and verify checksums,
-      release identity, native execution on supported platforms, and both Linux
-      amd64/arm64 image architectures.
-- [ ] Validate actual released OC/OtterIO pairs in single/dual HTTP and TLS,
-      independent CAs and supported proxy/container configurations.
-- [ ] Verify browser-off behavior: the old page and Web RPC/upload/download/ZIP
-      routes are unavailable; S3, Admin, STS, health and metrics still work on
-      their intended listeners with their normal authentication requirements.
-- [ ] Verify browse, upload/download, deletion, ZIP, bucket settings and IAM,
-      restricted identities/explicit denies, cancellation and uncertain results.
-      Missing server capabilities must refuse mutations or use the documented
-      read-only behavior; never substitute administrator permissions.
-- [ ] Verify OC preference persistence after restart and a real deployment
-      upgrade, same-server UI rollback and TLS/access configuration rollback.
-- [ ] Publish a decision and migration path for independent-user/OIDC use.
-- [ ] Publish the notice in at least two notified OtterIO release cycles, record
-      their tags/dates and resolve active migration blockers. These are release
-      events, not PR merges, and no fixed elapsed-day substitute is defined.
-- [ ] Only then review a separate default-off change with an explicitly bounded
-      opt-in fallback window; publish its end release/date before starting it.
-- [ ] After that window, review Web-specific deletion separately, preserving
-      shared authentication, protocols, node communication and admin logging.
-
-## Current evidence and status
-
-OC PR #19 was merged on 2026-10-10. At preparation of this notice, the latest
-published OC tag was `RELEASE.2026-10-09T17-33-03Z`, predating that change;
-this is a dated snapshot, not a claim about future release availability.
-The [browser-off source acceptance](https://github.com/soulteary/oc/blob/main/docs/console-browser-off-results.json)
-records OtterIO source `f0830a2c357043f0b8f821f49e899cf6daeadbb3` and its
-actual binary identities. It is useful evidence, but does not complete the
-released-pair, native-platform, upgrade/rollback or deprecation-window gates.
-
-No checklist item above is certified by this documentation PR. No runtime default,
-route, static asset, credential handling or storage format changes here.
+S3, Admin, STS, health, metrics, node communication, shared JWT authentication,
+terminal printing and Admin logs remain required. The user's requested source
+removal is documented separately from these outstanding release requirements.
 
 ---
 
-# 内置 Web 控制台弃用公告
+# 内置 Web Console 弃用历史与迁移门槛
 
-内置 Web 控制台将逐步迁移到独立交付的 OC Console。本公告随 OtterIO
-正式发行后生效；合并文档不代表发布，也不算已经完成一个弃用周期。
-当前 `OTTERIO_BROWSER` 默认仍为 `on`，旧网页、账号登录和 OpenID 登录继续可用，
-尚未指定删除日期或版本。
+内置网页迁移到独立 OC Console。本源码分支按用户要求提供可审查的删除候选，
+不表示正式替代发行、通知周期或回退窗口已经完成。配置与删除边界见
+[删除分析](web-console-removal.md)。
 
-本阶段针对本机、单一身份操作。OC 所有浏览器会话共享启动 alias 的身份，
-尚不能替代独立用户登录、OIDC 或多人集中部署；这些使用者应保留旧 Web，
-直到公布替代方案或明确支持范围。先确认选定的正式 OC 版本实际包含
-`oc-console`，核对校验和与镜像摘要，再固定两端版本。PR #19 合并不等于
-已有包含它的正式发行版，旧发行物不会自动更新。
+首次公告已随 `RELEASE.2026-10-10T16-38-05Z` 发布，发布时间为北京时间
+2026-10-11 00:46:29。这只是第一个通知发行周期；该旧发行物仍默认开启内置网页。
+历史要求至少两个已通知发行周期、解决迁移阻塞后单独审查默认关闭，再公布有期限
+的显式开启回退窗口，窗口结束后审查删除。截至 2026-10-12，第二次通知和窗口
+结束均无完成记录。本候选不伪称这些要求已经满足，也不承诺新的删除日期或版本。
 
-迁移时保留数据卷、现有服务端版本、S3/Admin 地址与独立 CA 配置。
-验证 OC 后设置 `OTTERIO_BROWSER=off` 并重建／重启同版本服务。
-拆分模式应保留实际配置的 `--address`、`--console-address`（或等效环境配置）
-及代理映射，并让 OC 的 `--admin-url` 使用实际可达的管理 URL；9000／9001
-仅是 Compose 示例端口，不能覆盖已有自定义地址。`--console-address` 同时
-承载 Admin API，不能随网页关闭一起删除。
-恢复旧网页只需改回 `on` 并重启同一服务端，必要时恢复原先的浏览器访问映射；
-无需降级存储。界面回退不会撤销对象写入、策略变更、密钥轮换或生命周期转换。
+OC 最新源码已实现 native IAM、浏览器 OIDC 独立会话与条件 IAM 协议，并有真实
+浏览器开发验收；不能把更早正式 OC 程序当作已经获得新功能。多用户使用相应身份
+模式及每个用户自身的服务端权限，不共享管理员 alias。缺少原子协议或权威 native
+父关系时拒绝相应写入，不借管理员权限补齐。
 
-上方验收清单均为待验收项目，要求固定版本和程序摘要、正式发行组合、
-单／双入口 HTTP/TLS、权限回归、双架构镜像、真实升级与回退，以及 OIDC
-支持范围的明确决定。至少经过两个已通知的正式发行周期并消除迁移阻塞后，
-才单独审查默认关闭；公布有期限的显式开启回退窗口，窗口结束后再审查删除。
-保留 S3、Admin、STS、health、metrics、节点通信、共享 JWT 和终端日志功能。
+迁移保留 S3/Admin 地址、代理映射、数据卷、身份和独立 CA；`--console-address`、
+`--console-certs-dir` 与对应环境变量继续配置 Admin 监听器，9001 不是 OC 网页。
+含旧 Web 的版本可通过 `off`／`on` 切换网页；本删除候选省略或 `off` 可启动，
+显式 `on` 报错并引导 OC，不能通过开关恢复已删除代码。回退到保留的旧服务端前
+必须验证数据／配置兼容，不能把网页回退等同于撤销对象、策略、密钥或生命周期变更。
+
+上方清单仍要求新的正式配对、能力与权限矩阵、全平台和双架构运行、真实升级回退、
+稳定性、通知周期与回退期限。开发证据不能替代发行认证。保留 S3/Admin/STS、
+health/metrics、节点通信、共享 JWT、终端打印及管理日志。

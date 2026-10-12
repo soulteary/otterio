@@ -131,9 +131,6 @@ var (
 	// Name of gateway server, e.g S3, NAS, etc
 	globalGatewayName = ""
 
-	// This flag is set to 'true' by default
-	globalBrowserEnabled = true
-
 	// This flag is set to 'us-east-1' by default
 	globalServerRegion = globalOtterioDefaultRegion
 
@@ -146,8 +143,8 @@ var (
 	// Holds the possible host endpoint.
 	globalOtterioEndpoint = ""
 
-	// Optional dedicated console listener address (in `host:port` format).
-	// Empty means the console is served on the same listener as S3.
+	// Optional dedicated management listener address (in `host:port` format).
+	// Empty means the Admin API is served on the same listener as S3.
 	globalOtterioConsoleAddr = ""
 	// Holds the host part of --console-address (when set).
 	globalOtterioConsoleHost = ""
@@ -315,16 +312,3 @@ var (
 )
 
 var errSelfTestFailure = errors.New("self test failed. unsafe to start server")
-
-// Returns otterio global information, as a key value map.
-// returned list of global values is not an exhaustive
-// list. Feel free to add new relevant fields.
-func getGlobalInfo() (globalInfo map[string]interface{}) {
-	globalInfo = map[string]interface{}{
-		"serverRegion": globalServerRegion,
-		"domains":      globalDomainNames,
-		// Add more relevant global settings here.
-	}
-
-	return globalInfo
-}

@@ -52,7 +52,7 @@ class LocalService:
         env = environment(home)
         env.update(OTTERIO_ROOT_USER=USER, OTTERIO_ROOT_PASSWORD=PASSWORD,
                    AWS_ACCESS_KEY_ID=USER, AWS_SECRET_ACCESS_KEY=PASSWORD,
-                   AWS_EC2_METADATA_DISABLED="true", OTTERIO_BROWSER="on")
+                   AWS_EC2_METADATA_DISABLED="true", OTTERIO_BROWSER="off")
         self.stdout_path = self.root / "stdout.log"
         self.stderr_path = self.root / "stderr.log"
         self.stdout = self.stdout_path.open("w")
@@ -155,7 +155,47 @@ class CLIIntegrationTests(unittest.TestCase):
         service = LocalService(self.root, name, argv, port, console_port, tls)
         self.services.append(service)
         service.ready(wait_for_storage=wait_for_storage)
+        self.assert_legacy_web_unavailable(service)
         return service
+
+    def assert_legacy_web_unavailable(self, service):
+        opener = urllib.request.build_opener(
+            urllib.request.ProxyHandler({}),
+            urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
+        endpoints = [service.url]
+        if service.console_port:
+            endpoints.append(f"{'https' if service.tls else 'http'}://127.0.0.1:{service.console_port}")
+        routes = [("GET", "/otterio/", None),
+                  ("GET", "/otterio/index_bundle.js", None),
+                  ("POST", "/otterio/webrpc", b'{"jsonrpc":"2.0","method":"web.Login","params":{},"id":1}'),
+                  ("PUT", "/otterio/upload/probe/key", b"must not be written"),
+                  ("GET", "/otterio/download/probe/key?token=removed", None),
+                  ("POST", "/otterio/zip?token=removed", b'{"bucketName":"probe","objects":["key"]}')]
+        for endpoint in endpoints:
+            for agent in ("Mozilla/5.0", "S3-client"):
+                for method, path, body in routes:
+                    with self.subTest(endpoint=endpoint, method=method, route=path, agent=agent):
+                        request = urllib.request.Request(endpoint + path, data=body, method=method,
+                            headers={"User-Agent": agent, "Content-Type": "application/json"})
+                        try:
+                            response = opener.open(request, timeout=3)
+                        except urllib.error.HTTPError as error:
+                            response = error
+                        with response:
+                            self.assertGreaterEqual(response.status, 400)
+                            payload = response.read()
+                            self.assertNotIn(b"<html", payload.lower())
+                            self.assertNotIn(b'"jsonrpc"', payload)
+
+    def test_legacy_browser_opt_in_fails_before_listening(self):
+        port = self.port()
+        env = environment(self.client_home)
+        env.update(OTTERIO_ROOT_USER=USER, OTTERIO_ROOT_PASSWORD=PASSWORD, OTTERIO_BROWSER="on")
+        code, stdout, stderr = bounded_run([str(Path(SERVER_BINARY).resolve()), "server", "--address",
+            f"127.0.0.1:{port}", str(self.root / "removed-web-data")], env, self.root, 15)
+        self.assertEqual(code, 1, stdout + stderr)
+        self.assertIn("OC Console", stdout + stderr)
+        self.assertFalse(listening(port))
 
     def client(self, *argv):
         code, stdout, stderr = bounded_run([str(Path(CLIENT_BINARY).resolve()), "--config-dir",

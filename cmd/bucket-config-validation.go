@@ -25,11 +25,11 @@ func prepareConditionalBucketConfiguration(ctx context.Context, w http.ResponseW
 		return true
 	}
 	if _, code := bucketConfigCondition(r, file); code != ErrNone {
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(code), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(code), r.URL)
 		return false
 	}
 	fail := func(code APIErrorCode) bool {
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(code), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(code), r.URL)
 		return false
 	}
 	shaValues := r.Header.Values("X-Amz-Content-Sha256")
@@ -54,7 +54,7 @@ func prepareConditionalBucketConfiguration(ctx context.Context, w http.ResponseW
 	}
 	data, err := readConfigurationBody(ctx, r, limit)
 	if err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		return false
 	}
 	if int64(len(data)) > limit {

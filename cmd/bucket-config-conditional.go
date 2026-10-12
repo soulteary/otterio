@@ -164,17 +164,17 @@ func writeFreshBucketConfiguration(ctx context.Context, w http.ResponseWriter, r
 	}
 	data, revision, err := globalBucketMetadataSys.ReadConfigWithRevision(ctx, bucket, file)
 	if err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		return true
 	}
 	bucketConfigResponse(w, revision, len(data) != 0)
 	if len(data) == 0 {
 		switch file {
 		case bucketPolicyConfig:
-			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNoSuchBucketPolicy), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNoSuchBucketPolicy), r.URL)
 			return true
 		case bucketLifecycleConfig:
-			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNoSuchLifecycleConfiguration), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNoSuchLifecycleConfiguration), r.URL)
 			return true
 		case bucketVersioningConfig:
 			data = []byte(`<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></VersioningConfiguration>`)
@@ -191,15 +191,15 @@ func writeFreshBucketConfiguration(ctx context.Context, w http.ResponseWriter, r
 func updateBucketConfiguration(ctx context.Context, w http.ResponseWriter, r *http.Request, bucket, file string, data []byte) bool {
 	expected, code := bucketConfigCondition(r, file)
 	if code != ErrNone {
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(code), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(code), r.URL)
 		return false
 	}
 	var commit bucketConfigCommit
 	if err := globalBucketMetadataSys.update(ctx, bucket, file, data, expected, &commit); err != nil {
 		if errors.Is(err, errBucketConfigInvalidState) {
-			writeErrorResponse(ctx, w, APIError{Code: "InvalidBucketState", Description: errBucketConfigInvalidState.Error(), HTTPStatusCode: http.StatusConflict}, r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(ctx, w, APIError{Code: "InvalidBucketState", Description: errBucketConfigInvalidState.Error(), HTTPStatusCode: http.StatusConflict}, r.URL)
 		} else {
-			writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+			writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		}
 		return false
 	}

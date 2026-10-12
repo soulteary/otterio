@@ -111,7 +111,7 @@ jobs:
           # Linux job below where it actually exercises real behaviour.
           #
           # We still inject version info via gen-ldflags so the produced
-          # binary (and the browser uiVersion it reports) is a valid
+          # binary reports a valid
           # RFC3339 version instead of the "DEVELOPMENT.GOGET" default,
           # matching the Makefile/Docker builds.
           go build --ldflags="$(go run buildscripts/gen-ldflags.go)" -o otterio.exe
@@ -349,27 +349,6 @@ jobs:
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
-
-  # Browser unit tests run independently of Go - no need to hold up other jobs.
-  browser:
-    name: Browser tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: '24.21.0'
-      - uses: oven-sh/setup-bun@v2.2.0
-        with:
-          bun-version: '1.4.2'
-      - name: bun test
-        working-directory: browser
-        run: |
-          bun install --frozen-lockfile
-          bun run test --runInBand
-          bun run release
-          git diff --exit-code -- production
-          test -z "$(git ls-files --others --exclude-standard production)"
 
   # Lightweight static checks: shellcheck on mint scripts.
   shellcheck:

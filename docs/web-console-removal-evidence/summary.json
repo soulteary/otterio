@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "dateLocal": "2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "status": "passed-with-recorded-limits",
+  "scope": "source removal candidate; native darwin/arm64; not released-pair or production-rollout certification",
+  "otterioBase": "703eef50e36c3ef163810561c8cd4f7f8c7c1d28",
+  "otterioSourceState": "modified",
+  "runtimeManifestSHA256": "320e3ffdc9659c09c818672553d93dbcff46bab31c1f421229d170d645df9e37",
+  "ocSource": "d944a0508942b278934a37908f4afc798e84504b",
+  "ocBinarySourceState": "clean; Python acceptance harness updated after build",
+  "binaries": {
+    "otterio": {
+      "sha256": "4f53709351d03fa7a604e341c770fef5529c7f24cec79aff537f8509c0851638"
+    },
+    "oc": {
+      "sha256": "1fe54d23ec4e2af50e305b2a02d7938f7776724b858cfca0bdc003c270ac549a"
+    },
+    "oc-console": {
+      "sha256": "e846fa6a76339e3e196f126582ea5161e3f21c892dc7fab361eb570da8808683"
+    }
+  },
+  "checks": {
+    "otterioAllPackagesTestCompilation": "passed; go test -tags kqueue ./... -run ^$; compilation only",
+    "otterioRaceAuthorization": {
+      "topLevelPassed": 79,
+      "leafPassed": 999,
+      "skipped": 0,
+      "failed": 0,
+      "filter": "TestEmbeddedWebRemoval|TestBearerRequestAuthenticate|TestSTSNativeParent|TestFiber|TestConsoleVersionAuthorization|TestConsoleIAM"
+    },
+    "ocGoPackages": [
+      "internal/console",
+      "internal/storageclient",
+      "internal/oidc"
+    ],
+    "ocConsoleAPI": "builds; no package tests",
+    "ocWebBehaviorPassed": 88,
+    "settingsGroupsPassed": 132,
+    "featureGroupsPassed": 60,
+    "versionCopyRequestsPassed": 372,
+    "nativeHTTPSGroupsPassed": 50,
+    "rangeDiagnosticsOIDCSTS": "passed; controlled TLS IdP and real server STS, not third-party provider/browser certification",
+    "realCLIIntegration": {
+      "passed": 9,
+      "skipped": 0,
+      "includes": "server restart, NAS/S3 gateways, separate TLS, legacy routes absent"
+    },
+    "lint": "0 issues",
+    "moduleTidyDiff": "no changes",
+    "pythonUnits": {
+      "dependencyVersions": {
+        "passed": 14
+      },
+      "raceLauncher": {
+        "passed": 14
+      },
+      "buildMetadata": {
+        "passed": 4
+      },
+      "CLIContractUnits": {
+        "total": 32,
+        "skipped": 5
+      },
+      "DockerEntrypoint": {
+        "total": 36,
+        "skipped": 2
+      }
+    },
+    "CLIContract": {
+      "cases": 133,
+      "expectedHelpChanges": 35,
+      "differencesFromCurrentUnmodifiedMain": 0,
+      "archivedBaselineDifferences": {
+        "count": 4,
+        "reason": "local DNS resolves invalid-address; all four outcomes reproduced with unchanged current main",
+        "cases": [
+          "gateway-conflict-address",
+          "gateway-leaf-address",
+          "gateway-parent-address",
+          "server-address-invalid"
+        ]
+      },
+      "finalProgramSHA256": "4f53709351d03fa7a604e341c770fef5529c7f24cec79aff537f8509c0851638"
+    },
+    "nativeHarnessRegression": {
+      "passed": 5,
+      "binaryIdentityRegressionPassed": 4,
+      "scope": "public access identifiers remain allowed in documented IAM results; secrets remain forbidden; coupled user/service/group and session contracts checked"
+    }
+  },
+  "removed": {
+    "browserTrackedFiles": 208,
+    "browserTrackedBytes": 2227783,
+    "jsonRPCTrackedFiles": 13,
+    "jsonRPCTrackedBytes": 60658
+  },
+  "remainingLimits": [
+    "Latest third-party Keycloak browser acceptance not rerun on this source removal; earlier source reports remain bounded to their named binaries.",
+    "Linux amd64/arm64 image runtime and supported native platform matrix not rerun.",
+    "Full unfiltered Go test suite not rerun; retained protocols covered by filtered race/security and real program fixtures.",
+    "Published pair, proxy/distributed/federation deployments, true upgrade/storage rollback and notified fallback window remain pending.",
+    "Sensitive ordinary-user platform/global capacity/full policy summaries intentionally withdrawn."
+  ],
+  "evidence": [
+    "settings.json",
+    "features.json",
+    "protocol.json",
+    "range.json",
+    "native.json"
+  ],
+  "nativeHarnessPatchSHA256": "68d3b974317a41dbe34e4302d5f6b6ad3c10b235204de66b01323e8383f4aa5e",
+  "nativeInitialFailure": "native-initial-failed.json; historical checker rejected a public IAM identifier; not a production secret disclosure"
+}

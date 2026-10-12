@@ -53,7 +53,7 @@ func printGatewayStartupMessage(apiEndPoints []string, backendType string) {
 	}
 }
 
-// Prints common server startup message. Prints credential, region and browser access.
+// Prints common server startup message. Prints credential, region and API access.
 func printGatewayCommonMsg(apiEndpoints []string) {
 	// Get saved credentials.
 	cred := globalActiveCred
@@ -68,13 +68,7 @@ func printGatewayCommonMsg(apiEndpoints []string) {
 	}
 	printEventNotifiers()
 
-	if globalBrowserEnabled {
-		logStartupMessage(color.Blue("\nBrowser Access:"))
-		if globalOtterioConsoleEndpoint != "" {
-			consoleURL := globalOtterioConsoleEndpoint + otterioReservedBucketPath + "/"
-			logStartupMessage(fmt.Sprintf(getFormatStr(len(consoleURL), 3), consoleURL))
-		} else {
-			logStartupMessage(fmt.Sprintf(getFormatStr(len(apiEndpointStr), 3), apiEndpointStr))
-		}
+	if globalOtterioConsoleEndpoint != "" {
+		logStartupMessage(color.Blue("Admin API: ") + color.Bold(globalOtterioConsoleEndpoint))
 	}
 }

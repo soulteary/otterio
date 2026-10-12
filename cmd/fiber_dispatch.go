@@ -268,8 +268,7 @@ func maxClientsFiber(_ string, f OtterioHandler) OtterioHandler {
 			return err
 		case <-deadlineTimer.C:
 			writeErrorResponseFiber(c.Context(), c,
-				errorCodes.ToAPIErr(ErrOperationMaxedOut),
-				guessIsBrowserReqFiber(c))
+				errorCodes.ToAPIErr(ErrOperationMaxedOut))
 			globalHTTPStats.addRequestsInQueue(-1)
 			return nil
 		case <-c.Context().Done():
@@ -328,7 +327,7 @@ func methodNotAllowedHandlerFiber(_ string) OtterioHandler {
 				Description: fmt.Sprintf("An error occurred when parsing the HTTP request %s at '%s'",
 					c.Method(), c.Path()),
 				HTTPStatusCode: fiber.StatusBadRequest,
-			}, guessIsBrowserReqFiber(c))
+			})
 		}
 		_ = reqURL
 		return nil
@@ -336,7 +335,7 @@ func methodNotAllowedHandlerFiber(_ string) OtterioHandler {
 }
 
 func errorResponseHandlerFiber(c fiber.Ctx) error {
-	writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInvalidRequest), guessIsBrowserReqFiber(c))
+	writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInvalidRequest))
 	return nil
 }
 

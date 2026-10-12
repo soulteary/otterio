@@ -85,10 +85,19 @@ jobs:
             sleep 1
           done
           test "$ready" = true || { echo '::error::Secure Compose listeners did not become ready.'; exit 1; }
-          # Static console routes intentionally distinguish browsers from S3 clients.
-          curl -fsS --max-time 5 -A 'Mozilla/5.0 (OtterIO Compose smoke test)' \
-            http://127.0.0.1:9001/otterio/ > "$RUNNER_TEMP/otterio-console.html"
-          grep -qi '<html' "$RUNNER_TEMP/otterio-console.html"
+          # The management listener stays available; legacy Web surfaces do not.
+          admin_status="$(curl -sS --max-time 5 -o "$RUNNER_TEMP/otterio-admin.txt" -w '%{http_code}' \
+            http://127.0.0.1:9001/otterio/admin/v3/info)"
+          test "$admin_status" = 403
+          for listener in 9000 9001; do
+            for route in /otterio/ /otterio/webrpc /otterio/upload/probe/key /otterio/download/probe/key /otterio/zip; do
+              status="$(curl -sS --max-time 5 -A 'Mozilla/5.0 (OtterIO Compose smoke test)' \
+                -o "$RUNNER_TEMP/otterio-web.txt" -w '%{http_code}' "http://127.0.0.1:$listener$route")"
+              test "$status" != 200
+              ! grep -qi '<html' "$RUNNER_TEMP/otterio-web.txt"
+              ! grep -qi '"jsonrpc"' "$RUNNER_TEMP/otterio-web.txt"
+            done
+          done
           container_id="$("${compose[@]}" ps -q otterio)"
           test -n "$container_id"
           test "$(docker inspect --format '{{.Config.User}}' "$container_id")" = '10001:10001'

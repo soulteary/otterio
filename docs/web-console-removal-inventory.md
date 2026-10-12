@@ -1,13 +1,14 @@
 # 旧 Web Console 物理删除依赖清单
 
-本清单用于后续独立删除变更的审查，当前不授权删除或默认关闭。
-调查基线为 OtterIO `ff6e66f3fbd7e57198ef5df016fdd79e5545fc7b`；
-IAM 客户端/计划复查基线为 OC `33274003775a0684a4c93c113a470ee7e384afdd`。
-代码验收不等于正式发行组合验收，当前发布周期及 fallback 门禁仍未完成。
-[弃用公告及门禁](web-console-deprecation.md)继续有效；该公告中的旧 OC
-单身份范围描述是历史发布背景，新的 native/OIDC 源码能力不得自动视为已发行承诺。
+本清单约束用户要求的源码删除候选，区分 Web 专属代码与必须保留的后端。
+原调查基线为 OtterIO `ff6e66f3fbd7e57198ef5df016fdd79e5545fc7b`；本轮候选
+从 `703eef50e36c3ef163810561c8cd4f7f8c7c1d28` 出发，OC 分析基线为
+`d944a0508942b278934a37908f4afc798e84504b`。OC 已实现 native/OIDC 独立会话，
+但源码验收不等于正式发行组合验收，通知周期及 fallback 门槛仍未完成。
+本分支删除用于评审，不宣称生产迁移或发布完成。完整分析见
+[删除候选](web-console-removal.md)，历史要求见[弃用公告及门禁](web-console-deprecation.md)。
 
-## 删除之前必须完成的外部依赖
+## 发布删除版本之前尚需完成的外部依赖
 
 - 发布包含 `oc-console` 的固定 OC/OtterIO 组合，记录 tag、源提交、二进制
   SHA-256、镜像 digest、Linux amd64/arm64 镜像和支持平台原生执行结果。
@@ -46,8 +47,8 @@ IAM 客户端/计划复查基线为 OC `33274003775a0684a4c93c113a470ee7e384afdd
   toolchain job/paths、`.dockerignore` 的 embed 例外，以及 dependency/race/
   build-metadata/container-security 脚本中仅 Web 的断言/fixture。
   保留 Docker server build、source provenance、双架构与安全检查。
-- README/截图/运行示例的旧网页入口可在门禁完成后改写；保留弃用和迁移
-  历史，不删除 OC 的接入、TLS、Admin 地址和回退说明。
+- README/运行示例随候选改为 OC 网页入口；9001 示例保留为 Admin 端口。
+  保留弃用和迁移历史，不删除 OC 接入、TLS、实际 Admin 地址与回退边界。
 
 ## 混合文件必须逐分支拆分
 
@@ -62,9 +63,9 @@ IAM 客户端/计划复查基线为 OC `33274003775a0684a4c93c113a470ee7e384afdd
 - `cmd/api-response.go`、`cmd/fiber_response.go`：只审查 browser 格式化
   分支，保留标准 S3 XML/JSON 状态、错误映射和 streaming bridge。
 - `cmd/common-main.go`、`cmd/globals.go`、`cmd/config/constants.go`、
-  server/gateway startup：未来 `OTTERIO_BROWSER` 的弃用/兼容行为需明确发布；
-  不能将 `globalBrowserEnabled` 当前默认 `true` 改掉作为本清单的副作用。
-  不得顺便删除管理监听器配置、TLS 加载与启动日志。
+  server/gateway startup：候选接受省略或 `OTTERIO_BROWSER=off`，显式 `on`
+  报已移除并引导 OC；删除后的环境开关不能恢复旧网页。不得连带删除管理
+  监听器配置、TLS 加载与启动日志。该行为随候选评审，未宣称已经正式发布。
 - `cmd/fiber_test_router.go` 和泛化 HTTP tests：仅拆 Web fixture/register，
   保留 S3/Admin/STS/health/metrics 和 split-listener 测试基础设施。
 
@@ -73,12 +74,12 @@ IAM 客户端/计划复查基线为 OC `33274003775a0684a4c93c113a470ee7e384afdd
 - `cmd/jwt.go` 整体不能删除：`authenticateNode`/`newAuthToken` 被 peer、
   lock、storage、bootstrap REST client 使用；共享 `cmd/jwt/`、`pkg/auth/`
   及 `jwt-go` 依赖也不能跟 browser manifest 一起裁掉。
-- `webRequestAuthenticate`/`webTokenCallback` 的名称含 Web，但
-  `cmd/metrics.go:AuthMiddleware` 仍用于 Prometheus bearer token 并强制
-  issuer=`prometheus`；`cmd/fiber_metrics_router.go` legacy/cluster/node
-  metrics 路由仍依赖它。`cmd/auth-handler.go`、`cmd/fiber_middleware.go`、
-  `cmd/handler-utils.go` 也有共享认证调用。若重命名/抽离应先保持等价行为，
-  不得把 metrics 改为匿名访问或删除 issuer/signature/expiry 校验。
+- 旧 `webRequestAuthenticate`/`webTokenCallback` 同时承担共享 bearer 认证；
+  本候选保留该路径并改名为 `authenticateBearerRequest`/`bearerTokenKey`。
+  [Metrics AuthMiddleware](../cmd/metrics.go) 继续使用 Prometheus bearer token
+  并强制 issuer=`prometheus`；legacy/cluster/node metrics 路由保留认证。
+  `cmd/auth-handler.go`、`cmd/fiber_middleware.go`、`cmd/handler-utils.go`
+  也保留共享调用，不得把 metrics 改为匿名或删除 issuer/signature/expiry 校验。
 - `authenticateWeb`、`authenticateURL`、`webTokenAuthenticate` 与 Web
   token validity helper 可在全仓零生产调用证明后单独清理；其底层 shared
   JWT claim/parser/credential lookup、STS 临时用户处理不能连带删除。
@@ -89,7 +90,7 @@ IAM 客户端/计划复查基线为 OC `33274003775a0684a4c93c113a470ee7e384afdd
 - 保留 S3/API router、Admin router（含 conditional IAM/relationships、
   self-credentials、配置、日志流）、STS/OpenID validator/provider、IAM
   parent/group/service/temporary credential 与 policy 校验、health、metrics。
-- 保留 `pkg/console/`、`cmd/consolelogger.go`、Admin ConsoleLog 和 logger
+- 保留 [终端输出](../pkg/console/console.go)、[管理日志](../cmd/consolelogger.go)、Admin ConsoleLog 和 logger
   console target：它们是终端打印、后台存储任务/运维日志，不是内置网页。
 - 保留 `pkg/env/web_env.go`：它实现 `env://`/`env+tls://` 远程环境值获取，
   不是 Web Console。`pkg/event/target/webhook.go` 与 JWT policy conditions
@@ -131,19 +132,22 @@ IAM 客户端/计划复查基线为 OC `33274003775a0684a4c93c113a470ee7e384afdd
   （binding/group/service）及15秒读取上限；固定 ContentLength、完整 payload
   hash、EOF/加密 envelope 校验先于 persistence。通用 object upload 不继承小限额。
 
-## 仍须单独判断的旧 native IAM 路径
+## 原生 IAM 的当前范围与历史差异
 
-本复查的原子关系协议结论仅覆盖 binding、user secret、group 修改和已有
-service-account 修改。OC 基线 allowlist 仍有 user.disable/delete，走
-`native_iam_retirement.go:retireNativeUser` 的直接目标 retirement 而非关系
-snapshot/CAS；该路径不能证明父用户的所有 service/STS 子身份会话已捕获。
-user.enable 和 service-account.create 也不是本次新增 coupled mutation。
-这些范围已报告协调 agent，删除旧 Web 前应采用已验证的保守拒绝或完成独立
-原子协议/会话影响证据，不能把新增协议测试推广成全部 IAM 关系安全保证。
+早期调查中的 user.enable/disable/delete 与 service-account.create 尚未采用
+完整关系条件；该描述不再代表当前源码。当前后端已有[用户条件修改](../cmd/admin-iam-relationship-users.go)、
+[服务账号关系修改](../cmd/admin-iam-relationship-service-accounts.go)和
+[受保护服务账号创建](../cmd/admin-iam-service-account-create.go)。OC 开发验收
+包含父身份停用／恢复／删除、子 service/STS 权限变化及旧 cookie 不复活。
+
+这些证据仍限定于记录的程序与环境。新源码协议不能自动赋予旧正式服务端能力，
+也不能推断 external/OIDC 身份拥有 native 父关系。缺少能力或权威关系时保守拒绝；
+用户要求的删除候选不放宽现有协议、权限或不确定结果处理。
 
 ## 删除变更的提交顺序与验收
 
-1. 先完成以上发布/fallback 门禁；单独评审删除范围和 CLI 兼容承诺。
+1. 按用户要求准备独立源码候选，评审删除范围和兼容语义；正式发布删除版本
+   仍需以上发行、通知与 fallback 门槛，开发工作不计为已完成的通知周期。
 2. 先抽离/保留 shared JWT 和 metrics auth，并验证现有凭据、缺失/伪造/过期
    token、错误 issuer、权限拒绝，以及 node/bootstrap/lock/storage 认证。
 3. 删除 Web 注册、RPC/专属 handler/assets；保留 S3/Admin/STS/metrics/health
@@ -154,7 +158,8 @@ user.enable 和 service-account.create 也不是本次新增 coupled mutation。
    replacement；验证双监听、自定义端口、独立证书/CA、代理、升级与回退。
    记录 exact source/tree/dirty、binary hash、镜像 digest 和可重放验收报告。
 
-本次只提交依赖清单。没有关闭/删除旧 Web、改运行默认、裁剪认证或承诺删除版本。
+本候选按清单删除 Web 专属部分，实际范围和回归结果以评审差异及验证记录为准。
+本文不替代运行验收，不认证发行组合，也不承诺删除版本或迁移期限。
 
 ## 原生服务账号创建的并发边界
 

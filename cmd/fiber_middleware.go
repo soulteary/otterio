@@ -67,7 +67,7 @@ func filterReservedMetadataFiber(c fiber.Ctx) error {
 		return err
 	}
 	if containsReservedMetadata(r.Header) {
-		writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrUnsupportedMetadata), guessIsBrowserReq(r))
+		writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrUnsupportedMetadata))
 		return nil
 	}
 	return c.Next()
@@ -83,7 +83,7 @@ func setSSETLSHandlerFiber(c fiber.Ctx) error {
 		if r.Method == http.MethodHead {
 			writeErrorResponseHeadersOnlyFiber(c, errorCodes.ToAPIErr(ErrInsecureSSECustomerRequest))
 		} else {
-			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInsecureSSECustomerRequest), guessIsBrowserReq(r))
+			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInsecureSSECustomerRequest))
 		}
 		return nil
 	}
@@ -100,7 +100,7 @@ func setAuthHandlerFiber(c fiber.Ctx) error {
 	if isSupportedS3AuthType(aType) {
 		return c.Next()
 	} else if aType == authTypeJWT {
-		if _, _, authErr := webRequestAuthenticate(r); authErr != nil {
+		if _, _, authErr := authenticateBearerRequest(r); authErr != nil {
 			c.Status(http.StatusUnauthorized)
 			return c.SendString(authErr.Error())
 		}
@@ -108,7 +108,7 @@ func setAuthHandlerFiber(c fiber.Ctx) error {
 	} else if aType == authTypeSTS {
 		return c.Next()
 	}
-	writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrSignatureVersionNotSupported), guessIsBrowserReq(r))
+	writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrSignatureVersionNotSupported))
 	atomic.AddUint64(&globalHTTPStats.rejectedRequestsAuth, 1)
 	return nil
 }
@@ -123,33 +123,15 @@ func setTimeValidityHandlerFiber(c fiber.Ctx) error {
 	if aType == authTypeSigned || aType == authTypeSignedV2 || aType == authTypeStreamingSigned {
 		amzDate, errCode := parseAmzDateHeader(r)
 		if errCode != ErrNone {
-			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(errCode), guessIsBrowserReq(r))
+			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(errCode))
 			atomic.AddUint64(&globalHTTPStats.rejectedRequestsTime, 1)
 			return nil
 		}
 		curTime := UTCNow()
 		if curTime.Sub(amzDate) > globalMaxSkewTime || amzDate.Sub(curTime) > globalMaxSkewTime {
-			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrRequestTimeTooSkewed), guessIsBrowserReq(r))
+			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrRequestTimeTooSkewed))
 			atomic.AddUint64(&globalHTTPStats.rejectedRequestsTime, 1)
 			return nil
-		}
-	}
-	return c.Next()
-}
-
-// 5. setBrowserCacheControlHandler
-func setBrowserCacheControlHandlerFiber(c fiber.Ctx) error {
-	r, err := fiberSharedRequest(c)
-	if err != nil {
-		return err
-	}
-	if globalBrowserEnabled && r.Method == http.MethodGet && guessIsBrowserReq(r) {
-		if HasPrefix(r.URL.Path, otterioReservedBucketPath+SlashSeparator) {
-			if HasSuffix(r.URL.Path, ".js") || r.URL.Path == otterioReservedBucketPath+"/favicon.ico" {
-				c.Set(xhttp.CacheControl, "max-age=31536000")
-			} else {
-				c.Set(xhttp.CacheControl, "no-store")
-			}
 		}
 	}
 	return c.Next()
@@ -163,23 +145,9 @@ func setReservedBucketHandlerFiber(c fiber.Ctx) error {
 	}
 	bucketName, _ := request2BucketObjectName(r)
 	if isOtterioReservedBucket(bucketName) || isOtterioMetaBucket(bucketName) {
-		if !guessIsRPCReq(r) && !guessIsBrowserReq(r) && !guessIsHealthCheckReq(r) && !guessIsMetricsReq(r) && !isAdminReq(r) {
-			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrAllAccessDisabled), guessIsBrowserReq(r))
+		if !guessIsRPCReq(r) && !guessIsHealthCheckReq(r) && !guessIsMetricsReq(r) && !isAdminReq(r) {
+			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrAllAccessDisabled))
 			return nil
-		}
-	}
-	return c.Next()
-}
-
-// 7. setBrowserRedirectHandler
-func setBrowserRedirectHandlerFiber(c fiber.Ctx) error {
-	r, err := fiberSharedRequest(c)
-	if err != nil {
-		return err
-	}
-	if globalBrowserEnabled && guessIsBrowserReq(r) {
-		if redirectLocation := getRedirectLocation(r.URL.Path); redirectLocation != "" {
-			return c.Redirect().Status(http.StatusTemporaryRedirect).To(redirectLocation)
 		}
 	}
 	return c.Next()
@@ -200,7 +168,7 @@ func setRequestHeaderSizeLimitHandlerFiber(c fiber.Ctx) error {
 		return err
 	}
 	if isHTTPHeaderSizeTooLarge(r.Header) {
-		writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrMetadataTooLarge), guessIsBrowserReq(r))
+		writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrMetadataTooLarge))
 		atomic.AddUint64(&globalHTTPStats.rejectedRequestsHeader, 1)
 		return nil
 	}
@@ -262,21 +230,21 @@ func setRequestValidityHandlerFiber(c fiber.Ctx) error {
 		return err
 	}
 	if hasBadPathComponent(r.URL.Path) {
-		writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInvalidResourceName), guessIsBrowserReq(r))
+		writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInvalidResourceName))
 		atomic.AddUint64(&globalHTTPStats.rejectedRequestsInvalid, 1)
 		return nil
 	}
 	for _, vv := range r.URL.Query() {
 		for _, v := range vv {
 			if hasBadPathComponent(v) {
-				writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInvalidResourceName), guessIsBrowserReq(r))
+				writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInvalidResourceName))
 				atomic.AddUint64(&globalHTTPStats.rejectedRequestsInvalid, 1)
 				return nil
 			}
 		}
 	}
 	if hasMultipleAuth(r) {
-		writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInvalidRequest), guessIsBrowserReq(r))
+		writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrInvalidRequest))
 		atomic.AddUint64(&globalHTTPStats.rejectedRequestsInvalid, 1)
 		return nil
 	}
@@ -291,41 +259,7 @@ func setBucketForwardingHandlerFiber(c fiber.Ctx) error {
 	}
 	if globalDNSConfig == nil || len(globalDomainNames) == 0 || !globalBucketFederation ||
 		guessIsHealthCheckReq(r) || guessIsMetricsReq(r) ||
-		guessIsRPCReq(r) || guessIsLoginSTSReq(r) || isAdminReq(r) {
-		return c.Next()
-	}
-
-	// For browser requests, when federation is setup we need to specifically
-	// handle download and upload for browser requests.
-	if guessIsBrowserReq(r) {
-		var bucket string
-		switch r.Method {
-		case http.MethodPut:
-			if getRequestAuthType(r) == authTypeJWT {
-				bucket, _ = path2BucketObjectWithBasePath(otterioReservedBucketPath+"/upload", r.URL.Path)
-			}
-		case http.MethodGet:
-			if t := r.URL.Query().Get("token"); t != "" {
-				bucket, _ = path2BucketObjectWithBasePath(otterioReservedBucketPath+"/download", r.URL.Path)
-			} else if getRequestAuthType(r) != authTypeJWT && !strings.HasPrefix(r.URL.Path, otterioReservedBucketPath) {
-				bucket, _ = request2BucketObjectName(r)
-			}
-		}
-		if bucket == "" {
-			return c.Next()
-		}
-		sr, derr := globalDNSConfig.Get(bucket)
-		if derr != nil {
-			if derr == dns.ErrNoEntriesFound {
-				writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrNoSuchBucket), guessIsBrowserReq(r))
-			} else {
-				writeErrorResponseFiber(c.Context(), c, toAPIError(c.Context(), derr), guessIsBrowserReq(r))
-			}
-			return nil
-		}
-		if globalDomainIPs.Intersection(set.CreateStringSet(getHostsSlice(sr)...)).IsEmpty() {
-			return fiberForwardRequest(c, getHostFromSrv(sr))
-		}
+		guessIsRPCReq(r) || guessIsSTSReq(r) || isAdminReq(r) {
 		return c.Next()
 	}
 
@@ -356,9 +290,9 @@ func setBucketForwardingHandlerFiber(c fiber.Ctx) error {
 	sr, derr := globalDNSConfig.Get(bucket)
 	if derr != nil {
 		if derr == dns.ErrNoEntriesFound {
-			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrNoSuchBucket), guessIsBrowserReq(r))
+			writeErrorResponseFiber(c.Context(), c, errorCodes.ToAPIErr(ErrNoSuchBucket))
 		} else {
-			writeErrorResponseFiber(c.Context(), c, toAPIError(c.Context(), derr), guessIsBrowserReq(r))
+			writeErrorResponseFiber(c.Context(), c, toAPIError(c.Context(), derr))
 		}
 		return nil
 	}
@@ -396,7 +330,7 @@ func setRedirectHandlerFiber(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	if !shouldProxy() || guessIsRPCReq(r) || guessIsBrowserReq(r) ||
+	if !shouldProxy() || guessIsRPCReq(r) ||
 		guessIsHealthCheckReq(r) || guessIsMetricsReq(r) || isAdminReq(r) {
 		return c.Next()
 	}

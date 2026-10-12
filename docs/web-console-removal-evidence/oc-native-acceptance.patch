@@ -1,0 +1,265 @@
+diff --git a/buildscripts/console_native_acceptance.py b/buildscripts/console_native_acceptance.py
+index edfe0f4b..a8480694 100644
+--- a/buildscripts/console_native_acceptance.py
++++ b/buildscripts/console_native_acceptance.py
+@@ -7,9 +7,28 @@ import time
+ import urllib.parse
+ 
+ 
++def native_iam_action(client, body, headers, public_access_keys, expected=200):
++    # These names were created by this fixture; no existing or generated secret
++    # enters the exemption. Coupled acknowledgements include their public scope.
++    return json.loads(client('/api/iam/actions', 'POST', body, expected=expected,
++                             headers=headers, allowed_credentials=tuple(public_access_keys))[0])
++
++
++def require_user_change(result, target, status, login_required):
++    impact = result.get('impact', {})
++    if (result.get('outcome') != 'confirmed' or
++            result.get('user') != {'accessKey': target, 'status': status} or
++            result.get('loginRequired') is not login_required or
++            result.get('restartRequired', False) is not False or
++            impact.get('kind') != 'user' or impact.get('target') != target or
++            impact.get('state') != 'known' or impact.get('coupledUsers') is not True or
++            target not in impact.get('affectedAccessKeys', [])):
++        raise RuntimeError('native user mutation acknowledgement does not match its target and retirement scope')
++
++
+ def verify_native(args, root, cli, browser, stop, certificate, free_port, env,
+                   credentials, endpoint, admin, s3ca, adminca, bucket, viewer_access,
+-                  viewer_secret, root_access, root_secret, checks):
++                  viewer_secret, root_access, root_secret, checks, signed_request):
+     tls_dir = root / 'native-browser-tls'
+     browser_ca = certificate(tls_dir)
+     base = f'https://127.0.0.1:{free_port()}'
+@@ -137,6 +156,7 @@ def verify_native(args, root, cli, browser, stop, certificate, free_port, env,
+             created = json.loads(manager('/api/iam/actions', 'POST', create_user, headers=manager_headers)[0])
+             assert created['outcome'] == 'confirmed' and not created['restartRequired']
+             credentials.extend([created['credentials']['accessKey'], created['credentials']['secretKey']])
++            public_access_keys = [manager_access, created['credentials']['accessKey']]
+             manager('/api/iam/actions', 'POST', create_user, expected=409, headers=manager_headers)
+             manager('/api/iam/actions', 'POST', {'action': 'group.create', 'group': new_group, 'confirmTarget': new_group}, headers=manager_headers)
+             if getattr(args, 'expect_relationship_unsupported', False):
+@@ -169,73 +189,76 @@ def verify_native(args, root, cli, browser, stop, certificate, free_port, env,
+                 created_browser('/api/session', expected=401)
+                 enable_user = {'action': 'user.enable', 'user': new_user, 'confirmTarget': new_user}
+                 alice('/api/iam/actions', 'POST', enable_user, expected=403, headers=alice_headers)
+-                manager('/api/iam/actions', 'POST', enable_user, headers=manager_headers)
++                require_user_change(native_iam_action(manager, enable_user, manager_headers, public_access_keys), new_user, 'enabled', False)
+                 created_browser('/api/session', expected=401)
+                 created_browser('/api/login', 'POST', {'accessKey': new_user, 'secretKey': new_secret})
+-                manager('/api/iam/actions', 'POST', {'action': 'user.enable', 'user': manager_access, 'confirmTarget': manager_access}, headers=manager_headers)
+-                manager('/api/session')
+-                checks.append('native account activation enforces manager permission, never revives revoked sessions and does not stop self-targeted manager sessions')
+-                service = json.loads(manager('/api/iam/actions', 'POST', {'action': 'service-account.create', 'user': new_user, 'confirmTarget': new_user}, headers=manager_headers)[0])
++                require_user_change(native_iam_action(manager, {'action': 'user.enable', 'user': manager_access, 'confirmTarget': manager_access}, manager_headers, public_access_keys), manager_access, 'enabled', True)
++                manager('/api/session', expected=401)
++                manager_session = json.loads(manager('/api/login', 'POST', {'accessKey': manager_access, 'secretKey': manager_secret})[0])
++                manager_headers = {'X-CSRF-Token': manager_session['csrfToken']}
++                checks.append('native account activation enforces manager permission, never revives revoked sessions and acknowledges self-target enable before requiring a fresh manager login')
++                cli('admin', 'policy', 'set', 'store', 'readonly', 'user=' + new_user)
++                service = native_iam_action(manager, {'action': 'service-account.create', 'user': new_user, 'confirmTarget': new_user}, manager_headers, public_access_keys)
+                 service_key = service['credentials']['accessKey']
+                 credentials.extend([service_key, service['credentials']['secretKey']])
++                public_access_keys.append(service_key)
++                def service_read(expected):
++                    uri = '/' + urllib.parse.quote(bucket + '/plain.txt', safe='/-_.~')
++                    status, _, _ = signed_request(endpoint, 'GET', uri, b'', service_key,
++                                                 service['credentials']['secretKey'], ssl.create_default_context(cafile=str(s3ca)))
++                    if status != expected:
++                        raise RuntimeError('native user lifecycle did not preserve the expected signed service-child permission')
++                service_read(200)
+                 second_created = browser(base, tls_context)
+                 second_created('/api/login', 'POST', {'accessKey': new_user, 'secretKey': new_secret})
+                 disable_user = {'action': 'user.disable', 'user': new_user, 'confirmTarget': new_user}
+                 alice('/api/iam/actions', 'POST', disable_user, expected=403, headers=alice_headers)
+-                disabled = json.loads(manager('/api/iam/actions', 'POST', disable_user, headers=manager_headers)[0])
+-                assert disabled['outcome'] == 'confirmed' and not disabled['restartRequired'] and not disabled['loginRequired']
++                disabled = native_iam_action(manager, disable_user, manager_headers, public_access_keys)
++                require_user_change(disabled, new_user, 'disabled', False)
+                 rejected('/api/login', 'POST', {'accessKey': new_user, 'secretKey': new_secret}, expected=401)
+                 # Enable before either old browser makes another request: explicit
+                 # target retirement must not rely on request-time credential denial.
+-                manager('/api/iam/actions', 'POST', enable_user, headers=manager_headers)
++                require_user_change(native_iam_action(manager, enable_user, manager_headers, public_access_keys), new_user, 'enabled', False)
+                 created_browser('/api/session', expected=401)
+                 second_created('/api/session', expected=401)
+                 created_browser('/api/login', 'POST', {'accessKey': new_user, 'secretKey': new_secret})
+                 checks.append('native user disable requires manager permission, revokes all target sessions before any follow-up request, and later enable permits only a fresh login')
+                 delete_user = {'action': 'user.delete', 'user': new_user, 'confirmTarget': new_user}
+                 alice('/api/iam/actions', 'POST', delete_user, expected=403, headers=alice_headers)
+-                manager('/api/iam/actions', 'POST', delete_user, expected=409, headers=manager_headers)
+-                created_browser('/api/session')  # service-account preflight preserves the session
+                 cli('admin', 'group', 'add', 'store', new_group, new_user)
+-                blocked = json.loads(manager('/api/iam/actions', 'POST', delete_user, expected=409, headers=manager_headers)[0])
+-                assert blocked['code'] == 'user_has_groups'
++                group = json.loads(cli('--json', 'admin', 'group', 'info', 'store', new_group))
++                assert new_user in group['members']
+                 created_browser('/api/session')
+-                cli('admin', 'group', 'remove', 'store', new_group, new_user)
+-                checks.append('native user deletion rejects unauthorized operators and users with groups/service accounts without revoking target sessions')
+                 alice('/api/session')
+                 bob('/api/session')
+-                # Service-account cleanup must use its actual manager identity;
+-                # the server deliberately prevents root from managing this target.
+-                fixture_config = root / 'config' / 'config.json'
+-                config = json.loads(fixture_config.read_text())
+-                config['aliases']['native-manager'] = {**config['aliases']['store'], 'accessKey': manager_access, 'secretKey': manager_secret}
+-                fixture_config.write_text(json.dumps(config))
+-                fixture_config.chmod(0o600)
+-                cli('admin', 'user', 'svcacct', 'rm', 'native-manager', service_key)
+-                del config['aliases']['native-manager']
+-                fixture_config.write_text(json.dumps(config))
+                 second_created('/api/login', 'POST', {'accessKey': new_user, 'secretKey': new_secret})
+-                deleted = json.loads(manager('/api/iam/actions', 'POST', delete_user, headers=manager_headers)[0])
+-                assert deleted['outcome'] == 'confirmed' and not deleted['restartRequired'] and not deleted['loginRequired']
++                deleted = native_iam_action(manager, delete_user, manager_headers, public_access_keys)
++                require_user_change(deleted, new_user, 'deleted', False)
++                assert service_key in deleted['impact']['affectedAccessKeys']
++                group = json.loads(cli('--json', 'admin', 'group', 'info', 'store', new_group))
++                assert group['groupName'] == new_group and new_user not in group.get('members', [])
++                service_read(403)
+                 # Recreate the name AND secret before either old browser requests
+                 # identity again. Only explicit retirement keeps both cookies dead.
+                 cli('admin', 'user', 'add', 'store', new_user, new_secret)
++                cli('admin', 'policy', 'set', 'store', 'readonly', 'user=' + new_user)
+                 created_browser('/api/session', expected=401)
+                 second_created('/api/session', expected=401)
+                 created_browser('/api/login', 'POST', {'accessKey': new_user, 'secretKey': new_secret})
+-                checks.append('native user deletion retires all target sessions; recreating the identical username/secret cannot revive old cookies and requires fresh login')
++                service_read(403)
++                checks.append('native user deletion rejects unauthorized operators, atomically removes group membership and service children, retires all target sessions, and identical username/secret recreation requires fresh login')
+                 cli('admin', 'user', 'remove', 'store', new_user)
+                 cli('admin', 'group', 'remove', 'store', new_group)
+-                self_disabled = json.loads(manager('/api/iam/actions', 'POST', {'action': 'user.disable', 'user': manager_access, 'confirmTarget': manager_access}, headers=manager_headers)[0])
+-                assert self_disabled['outcome'] == 'confirmed' and self_disabled['loginRequired'] and not self_disabled['restartRequired']
++                self_disabled = native_iam_action(manager, {'action': 'user.disable', 'user': manager_access, 'confirmTarget': manager_access}, manager_headers, public_access_keys)
++                require_user_change(self_disabled, manager_access, 'disabled', True)
+                 cli('admin', 'user', 'enable', 'store', manager_access)
+                 manager('/api/session', expected=401)
+                 manager('/api/login', 'POST', {'accessKey': manager_access, 'secretKey': manager_secret})
+                 alice('/api/session')
+                 bob('/api/session')
+                 checks.append('native self-disable acknowledges before retiring own session, keeps shared console available and requires fresh login after administrative activation')
+-                self_deleted = json.loads(manager('/api/iam/actions', 'POST', {'action': 'user.delete', 'user': manager_access, 'confirmTarget': manager_access}, headers={'X-CSRF-Token': json.loads(manager('/api/session')[0])['csrfToken']})[0])
+-                assert self_deleted['outcome'] == 'confirmed' and self_deleted['loginRequired'] and not self_deleted['restartRequired']
++                self_deleted = native_iam_action(manager, {'action': 'user.delete', 'user': manager_access, 'confirmTarget': manager_access}, {'X-CSRF-Token': json.loads(manager('/api/session')[0])['csrfToken']}, public_access_keys)
++                require_user_change(self_deleted, manager_access, 'deleted', True)
+                 manager('/api/session', expected=401)
+                 rejected('/api/login', 'POST', {'accessKey': manager_access, 'secretKey': manager_secret}, expected=401)
+                 alice('/api/session')
+diff --git a/buildscripts/test-console-integration.py b/buildscripts/test-console-integration.py
+index 906997ca..71bfbf20 100644
+--- a/buildscripts/test-console-integration.py
++++ b/buildscripts/test-console-integration.py
+@@ -88,6 +88,14 @@ def run_fixture_cli(command, env, credentials):
+     return result.stdout
+ 
+ 
++def require_no_browser_credentials(payload, credentials, public_access_keys=()):
++    # IAM acknowledgements can name an already known public access key. Secrets
++    # remain forbidden even when their paired key is expected in the response.
++    if any(credential.encode() in payload for credential in credentials
++           if credential not in public_access_keys):
++        raise RuntimeError('browser response disclosed storage credentials')
++
++
+ def stop(process):
+     if process is None or process.poll() is not None:
+         return
+@@ -237,8 +245,7 @@ def scenario(args, name, preview=False, record=None):
+                     response = error
+                 with response:
+                     payload = response.read()
+-                    if any(credential.encode() in payload for credential in credentials if credential not in allowed_credentials):
+-                        raise RuntimeError('browser response disclosed storage credentials')
++                    require_no_browser_credentials(payload, credentials, allowed_credentials)
+                     accepted = expected if isinstance(expected, tuple) else (expected,)
+                     if expected is not None and response.status not in accepted:
+                         raise RuntimeError(f'{method} {path.split("?")[0]}: expected {expected}, got {response.status}: {payload[:300]!r}')
+@@ -381,7 +388,7 @@ def scenario(args, name, preview=False, record=None):
+                 from console_native_acceptance import verify_native
+                 record['nativeMetrics'] = verify_native(args, root, cli, browser, stop, certificate, free_port, env,
+                     credentials, endpoint, admin, s3ca, adminca, bucket, restricted_access, restricted_secret,
+-                    access, secret, checks)
++                    access, secret, checks, signed_request)
+             if args.relationship_iam:
+                 from console_relationship_iam_acceptance import verify_relationship_iam
+                 record['relationshipIAMMetrics'] = verify_relationship_iam(args, root, cli, browser, stop, certificate, free_port, env,
+diff --git a/buildscripts/test_console_native_acceptance.py b/buildscripts/test_console_native_acceptance.py
+new file mode 100644
+index 00000000..909a9656
+--- /dev/null
++++ b/buildscripts/test_console_native_acceptance.py
+@@ -0,0 +1,71 @@
++"""Public IAM identifiers must not mask existing storage-secret disclosures."""
++import copy
++import importlib.util
++import json
++from pathlib import Path
++import unittest
++
++from console_native_acceptance import native_iam_action, require_user_change
++
++spec = importlib.util.spec_from_file_location('native_acceptance_scanner', Path(__file__).with_name('test-console-integration.py'))
++acceptance = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(acceptance)
++
++
++class NativeIAMAcceptanceTests(unittest.TestCase):
++    def confirmed(self):
++        return {'outcome': 'confirmed', 'user': {'accessKey': 'public-target', 'status': 'disabled'},
++                'loginRequired': False, 'impact': {'kind': 'user', 'target': 'public-target',
++                'state': 'known', 'coupledUsers': True, 'affectedAccessKeys': ['public-target', 'public-child']}}
++
++    def request(self, reply):
++        def client(path, method, body, expected, headers, allowed_credentials):
++            self.assertEqual((path, method, expected, headers), ('/api/iam/actions', 'POST', 200, {'X-CSRF-Token': 'fixture-csrf'}))
++            self.assertEqual(allowed_credentials, ('public-target', 'public-child'))
++            payload = json.dumps(reply).encode()
++            acceptance.require_no_browser_credentials(payload, ['public-target', 'existing-secret', 'public-child', 'child-secret'], allowed_credentials)
++            return payload, {}
++        return client
++
++    def action(self, reply):
++        return native_iam_action(self.request(reply), {'action': 'user.disable'},
++                                 {'X-CSRF-Token': 'fixture-csrf'}, ['public-target', 'public-child'])
++
++    def test_old_scanner_rejects_public_acknowledgement_without_narrow_exemption(self):
++        with self.assertRaisesRegex(RuntimeError, 'disclosed storage credentials'):
++            acceptance.require_no_browser_credentials(json.dumps(self.confirmed()).encode(), ['public-target', 'existing-secret'])
++
++    def test_public_user_and_child_scope_are_allowed(self):
++        result = self.action(self.confirmed())
++        require_user_change(result, 'public-target', 'disabled', False)
++
++    def test_existing_parent_and_child_secrets_remain_forbidden(self):
++        for leaked in ('existing-secret', 'child-secret'):
++            with self.subTest(leaked=leaked):
++                result = self.confirmed()
++                result['unexpected'] = leaked
++                with self.assertRaisesRegex(RuntimeError, 'disclosed storage credentials'):
++                    self.action(result)
++
++    def test_unlisted_identifier_remains_forbidden(self):
++        with self.assertRaisesRegex(RuntimeError, 'disclosed storage credentials'):
++            acceptance.require_no_browser_credentials(b'public-stranger', ['public-stranger'], ['public-target'])
++
++    def test_acknowledgement_requires_matching_user_and_retirement_scope(self):
++        mutations = [lambda result: result.update(outcome='unknown'),
++                     lambda result: result['user'].update(accessKey='other-target'),
++                     lambda result: result['user'].update(status='enabled'),
++                     lambda result: result.update(loginRequired=True),
++                     lambda result: result.update(restartRequired=True),
++                     lambda result: result['impact'].update(target='other-target'),
++                     lambda result: result['impact'].update(coupledUsers=False),
++                     lambda result: result['impact'].update(affectedAccessKeys=['public-child'])]
++        for mutate in mutations:
++            result = copy.deepcopy(self.confirmed())
++            mutate(result)
++            with self.assertRaisesRegex(RuntimeError, 'retirement scope'):
++                require_user_change(result, 'public-target', 'disabled', False)
++
++
++if __name__ == '__main__':
++    unittest.main()

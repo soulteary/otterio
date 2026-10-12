@@ -62,12 +62,12 @@ func (a adminAPIHandlers) PutBucketQuotaConfigHandler(w http.ResponseWriter, r *
 	}
 
 	if _, err = parseBucketQuota(bucket, data); err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		return
 	}
 
 	if err = globalBucketMetadataSys.Update(bucket, bucketQuotaConfigFile, data); err != nil {
-		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		return
 	}
 

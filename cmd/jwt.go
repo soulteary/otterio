@@ -25,61 +25,20 @@ import (
 	jwtreq "github.com/dgrijalva/jwt-go/request"
 	xjwt "github.com/soulteary/otterio/cmd/jwt"
 	"github.com/soulteary/otterio/cmd/logger"
-	"github.com/soulteary/otterio/pkg/auth"
 )
 
 const (
 	jwtAlgorithm = "Bearer"
 
-	// Default JWT token for web handlers is one day.
-	defaultJWTExpiry = 24 * time.Hour
-
 	// Inter-node JWT token expiry is 15 minutes.
 	defaultInterNodeJWTExpiry = 15 * time.Minute
-
-	// URL JWT token expiry is one minute (might be exposed).
-	defaultURLJWTExpiry = time.Minute
 )
 
 var (
-	errInvalidAccessKeyID   = errors.New("The access key ID you provided does not exist in our records")
-	errChangeCredNotAllowed = errors.New("Changing access key and secret key not allowed")
-	errAuthentication       = errors.New("Authentication failed, check your access credentials")
-	errNoAuthToken          = errors.New("JWT token missing")
-	errIncorrectCreds       = errors.New("Current access key or secret key is incorrect")
-	errPresignedNotAllowed  = errors.New("Unable to generate shareable URL due to lack of read permissions")
+	errInvalidAccessKeyID = errors.New("The access key ID you provided does not exist in our records")
+	errAuthentication     = errors.New("Authentication failed, check your access credentials")
+	errNoAuthToken        = errors.New("JWT token missing")
 )
-
-func authenticateJWTUsers(accessKey, secretKey string, expiry time.Duration) (string, error) {
-	passedCredential, err := auth.CreateCredentials(accessKey, secretKey)
-	if err != nil {
-		return "", err
-	}
-	expiresAt := UTCNow().Add(expiry)
-	return authenticateJWTUsersWithCredentials(passedCredential, expiresAt)
-}
-
-func authenticateJWTUsersWithCredentials(credentials auth.Credentials, expiresAt time.Time) (string, error) {
-	serverCred := globalActiveCred
-	if serverCred.AccessKey != credentials.AccessKey {
-		var ok bool
-		serverCred, ok = globalIAMSys.GetUser(credentials.AccessKey)
-		if !ok {
-			return "", errInvalidAccessKeyID
-		}
-	}
-
-	if !serverCred.Equal(credentials) {
-		return "", errAuthentication
-	}
-
-	claims := xjwt.NewMapClaims()
-	claims.SetExpiry(expiresAt)
-	claims.SetAccessKey(credentials.AccessKey)
-
-	jwt := jwtgo.NewWithClaims(jwtgo.SigningMethodHS512, claims)
-	return jwt.SignedString([]byte(serverCred.SecretKey))
-}
 
 func authenticateNode(accessKey, secretKey, audience string) (string, error) {
 	claims := xjwt.NewStandardClaims()
@@ -91,16 +50,8 @@ func authenticateNode(accessKey, secretKey, audience string) (string, error) {
 	return jwt.SignedString([]byte(secretKey))
 }
 
-func authenticateWeb(accessKey, secretKey string) (string, error) {
-	return authenticateJWTUsers(accessKey, secretKey, defaultJWTExpiry)
-}
-
-func authenticateURL(accessKey, secretKey string) (string, error) {
-	return authenticateJWTUsers(accessKey, secretKey, defaultURLJWTExpiry)
-}
-
 // Callback function used for parsing
-func webTokenCallback(claims *xjwt.MapClaims) ([]byte, error) {
+func bearerTokenKey(claims *xjwt.MapClaims) ([]byte, error) {
 	if claims.AccessKey == globalActiveCred.AccessKey {
 		return []byte(globalActiveCred.SecretKey), nil
 	}
@@ -122,27 +73,10 @@ func webTokenCallback(claims *xjwt.MapClaims) ([]byte, error) {
 
 }
 
-func isAuthTokenValid(token string) bool {
-	_, _, err := webTokenAuthenticate(token)
-	return err == nil
-}
-
-func webTokenAuthenticate(token string) (*xjwt.MapClaims, bool, error) {
-	if token == "" {
-		return nil, false, errNoAuthToken
-	}
-	claims := xjwt.NewMapClaims()
-	if err := xjwt.ParseWithClaims(token, claims, webTokenCallback); err != nil {
-		return claims, false, errAuthentication
-	}
-	owner := claims.AccessKey == globalActiveCred.AccessKey
-	return claims, owner, nil
-}
-
 // Check if the request is authenticated.
 // Returns nil if the request is authenticated. errNoAuthToken if token missing.
 // Returns errAuthentication for all other errors.
-func webRequestAuthenticate(req *http.Request) (*xjwt.MapClaims, bool, error) {
+func authenticateBearerRequest(req *http.Request) (*xjwt.MapClaims, bool, error) {
 	token, err := jwtreq.AuthorizationHeaderExtractor.ExtractToken(req)
 	if err != nil {
 		if err == jwtreq.ErrNoTokenInRequest {
@@ -151,7 +85,7 @@ func webRequestAuthenticate(req *http.Request) (*xjwt.MapClaims, bool, error) {
 		return nil, false, err
 	}
 	claims := xjwt.NewMapClaims()
-	if err := xjwt.ParseWithClaims(token, claims, webTokenCallback); err != nil {
+	if err := xjwt.ParseWithClaims(token, claims, bearerTokenKey); err != nil {
 		return claims, false, errAuthentication
 	}
 	owner := claims.AccessKey == globalActiveCred.AccessKey

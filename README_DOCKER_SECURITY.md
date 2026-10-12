@@ -48,10 +48,12 @@ docker compose -f docker-compose.secure.yml up -d
 
 The profile runs as a fixed numeric non-root user, drops capabilities, prevents
 privilege escalation, uses a read-only root filesystem plus a bounded temporary
-filesystem, and binds S3/console to loopback only. A host reverse proxy can use
+filesystem, and binds S3/Admin to loopback only. A host reverse proxy can use
 127.0.0.1:9000. A containerized Traefik should share a private Docker network with
 OtterIO and connect to its service port; its own 127.0.0.1 is not the host. Do not
-publish the console on the public Internet. Network controls do not replace IAM.
+publish the Admin endpoint on the public Internet. Use the independently delivered
+[OC Console](https://github.com/soulteary/oc/blob/main/docs/console.md) for browser
+access; this server candidate no longer embeds a Web UI. Network controls do not replace IAM.
 
 Local Compose secrets use bind mounts: ensure the file is actually readable by
 the numeric container user; do not rely on Compose `uid`/`gid` remapping. Never

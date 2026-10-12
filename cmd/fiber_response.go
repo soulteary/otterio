@@ -64,7 +64,7 @@ func writeSuccessResponseHeadersOnlyFiber(c fiber.Ctx) {
 	writeResponseFiber(c, fiber.StatusOK, nil, mimeNone)
 }
 
-func writeErrorResponseFiber(ctx context.Context, c fiber.Ctx, err APIError, browser bool) {
+func writeErrorResponseFiber(ctx context.Context, c fiber.Ctx, err APIError) {
 	reqURL := requestURL(c)
 	switch err.Code {
 	case "SlowDown", "XOtterioServerNotInitialized", "XOtterioReadQuorum", "XOtterioWriteQuorum":
@@ -73,12 +73,6 @@ func writeErrorResponseFiber(ctx context.Context, c fiber.Ctx, err APIError, bro
 		err.Description = fmt.Sprintf("Region does not match; expecting '%s'.", globalServerRegion)
 	case "AuthorizationHeaderMalformed":
 		err.Description = fmt.Sprintf("The authorization header is malformed; the region is wrong; expecting '%s'.", globalServerRegion)
-	case "AccessDenied":
-		if browser && globalBrowserEnabled {
-			c.Set(xhttp.Location, otterioReservedBucketPath+reqURL.Path)
-			c.Status(fiber.StatusTemporaryRedirect)
-			return
-		}
 	}
 
 	errorResponse := getAPIErrorResponse(ctx, err, reqURL.Path,

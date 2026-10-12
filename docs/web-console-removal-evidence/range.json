@@ -1,0 +1,44 @@
+{
+  "serverSource": "703eef50e36c3ef163810561c8cd4f7f8c7c1d28",
+  "profiles": [
+    {
+      "profile": "single-http",
+      "checks": 9,
+      "fixtureBytes": 1048576,
+      "sha256": "aca1cd027e979588d14b877b7b0cb8585ad9fec599eb45801992ee5382b3760f",
+      "emptyObjectChecks": 2,
+      "nullVersionStatus": 206,
+      "historicalVersionStatus": 206,
+      "restrictedCurrentStatus": 206,
+      "restrictedHistoricalStatus": 403,
+      "restrictedConditionalFullStatus": 200,
+      "restrictedIfRangeFallbackStatus": 200
+    },
+    {
+      "profile": "dual-http",
+      "checks": 9,
+      "fixtureBytes": 1048576,
+      "sha256": "aca1cd027e979588d14b877b7b0cb8585ad9fec599eb45801992ee5382b3760f",
+      "emptyObjectChecks": 2,
+      "nullVersionStatus": 206,
+      "historicalVersionStatus": 206,
+      "restrictedCurrentStatus": 206,
+      "restrictedHistoricalStatus": 403,
+      "restrictedConditionalFullStatus": 200,
+      "restrictedIfRangeFallbackStatus": 200
+    },
+    {
+      "profile": "dual-tls",
+      "checks": 9,
+      "fixtureBytes": 1048576,
+      "sha256": "aca1cd027e979588d14b877b7b0cb8585ad9fec599eb45801992ee5382b3760f",
+      "emptyObjectChecks": 2,
+      "nullVersionStatus": 206,
+      "historicalVersionStatus": 206,
+      "restrictedCurrentStatus": 206,
+      "restrictedHistoricalStatus": 403,
+      "restrictedConditionalFullStatus": 200,
+      "restrictedIfRangeFallbackStatus": 200
+    }
+  ]
+}

@@ -59,14 +59,14 @@ func ServerFlags() []cli.Flag {
 			Local:   true,
 			Name:    "console-address",
 			Value:   "",
-			Usage:   "bind the web console + admin API to a separate ADDRESS:PORT (default: same as --address)",
+			Usage:   "bind the admin API to a separate ADDRESS:PORT (default: same as --address)",
 			Sources: cli.EnvVars("OTTERIO_BROWSER_ADDRESS"),
 		},
 		&cli.StringFlag{
 			Local:   true,
 			Name:    "console-certs-dir",
 			Value:   "",
-			Usage:   "path to a separate certs directory for the console listener (requires --console-address)",
+			Usage:   "path to a separate certs directory for the management listener (requires --console-address)",
 			Sources: cli.EnvVars("OTTERIO_BROWSER_CERTS_DIR"),
 		},
 	}
@@ -114,10 +114,10 @@ EXAMPLES:
      {{.Prompt}} {{.HelpName}} http://node{1...16}.example.com/mnt/export{1...32} \
             http://node{17...64}.example.com/mnt/export{1...64}
 
-  5. Start otterio server with the web console listening on a separate port.
+  5. Start otterio server with the admin API listening on a separate port.
      {{.Prompt}} {{.HelpName}} --address ":9000" --console-address ":9001" /home/shared
 
-  6. Same as above, with a dedicated TLS keypair for the console listener.
+  6. Same as above, with a dedicated TLS keypair for the management listener.
      {{.Prompt}} {{.HelpName}} --address ":9000" --console-address ":9001" \
             --certs-dir /etc/otterio/certs/s3 \
             --console-certs-dir /etc/otterio/certs/console /home/shared
@@ -153,7 +153,7 @@ func serverHandleCmdArgs(ctx *cli.Command) {
 	globalPublicCerts, globalTLSCerts, globalIsTLS, err = getTLSConfig()
 	logger.FatalIf(err, "Unable to load the TLS configuration")
 
-	// Optionally load a dedicated TLS keypair for the console listener.
+	// Optionally load a dedicated TLS keypair for the management listener.
 	logger.FatalIf(loadConsoleTLSConfig(), "Unable to load the console TLS configuration")
 
 	// Check and load Root CAs.
