@@ -99,24 +99,33 @@ policy or the acceptance needed for the capabilities actually offered.
    made after that snapshot and external effects before any real rollout.
 
 The companion OC preparation adds
-[`buildscripts/console_upgrade_acceptance.py`](https://github.com/soulteary/oc/blob/main/buildscripts/console_upgrade_acceptance.py)
+[`buildscripts/console_upgrade_acceptance.py`](https://github.com/soulteary/oc/blob/dc8ddfbbabe09b5acc1d90a4b5bdc82175f4c14d/buildscripts/console_upgrade_acceptance.py)
 for actual published-old → candidate → published-old runs. It checks the previous
 binary against the supplied published checksum file and records program/source
-identities. Its `single-tls`/`dual-tls` profiles use isolated data and preserve the
+identities. The old OtterIO checksum file covers six programs and does not cover
+`release-manifest.json`. Supply `--previous-manifest-sha256` from an independently
+trusted source before the runner parses that manifest or starts a profile; a
+hash computed only from the supplied manifest is not an independent check.
+Its `single-tls`/`dual-tls` profiles use isolated data and preserve the
 same fixture between programs. Run it with explicit old/new server, OC CLI/Console,
 source revisions and an output report. A script's existence is not a passed run;
 the report, including any failures/skips and exact checked state, is the evidence.
 
 ### Verified development upgrade on 2026-10-13 (Asia/Shanghai)
 
-The separate [darwin/arm64 upgrade report](https://github.com/soulteary/oc/blob/main/docs/evidence/console-migration/upgrade-darwin-arm64.json)
+The separate [darwin/arm64 upgrade report](https://github.com/soulteary/oc/blob/dc8ddfbbabe09b5acc1d90a4b5bdc82175f4c14d/docs/evidence/console-migration/upgrade-darwin-arm64.json)
 passed both profiles, with 13 recorded check groups and successful process
 cleanup per profile. Its SHA-256 is
-`b2737bc3e16a2f9e9ff8d9d6f4c4464e3a737f8a342c12a6ccb170105b718237`.
+`4d948227dec0576b31af97875e821ddcd650667518ecbf11e510b63af4a03991`.
 It binds all six programs: the October 10 published OtterIO and OC CLI/Console
 assets, and clean darwin/arm64 source builds at OtterIO `c3b3665` and OC `26a0fa6`.
 Old assets are bound to their published manifests/checksums and the extracted
 OC archive, rather than treated as clean development builds.
+The old OtterIO manifest was independently bound to the digest recorded by the
+[official GitHub release asset API, asset 628471077](https://api.github.com/repos/soulteary/otterio/releases/assets/628471077):
+`2fe6f658e2c0b757ff44962041ff3575adab1620109b40f848654530697f2ba3`.
+The report records the expected and observed manifest hashes separately, then
+checks its release/source identity and the program checksum.
 
 - A single-node erasure fixture using four storage directories passed shared TLS and split S3/Admin
   TLS with independent CAs. The candidate actually started with the browser
@@ -135,14 +144,19 @@ The initial failed attempts are retained with their narrower results. The final
 harness waits for the identified server's IAM-initialization message, a signed
 root S3 read and, after seeding, authenticated Admin information for the known
 user. These read-only readiness probes handle asynchronous initialization;
-acceptance writes and permission allow/deny assertions are not retried. Nine
-focused harness regressions, including first termination during cleanup and real
-child-process/temporary-storage cleanup, also passed. The report's four harness
+acceptance writes and permission allow/deny assertions are not retried. Fifteen
+focused harness regressions, including trusted manifest hash rejection before
+startup, first termination during cleanup and real child-process/temporary-storage
+cleanup, also passed. The report's four harness
 fingerprints match the tested files. The
-[earlier passing report](https://github.com/soulteary/oc/blob/main/docs/evidence/console-migration/upgrade-before-cleanup-hardening.json)
+[earlier passing report](https://github.com/soulteary/oc/blob/dc8ddfbbabe09b5acc1d90a4b5bdc82175f4c14d/docs/evidence/console-migration/upgrade-before-cleanup-hardening.json)
 is retained unchanged as historical evidence before cleanup hardening; it does
-not certify the updated harness. The main report above comes from a fresh full
-run after that fix.
+not certify the updated harness. The later cleanup-hardened passing report is
+also retained unchanged as
+[`upgrade-before-manifest-binding.json`](https://github.com/soulteary/oc/blob/dc8ddfbbabe09b5acc1d90a4b5bdc82175f4c14d/docs/evidence/console-migration/upgrade-before-manifest-binding.json), SHA-256
+`b2737bc3e16a2f9e9ff8d9d6f4c4464e3a737f8a342c12a6ccb170105b718237`;
+it predates independent manifest verification. The main report above comes from
+a fresh full run after both fixes.
 
 `releaseAssetCertification` remains `false`: the new programs are source builds,
 not new published artifacts or container images. This verifies only the stated
@@ -210,7 +224,12 @@ TLS／CA／代理和登录模式，再验收这些范围。本记录以 10 月 1
 状态，恢复升级前快照，并明确快照后的写入和外部作用如何恢复。
 
 配套 OC 的升级脚本执行真实旧版 → 候选 → 旧版，记录校验和、源码和实际检查
-状态。新的 [darwin/arm64 报告](https://github.com/soulteary/oc/blob/main/docs/evidence/console-migration/upgrade-darwin-arm64.json)
+状态。旧 OtterIO 校验和文件只覆盖六个程序，不覆盖 `release-manifest.json`；
+`--previous-manifest-sha256` 必须来自独立可信来源，不能把所提交清单自身计算的
+摘要当成独立证明。本次采用[官方 GitHub 发行附件 API 的 628471077 号附件摘要](https://api.github.com/repos/soulteary/otterio/releases/assets/628471077)
+`2fe6f658e2c0b757ff44962041ff3575adab1620109b40f848654530697f2ba3`，
+在解析清单或启动场景前核对字节，再核对发行／源码身份与程序校验和。
+新的 [darwin/arm64 报告](https://github.com/soulteary/oc/blob/dc8ddfbbabe09b5acc1d90a4b5bdc82175f4c14d/docs/evidence/console-migration/upgrade-darwin-arm64.json)
 已通过 single／dual TLS，每个场景 13 组检查并完成进程清理。使用单节点四个
 存储目录的纠删码样本，同卷真实升级／回退，核对对象、历史版本、标签、桶版本设置、原生用户／
 组策略、显式读写拒绝及 CLI 配置；新增对象在旧程序回退后仍可由受限用户读取。
@@ -218,10 +237,16 @@ TLS／CA／代理和登录模式，再验收这些范围。本记录以 10 月 1
 新 local 和回退旧 Console 后保留；新 native HTTPS 偏好隔离且重启后保持。
 
 最终脚本仅重试存储／IAM 的只读就绪探测，不重试验收写入或权限允许／拒绝
-断言；9 项脚本回归包含清理期间首次终止信号、真实子进程及临时目录清理。
+断言；15 项脚本回归包含启动前可信清单摘要校验失败、清理期间首次终止信号、
+真实子进程及临时目录清理。
 6 个程序身份与 4 个脚本摘要绑定在报告中。
-[清理加固前的旧通过报告](https://github.com/soulteary/oc/blob/main/docs/evidence/console-migration/upgrade-before-cleanup-hardening.json)
-原样保留为历史证据，不证明新脚本已通过；主报告是修复后完整重跑的结果。
+[清理加固前的旧通过报告](https://github.com/soulteary/oc/blob/dc8ddfbbabe09b5acc1d90a4b5bdc82175f4c14d/docs/evidence/console-migration/upgrade-before-cleanup-hardening.json)
+原样保留为历史证据，不证明新脚本已通过；清理加固后、独立清单校验前的通过
+报告也原样保留为
+[`upgrade-before-manifest-binding.json`](https://github.com/soulteary/oc/blob/dc8ddfbbabe09b5acc1d90a4b5bdc82175f4c14d/docs/evidence/console-migration/upgrade-before-manifest-binding.json)，其 SHA-256 为
+`b2737bc3e16a2f9e9ff8d9d6f4c4464e3a737f8a342c12a6ccb170105b718237`。
+主报告是两项修复后完整重跑的结果，SHA-256 为
+`4d948227dec0576b31af97875e821ddcd650667518ecbf11e510b63af4a03991`。
 初次失败和此前历史报告继续保留，不把旧报告改写为新通过结果。
 新程序仍是干净源码构建，`releaseAssetCertification: false`；本结果不覆盖
 任意 IAM／配置变更、密钥轮换、全部纠删码元数据、多 pool、分布式／外部存储、
