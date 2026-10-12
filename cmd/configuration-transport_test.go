@@ -28,7 +28,15 @@ func configurationTestReadTimeout(t *testing.T, app *fiber.App) {
 		uri   string
 		limit int
 	}{
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-policy-bindings", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionV2Prefix + "/iam-policy-bindings", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-create", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionV2Prefix + "/iam-create", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-user-secret", 2048},
+		{adminPathPrefix + adminAPIVersionV2Prefix + "/iam-user-secret", 2048},
 		{adminPathPrefix + adminAPIVersionPrefix + "/self-credentials", 4096},
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-bindings", 32 * 1024},
+		{adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-users", 4096},
 		{"/bucket?policy", int(maxBucketPolicySize)},
 		{"/bucket?lifecycle", int(maxBucketVersioningConfigSize)},
 		{"/bucket?versioning", int(maxBucketVersioningConfigSize)},
@@ -62,7 +70,13 @@ func TestBucketConfigTransportPreReadDeadline(t *testing.T) {
 		name, uri, extra string
 		length           int
 	}{
+		{"policy-bindings-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-policy-bindings", "", 1024},
+		{"create-small", adminPathPrefix + adminAPIVersionV2Prefix + "/iam-create", "", 1024},
+		{"user-secret-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-user-secret", "", 1024},
 		{"self-small", adminPathPrefix + adminAPIVersionPrefix + "/self-credentials", "", 1024},
+		{"bindings-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-bindings", "", 1024},
+		{"users-small", adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-users", "", 1024},
+		{"bindings-large", adminPathPrefix + adminAPIVersionPrefix + "/iam-relationship-bindings", "", 9000},
 		{"policy-large", "/bucket?policy", bucketConfigIfMatchHeader + ": " + strings.Repeat("0", 64) + "\r\n", 9000},
 		{"lifecycle-small", "/bucket?lifecycle", bucketConfigIfMatchHeader + ": " + strings.Repeat("0", 64) + "\r\n", 1024},
 		{"versioning-small", "/bucket?versioning", bucketConfigIfMatchHeader + ": " + strings.Repeat("0", 64) + "\r\n", 1024},

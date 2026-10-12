@@ -224,6 +224,8 @@ type IAMSys struct {
 	iamPolicyDocsMap map[string]iampolicy.Policy
 	// map of usernames to credentials
 	iamUsersMap map[string]auth.Credentials
+	// Protected by store lock; invalidates in-flight native identity proofs.
+	nativeIdentityEpoch uint64
 	// map of group names to group info
 	iamGroupsMap map[string]GroupInfo
 	// map of user names to groups they are a member of
@@ -802,14 +804,18 @@ func (sys *IAMSys) DeleteUser(accessKey string) error {
 		// Delete any service accounts if any first.
 		if u.IsServiceAccount() {
 			if u.ParentUser == accessKey {
-				_ = sys.store.deleteUserIdentity(context.Background(), u.AccessKey, srvAccUser)
+				if err := sys.store.deleteUserIdentity(context.Background(), u.AccessKey, srvAccUser); err == nil {
+					sys.nativeIdentityEpoch++
+				}
 				delete(sys.iamUsersMap, u.AccessKey)
 			}
 		}
 		// Delete any associated STS users.
 		if u.IsTemp() {
 			if u.ParentUser == accessKey {
-				_ = sys.store.deleteUserIdentity(context.Background(), u.AccessKey, stsUser)
+				if err := sys.store.deleteUserIdentity(context.Background(), u.AccessKey, stsUser); err == nil {
+					sys.nativeIdentityEpoch++
+				}
 				delete(sys.iamUsersMap, u.AccessKey)
 			}
 		}
@@ -824,6 +830,9 @@ func (sys *IAMSys) DeleteUser(accessKey string) error {
 	}
 
 	delete(sys.iamUsersMap, accessKey)
+	if err == nil {
+		sys.nativeIdentityEpoch++
+	}
 	delete(sys.iamUserPolicyMap, accessKey)
 
 	return err
@@ -1064,6 +1073,7 @@ func (sys *IAMSys) SetUserStatus(accessKey string, status madmin.AccountStatus) 
 	}
 
 	sys.iamUsersMap[accessKey] = uinfo.Credentials
+	sys.nativeIdentityEpoch++
 	return nil
 }
 
@@ -1142,6 +1152,8 @@ type newServiceAccountOpts struct {
 	sessionPolicy *iampolicy.Policy
 	accessKey     string
 	secretKey     string
+	// Set only by the authenticated legacy OpenID temporary-self path.
+	allowExternalParent bool
 }
 
 // NewServiceAccount - create a new service account
@@ -1168,11 +1180,20 @@ func (sys *IAMSys) NewServiceAccount(_ context.Context, parentUser string, group
 	sys.store.lock()
 	defer sys.store.unlock()
 
+	return sys.newServiceAccountLocked(parentUser, groups, opts, policyBuf)
+}
+
+// Caller holds the persistence write lock.
+func (sys *IAMSys) newServiceAccountLocked(parentUser string, groups []string, opts newServiceAccountOpts, policyBuf []byte) (auth.Credentials, error) {
 	if parentUser == globalActiveCred.AccessKey {
 		return auth.Credentials{}, errIAMActionNotAllowed
 	}
 
 	cr, ok := sys.iamUsersMap[parentUser]
+	externalTemporarySelf := opts.allowExternalParent && ok && cr.IsTemp() && cr.ParentUser == ""
+	if sys.usersSysType == OtterIOUsersSysType && (!ok || !cr.IsValid() || cr.Status == auth.AccountOff || (!externalTemporarySelf && cr.IsTemp()) || cr.IsServiceAccount() || cr.ParentUser != "") {
+		return auth.Credentials{}, errIAMActionNotAllowed
+	}
 	if !ok {
 		// For LDAP users we would need this fallback
 		if sys.usersSysType != OtterIOUsersSysType {
@@ -1215,12 +1236,26 @@ func (sys *IAMSys) NewServiceAccount(_ context.Context, parentUser string, group
 	)
 
 	if len(opts.accessKey) > 0 {
+		// Explicit keys must satisfy namespace absence before credential generation:
+		// native user keys can exceed the generated service-key length limit.
+		if opts.accessKey == globalActiveCred.AccessKey {
+			return auth.Credentials{}, errIAMActionNotAllowed
+		}
+		if _, exists := sys.iamUsersMap[opts.accessKey]; exists {
+			return auth.Credentials{}, errIAMCreateExists
+		}
 		cred, err = auth.CreateNewCredentialsWithMetadata(opts.accessKey, opts.secretKey, m, globalActiveCred.SecretKey)
 	} else {
 		cred, err = auth.GetNewCredentialsWithMetadata(m, globalActiveCred.SecretKey)
 	}
 	if err != nil {
 		return auth.Credentials{}, err
+	}
+	if cred.AccessKey == globalActiveCred.AccessKey {
+		return auth.Credentials{}, errIAMActionNotAllowed
+	}
+	if _, exists := sys.iamUsersMap[cred.AccessKey]; exists {
+		return auth.Credentials{}, errIAMCreateExists
 	}
 	cred.ParentUser = parentUser
 	cred.Groups = groups
@@ -1377,15 +1412,12 @@ func (sys *IAMSys) DeleteServiceAccount(_ context.Context, accessKey string) err
 
 	// It is ok to ignore deletion error on the mapped policy
 	err := sys.store.deleteUserIdentity(context.Background(), accessKey, srvAccUser)
-	if err != nil {
-		// ignore if user is already deleted.
-		if err == errNoSuchUser {
-			return nil
-		}
+	if err != nil && !errors.Is(err, errNoSuchUser) {
 		return err
 	}
 
 	delete(sys.iamUsersMap, accessKey)
+	sys.nativeIdentityEpoch++
 	return nil
 }
 
@@ -1432,6 +1464,7 @@ func (sys *IAMSys) CreateUser(accessKey string, uinfo madmin.UserInfo) error {
 	}
 
 	sys.iamUsersMap[accessKey] = u.Credentials
+	sys.nativeIdentityEpoch++
 
 	// SECURITY (CVE-2021-43858): the add-user admin API must NOT apply policy
 	// changes. A regular user is permitted to call this API to rotate their own
@@ -1468,6 +1501,7 @@ func (sys *IAMSys) SetUserSecretKey(accessKey string, secretKey string) error {
 	}
 
 	sys.iamUsersMap[accessKey] = cred
+	sys.nativeIdentityEpoch++
 	return nil
 }
 
@@ -1599,6 +1633,9 @@ func (sys *IAMSys) AddUsersToGroup(group string, members []string) error {
 	}
 
 	sys.iamGroupsMap[group] = gi
+	if !ok {
+		sys.nativeIdentityEpoch++
+	}
 
 	// update user-group membership map
 	for _, member := range members {
@@ -1667,6 +1704,7 @@ func (sys *IAMSys) RemoveUsersFromGroup(group string, members []string) error {
 
 		// Delete from server memory
 		delete(sys.iamGroupsMap, group)
+		sys.nativeIdentityEpoch++
 		delete(sys.iamGroupPolicyMap, group)
 		return nil
 	}
@@ -1681,6 +1719,7 @@ func (sys *IAMSys) RemoveUsersFromGroup(group string, members []string) error {
 		return err
 	}
 	sys.iamGroupsMap[group] = gi
+	sys.nativeIdentityEpoch++
 
 	// update user-group membership map
 	for _, member := range members {
@@ -2198,6 +2237,32 @@ func (sys *IAMSys) IsAllowedSTS(args iampolicy.Args, parentUser string) bool {
 
 	sys.store.rlock()
 	defer sys.store.runlock()
+
+	if parentUser != "" {
+		// Native AssumeRole children retain an issuance policy, but that snapshot
+		// cannot outlive the authoritative parent or exceed its current authority.
+		// WebIdentity has no stored native parent; LDAP returned above.
+		parent, exists := sys.iamUsersMap[parentUser]
+		child, childExists := sys.iamUsersMap[args.AccountName]
+		if !exists || !parent.IsValid() || parent.IsTemp() || parent.IsServiceAccount() || parent.ParentUser != "" ||
+			!childExists || !child.IsValid() || !child.IsTemp() || child.ParentUser != parentUser {
+			return false
+		}
+		parentArgs := args
+		parentArgs.AccountName = parentUser
+		parentArgs.Groups = parent.Groups
+		parentArgs.ConditionValues = make(map[string][]string, len(args.ConditionValues)+2)
+		for key, values := range args.ConditionValues {
+			parentArgs.ConditionValues[key] = append([]string(nil), values...)
+		}
+		parentArgs.ConditionValues["username"] = []string{parentUser}
+		parentArgs.ConditionValues["userid"] = []string{parentUser}
+		// Evaluates current direct/group policies under this same read lock,
+		// with positive allow required even for own-account operations.
+		if !sys.nativePolicyAllowsLocked(parentArgs) {
+			return false
+		}
+	}
 
 	// If policy is available for given user, check the policy.
 	mp, ok := sys.iamUserPolicyMap[args.AccountName]
