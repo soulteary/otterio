@@ -119,7 +119,7 @@ changes and results. These exact program hashes passed:
   no skips/failures. They cover production listener routing, legacy-route refusal,
   shared metrics bearer auth, S3/version/copy/cache/tagging permissions, conditional
   IAM and native STS parent authority. All Go test packages also compiled; the
-  full unfiltered test suite was not run.
+  full unfiltered test suite was not run locally.
 - OC authentication/storage/Console Go suites passed; its Web behavior suite
   passed 88/88. Nine real CLI cases passed for server restart, NAS/S3 gateways,
   separate TLS and old Web route refusal. Repository lint reports zero issues;
@@ -158,6 +158,20 @@ again passed 25 groups per HTTPS listener arrangement; 11 native regressions and
 four binary-identity checks passed. Its new fingerprints and scope are recorded
 separately in the follow-up summary, with earlier reports preserved.
 
+The [direct-key review](https://github.com/soulteary/oc/pull/45#discussion_r4249811333)
+further narrows what the earlier inventory can establish: a parent-filtered list
+cannot detect a child detached from that parent. At OC `d7269c1b`, the manager
+also queries the child access key directly through signed Admin Info requests,
+requiring 200 at creation and an explicit service-account-not-found 404 after
+deletion and identical parent recreation. The complete wire Code, Message and
+Resource must match; authorization failures, generic 404s, malformed responses
+and network failures cannot prove absence. The [new direct-key report](web-console-removal-evidence/native-direct-child-info.json)
+passed 25 groups per HTTPS arrangement, with 16 native regressions and four
+binary-identity checks. The [initial strict failure](web-console-removal-evidence/native-direct-child-info-first-failure.json)
+is retained: its expected Message omitted the underlying cause appended by
+`toAdminAPIErr`. The successful run uses the source-derived full wire message.
+Earlier inventory reports retain their narrower historical meaning.
+
 The CLI archive comparison has four local DNS differences in 133 cases; the same
 four responses occur on unchanged current OtterIO main. Comparing against that
 same-source baseline yields no unexpected differences after 35 intentional help
@@ -173,7 +187,9 @@ changes; 29 local comparator units passed, with five optional/platform skips.
 The before observations are PR #41's candidate artifact, strictly matched against
 the fixed `52e2d95` baseline by its successful CI job with no delta exemptions;
 they are not presented as a direct baseline build. Artifact identities and this
-scope are recorded in the follow-up summary. Fresh Windows CI remains pending.
+scope are recorded in the follow-up summary.
+The [fresh Windows job](https://github.com/soulteary/otterio/actions/runs/38271297327/job/114885922231)
+subsequently passed on `308263fb`, along with that commit's Linux/macOS CLI checks.
 
 Packaging/entrypoint unit checks passed with two optional image checks skipped;
 five optional CLI-contract unit fixtures were also skipped. Linux image runtime,

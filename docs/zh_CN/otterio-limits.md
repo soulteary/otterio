@@ -45,9 +45,10 @@ TiB、GiB、MiB 是二进制单位。客户端可以请求更小的页面；请�
 源码依据：[对象与分片大小常量](../../cmd/utils.go)、[响应限制](../../cmd/api-response.go)、
 [metacache 块大小](../../cmd/metacache.go)与[请求参数解析](../../cmd/api-resources.go)。
 
-控制台通过单个 XMLHttpRequest 上传文件，没有使用 S3 分片上传。实际限制还取决于
-浏览器、代理超时与服务端配置，不能把 S3 上限写成已验证的浏览器 5 TiB 上传能力。
-大文件请使用支持分片上传的客户端。见[控制台上传实现](../../browser/app/js/uploads/actions.js)。
+浏览器上传由独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)处理，
+它有自己的上传限制和分片传输实现。限制还取决于所选 OC 版本、浏览器、代理及后端配置，
+不能把服务端 S3 上限写成已验证的浏览器 5 TiB 上传能力。
+超过 Console 配置限制的文件请使用支持分片上传的 S3 客户端。
 
 ## 条件写入
 

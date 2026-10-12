@@ -14,7 +14,7 @@ The examples use a single listener on port 9000. Configure an administrator alia
 oc alias set myotterio http://localhost:9000 "$OTTERIO_ROOT_USER" "$OTTERIO_ROOT_PASSWORD" --api s3v4 --path on
 ```
 
-If the server has a separate console listener on port 9001, add `--admin-url http://localhost:9001` when setting the alias. The management URL is a root URL without `/otterio/` or `/otterio/admin/v3`. OC uses OtterIO's `/otterio/admin/v3` management protocol; upstream `mc admin` compatibility is not assumed.
+If the server has a separate Admin listener on port 9001 via `--console-address`, add `--admin-url http://localhost:9001` when setting the alias, using the actual deployment address. The management URL is a root URL without `/otterio/` or `/otterio/admin/v3`. Configure S3/Admin CA trust separately when needed. This is an Admin endpoint; browser access uses the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md). OC uses OtterIO's `/otterio/admin/v3` management protocol; upstream `mc admin` compatibility is not assumed.
 
 ## Create a user with a policy
 

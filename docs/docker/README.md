@@ -51,7 +51,7 @@ docker run -d --name otterio `
   soulteary/otterio:latest server --console-address ":9001" /data
 ```
 
-The S3 endpoint is <http://127.0.0.1:9000> and the console/management endpoint is <http://127.0.0.1:9001>. Sign in using the configured credentials. [Verify an upload and download](../../README.md#verify) with OC; its alias can store both endpoints.
+The S3 endpoint is <http://127.0.0.1:9000> and the Admin endpoint is <http://127.0.0.1:9001>. [Verify an upload and download](../../README.md#verify) with OC using the configured credentials; its alias can store both endpoints. Browser access uses the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md), with its own listener. Preserve existing S3/Admin ports, proxy mappings and separate CA settings when connecting OC.
 
 The named volume survives container removal. Recreating the container requires the same volume and credentials. For disposable testing, omit `--mount` and use `--rm` without `-d`; Docker removes the anonymous data volume when that container is removed. Use a separate container name and free ports if another instance is running.
 

@@ -42,7 +42,7 @@ docker stack deploy --compose-file=docker-compose-secrets.yaml otterio_stack
 
 这将把Compose file里描述的服务部署为Docker stack`otterio_stack`。 更多 `docker stack` [命令参考](https://docs.docker.com/engine/reference/commandline/stack/)。
 
-在stack成功部署之后，你可以通过[OtterIO Client](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md) `oc` 或者浏览器访问http://[Node_Public_IP_Address]:[Expose_Port_on_Host]来访问你的OtterIO server。
+stack 部署后，使用 [OC](https://github.com/soulteary/oc/blob/main/docs/commands.md)验证 S3 端点 `http://[Node_Public_IP_Address]:[Expose_Port_on_Host]`。浏览器访问由独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)提供。保留实际的 S3/Admin 端口与代理映射，按部署配置 OC 的端点和各自的 CA；`--console-address` 是 Admin 监听地址，不是浏览器入口。
 
 ## 4. 删除分布式OtterIO services
 

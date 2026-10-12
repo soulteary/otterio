@@ -1,7 +1,7 @@
 # Build the checked-out source with Docker
 
-`docker build -t otterio-local .` compiles this directory, including local edits
-and committed browser assets. It does not clone a repository or checkout remote
+`docker build -t otterio-local .` compiles the server from this directory, including local edits.
+The standalone OC Web Console is built and run separately. This build does not clone a repository or checkout remote
 `main`. Git metadata is excluded from the build context.
 
 For a clean, identified checkout:

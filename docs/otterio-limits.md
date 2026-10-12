@@ -55,11 +55,11 @@ Source: [object and part size constants](../cmd/utils.go),
 [response limits](../cmd/api-response.go), [metacache block size](../cmd/metacache.go)
 and [request argument parsing](../cmd/api-resources.go).
 
-The web console uploads a file through one XMLHttpRequest rather than a multipart
-S3 upload. Its practical limit depends on the browser, proxy timeouts and server
-configuration; the S3 ceiling is not a verified 5 TiB browser-upload guarantee.
-Use a multipart-capable S3 client for large transfers. See
-[console upload code](../browser/app/js/uploads/actions.js).
+Browser uploads are handled by the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md#upload-semantics),
+which has its own upload limits and multipart transfer implementation. Its limits
+also depend on the selected OC version, browser, proxy and backend configuration;
+the server's S3 ceiling is not a verified 5 TiB browser-upload guarantee.
+Use a multipart-capable S3 client for transfers beyond the Console's configured limit.
 
 ## Conditional object writes
 

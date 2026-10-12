@@ -290,9 +290,9 @@ oc admin config set myotterio heal max_sleep=300ms max_io=100
 
 ## 仅通过环境变量设置的选项
 
-### 浏览器
+### 旧浏览器设置
 
-通过 `OTTERIO_BROWSER` 开启或关闭 Web UI，默认是 `on`。设为 `off` 不会关闭 S3 或管理接口。
+内置 Web Console 已移除。`OTTERIO_BROWSER` 应留空或设为 `off`；显式设为 `on` 会终止启动并给出迁移提示。此设置不会关闭 S3 或 Admin 接口。浏览器访问由独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)提供；选择发行版本前请核对[删除范围与发行门槛](../../web-console-removal.md)。
 
 示例:
 
@@ -301,11 +301,11 @@ export OTTERIO_BROWSER=off
 otterio server /data
 ```
 
-### 独立的 Web 控制台监听端口
+### Admin 监听地址（保留旧 console 参数名）
 
-默认情况下，Web 控制台与 S3 API 共用 ``--address`` 指定的监听器。如果希望将 Web UI 与 Admin API 单独绑定到另一个端口，可以通过 ``--console-address`` 命令行参数或 ``OTTERIO_BROWSER_ADDRESS`` 环境变量启用。开启该模式后，S3 监听端口将不再把浏览器请求重定向到 Web UI——浏览器访问 S3 端口会按常规 S3 接口返回错误响应。
+默认情况下，S3 与 Admin API 共用 `--address` 指定的监听器。通过 `server`/`gateway` 的 `--console-address` 参数或 `OTTERIO_BROWSER_ADDRESS` 环境变量，可将 Admin API 单独绑定到另一个端口。这些兼容名称配置的是 Admin 监听器，两个服务端监听器都不提供 Web Console。为 OC 设置实际的 S3 URL 和单独的 `--admin-url`，`oc-console` 则使用自己的浏览器监听地址，详见[拆分 S3 与 Admin 端口](../../../README_zh_CN.md#拆分-s3-与-admin-端口)。
 
-控制台端口必须与 S3 端口不同，否则服务启动会直接失败。
+Admin 端口必须与 S3 端口不同，否则服务启动会直接失败。下面的示例端口不能替代部署已有的端口或代理映射。
 
 示例:
 
@@ -318,9 +318,9 @@ export OTTERIO_BROWSER_ADDRESS=":9001"
 otterio server --address ":9000" /data
 ```
 
-### 控制台监听器使用独立 TLS 证书目录
+### Admin 独立 TLS 证书目录（保留旧 console 参数名）
 
-启用 ``--console-address`` 后，可以通过 ``--console-certs-dir``（或环境变量 ``OTTERIO_BROWSER_CERTS_DIR``）让控制台监听器使用独立的 TLS 证书。该目录需要包含 ``public.crt`` 与 ``private.key``，目录结构与 ``--certs-dir`` 相同；未指定时控制台监听器复用 ``--certs-dir`` 加载的证书。
+启用 `--console-address` 后，可以通过 `--console-certs-dir`（或 `OTTERIO_BROWSER_CERTS_DIR`）让 Admin 监听器使用独立的 TLS 证书。该目录需要包含 `public.crt` 与 `private.key`，目录结构与 `--certs-dir` 相同；未指定时 Admin 监听器复用 `--certs-dir` 加载的证书。两个端点使用不同 CA 时，应分别配置 OC 的 S3 与 Admin CA 信任；OC Web Console 的 HTTPS 证书由 `oc-console` 单独配置，不使用这些服务端证书目录。
 
 示例:
 

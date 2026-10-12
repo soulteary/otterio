@@ -253,7 +253,7 @@ $ go run ldap.go -u foouser -p foopassword
 ```
 
 ## Caveats
-**LDAP STS credentials are not yet supported on OtterIO Browser UI, we may add this feature in future releases.**
+OtterIO no longer serves an embedded Web UI. The standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md) has separate authentication modes and compatibility requirements. Its native IAM mode does not accept LDAP/directory identities; do not treat a successful LDAP STS API example as proof of browser-login support.
 
 ## Explore Further
 - [OtterIO Admin Complete Guide](https://github.com/soulteary/oc/blob/main/docs/administration.md)

@@ -62,7 +62,7 @@ otterio.exe gateway nas M:\export
 
 ## 3. Test your setup
 
-To test this setup, access the OtterIO server via browser or [`oc`](https://github.com/soulteary/oc#readme). You’ll see the uploaded files are accessible from the all the OtterIO shared backend endpoints.
+To test this setup, use [`oc`](https://github.com/soulteary/oc#readme) to upload an object and verify its content through each configured shared-backend endpoint. Browser access uses the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md), with the actual S3/Admin endpoints and the configured identity's permissions. The server does not serve a Web UI.
 
 ## Explore Further
 - [Use `oc` with OtterIO Server](https://github.com/soulteary/oc#readme)

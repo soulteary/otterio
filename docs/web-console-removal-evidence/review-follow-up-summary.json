@@ -30,7 +30,7 @@
   "history": "native.json and summary.json retain their original earlier harness fingerprints and weaker assertions; this follow-up does not replace historical results",
   "limits": "No production Go code changes; existing release, image/platform, deployment, upgrade/rollback and third-party browser gates remain outstanding. No complete STS-child-scope certification.",
   "windowsCLIContract": {
-    "status": "artifact-replay-passed; new CI execution pending",
+    "status": "artifact-replay and fresh Windows CI passed",
     "fixedBaseline": "52e2d95b7d4fb58fb212f4a2ce3f351b891e0343",
     "cases": 133,
     "approvedHelpChanges": 35,
@@ -63,7 +63,15 @@
       "reportSHA256": "4a51d55b41e408d790a3ab749900a4c4f198398672edf4a5f2cfcb308e288c82"
     },
     "platform": "Windows amd64, Go 1.27.2, CGO=0",
-    "baselineArchive": "unchanged"
+    "baselineArchive": "unchanged",
+    "newCI": {
+      "status": "passed",
+      "commit": "308263fb1fb36e66781eb04175ba697de194913c",
+      "run": 38271297327,
+      "job": 114885922231,
+      "url": "https://github.com/soulteary/otterio/actions/runs/38271297327/job/114885922231",
+      "otherPlatforms": "Linux and macOS CLI checks on the same commit also passed"
+    }
   },
   "cascadeInventoryFollowUp": {
     "dateUTC": "2026-10-12T15:32:08.850212+00:00",
@@ -99,5 +107,46 @@
     "binaryIdentityRegressionPassed": 4,
     "managementInventory": "authenticated HTTP200 and matching parent/DTO; child present after create, absent after delete, absent after same-name/secret parent recreation; failed reads and malformed results cannot prove removal",
     "productionBinaries": "same hashes as original summary and preceding review report; no production Go code changes"
+  },
+  "directChildInfoFollowUp": {
+    "dateUTC": "2026-10-12T15:48:06.473571+00:00",
+    "status": "passed",
+    "reviewComment": "https://github.com/soulteary/oc/pull/45#discussion_r4249811333",
+    "ocHarnessCommit": "d7269c1ba18e84a30c070166394318883b00c1b7",
+    "report": "native-direct-child-info.json",
+    "reportSHA256": "59f4faff9132c40b54e447865e78016b62bb26abd67c86e67d5cca0362c10aad",
+    "harnesses": [
+      {
+        "name": "test-console-integration.py",
+        "sha256": "eb1d2436efecf184dfeaea91d4519c2c3f2194bc0f161c05696f6094566c05ed"
+      },
+      {
+        "name": "console_write_acceptance.py",
+        "sha256": "67e326e7f3e1ee484c1b2dc7e58bbb3583373ef29519bbe0680d48337e721c8c"
+      },
+      {
+        "name": "console_acceptance_protocol.py",
+        "sha256": "2fad03751d8c3f9344bf28680b099c1661cb7296a2762fe5f4fd0777464a78e1"
+      },
+      {
+        "name": "local_http.py",
+        "sha256": "8d9ae2287186726711458bff030de76f2d805dfa1a0be32d5354c41f721fe24f"
+      },
+      {
+        "name": "console_native_acceptance.py",
+        "sha256": "8dff7fd4fe6287eb3034d2508a1e792e30484aa9385a102c8c1b0d7e1019a45d"
+      }
+    ],
+    "nativeHTTPSGroupsPassed": 50,
+    "nativeHarnessRegressionPassed": 16,
+    "binaryIdentityRegressionPassed": 4,
+    "directInfo": "manager SigV4 GET by child accessKey, independent Admin CA: 200 at creation, exact service-account-not-found 404 after parent delete and identical parent recreation; reject auth errors, generic404, malformed JSON and transport failure",
+    "historicalScope": "parent-filtered inventory alone did not establish direct-key absence; preceding reports are not upgraded to prove this check",
+    "firstFailure": {
+      "report": "native-direct-child-info-first-failure.json",
+      "reportSHA256": "778f16348f948bcd088d100dceef6484567e795bac931b70f0c2b79aedfaa4d7",
+      "reason": "strict message assertion omitted the underlying cause appended by toAdminAPIErr; no unknown404 was accepted; full source-derived wire message checked in the successful run"
+    },
+    "productionBinaries": "same hashes as original summary and preceding reports; no production Go changes"
   }
 }

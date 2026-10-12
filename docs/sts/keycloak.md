@@ -114,13 +114,9 @@ This will open the login page of keycloak, upon successful login, STS credential
 
 These credentials can now be used to perform OtterIO API operations.
 
-### Using OtterIO Browser
+### Browser access with OC OIDC
 
-- Open OtterIO URL on the browser, lets say http://localhost:9000
-- Click on `Log in with OpenID`
-- Provide `Client ID` and press ENTER, if `client_id` is already configured for OtterIO this page will automatically redirect to Keycloak user login page.
-- User will be redirected to the Keycloak user login page, upon successful login the user will be redirected to OtterIO page and logged in automatically,
-  the user should see now the buckets and objects they have access to.
+OtterIO no longer serves an embedded OpenID login page. Use the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md) from source or a release containing `--auth-mode oidc`. The administrator configures the fixed issuer/client ID, browser HTTPS origin and callback, and actual S3/Admin HTTPS URLs with independent CA trust. Register OC's callback with Keycloak and verify its discovery/token profile matches the selected OC version. Each browser user uses their own server-issued STS credentials and permissions; a shared administrator alias is not an independent-user login. The STS API examples above remain available. See [removal scope and release gates](../web-console-removal.md); older OC releases do not acquire these source features automatically.
 
 ## Explore Further
 

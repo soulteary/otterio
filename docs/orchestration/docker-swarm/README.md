@@ -61,7 +61,7 @@ docker stack deploy --compose-file=docker-compose-secrets.yaml otterio_stack
 
 This deploys services described in the Compose file as Docker stack `otterio_stack`. Look up the `docker stack` [command reference](https://docs.docker.com/engine/reference/commandline/stack/) for more info.
 
-After the stack is successfully deployed, you should be able to access OtterIO server via [OtterIO Client](https://github.com/soulteary/oc/blob/main/docs/commands.md) `oc` or your browser at http://[Node_Public_IP_Address]:[Expose_Port_on_Host]
+After the stack is deployed, verify the S3 endpoint at `http://[Node_Public_IP_Address]:[Expose_Port_on_Host]` with [OC](https://github.com/soulteary/oc/blob/main/docs/commands.md). Browser access uses the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md). Preserve the actual S3/Admin port and proxy mappings, and configure OC's endpoints and independent CA settings accordingly; `--console-address` is an Admin listener, not a browser listener.
 
 ## 4. Remove distributed OtterIO services
 

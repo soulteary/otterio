@@ -27,7 +27,7 @@ docker-compose.exe pull
 docker-compose.exe up
 ```
 
-现在每个实例都可以访问，端口从9001到9004，请在浏览器中访问http://127.0.0.1:9001/
+示例通过 Nginx 代理四个 OtterIO 实例，在 `http://127.0.0.1:9000` 提供 S3 端点。使用 [OC](https://github.com/soulteary/oc#readme)验证访问。浏览器入口由独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)提供，不是这个 S3 端口。如果部署使用 `--console-address` 拆分 Admin 流量，应保留其代理映射，为 OC 配置实际的 S3/Admin URL 和各自的 CA 设置。
 
 ### 注意事项
 
@@ -36,11 +36,11 @@ docker-compose.exe up
 * 默认情况下会创建4个otterio实例，你可以添加更多的OtterIO服务（最多总共16个）到你的OtterIO Compose deployment。添加一个服务
   * 复制服务定义并适当地更改新服务的名称。
   * 更新每个服务中的命令部分。
-  * 更新要为新服务公开的端口号。 另外，请确保分配给新服务的端口尚未使用。
+  * 更新 Nginx 配置中的 upstream，加入新实例。
 
   关于分布式OtterIO的更多资料，请访问[这里](https://github.com/soulteary/otterio/blob/main/docs/zh_CN/README.md).
 
-* Docker compose file中的OtterIO服务使用的端口是9001到9004，这允许多个服务在主机上运行。
+* 当前 Compose 示例中的 OtterIO 服务在容器网络使用 9000，由 Nginx 映射到主机 9000。已有部署应保留自己的端口与代理配置。
 
 ### 了解更多
 - [Docker Compose概述](https://docs.docker.com/compose/overview/)

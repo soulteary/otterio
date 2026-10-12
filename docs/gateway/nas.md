@@ -24,11 +24,11 @@ export OTTERIO_ROOT_PASSWORD=otterio123
 otterio gateway nas /shared/nasvol
 ```
 
-## Test using OtterIO Browser
+## Use OC Web Console
 
-OtterIO Gateway comes with an embedded web based object browser. Point your web browser to http://127.0.0.1:9000 to ensure that your server has started successfully.
+OtterIO Gateway does not serve a Web UI. Use the `oc` commands below to verify S3 access, or run the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md) against the gateway's S3 endpoint.
 
-![Screenshot](https://raw.githubusercontent.com/soulteary/OtterIO/main/docs/screenshots/otterio-browser-gateway.png)
+`--console-address` configures an optional separate Admin listener, not the Web Console. When using it, configure OC with the gateway's actual S3 URL and a separate `--admin-url`; preserve the deployment's ports and S3/Admin CA settings. See [separate S3 and Admin listeners](../../README.md#run-s3-and-admin-on-separate-ports). Local alias mode uses one configured identity; multiple independent browser users require native IAM or OIDC mode and their own backend permissions. Available operations depend on the NAS gateway's supported protocols and configuration.
 
 ## Test using OtterIO Client `oc`
 
@@ -37,13 +37,13 @@ OtterIO Gateway comes with an embedded web based object browser. Point your web 
 ### Configure `oc`
 
 ```
-mc alias set mynas http://gateway-ip:9000 access_key secret_key
+oc alias set mynas http://gateway-ip:9000 access_key secret_key
 ```
 
 ### List buckets on nas
 
 ```
-mc ls mynas
+oc ls mynas
 [2017-02-22 01:50:43 PST]     0B ferenginar/
 [2017-02-26 21:43:51 PST]     0B my-bucket/
 [2017-02-26 22:10:11 PST]     0B test-bucket1/

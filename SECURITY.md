@@ -85,8 +85,9 @@ disclosure.
 
 ## Out of scope
 
-- CVEs against MinIO Console, `mc`, `kes`, or other MinIO satellite projects
-  (OtterIO ships its own console under [`browser/`](browser)).
+- CVEs against MinIO Console, `mc`, `kes`, or other MinIO satellite projects.
+  The standalone [OC Web Console](https://github.com/soulteary/oc) is maintained
+  in a separate repository and needs its own security assessment.
 - Pure dependency CVEs already fixed by a `go.mod` upgrade — please open a
   regular pull request.
 - Bugs that require attacker control of the **server** binary or the
@@ -157,8 +158,8 @@ vendored 副本不受维护者支持；这不构成特定标签的长期维护�
 
 ### 不在范围内的项目
 
-- 针对 MinIO Console、`mc`、`kes` 等 MinIO 周边项目的 CVE（OtterIO 自带
-  控制台位于 [`browser/`](browser)）。
+- 针对 MinIO Console、`mc`、`kes` 等 MinIO 周边项目的 CVE。独立的
+  [OC Web Console](https://github.com/soulteary/oc)由单独的仓库维护，需要单独评估其安全性。
 - 已经可以通过升级 `go.mod` 修复的纯依赖 CVE — 请直接提交 PR。
 - 需要攻击者控制 **服务端二进制** 或底层磁盘存储才能利用的问题；威胁模型
   假定这些是可信的。

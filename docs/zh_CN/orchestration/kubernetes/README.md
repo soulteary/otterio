@@ -11,8 +11,8 @@
 - **镜像：** 使用 `soulteary/otterio` 或 `ghcr.io/soulteary/otterio`，固定经过评审的版本标签或 digest。发布产物见[发布指南](../../../releases/README.md)。
 - **凭据：** 通过 Kubernetes Secret 提供 `OTTERIO_ROOT_USER` 和 `OTTERIO_ROOT_PASSWORD`，或挂载 Secret 文件，并将 `OTTERIO_ROOT_USER_FILE` 和 `OTTERIO_ROOT_PASSWORD_FILE` 设置为容器内的文件路径。文件变量由镜像入口脚本读取，设置容器参数时请保留该入口脚本。详见 [Docker 凭据规则](../../../../README_DOCKER_SECURITY.md)和 Kubernetes [Secret 文档](https://kubernetes.io/docs/concepts/configuration/secret/)。
 - **存储：** 将持久化存储挂载到 `server` 参数指定的路径。临时单节点实例可使用 `server /data`；分布式部署需要按照[分布式指南](../../distributed/README.md)和[纠删码指南](../../erasure/README.md)规划磁盘及节点端点。增加单节点工作负载的副本数不会自动组成分布式 OtterIO 集群。Kubernetes [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)可提供稳定身份和持久卷关联，但不会替你配置 OtterIO 的存储拓扑。
-- **端口：** 使用 `server --address :9000 --console-address :9001 /data` 时，S3 监听 9000，控制台与 Admin API 监听 9001。根据流量用途配置 Service 和访问控制，并按[服务端 README](../../../../README_zh_CN.md#拆分-s3-与-web-控制台端口)为 OC 设置分别对应 S3 和管理接口的地址。
-- **TLS：** 按 [TLS 指南](../../tls/README.md)挂载 PEM 格式的证书，并使用规定的文件名与路径。为控制台设置独立证书目录时，必须同时启用独立控制台监听器。
+- **端口：** 使用 `server --address :9000 --console-address :9001 /data` 时，S3 监听 9000，Admin API 监听 9001。根据流量用途配置 Service 和访问控制，并按[服务端 README](../../../../README_zh_CN.md#拆分-s3-与-admin-端口)为 OC 设置实际的 S3 和管理接口地址。Web Console 是独立的 `oc-console` 服务，使用自己的浏览器监听地址；这些示例端口不能替代现有部署端口或代理映射。
+- **TLS：** 按 [TLS 指南](../../tls/README.md)挂载 PEM 格式的证书，并使用规定的文件名与路径。`--console-certs-dir` 指定 Admin 证书目录，必须同时启用独立 Admin 监听器。保留 OC 中独立的 S3/Admin CA 信任，浏览器 HTTPS 证书在 `oc-console` 中单独配置。
 - **健康检查：** S3 监听器通过 `/otterio/health/live` 和 `/otterio/health/ready` 提供进程探针，不能据此判断分布式读写仲裁状态；[健康检查指南](../../../metrics/healthcheck/README.md)介绍集群探针。按照 Kubernetes [探针文档](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)和部署情况设置超时及启动预算。
 
 ## 使用持久数据前验证

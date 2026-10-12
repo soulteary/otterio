@@ -33,7 +33,7 @@ SecretKey: X3RKxEeFOI8InuNWoPsbG+XEVoaJVCqbvxe+PTOa
 ...
 ```
 
-Instance is now accessible on the host at port 9000, proceed to access the Web browser at http://127.0.0.1:9000/
+The instance's S3 endpoint is `http://127.0.0.1:9000`. Verify access with [OC](https://github.com/soulteary/oc#readme). For browser access, run the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md); the server does not provide a Web UI.
 
 ## Explore Further
 - [OtterIO Erasure Code QuickStart Guide](https://github.com/soulteary/otterio/blob/main/docs/erasure/README.md)

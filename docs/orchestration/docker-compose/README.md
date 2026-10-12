@@ -33,7 +33,7 @@ docker-compose.exe pull
 docker-compose.exe up
 ```
 
-Distributed instances are now accessible on the host at ports 9000, proceed to access the Web browser at http://127.0.0.1:9000/. Here 4 OtterIO server instances are reverse proxied through Nginx load balancing.
+The example exposes the S3 endpoint at `http://127.0.0.1:9000`, with four OtterIO server instances behind Nginx. Verify access with [OC](https://github.com/soulteary/oc#readme). Browser access uses the standalone [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/console.md), not this S3 port. If your deployment separates Admin traffic with `--console-address`, preserve its proxy mapping and configure OC's actual S3/Admin URLs and independent CA settings.
 
 ### Notes
 

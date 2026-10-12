@@ -16,22 +16,23 @@ export OTTERIO_ROOT_USER=otterioaccesskey
 export OTTERIO_ROOT_PASSWORD=otteriosecretkey
 otterio gateway nas /shared/nasvol
 ```
-## 使用浏览器进行验证
-使用你的浏览器访问`http://127.0.0.1:9000`,如果能访问，恭喜你，启动成功了。
+## 使用 OC Web Console
 
-![Screenshot](https://raw.githubusercontent.com/soulteary/OtterIO/main/docs/screenshots/otterio-browser-gateway.png)
+OtterIO 网关不再提供 Web UI。可以使用下面的 `oc` 命令验证 S3 访问，或让独立的 [OC Web Console](https://github.com/soulteary/oc/blob/main/docs/zh_CN/console.md)连接网关的 S3 端点。
+
+`--console-address` 用于配置独立的 Admin 监听器，不是 Web Console 地址。启用后，为 OC 配置实际的 S3 URL 和单独的 `--admin-url`，并保留部署现有的端口及 S3/Admin CA 设置，详见[拆分 S3 与 Admin 端口](../../../README_zh_CN.md#拆分-s3-与-admin-端口)。本机别名模式使用一个已配置的身份；多个独立浏览器用户需要 native IAM 或 OIDC 模式，以及各自真实的后端权限。可用操作取决于 NAS 网关支持的协议和配置。
 
 ## 使用`oc`进行验证
 `oc`为ls，cat，cp，mirror，diff，find等UNIX命令提供了一种替代方案。它支持文件系统和兼容Amazon S3的云存储服务（AWS Signature v2和v4）。
 
 ### 设置`oc`
 ```
-mc alias set mynas http://gateway-ip:9000 access_key secret_key
+oc alias set mynas http://gateway-ip:9000 access_key secret_key
 ```
 
 ### 列举nas上的存储桶
 ```
-mc ls mynas
+oc ls mynas
 [2017-02-22 01:50:43 PST]     0B ferenginar/
 [2017-02-26 21:43:51 PST]     0B my-bucket/
 [2017-02-26 22:10:11 PST]     0B test-bucket1/
