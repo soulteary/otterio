@@ -138,13 +138,43 @@ def api(path):
     return json.loads(command(['gh', 'api', path]))
 
 
-def snapshot(repository, tag, destination, draft=True):
-    """Download every official asset and verify metadata digests independently."""
+def release_metadata(repository, tag, draft=True):
+    """Find a unique draft by collection/ID; GitHub's tag endpoint is published-only."""
     tag_valid(tag)
     require(repository in REPOSITORIES, 'unsupported repository')
-    release = api(f'repos/{repository}/releases/tags/{tag}')
-    require(release.get('tag_name') == tag and release.get('prerelease') is False and
+    if draft is False:
+        release = api(f'repos/{repository}/releases/tags/{tag}')
+    else:
+        matches = []
+        page = 1
+        while True:
+            rows = api(f'repos/{repository}/releases?per_page=100&page={page}')
+            require(isinstance(rows, list) and len(rows) <= 100 and
+                    all(isinstance(row, dict) for row in rows), 'invalid release listing')
+            matches.extend(row for row in rows if row.get('tag_name') == tag)
+            require(len(matches) <= 1, 'expected one official release for tag')
+            if len(rows) < 100:
+                break
+            page += 1
+        require(len(matches) == 1, 'expected one official release for tag')
+        selected = matches[0]
+        release_id = selected.get('id')
+        require(type(release_id) is int and release_id > 0, 'invalid official release ID')
+        require(selected.get('prerelease') is False and type(selected.get('draft')) is bool and
+                (draft is None or selected['draft'] is draft), 'unexpected release publication state')
+        release = api(f'repos/{repository}/releases/{release_id}')
+        require(isinstance(release, dict) and type(release.get('id')) is int and
+                all(release.get(field) == selected.get(field) for field in
+                    ('id', 'tag_name', 'draft', 'prerelease')), 'release identity changed during lookup')
+    require(isinstance(release, dict) and release.get('tag_name') == tag and
+            release.get('prerelease') is False and type(release.get('draft')) is bool and
             (draft is None or release.get('draft') is draft), 'unexpected release publication state')
+    return release
+
+
+def snapshot(repository, tag, destination, draft=True):
+    """Download every official asset and verify metadata digests independently."""
+    release = release_metadata(repository, tag, draft)
     names = asset_names(repository, tag)
     assets = release.get('assets', [])
     require(len(assets) == len(names) and {r.get('name') for r in assets} == names, 'unexpected official release assets')
