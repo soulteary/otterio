@@ -22,6 +22,7 @@ jobs:
       contents: write
       actions: write
     env:
+      PYTHONDONTWRITEBYTECODE: "1"
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ inputs.tag }}
     steps:

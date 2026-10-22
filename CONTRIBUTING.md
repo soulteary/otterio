@@ -21,7 +21,7 @@ upstream MinIO instructions may refer to different commands, APIs or dependencie
 
 ## Toolchain and local build
 
-Use Go **1.27.2 or newer**, Git, Make and Bash. For race tests install a working C
+Use Go **1.27.3 or newer**, Git, Make and Bash. For race tests install a working C
 compiler; ordinary server builds use `CGO_ENABLED=0`. The pinned versions in
 [go.mod](go.mod), [Makefile](Makefile) and CI are the source of truth.
 
