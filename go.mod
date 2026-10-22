@@ -21,7 +21,7 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/go-ldap/ldap/v3 v3.4.15
 	github.com/go-sql-driver/mysql v1.10.1
-	github.com/gofiber/fiber/v3 v3.6.1
+	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gomodule/redigo v1.9.3
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.23.0
@@ -48,10 +48,10 @@ require (
 	github.com/rjeczalik/notify v0.9.3
 	github.com/secure-io/sio-go v0.3.1
 	github.com/shirou/gopsutil/v3 v3.24.5
-	github.com/soulteary/otterio-kits/highwayhash v1.0.6
-	github.com/soulteary/otterio-kits/sha256-simd v1.0.2
-	github.com/soulteary/otterio-kits/simdjson-go v0.4.7
-	github.com/soulteary/otterio-kits/sio v0.5.3
+	github.com/soulteary/otterio-kits/highwayhash v1.0.7
+	github.com/soulteary/otterio-kits/sha256-simd v1.0.4
+	github.com/soulteary/otterio-kits/simdjson-go v0.4.8
+	github.com/soulteary/otterio-kits/sio v0.5.4
 	github.com/soulteary/otterio-sdk/v7 v7.3.2
 	github.com/tidwall/gjson v1.20.0
 	github.com/tidwall/sjson v1.2.5
@@ -109,8 +109,8 @@ require (
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/shoenig/go-m1cpu v0.2.4 // indirect
-	github.com/soulteary/otterio-kits/crc64nvme v1.1.3 // indirect
-	github.com/soulteary/otterio-kits/md5-simd v1.2.0 // indirect
+	github.com/soulteary/otterio-kits/crc64nvme v1.1.4 // indirect
+	github.com/soulteary/otterio-kits/md5-simd v1.2.1 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.2 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
