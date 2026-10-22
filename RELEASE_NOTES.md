@@ -2,13 +2,13 @@
 
 This preparation covers the production changes after
 `RELEASE.2026-10-10T16-38-05Z` (`8cc518b31ac8b69c8f855e19b4bd027f44275c47`)
-through `c3b3665154264993fa06a28e95ab25fdd03d7c0c`: conditional native IAM
+through the current source: conditional native IAM
 protocols and current-parent STS authorization (#41), followed by embedded Web
 removal (#42). It does not create a release or certify future release artifacts.
 
 ## Changes
 
-- Require Go 1.27.3 across the main and auxiliary modules and build images; refresh compatible dependencies and checksums.
+- Require Go 1.27.3 across the main and auxiliary modules and build images; refresh compatible dependencies and checksums, including OtterIO SDK v7.3.3 and the newly released OtterIO Kits.
 - Add a manually triggered immutable-tag preparation workflow that verifies the exact main commit before dispatching the existing draft builder. Publication and packaged-pair acceptance remain separate.
 
 - Add conditional native IAM policy bindings and identity relationships for

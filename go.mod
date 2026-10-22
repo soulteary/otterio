@@ -52,7 +52,7 @@ require (
 	github.com/soulteary/otterio-kits/sha256-simd v1.0.4
 	github.com/soulteary/otterio-kits/simdjson-go v0.4.8
 	github.com/soulteary/otterio-kits/sio v0.5.4
-	github.com/soulteary/otterio-sdk/v7 v7.3.2
+	github.com/soulteary/otterio-sdk/v7 v7.3.3
 	github.com/tidwall/gjson v1.20.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/tinylib/msgp v1.6.5
