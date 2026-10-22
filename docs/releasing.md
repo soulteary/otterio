@@ -398,3 +398,15 @@ Release checks 全绿。发布文章或日期命名的文档不是实际版本�
 本轮包含内部存储加固：分布式节点应全部升级，提前备份元数据并验证已有对象、分片上传、
 大对象流式读写及修复/复制。64 MiB 限制不针对 S3 对象大小；历史损坏元数据需调查恢复，
 不能以关闭校验绕过。所有产物与部署验证完成后再公告。
+
+## Prepare an immutable release tag from Actions
+
+After the exact main commit passes its required checks, run **Prepare release tag**
+on `main` with a new UTC `RELEASE.YYYY-MM-DDTHH-MM-SSZ` tag. The workflow refuses
+existing tags, a changed main branch, dirty source, or incomplete CI. It creates
+the tag once and explicitly dispatches the existing draft builder from that tag
+because token-created tag pushes do not trigger Actions. This prepares a draft
+only; packaged-pair acceptance, publication, and latest promotion remain separate.
+
+If dispatch fails after tag creation, retain the tag and manually run the existing
+Release workflow for that exact tag. Never delete or move the tag to retry.
