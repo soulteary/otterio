@@ -15,7 +15,7 @@ REQUIRED_WORKFLOWS = ('go.yml', 'lint.yml', 'release-checks.yml')
 
 
 def command(*args):
-    return subprocess.check_output(args, cwd=ROOT, text=True).strip()
+    return subprocess.check_output(args, cwd=ROOT, text=True, encoding="utf-8").strip()
 
 
 def prepare(tag):
@@ -31,7 +31,7 @@ def prepare(tag):
         raise ValueError("release source is no longer origin/main")
     if command("git", "tag", "--list", tag):
         raise ValueError("tag already exists; never move or reuse a release tag")
-    if not (ROOT / "RELEASE_NOTES.md").read_text().strip():
+    if not (ROOT / "RELEASE_NOTES.md").read_text(encoding="utf-8").strip():
         raise ValueError("release notes must be reviewed before tag preparation")
     for workflow in REQUIRED_WORKFLOWS:
         payload = json.loads(command("gh", "api", f"repos/{repository}/actions/workflows/{workflow}/runs?head_sha={sha}&branch=main&event=push&per_page=1"))
