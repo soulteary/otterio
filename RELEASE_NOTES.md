@@ -8,6 +8,9 @@ removal (#42). It does not create a release or certify future release artifacts.
 
 ## Changes
 
+- Require Go 1.27.3 across the main and auxiliary modules and build images; refresh compatible dependencies and checksums.
+- Add a manually triggered immutable-tag preparation workflow that verifies the exact main commit before dispatching the existing draft builder. Publication and packaged-pair acceptance remain separate.
+
 - Add conditional native IAM policy bindings and identity relationships for
   user, group, service-account and self-secret changes. Relationship revisions bind
   the full native IAM graph and affected access keys; signed conditions, permissions and identity

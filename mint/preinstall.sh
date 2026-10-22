@@ -31,7 +31,7 @@ $APT update
 $APT install gnupg ca-certificates
 
 # download and install golang
-GO_VERSION="1.27.2"
+GO_VERSION="1.27.3"
 GO_INSTALL_PATH="/usr/local"
 download_url="https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
 go_archive=$(mktemp)
