@@ -195,10 +195,16 @@ temporarily inconsistent. Inspect all outputs before announcing.
 Before public release, confirm the draft build and official packaged-pair
 acceptance completed successfully and independently review the attestation hash.
 The `CONSOLE_RELEASE_TOKEN` secret needs Contents read on both repositories for
-cross-repository draft access and Actions read on both for official run/artifact reads;
+release endpoints and Actions read on both for official run/artifact reads;
 the own-repository token does not imply partner-draft access. Publication uses
 the reader secret only for reads and the repository's own `GITHUB_TOKEN` for
-the final release mutation. The reader does not need Contents write.
+the final release mutation. Endpoint read permissions alone do not establish
+draft visibility: GitHub restricts draft listings to callers with push access.
+Verify collection lookup and numeric release-ID reads for both actual drafts
+with this credential before dispatch. A successful public-release or `/user`
+request is insufficient. Inspect repository selection and draft access before
+changing scopes; do not publish drafts to make them readable. See the
+[OC access diagnostic and recovery procedure](https://github.com/soulteary/oc/blob/main/docs/console-release-acceptance.md#official-acceptance-and-access).
 This guide does not assert that those secrets
 or registry permissions have already been configured.
 
