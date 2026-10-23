@@ -146,8 +146,10 @@ release. Neither draft preparation nor publication calls promotion.
 Cross-repository draft and official artifact reads use the configured
 `CONSOLE_RELEASE_TOKEN` with Contents read and Actions read on both repositories;
 the actor must be able to read both drafts. Publication uses its own repository
-token for the final release mutation. The reader needs no Contents write. Secret
-and package access must be checked before dispatch; this draft does not assert
+token for the final release mutation. Endpoint read permissions alone do not
+establish draft visibility: GitHub also restricts draft listings to callers with
+push access. Verify both actual drafts with the configured reader before dispatch.
+Secret and package access must be checked before dispatch; this draft does not assert
 that they are configured.
 
 Before publication, the operator must review the actual release notes, this
