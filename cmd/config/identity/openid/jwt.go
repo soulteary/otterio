@@ -195,7 +195,8 @@ func (p *JWT) Validate(token, dsecs string) (map[string]interface{}, error) {
 		if err = p.PopulatePublicKey(); err != nil {
 			return nil, err
 		}
-		jwtToken, err = jwtgo.ParseWithClaims(token, &claims, keyFuncCallback)
+		// Preserve the algorithm allowlist when retrying with refreshed keys.
+		jwtToken, err = jp.ParseWithClaims(token, &claims, keyFuncCallback)
 		if err != nil {
 			return nil, err
 		}
