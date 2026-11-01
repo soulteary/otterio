@@ -50,8 +50,8 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/soulteary/otterio-kits/highwayhash v1.0.7
 	github.com/soulteary/otterio-kits/sha256-simd v1.0.4
-	github.com/soulteary/otterio-kits/simdjson-go v0.4.8
-	github.com/soulteary/otterio-kits/sio v0.5.4
+	github.com/soulteary/otterio-kits/simdjson-go v0.4.9
+	github.com/soulteary/otterio-kits/sio v0.5.5
 	github.com/soulteary/otterio-sdk/v7 v7.3.3
 	github.com/tidwall/gjson v1.20.0
 	github.com/tidwall/sjson v1.2.5
@@ -110,7 +110,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/shoenig/go-m1cpu v0.2.4 // indirect
 	github.com/soulteary/otterio-kits/crc64nvme v1.1.4 // indirect
-	github.com/soulteary/otterio-kits/md5-simd v1.2.1 // indirect
+	github.com/soulteary/otterio-kits/md5-simd v1.2.2 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.2 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
