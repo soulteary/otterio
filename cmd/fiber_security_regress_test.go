@@ -11,12 +11,49 @@
 package cmd
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
 )
+
+// The production validity middleware must reject raw and encoded dot segments
+// before Fiber's normalized path can select any S3 operation. In particular,
+// /bucket/../../etc must not be reinterpreted as an operation on bucket "etc".
+func TestFiberS3RejectsDotSegmentsBeforeDispatch(t *testing.T) {
+	app := newFiberApp()
+	app.Use(setRequestValidityHandlerFiber)
+	called := false
+	handler := func(c fiber.Ctx) error {
+		called = true
+		return c.SendStatus(http.StatusOK)
+	}
+	app.Use(s3PathDispatch(handler, handler))
+	h := fiberHTTPTestHandler(app)
+	for _, path := range []string{
+		"/bucket/../../etc",
+		"/bucket/%2e%2e/%2E%2E/etc",
+		"/bucket/key/.",
+		"/bucket/key/%2e",
+	} {
+		t.Run(path, func(t *testing.T) {
+			called = false
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if called {
+				t.Fatal("invalid path reached an S3 handler")
+			}
+			want := encodeResponse(getAPIErrorResponse(req.Context(),
+				errorCodes.ToAPIErr(ErrInvalidResourceName), req.URL.Path, "", globalDeploymentID))
+			if rec.Code != http.StatusBadRequest || !bytes.Equal(rec.Body.Bytes(), want) {
+				t.Fatalf("status=%d body=%s; want status=400 body=%s", rec.Code, rec.Body, want)
+			}
+		})
+	}
+}
 
 // buildFiberSecurityChain mirrors the production middleware order from
 // fiber_router.go (globalFiberHandlers) restricted to the handlers that are

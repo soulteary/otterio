@@ -84,10 +84,8 @@ func TestCopyObjectRouteDispatch(t *testing.T) {
 			}, nil, nil),
 	}
 
-	objectDispatch, bucketDispatch := makeBucketObjectDispatchHandlers(objectRules, nil)
 	group := app.Group("")
-	group.All("/:bucket/*", objectDispatch)
-	group.All("/:bucket", bucketDispatch)
+	group.Use(s3PathDispatch(makeS3DispatchHandler(objectRules), makeS3DispatchHandler(nil)))
 
 	req := httptest.NewRequest(http.MethodPut, "/dstbucket/dir/object-2", nil)
 	// Mirrors what mc / minio-go sends for `mc mv src/obj dst/obj`.

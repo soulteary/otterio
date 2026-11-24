@@ -20,14 +20,13 @@ package cmd
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
 )
 
 // buildVhostTestHandler wires the same dispatch structure used by
-// registerAPIRouterFiber (vhost middleware + vhost dispatch + path-style routes)
+// registerAPIRouterFiber (vhost middleware + original-path S3 dispatch)
 // around stub handlers that record the resolved bucket/object, so the routing
 // decision can be asserted without a full object layer.
 func buildVhostTestHandler(rec *struct {
@@ -47,22 +46,8 @@ func buildVhostTestHandler(rec *struct {
 		rec.object = pathParamObject(c)
 		return c.SendStatus(fiber.StatusOK)
 	}
-	objectDispatch := func(c fiber.Ctx) error {
-		if strings.TrimPrefix(c.Params("*"), "/") == "" {
-			return bucketHandler(c)
-		}
-		return objectHandler(c)
-	}
-
 	apiGroup := app.Group("", vhostBucketMiddleware)
-	apiGroup.Use(func(c fiber.Ctx) error {
-		if handled, err := vhostObjectDispatch(c, objectHandler, bucketHandler); handled {
-			return err
-		}
-		return c.Next()
-	})
-	apiGroup.All("/:bucket/*", objectDispatch)
-	apiGroup.All("/:bucket", bucketHandler)
+	apiGroup.Use(s3PathDispatch(objectHandler, bucketHandler))
 
 	return fiberHTTPTestHandler(app)
 }

@@ -21,8 +21,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/gofiber/fiber/v3"
 )
 
 func TestEncodedObjectPathPreserved(t *testing.T) {
@@ -46,17 +44,8 @@ func TestEncodedObjectPathPreserved(t *testing.T) {
 		if streamed {
 			rule = s3RouteStream(methods, "objecttest", true, capture, nil, nil)
 		}
-		objectDispatch, bucketDispatch := makeBucketObjectDispatchHandlers([]routeRule{rule}, nil)
-		objectHandler := makeS3DispatchHandler([]routeRule{rule})
 		group := app.Group("", vhostBucketMiddleware)
-		group.Use(func(c fiber.Ctx) error {
-			if handled, err := vhostObjectDispatch(c, objectHandler, bucketDispatch); handled {
-				return err
-			}
-			return c.Next()
-		})
-		group.All("/:bucket/*", objectDispatch)
-		group.All("/:bucket", bucketDispatch)
+		group.Use(s3PathDispatch(makeS3DispatchHandler([]routeRule{rule}), makeS3DispatchHandler(nil)))
 		handler := fiberHTTPTestHandler(app)
 		cases := []struct{ encoded, object string }{
 			{"a%2Fb", "a/b"},
@@ -66,6 +55,16 @@ func TestEncodedObjectPathPreserved(t *testing.T) {
 			{"a%25b", "a%b"},
 			{"a+b", "a+b"},
 			{"a%2Bb", "a+b"},
+			{"%41%2Etxt", "A.txt"},
+			{"%252e%252e/key", "%2e%2e/key"},
+			{"/key", "/key"},
+			{"key/", "key/"},
+			// These invalid keys must reach object-name validation unchanged,
+			// rather than becoming a different bucket or root operation.
+			{"../../etc", "../../etc"},
+			{"%2e%2e/%2e%2e/etc", "../../etc"},
+			{"..", ".."},
+			{".", "."},
 		}
 		for _, method := range methods {
 			for _, tc := range cases {
