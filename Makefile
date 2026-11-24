@@ -15,8 +15,8 @@ TAG ?= "soulteary/otterio:$(VERSION)"
 # "Non-committed changes in auto-generated code is detected".
 MSGP_VERSION ?= v1.6.5
 # stringer is a standalone build tool; x/tools is not a runtime dependency.
-STRINGER_VERSION ?= v0.51.0
-GOLANGCI_LINT_VERSION ?= v2.14.0
+STRINGER_VERSION ?= v0.53.0
+GOLANGCI_LINT_VERSION ?= v2.15.0
 
 all: build
 

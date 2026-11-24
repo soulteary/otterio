@@ -1,6 +1,6 @@
 module mint.minio.io/versioning/tests
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/aws/aws-sdk-go v1.55.8
@@ -9,5 +9,5 @@ require (
 
 require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 )
