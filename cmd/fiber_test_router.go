@@ -23,7 +23,6 @@ import (
 	"net"
 	"net/http"
 	"regexp"
-	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	xhttp "github.com/soulteary/otterio/cmd/http"
@@ -118,19 +117,12 @@ func registerAPIFunctionsFiber(app *fiber.App, objLayer ObjectLayer, apiFunction
 	// legacy test router; the production router intentionally returns 400 instead.
 	objectHandler := makeTestS3DispatchHandler(objectRules)
 	bucketHandler := makeTestS3DispatchHandler(bucketRules)
-	objectDispatch := func(c fiber.Ctx) error {
-		if strings.TrimPrefix(c.Params("*"), "/") == "" {
-			return bucketHandler(c)
-		}
-		return objectHandler(c)
-	}
 	rootDispatch := makeTestS3DispatchHandler([]routeRule{
 		s3Route([]string{http.MethodGet}, "listbuckets", false, api.ListBucketsHandler, nil, nil),
 	})
 
 	apiGroup := app.Group("", vhostBucketMiddleware)
-	apiGroup.All("/:bucket/*", objectDispatch)
-	apiGroup.All("/:bucket", bucketHandler)
+	apiGroup.Use(s3PathDispatch(objectHandler, bucketHandler))
 
 	app.All("/", func(c fiber.Ctx) error {
 		if pathParamBucket(c) != "" {

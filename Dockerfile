@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG GO_VERSION=1.27.3-alpine
+ARG GO_VERSION=1.27.4-alpine3.24
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} AS builder
 
 # Compile the supplied build context, including local edits, never remote main.

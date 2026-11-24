@@ -37,12 +37,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # setup-go can cache both modules and build outputs. Manage them here
       # separately so build snapshots can advance with source commits without
       # re-uploading the module download cache for every change.
-      - uses: actions/setup-go@v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         id: go
         with:
           go-version-file: go.mod
@@ -57,7 +57,7 @@ jobs:
           echo "buildcache=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Go modules
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.gocache.outputs.modcache }}
           key: gomod-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.mod', 'go.sum') }}
@@ -67,7 +67,7 @@ jobs:
       # Actions caches are immutable. Save a new build snapshot per commit,
       # restore the nearest compatible one, and let Go validate individual entries.
       - name: Cache plain build outputs
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.gocache.outputs.buildcache }}
           key: gobuild-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-plain-cgo0-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
@@ -175,10 +175,10 @@ jobs:
       CGO_ENABLED: '1'
       GOTOOLCHAIN: local
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test race CI helpers
         run: python3 -m unittest discover -s buildscripts -p 'test_race_*.py' -v
-      - uses: actions/setup-go@v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         id: go
         with:
           go-version-file: go.mod
@@ -195,7 +195,7 @@ jobs:
       # Keep race and plain build snapshots separate. Go already distinguishes
       # their entries; separate Actions keys avoid competing incomplete snapshots.
       - name: Cache Go modules
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.gocache.outputs.modcache }}
           key: gomod-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.mod', 'go.sum') }}
@@ -205,7 +205,7 @@ jobs:
       # Actions caches are immutable. Save a new build snapshot per commit,
       # restore the nearest compatible one, and let Go validate individual entries.
       - name: Cache race build outputs
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.gocache.outputs.buildcache }}
           key: gobuild-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.go.outputs.go-version }}-race-kqueue-cgo1-${{ hashFiles('go.mod', 'go.sum') }}-${{ github.sha }}
@@ -243,7 +243,7 @@ jobs:
 
       - name: Upload race diagnostics
         if: always()
-        uses: actions/upload-artifact@v7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: race-diagnostics-${{ github.run_attempt }}
           path: ${{ runner.temp }}/otterio-race/
@@ -258,8 +258,8 @@ jobs:
     name: Lint & generated code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-go@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         id: go
         with:
           go-version-file: go.mod
@@ -276,8 +276,8 @@ jobs:
     name: Cross compile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-go@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         id: go
         with:
           go-version-file: go.mod
@@ -310,8 +310,8 @@ jobs:
     name: Verify healing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-go@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         id: go
         with:
           go-version-file: go.mod
@@ -335,8 +335,8 @@ jobs:
     name: govulncheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-go@v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         id: go
         with:
           go-version-file: go.mod
@@ -347,7 +347,7 @@ jobs:
             go.sum
       - name: Install & run govulncheck
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.10.0
           govulncheck ./...
 
   # Lightweight static checks: shellcheck on mint scripts.
@@ -355,7 +355,7 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y devscripts shellcheck
       - name: Run shellcheck

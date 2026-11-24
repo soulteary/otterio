@@ -41,11 +41,8 @@ func TestBucketTrailingSlashDispatch(t *testing.T) {
 				w.WriteHeader(http.StatusNoContent)
 			}, nil, map[string]*regexp.Regexp{xhttp.ContentType: fiberMultipartFormRegex}),
 	}
-	objectDispatch, bucketDispatch := makeBucketObjectDispatchHandlers(nil, bucketRules)
-
 	group := app.Group("")
-	group.All("/:bucket/*", objectDispatch)
-	group.All("/:bucket", bucketDispatch)
+	group.Use(s3PathDispatch(makeS3DispatchHandler(nil), makeS3DispatchHandler(bucketRules)))
 
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
@@ -92,11 +89,8 @@ func TestBucketTrailingSlashDispatchViaHTTPAdaptor(t *testing.T) {
 				w.WriteHeader(http.StatusNoContent)
 			}, nil, map[string]*regexp.Regexp{xhttp.ContentType: fiberMultipartFormRegex}),
 	}
-	objectDispatch, bucketDispatch := makeBucketObjectDispatchHandlers(nil, bucketRules)
-
 	group := app.Group("")
-	group.All("/:bucket/*", objectDispatch)
-	group.All("/:bucket", bucketDispatch)
+	group.Use(s3PathDispatch(makeS3DispatchHandler(nil), makeS3DispatchHandler(bucketRules)))
 
 	httpHandler := adaptor.FiberApp(app)
 

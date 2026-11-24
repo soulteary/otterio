@@ -20,7 +20,6 @@ package cmd
 import (
 	"net/http"
 	"regexp"
-	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	xhttp "github.com/soulteary/otterio/cmd/http"
@@ -247,20 +246,6 @@ func makeS3DispatchHandler(rules []routeRule) fiber.Handler {
 	}
 }
 
-// makeBucketObjectDispatchHandlers returns bucket and object dispatch handlers.
-// Paths like /bucket/ match /:bucket/* with an empty wildcard; those are bucket operations.
-func makeBucketObjectDispatchHandlers(objectRules, bucketRules []routeRule) (objectDispatch, bucketDispatch fiber.Handler) {
-	objectHandler := makeS3DispatchHandler(objectRules)
-	bucketHandler := makeS3DispatchHandler(bucketRules)
-	objectDispatch = func(c fiber.Ctx) error {
-		if strings.TrimPrefix(c.Params("*"), "/") == "" {
-			return bucketHandler(c)
-		}
-		return objectHandler(c)
-	}
-	return objectDispatch, bucketHandler
-}
-
 // registerAPIRouterFiber registers S3 compatible APIs on a Fiber app.
 func registerAPIRouterFiber(app *fiber.App) {
 	api := objectAPIHandlers{
@@ -271,28 +256,15 @@ func registerAPIRouterFiber(app *fiber.App) {
 	objectRules := append(rejectedObjectAPIRules(), objectS3APIRules(api)...)
 	bucketRules := append(rejectedBucketAPIRules(), bucketS3APIRules(api)...)
 
-	objectDispatch, bucketDispatch := makeBucketObjectDispatchHandlers(objectRules, bucketRules)
-	// Raw object handler (without the path-style empty-wildcard check) used to
-	// dispatch virtual-host-style object operations, where the whole path is the
-	// object key.
 	objectHandler := makeS3DispatchHandler(objectRules)
+	bucketDispatch := makeS3DispatchHandler(bucketRules)
 	rootDispatch := makeS3DispatchHandler(rootS3APIRules(api))
 
 	listBucketsDoubleSlash := wrapS3Handler("listbuckets", false, toOtterioHandler(api.ListBucketsHandler))
 	notFoundHandler := collectAPIStatsFiber("notfound", httpTraceAllFiber(errorResponseHandlerFiber))
 
 	apiGroup := app.Group("", vhostBucketMiddleware)
-	// Virtual-host-style requests (bucket in the Host header) must be dispatched
-	// before the path-style routes, which would otherwise treat the first path
-	// segment as the bucket name and lose the object key.
-	apiGroup.Use(func(c fiber.Ctx) error {
-		if handled, err := vhostObjectDispatch(c, objectHandler, bucketDispatch); handled {
-			return err
-		}
-		return c.Next()
-	})
-	apiGroup.All("/:bucket/*", objectDispatch)
-	apiGroup.All("/:bucket", bucketDispatch)
+	apiGroup.Use(s3PathDispatch(objectHandler, bucketDispatch))
 
 	app.All("/", func(c fiber.Ctx) error {
 		if pathParamBucket(c) != "" {

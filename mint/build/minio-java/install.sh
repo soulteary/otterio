@@ -15,7 +15,7 @@
 #  limitations under the License.
 #
 
-SPOTBUGS_VERSION="4.10.4" ## needed since 8.0.2 release
+SPOTBUGS_VERSION="4.10.5" ## needed since 8.0.2 release
 JUNIT_VERSION="4.13.2" ## JUNIT version
 OTTERIO_JAVA_VERSION=$(curl --retry 10 -s "https://repo1.maven.org/maven2/io/minio/minio/maven-metadata.xml" | sed -n "/<latest>/{s/<.[^>]*>//g;p;q}" | sed "s/  *//g")
 if [ -z "$OTTERIO_JAVA_VERSION" ]; then

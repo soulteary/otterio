@@ -368,6 +368,30 @@ func vhostBucketMiddleware(c fiber.Ctx) error {
 	return c.Next()
 }
 
+// s3PathDispatch selects the S3 bucket/object from the original encoded path.
+// Fiber normalizes dot segments and unreserved escapes even with UnescapePath
+// disabled. Routing by its captures could therefore turn an invalid object key
+// into a different bucket operation before the S3 handler validates it. Keep
+// the original captures for the existing object-name checks and single decode;
+// the production request-validity middleware still rejects bad paths first.
+func s3PathDispatch(objectHandler, bucketHandler fiber.Handler) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		if handled, err := vhostObjectDispatch(c, objectHandler, bucketHandler); handled {
+			return err
+		}
+		path := strings.TrimPrefix(string(c.Request().URI().PathOriginal()), "/")
+		bucket, object, _ := strings.Cut(path, "/")
+		if bucket == "" {
+			return c.Next()
+		}
+		setPathVars(c, bucket, object)
+		if object == "" {
+			return bucketHandler(c)
+		}
+		return objectHandler(c)
+	}
+}
+
 // vhostObjectDispatch handles virtual-host-style requests, where the bucket was
 // taken from the Host header (by vhostBucketMiddleware) and the entire request
 // path is therefore the object key. This mirrors the legacy
@@ -380,9 +404,9 @@ func vhostObjectDispatch(c fiber.Ctx, objectHandler, bucketHandler fiber.Handler
 	if !ok || bucket == "" {
 		return false, nil
 	}
-	// c.Path() preserves percent-encoding (UnescapePath is disabled); the object
-	// helpers unescape it, matching the legacy UseEncodedPath behavior.
-	object := strings.TrimPrefix(c.Path(), "/")
+	// Read the original URI instead of Fiber's normalized routing path. The
+	// object helpers perform the single decode used by legacy UseEncodedPath.
+	object := strings.TrimPrefix(string(c.Request().URI().PathOriginal()), "/")
 	if object == "" {
 		return true, bucketHandler(c)
 	}

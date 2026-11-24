@@ -21,8 +21,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/gofiber/fiber/v3"
 )
 
 func TestEncodedObjectPathPreserved(t *testing.T) {
@@ -31,11 +29,12 @@ func TestEncodedObjectPathPreserved(t *testing.T) {
 	defer func() { globalDomainNames = savedDomains }()
 	for _, streamed := range []bool{false, true} {
 		app := newFiberApp()
-		var gotObject string
+		var gotObject, gotRawObject string
 		capture := func(w http.ResponseWriter, r *http.Request) {
 			var err error
 			// Match all legacy object handlers, which decode the captured path.
-			gotObject, err = unescapePath(urlVar(r, "object"))
+			gotRawObject = urlVar(r, "object")
+			gotObject, err = unescapePath(gotRawObject)
 			if err != nil {
 				t.Errorf("object capture could not be decoded: %v", err)
 			}
@@ -46,17 +45,8 @@ func TestEncodedObjectPathPreserved(t *testing.T) {
 		if streamed {
 			rule = s3RouteStream(methods, "objecttest", true, capture, nil, nil)
 		}
-		objectDispatch, bucketDispatch := makeBucketObjectDispatchHandlers([]routeRule{rule}, nil)
-		objectHandler := makeS3DispatchHandler([]routeRule{rule})
 		group := app.Group("", vhostBucketMiddleware)
-		group.Use(func(c fiber.Ctx) error {
-			if handled, err := vhostObjectDispatch(c, objectHandler, bucketDispatch); handled {
-				return err
-			}
-			return c.Next()
-		})
-		group.All("/:bucket/*", objectDispatch)
-		group.All("/:bucket", bucketDispatch)
+		group.Use(s3PathDispatch(makeS3DispatchHandler([]routeRule{rule}), makeS3DispatchHandler(nil)))
 		handler := fiberHTTPTestHandler(app)
 		cases := []struct{ encoded, object string }{
 			{"a%2Fb", "a/b"},
@@ -66,6 +56,18 @@ func TestEncodedObjectPathPreserved(t *testing.T) {
 			{"a%25b", "a%b"},
 			{"a+b", "a+b"},
 			{"a%2Bb", "a+b"},
+			{"%41%2Etxt", "A.txt"},
+			{"%252e%252e/key", "%2e%2e/key"},
+			// The legacy decoder trims leading slashes; the raw capture below
+			// must still preserve the encoded object path before decoding.
+			{"/key", "key"},
+			{"key/", "key/"},
+			// These invalid keys must reach object-name validation unchanged,
+			// rather than becoming a different bucket or root operation.
+			{"../../etc", "../../etc"},
+			{"%2e%2e/%2e%2e/etc", "../../etc"},
+			{"..", ".."},
+			{".", "."},
 		}
 		for _, method := range methods {
 			for _, tc := range cases {
@@ -78,6 +80,9 @@ func TestEncodedObjectPathPreserved(t *testing.T) {
 					req.Host = host
 					rec := httptest.NewRecorder()
 					handler.ServeHTTP(rec, req)
+					if gotRawObject != tc.encoded {
+						t.Fatalf("stream=%v vhost=%v %s %s: raw object %q, want %q", streamed, vhost, method, path, gotRawObject, tc.encoded)
+					}
 					if rec.Code != http.StatusOK || gotObject != tc.object {
 						t.Fatalf("stream=%v vhost=%v %s %s: status %d object %q, want %q", streamed, vhost, method, path, rec.Code, gotObject, tc.object)
 					}
