@@ -443,7 +443,7 @@ func TestAPIConditionalCopyVersions(t *testing.T) {
 }
 
 func TestAPIConditionalCopyEncryption(t *testing.T) {
-	ExecObjectLayerAPITest(t, func(obj ObjectLayer, instance, bucket string, router http.Handler, credentials auth.Credentials, t *testing.T) {
+	ExecObjectLayerAPITest(t, func(_ ObjectLayer, instance, bucket string, router http.Handler, credentials auth.Credentials, t *testing.T) {
 		oldKMS, oldTLS := GlobalKMS, globalIsTLS
 		GlobalKMS, globalIsTLS = conditionalMatchTestKMS(t), true
 		defer func() { GlobalKMS, globalIsTLS = oldKMS, oldTLS }()
