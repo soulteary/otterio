@@ -14,8 +14,8 @@ import (
 )
 
 func TestUnsupportedObjectWriteConditionRoutes(t *testing.T) {
-	apis := []string{"copyobject", "copyobjectpart", "putobjectpart", "newmultipartupload", "abortmultipartupload",
-		"deleteobject", "deletemultipleobjects", "postpolicybucket", "putobjectacl", "putobjecttagging",
+	apis := []string{"copyobjectpart", "putobjectpart", "newmultipartupload", "abortmultipartupload",
+		"deletemultipleobjects", "postpolicybucket", "putobjectacl", "putobjecttagging",
 		"deleteobjecttagging", "putobjectretention", "putobjectlegalhold", "restoreobject"}
 	for _, api := range apis {
 		for _, header := range []string{"If-Match", "If-None-Match"} {
@@ -42,7 +42,7 @@ func TestUnsupportedObjectWriteConditionRoutes(t *testing.T) {
 			})
 		}
 	}
-	for _, api := range []string{"getobject", "headobject", "putobject", "completemutipartupload"} {
+	for _, api := range []string{"getobject", "headobject", "putobject", "completemutipartupload", "copyobject", "deleteobject"} {
 		t.Run(api+"/handled-by-operation", func(t *testing.T) {
 			called := false
 			handler := guardUnsupportedObjectWriteConditions(api, func(http.ResponseWriter, *http.Request) { called = true })
@@ -80,6 +80,9 @@ func testAPIUnsupportedObjectWriteConditions(obj ObjectLayer, instance, bucket s
 			{"initiate", http.MethodPost, getNewMultipartURL("", bucket, "original"), map[string]string{}},
 		} {
 			operation.headers[header] = `"` + info.ETag + `"`
+			if operation.name == "delete" && header == "If-Match" {
+				operation.headers[header] = "*" // Wildcard DELETE remains outside the supported contract.
+			}
 			request, err := newTestSignedRequestV4(operation.method, operation.url, 0, nil, credentials.AccessKey, credentials.SecretKey, operation.headers)
 			if err != nil {
 				t.Fatal(err)

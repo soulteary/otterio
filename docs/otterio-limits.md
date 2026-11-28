@@ -131,8 +131,8 @@ abort it. Slow multipart completion can have an HTTP `200` response containing
 an XML `<Error>` after keepalive whitespace; clients must inspect the response
 body as required by the existing completion protocol.
 
-Destination `If-Match` and `If-None-Match` are explicitly rejected on copy,
-multipart initiation/parts/abort, delete, object metadata mutations, browser
+Destination `If-Match` and `If-None-Match` are explicitly rejected on
+multipart initiation/parts/abort, bulk deletion, object metadata mutations, browser
 POST and Snowball extraction. The existing `x-amz-copy-source-if-match` checks
 the copy source and remains a separate supported header. GET/HEAD conditions
 are also unchanged.
@@ -153,6 +153,56 @@ Sources: [create-only contract](../cmd/object-conditional-write.go),
 [match contract](../cmd/object-conditional-match.go),
 [unsupported operation guards](../cmd/object-write-condition-routes.go) and
 [create-only release review](releases/2026-10-08-release-review.md).
+
+### Conditional copy
+
+`X-Otterio-Conditional-Copy: v1` separately advertises `CopyObject` with one
+destination `If-None-Match: *`. It requires SigV4 with `if-none-match` in
+`SignedHeaders`, a filesystem or **local** single-pool erasure backend, no
+object cache and no bucket federation. Gateway, distributed and multi-pool
+backends are unsupported. The existing create-only PUT/completion capability
+does not advertise conditional copy.
+
+The destination existence check and commit share its namespace write lock.
+An existing destination, including a zero-byte object, fails with `412` and
+is preserved. Source-copy conditions, source authorization, metadata/tag
+directives and encryption retain their ordinary copy semantics. The operation
+does not delete the source or make a later rename atomic. Destination
+`If-Match`, non-wildcard or multiple `If-None-Match` values, explicit destination
+versions and replication/import headers are rejected with `501`.
+
+## Conditional object deletion
+
+`X-Otterio-Conditional-Delete: v1` advertises a separate, limited `DeleteObject`
+contract: one strong `If-Match` ETag (quoted or bare), signed by SigV4 or a SigV4
+presigned request. Both `s3:GetObject` and `s3:DeleteObject` must authorize the
+current object's stored tags. The backend repeats authorization and the ETag
+comparison while holding the same namespace write lock through final deletion.
+A stale validator returns `412`; an authorized missing current object or current
+delete marker returns `404`. Neither outcome deletes an object. An ordinary
+DELETE without a condition retains its existing missing-object `204` behavior.
+
+This contract supports filesystem storage and local single-pool erasure storage.
+It rejects any cache, distributed or multi-pool erasure, gateways, federation,
+buckets with replication rules, explicit `versionId` (including `null`),
+replication/import headers, force deletion or retention-bypass headers, wildcard
+`If-Match: *`, `If-None-Match`, weak tags and ETag lists. Duplicate or conflicting conditions are malformed requests. The
+current-object ETag restrictions described above also apply: directories,
+placeholder/absent metadata and compressed current objects cannot be conditionally
+deleted. The deletion capability does not change the existing conditional-write
+capabilities or add conditions to bulk deletion, tags, metadata or multipart abort.
+
+For a versioned bucket, conditional deletion follows ordinary current-key deletion
+and creates a delete marker; it does not permanently delete the selected historical
+version or bypass retention. ETags identify content according to the existing S3
+validator contract, not a unique mutation revision. In particular, another write
+with the same ETag is not distinguished by this condition.
+
+A client can use conditional copy followed by conditional deletion for a rename.
+These remain two operations: if the source ETag changes after the copy, deletion fails
+and the copied destination remains. There is no atomic two-key rename or automatic
+rollback of the destination; report the partial outcome and require a fresh read
+before retrying. See the [conditional deletion implementation](../cmd/object-conditional-delete.go).
 
 ## Partial or unavailable S3 features
 

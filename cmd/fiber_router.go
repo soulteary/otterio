@@ -62,6 +62,8 @@ func corsMiddlewareFiber() fiber.Handler {
 		xhttp.IfNoneMatch,
 		conditionalWritesHeader,
 		conditionalMatchWritesHeader,
+		conditionalCopyWritesHeader,
+		conditionalDeleteHeader,
 		"X-Amz*",
 		"x-amz*",
 		"*",

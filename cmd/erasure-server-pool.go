@@ -860,6 +860,9 @@ func (z *erasureServerPools) DeleteObjects(ctx context.Context, bucket string, o
 }
 
 func (z *erasureServerPools) CopyObject(ctx context.Context, srcBucket, srcObject, dstBucket, dstObject string, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (objInfo ObjectInfo, err error) {
+	if err = checkConditionalCopyOptions(dstOpts); err != nil {
+		return objInfo, err
+	}
 	srcObject = encodeDirObject(srcObject)
 	dstObject = encodeDirObject(dstObject)
 
@@ -902,6 +905,8 @@ func (z *erasureServerPools) CopyObject(ctx context.Context, srcBucket, srcObjec
 		ServerSideEncryption:   dstOpts.ServerSideEncryption,
 		UserDefined:            srcInfo.UserDefined,
 		Versioned:              dstOpts.Versioned,
+		VersionSuspended:       dstOpts.VersionSuspended,
+		RequireNewObject:       dstOpts.RequireNewObject,
 		VersionID:              dstOpts.VersionID,
 		MTime:                  dstOpts.MTime,
 		NoLock:                 dstOpts.NoLock,

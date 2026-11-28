@@ -642,6 +642,9 @@ func (fs *FSObjects) DeleteBucket(ctx context.Context, bucket string, forceDelet
 // if source object and destination object are same we only
 // update metadata.
 func (fs *FSObjects) CopyObject(ctx context.Context, srcBucket, srcObject, dstBucket, dstObject string, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (oi ObjectInfo, err error) {
+	if err = checkConditionalCopyOptions(dstOpts); err != nil {
+		return oi, err
+	}
 	if srcOpts.VersionID != "" && srcOpts.VersionID != nullVersionID {
 		return oi, VersionNotFound{
 			Bucket:    srcBucket,
@@ -672,6 +675,11 @@ func (fs *FSObjects) CopyObject(ctx context.Context, srcBucket, srcObject, dstBu
 
 	if _, err := fs.statBucketDir(ctx, srcBucket); err != nil {
 		return oi, toObjectErr(err, srcBucket)
+	}
+	if dstOpts.RequireNewObject {
+		if err = requireNewObject(ctx, dstBucket, dstObject, fs.getObjectInfo); err != nil {
+			return oi, toObjectErr(err, dstBucket, dstObject)
+		}
 	}
 
 	var currentCopySource ObjectInfo
@@ -1369,6 +1377,12 @@ func (fs *FSObjects) DeleteObject(ctx context.Context, bucket, object string, op
 
 	if _, err = fs.statBucketDir(ctx, bucket); err != nil {
 		return objInfo, toObjectErr(err, bucket)
+	}
+
+	if err = checkObjectDeletePreconditions(ctx, bucket, object, opts, func(ctx context.Context, bucket, object string, _ ObjectOptions) (ObjectInfo, error) {
+		return fs.getObjectInfo(ctx, bucket, object)
+	}); err != nil {
+		return objInfo, toObjectErr(err, bucket, object)
 	}
 
 	var rwlk *lock.LockedFile

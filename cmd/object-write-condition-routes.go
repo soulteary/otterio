@@ -20,8 +20,8 @@ func rejectObjectWriteConditions(api string, next func(http.ResponseWriter, *htt
 
 func guardUnsupportedObjectWriteConditions(api string, next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	switch api {
-	case "copyobject", "copyobjectpart", "putobjectpart", "newmultipartupload", "abortmultipartupload",
-		"deleteobject", "deletemultipleobjects", "postpolicybucket", "putobjectacl",
+	case "copyobjectpart", "putobjectpart", "newmultipartupload", "abortmultipartupload",
+		"deletemultipleobjects", "postpolicybucket", "putobjectacl",
 		"putobjecttagging", "deleteobjecttagging", "putobjectretention", "putobjectlegalhold", "restoreobject":
 		return rejectObjectWriteConditions(api, next)
 	default:
