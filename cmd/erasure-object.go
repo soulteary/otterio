@@ -73,7 +73,7 @@ func (er erasureObjects) CopyObject(ctx context.Context, srcBucket, srcObject, d
 	// Read metadata associated with the object from all disks.
 	storageDisks := er.getDisks()
 	metaArr, errs := readAllFileInfo(ctx, storageDisks, srcBucket, srcObject, srcOpts.VersionID, true)
-	if dstOpts.TransitionExpected != nil && isAllNotFound(errs) {
+	if (dstOpts.TransitionExpected != nil || dstOpts.CopySourceExpected != nil) && isAllNotFound(errs) {
 		return oi, PreConditionFailed{}
 	}
 
@@ -98,6 +98,16 @@ func (er erasureObjects) CopyObject(ctx context.Context, srcBucket, srcObject, d
 		return fi.ToObjectInfo(srcBucket, srcObject), toObjectErr(errMethodNotAllowed, srcBucket, srcObject)
 	}
 	if !sameTransitionSource(fi.ToObjectInfo(srcBucket, srcObject), dstOpts.TransitionExpected) {
+		return oi, PreConditionFailed{}
+	}
+	expected := dstOpts.CopySourceExpected
+	identityOnly := dstOpts.CopySourceIdentityOnly
+	if expected == nil {
+		expected = &srcInfo
+		identityOnly = true
+	}
+	currentCopySource := fi.ToObjectInfo(srcBucket, srcObject)
+	if !sameCopySource(currentCopySource, expected, identityOnly) {
 		return oi, PreConditionFailed{}
 	}
 	if srcInfo.versionOnly && fi.TransitionStatus != "" {
@@ -125,7 +135,17 @@ func (er erasureObjects) CopyObject(ctx context.Context, srcBucket, srcObject, d
 	if metadata == nil {
 		metadata = make(map[string]string)
 	}
-	metadata["etag"] = srcInfo.ETag
+	// A metadata-only copy retains the source data and its stored validator.
+	// The reader's ETag can be a client-visible, decrypted representation.
+	metadata["etag"] = currentCopySource.ETag
+	// Metadata replacement retains the source bytes, including compression.
+	for _, key := range []string{ReservedMetadataPrefix + "compression", ReservedMetadataPrefix + "actual-size"} {
+		if value, ok := currentCopySource.UserDefined[key]; ok {
+			metadata[key] = value
+		} else {
+			delete(metadata, key)
+		}
+	}
 	if fi.TransitionStatus != "" {
 		metadata[ReservedMetadataPrefixLower+"transition-status"] = fi.TransitionStatus
 		for _, key := range []string{transitionReferenceKey, transitionRestorePartsKey, transitionDeleteIntentKey} {
@@ -780,9 +800,21 @@ func (er erasureObjects) putObject(ctx context.Context, bucket string, object st
 		}
 		defer lk.Unlock()
 	}
-	if opts.RequireNewObject {
-		if err := requireNewErasureObject(ctx, bucket, object, opts, er.getObjectInfo); err != nil {
+	if opts.RequireNewObject || opts.IfMatch != nil {
+		if err := checkObjectWritePreconditions(ctx, bucket, object, opts, er.getObjectInfo); err != nil {
 			return ObjectInfo{}, err
+		}
+	}
+	if opts.CopySourceExpected != nil {
+		current, readErr := er.getObjectInfo(ctx, bucket, object, ObjectOptions{VersionID: opts.CopySourceVersionID, NoLock: true})
+		if isErrObjectNotFound(readErr) || isErrVersionNotFound(readErr) {
+			return ObjectInfo{}, PreConditionFailed{}
+		}
+		if readErr != nil {
+			return ObjectInfo{}, readErr
+		}
+		if !sameCopySource(current, opts.CopySourceExpected, opts.CopySourceIdentityOnly) {
+			return ObjectInfo{}, PreConditionFailed{}
 		}
 	}
 	if opts.TransitionExpected != nil {

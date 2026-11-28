@@ -90,7 +90,7 @@ func isEncryptedMultipart(objInfo ObjectInfo) bool {
 // ParseSSECopyCustomerRequest parses the SSE-C header fields of the provided request.
 // It returns the client provided key on success.
 func ParseSSECopyCustomerRequest(h http.Header, metadata map[string]string) (key []byte, err error) {
-	if crypto.S3.IsEncrypted(metadata) && crypto.SSECopy.IsRequested(h) {
+	if (crypto.S3.IsEncrypted(metadata) || crypto.S3KMS.IsEncrypted(metadata)) && crypto.SSECopy.IsRequested(h) {
 		return nil, crypto.ErrIncompatibleEncryptionMethod
 	}
 	k, err := crypto.SSECopy.ParseHTTP(h)
@@ -389,7 +389,9 @@ func decryptObjectInfo(key []byte, bucket, object string, metadata map[string]st
 // DecryptRequestWithSequenceNumberR - same as
 // DecryptRequestWithSequenceNumber but with a reader
 func DecryptRequestWithSequenceNumberR(client io.Reader, h http.Header, bucket, object string, seqNumber uint32, metadata map[string]string) (io.Reader, error) {
-	if crypto.S3.IsEncrypted(metadata) {
+	// Both server-managed modes recover the object key from stored metadata;
+	// only SSE-C reads require a customer key in the request headers.
+	if crypto.S3.IsEncrypted(metadata) || crypto.S3KMS.IsEncrypted(metadata) {
 		return newDecryptReader(client, nil, bucket, object, seqNumber, metadata)
 	}
 
@@ -876,7 +878,7 @@ func DecryptObjectInfo(info *ObjectInfo, r *http.Request) (encrypted bool, err e
 	// disallow X-Amz-Server-Side-Encryption header on HEAD and GET
 	switch r.Method {
 	case http.MethodGet, http.MethodHead:
-		if crypto.S3.IsRequested(headers) {
+		if crypto.S3.IsRequested(headers) || crypto.S3KMS.IsRequested(headers) {
 			return false, errInvalidEncryptionParameters
 		}
 	}
@@ -893,7 +895,7 @@ func DecryptObjectInfo(info *ObjectInfo, r *http.Request) (encrypted bool, err e
 			}
 		}
 
-		if crypto.S3.IsEncrypted(info.UserDefined) && r.Header.Get(xhttp.AmzCopySource) == "" {
+		if (crypto.S3.IsEncrypted(info.UserDefined) || crypto.S3KMS.IsEncrypted(info.UserDefined)) && r.Header.Get(xhttp.AmzCopySource) == "" {
 			if crypto.SSEC.IsRequested(headers) || crypto.SSECopy.IsRequested(headers) {
 				return encrypted, errEncryptedObject
 			}

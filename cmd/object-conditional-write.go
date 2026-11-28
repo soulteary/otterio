@@ -33,6 +33,8 @@ func conditionalWritesSupported() bool {
 	}
 }
 
+// conditionalWriteOptions parses the original create-only contract. Object
+// handlers dispatch the separate If-Match contract through setObjectWriteConditions.
 func conditionalWriteOptions(r *http.Request) (bool, APIErrorCode) {
 	if len(r.Header.Values("If-Match")) != 0 {
 		return false, ErrNotImplemented

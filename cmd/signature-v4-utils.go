@@ -192,6 +192,12 @@ func extractSignedHeaders(signedHeaders []string, r *http.Request) (http.Header,
 		// `host` will not be found in the headers, can be found in r.Host.
 		// but its always necessary that the list of signed headers containing host in it.
 		val, ok := reqHeaders[http.CanonicalHeaderKey(header)]
+		// Object preconditions consume actual headers, never query values.
+		// Recovering one here from the signed query would let a delegated
+		// request drop its condition while retaining a valid signature.
+		if (header == "if-match" || header == "if-none-match") && len(val) == 0 {
+			return nil, ErrUnsignedHeaders
+		}
 		if !ok {
 			// try to set headers from Query String
 			val, ok = reqQueries[header]

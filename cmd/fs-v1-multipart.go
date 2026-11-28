@@ -686,6 +686,14 @@ func (fs *FSObjects) CompleteMultipartUpload(ctx context.Context, bucket string,
 		}
 	}
 
+	// The merged file is no longer tracked by appendFileMap. A failed
+	// completion can reconstruct it from the original uploaded parts.
+	defer func() {
+		if e != nil {
+			fsRemoveFile(ctx, appendFilePath)
+		}
+	}()
+
 	if appendFallback {
 		if file != nil {
 			fsRemoveFile(ctx, file.filePath)
@@ -714,8 +722,10 @@ func (fs *FSObjects) CompleteMultipartUpload(ctx context.Context, bucket string,
 		return oi, err
 	}
 	defer destLock.Unlock()
-	if opts.RequireNewObject {
-		if err = requireNewObject(ctx, bucket, object, fs.getObjectInfo); err != nil {
+	if opts.RequireNewObject || opts.IfMatch != nil {
+		if err = checkObjectWritePreconditions(ctx, bucket, object, opts, func(ctx context.Context, bucket, object string, _ ObjectOptions) (ObjectInfo, error) {
+			return fs.getObjectInfo(ctx, bucket, object)
+		}); err != nil {
 			return oi, toObjectErr(err, bucket, object)
 		}
 	}

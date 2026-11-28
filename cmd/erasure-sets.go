@@ -1011,6 +1011,12 @@ func (s *erasureSets) DeleteObjects(ctx context.Context, bucket string, objects 
 func (s *erasureSets) CopyObject(ctx context.Context, srcBucket, srcObject, dstBucket, dstObject string, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (objInfo ObjectInfo, err error) {
 	srcSet := s.getHashedSet(srcObject)
 	dstSet := s.getHashedSet(dstObject)
+	if srcBucket == dstBucket && srcObject == dstObject && dstOpts.CopySourceExpected == nil {
+		source := srcInfo.Clone()
+		dstOpts.CopySourceExpected = &source
+		dstOpts.CopySourceVersionID = srcOpts.VersionID
+		dstOpts.CopySourceIdentityOnly = true
+	}
 
 	auditObjectErasureSet(ctx, dstObject, dstSet)
 
@@ -1038,15 +1044,18 @@ func (s *erasureSets) CopyObject(ctx context.Context, srcBucket, srcObject, dstB
 	}
 
 	putOpts := ObjectOptions{
-		ServerSideEncryption: dstOpts.ServerSideEncryption,
-		UserDefined:          srcInfo.UserDefined,
-		Versioned:            dstOpts.Versioned,
-		VersionID:            dstOpts.VersionID,
-		MTime:                dstOpts.MTime,
-		NoLock:               dstOpts.NoLock,
-		TransitionExpected:   dstOpts.TransitionExpected,
-		TransitionRestore:    dstOpts.TransitionRestore,
-		TransitionedObject:   dstOpts.TransitionedObject,
+		ServerSideEncryption:   dstOpts.ServerSideEncryption,
+		UserDefined:            srcInfo.UserDefined,
+		Versioned:              dstOpts.Versioned,
+		VersionID:              dstOpts.VersionID,
+		MTime:                  dstOpts.MTime,
+		NoLock:                 dstOpts.NoLock,
+		TransitionExpected:     dstOpts.TransitionExpected,
+		TransitionRestore:      dstOpts.TransitionRestore,
+		TransitionedObject:     dstOpts.TransitionedObject,
+		CopySourceExpected:     dstOpts.CopySourceExpected,
+		CopySourceVersionID:    dstOpts.CopySourceVersionID,
+		CopySourceIdentityOnly: dstOpts.CopySourceIdentityOnly,
 	}
 
 	return dstSet.putObject(ctx, dstBucket, dstObject, srcInfo.PutObjReader, putOpts)

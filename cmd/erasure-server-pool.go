@@ -864,6 +864,12 @@ func (z *erasureServerPools) CopyObject(ctx context.Context, srcBucket, srcObjec
 	dstObject = encodeDirObject(dstObject)
 
 	cpSrcDstSame := isStringEqual(pathJoin(srcBucket, srcObject), pathJoin(dstBucket, dstObject))
+	if cpSrcDstSame && dstOpts.CopySourceExpected == nil {
+		source := srcInfo.Clone()
+		dstOpts.CopySourceExpected = &source
+		dstOpts.CopySourceVersionID = srcOpts.VersionID
+		dstOpts.CopySourceIdentityOnly = true
+	}
 
 	poolIdx, err := z.getPoolIdxWithOpts(ctx, dstBucket, dstObject, srcInfo.Size, ObjectOptions{NoLock: dstOpts.NoLock})
 	if err != nil {
@@ -893,15 +899,18 @@ func (z *erasureServerPools) CopyObject(ctx context.Context, srcBucket, srcObjec
 	}
 
 	putOpts := ObjectOptions{
-		ServerSideEncryption: dstOpts.ServerSideEncryption,
-		UserDefined:          srcInfo.UserDefined,
-		Versioned:            dstOpts.Versioned,
-		VersionID:            dstOpts.VersionID,
-		MTime:                dstOpts.MTime,
-		NoLock:               dstOpts.NoLock,
-		TransitionExpected:   dstOpts.TransitionExpected,
-		TransitionRestore:    dstOpts.TransitionRestore,
-		TransitionedObject:   dstOpts.TransitionedObject,
+		ServerSideEncryption:   dstOpts.ServerSideEncryption,
+		UserDefined:            srcInfo.UserDefined,
+		Versioned:              dstOpts.Versioned,
+		VersionID:              dstOpts.VersionID,
+		MTime:                  dstOpts.MTime,
+		NoLock:                 dstOpts.NoLock,
+		TransitionExpected:     dstOpts.TransitionExpected,
+		TransitionRestore:      dstOpts.TransitionRestore,
+		TransitionedObject:     dstOpts.TransitionedObject,
+		CopySourceExpected:     dstOpts.CopySourceExpected,
+		CopySourceVersionID:    dstOpts.CopySourceVersionID,
+		CopySourceIdentityOnly: dstOpts.CopySourceIdentityOnly,
 	}
 
 	return z.serverPools[poolIdx].PutObject(ctx, dstBucket, dstObject, srcInfo.PutObjReader, putOpts)

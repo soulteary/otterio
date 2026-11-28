@@ -982,7 +982,10 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 	cpSrcDstSame := isStringEqual(pathJoin(srcBucket, srcObject), pathJoin(dstBucket, dstObject))
 
 	getObjectNInfo := objectAPI.GetObjectNInfo
-	if api.CacheAPI() != nil {
+	// A self-copy must capture origin metadata before any cache reader can
+	// normalize its ETag/size or repeat the authorization callback. Reading
+	// origin also avoids retaining a cache read lock while replacing its key.
+	if api.CacheAPI() != nil && !cpSrcDstSame {
 		getObjectNInfo = api.CacheAPI().GetObjectNInfo
 	}
 
@@ -1002,6 +1005,14 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
 			return true
 		}
+		if cpSrcDstSame {
+			// Capture storage metadata before read/decryption changes its ETag
+			// or size. The write side must not commit a stale self-copy after
+			// another writer has changed this source snapshot.
+			snapshot := o.Clone()
+			dstOpts.CopySourceExpected = &snapshot
+			dstOpts.CopySourceVersionID = srcOpts.VersionID
+		}
 		return false
 	}
 	checkCopyPrecondFn := func(o ObjectInfo) bool {
@@ -1019,11 +1030,9 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 	getOpts.AuthorizeReadFn = authorizeCopyMetadata
 	getOpts.CheckPrecondFn = checkCopyPrecondFn
 
-	// FIXME: a possible race exists between a parallel
-	// GetObject v/s CopyObject with metadata updates, ideally
-	// we should be holding write lock here but it is not
-	// possible due to other constraints such as knowing
-	// the type of source content etc.
+	// Self-copy reads without retaining a source lock. Native destination
+	// writers recheck the raw source snapshot under their write lock before
+	// committing, including when a read transforms the ETag or object size.
 	lock := noLock
 	if !cpSrcDstSame {
 		lock = readLock
@@ -1546,10 +1555,14 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		putObject = objectAPI.PutObject
 	)
 
-	// Check if put is allowed
-	if s3Err = isPutActionAllowed(ctx, rAuthType, bucket, object, r, iampolicy.PutObjectAction); s3Err != ErrNone {
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Err), r.URL)
-		return
+	// Conditional replacement can authorize PutObject using the existing
+	// object's tags. Authenticate first, then evaluate those stored tags.
+	hasIfMatch := len(r.Header.Values(xhttp.IfMatch)) != 0
+	if !hasIfMatch {
+		if s3Err = isPutActionAllowed(ctx, rAuthType, bucket, object, r, iampolicy.PutObjectAction); s3Err != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Err), r.URL)
+			return
+		}
 	}
 
 	switch rAuthType {
@@ -1574,6 +1587,13 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		}
 		if !skipContentSha256Cksum(r) {
 			sha256hex = getContentSha256Cksum(r, serviceS3)
+		}
+	}
+
+	if hasIfMatch {
+		if s3Err = authorizeObjectIfMatchBeforeWrite(ctx, r, bucket, object, objectAPI.GetObjectInfo); s3Err != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Err), r.URL)
+			return
 		}
 	}
 
@@ -1626,9 +1646,7 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		return
 	}
-	var conditionalError APIErrorCode
-	opts.RequireNewObject, conditionalError = conditionalWriteOptions(r)
-	if conditionalError != ErrNone {
+	if conditionalError := setObjectWriteConditions(ctx, r, bucket, object, &opts); conditionalError != ErrNone {
 		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(conditionalError), r.URL)
 		return
 	}
@@ -2908,7 +2926,7 @@ func (api objectAPIHandlers) ListObjectPartsHandler(w http.ResponseWriter, r *ht
 			ssec = true
 		}
 		var objectEncryptionKey []byte
-		if crypto.S3.IsEncrypted(listPartsInfo.UserDefined) {
+		if crypto.S3.IsEncrypted(listPartsInfo.UserDefined) || crypto.S3KMS.IsEncrypted(listPartsInfo.UserDefined) {
 			// Calculating object encryption key
 			objectEncryptionKey, err = decryptObjectInfo(key, bucket, object, listPartsInfo.UserDefined)
 			if err != nil {
@@ -3013,9 +3031,22 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 		return
 	}
 
-	if s3Error := checkRequestAuthType(ctx, r, policy.PutObjectAction, bucket, object); s3Error != ErrNone {
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
-		return
+	if len(r.Header.Values(xhttp.IfMatch)) != 0 {
+		// Verify the signature and install the body-hash reader before reading
+		// origin metadata for the tag-dependent PutObject authorization.
+		if s3Error := isReqAuthenticated(ctx, r, globalServerRegion, serviceS3); s3Error != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
+			return
+		}
+		if s3Error := authorizeObjectIfMatchBeforeWrite(ctx, r, bucket, object, objectAPI.GetObjectInfo); s3Error != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
+			return
+		}
+	} else {
+		if s3Error := checkRequestAuthType(ctx, r, policy.PutObjectAction, bucket, object); s3Error != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
+			return
+		}
 	}
 
 	// Content-Length is required and should be non-zero
@@ -3069,7 +3100,7 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 			var key []byte
 			isEncrypted = true
 			ssec = crypto.SSEC.IsEncrypted(mi.UserDefined)
-			if crypto.S3.IsEncrypted(mi.UserDefined) {
+			if crypto.S3.IsEncrypted(mi.UserDefined) || crypto.S3KMS.IsEncrypted(mi.UserDefined) {
 				// Calculating object encryption key
 				objectEncryptionKey, err = decryptObjectInfo(key, bucket, object, mi.UserDefined)
 				if err != nil {
@@ -3113,8 +3144,11 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 	}
 
 	completeMultiPartUpload := objectAPI.CompleteMultipartUpload
-	requireNew, conditionalError := conditionalWriteOptions(r)
-	if conditionalError != ErrNone {
+	completeOpts := ObjectOptions{
+		Versioned:        globalBucketVersioningSys.Enabled(bucket),
+		VersionSuspended: globalBucketVersioningSys.Suspended(bucket),
+	}
+	if conditionalError := setObjectWriteConditions(ctx, r, bucket, object, &completeOpts); conditionalError != ErrNone {
 		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(conditionalError), r.URL)
 		return
 	}
@@ -3143,11 +3177,7 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 
 	w = &whiteSpaceWriter{ResponseWriter: w, Flusher: w.(http.Flusher)}
 	completeDoneCh := sendWhiteSpace(w)
-	objInfo, err := completeMultiPartUpload(ctx, bucket, object, uploadID, completeParts, ObjectOptions{
-		RequireNewObject: requireNew,
-		Versioned:        globalBucketVersioningSys.Enabled(bucket),
-		VersionSuspended: globalBucketVersioningSys.Suspended(bucket),
-	})
+	objInfo, err := completeMultiPartUpload(ctx, bucket, object, uploadID, completeParts, completeOpts)
 	// Stop writing white spaces to the client. Note that close(doneCh) style is not used as it
 	// can cause white space to be written after we send XML response in a race condition.
 	headerWritten := <-completeDoneCh
