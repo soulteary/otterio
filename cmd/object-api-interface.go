@@ -60,6 +60,7 @@ type ObjectOptions struct {
 	IfMatch                       *ObjectIfMatchCondition                               // If-Match; evaluated against the current object under the destination write lock.
 	CopySourceExpected            *ObjectInfo                                           // Raw source snapshot for a self-copy, rechecked under the destination write lock.
 	CopySourceVersionID           string                                                // Source version selected by a self-copy; empty selects the current version.
+	CopySourceIdentityOnly        bool                                                  // Internal fallback snapshot came from edited copy metadata; only its data identity is authoritative.
 	ProxyRequest                  bool                                                  // only set for GET/HEAD in active-active replication scenario
 	ProxyHeaderSet                bool                                                  // only set for GET/HEAD in active-active replication scenario
 	ParentIsObject                func(ctx context.Context, bucket, parent string) bool // Used to verify if parent is an object.

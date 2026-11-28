@@ -677,8 +677,10 @@ func (fs *FSObjects) CopyObject(ctx context.Context, srcBucket, srcObject, dstBu
 	var currentCopySource ObjectInfo
 	if cpSrcDstSame {
 		expected := dstOpts.CopySourceExpected
+		identityOnly := dstOpts.CopySourceIdentityOnly
 		if expected == nil {
 			expected = &srcInfo
+			identityOnly = true
 		}
 		currentCopySource, err = fs.getObjectInfo(ctx, srcBucket, srcObject)
 		if isErrObjectNotFound(toObjectErr(err, srcBucket, srcObject)) {
@@ -689,7 +691,7 @@ func (fs *FSObjects) CopyObject(ctx context.Context, srcBucket, srcObject, dstBu
 		}
 		// The HTTP reader may have returned decrypted/compressed metadata;
 		// CopySourceExpected carries the original storage snapshot instead.
-		if !sameTransitionSource(currentCopySource, expected) {
+		if !sameCopySource(currentCopySource, expected, identityOnly) {
 			return oi, PreConditionFailed{}
 		}
 	}
@@ -1561,6 +1563,18 @@ func (fs *FSObjects) PutObjectTags(ctx context.Context, bucket, object string, t
 			Object:    object,
 			VersionID: opts.VersionID,
 		}
+	}
+
+	// Tags participate in the same transaction as conditional destination
+	// authorization and commit, before taking the metadata file lock.
+	if !opts.NoLock {
+		var err error
+		lk := fs.NewNSLock(bucket, object)
+		ctx, err = lk.GetLock(ctx, globalOperationTimeout)
+		if err != nil {
+			return ObjectInfo{}, err
+		}
+		defer lk.Unlock()
 	}
 
 	fsMetaPath := pathJoin(fs.fsPath, otterioMetaBucket, bucketMetaPrefix, bucket, object, fs.metaJSONFile)

@@ -101,11 +101,13 @@ func (er erasureObjects) CopyObject(ctx context.Context, srcBucket, srcObject, d
 		return oi, PreConditionFailed{}
 	}
 	expected := dstOpts.CopySourceExpected
+	identityOnly := dstOpts.CopySourceIdentityOnly
 	if expected == nil {
 		expected = &srcInfo
+		identityOnly = true
 	}
 	currentCopySource := fi.ToObjectInfo(srcBucket, srcObject)
-	if !sameTransitionSource(currentCopySource, expected) {
+	if !sameCopySource(currentCopySource, expected, identityOnly) {
 		return oi, PreConditionFailed{}
 	}
 	if srcInfo.versionOnly && fi.TransitionStatus != "" {
@@ -811,7 +813,7 @@ func (er erasureObjects) putObject(ctx context.Context, bucket string, object st
 		if readErr != nil {
 			return ObjectInfo{}, readErr
 		}
-		if !sameTransitionSource(current, opts.CopySourceExpected) {
+		if !sameCopySource(current, opts.CopySourceExpected, opts.CopySourceIdentityOnly) {
 			return ObjectInfo{}, PreConditionFailed{}
 		}
 	}

@@ -1555,10 +1555,14 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		putObject = objectAPI.PutObject
 	)
 
-	// Check if put is allowed
-	if s3Err = isPutActionAllowed(ctx, rAuthType, bucket, object, r, iampolicy.PutObjectAction); s3Err != ErrNone {
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Err), r.URL)
-		return
+	// Conditional replacement can authorize PutObject using the existing
+	// object's tags. Authenticate first, then evaluate those stored tags.
+	hasIfMatch := len(r.Header.Values(xhttp.IfMatch)) != 0
+	if !hasIfMatch {
+		if s3Err = isPutActionAllowed(ctx, rAuthType, bucket, object, r, iampolicy.PutObjectAction); s3Err != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Err), r.URL)
+			return
+		}
 	}
 
 	switch rAuthType {
@@ -1583,6 +1587,13 @@ func (api objectAPIHandlers) PutObjectHandler(w http.ResponseWriter, r *http.Req
 		}
 		if !skipContentSha256Cksum(r) {
 			sha256hex = getContentSha256Cksum(r, serviceS3)
+		}
+	}
+
+	if hasIfMatch {
+		if s3Err = authorizeObjectIfMatchBeforeWrite(ctx, r, bucket, object, objectAPI.GetObjectInfo); s3Err != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Err), r.URL)
+			return
 		}
 	}
 
@@ -3020,9 +3031,22 @@ func (api objectAPIHandlers) CompleteMultipartUploadHandler(w http.ResponseWrite
 		return
 	}
 
-	if s3Error := checkRequestAuthType(ctx, r, policy.PutObjectAction, bucket, object); s3Error != ErrNone {
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
-		return
+	if len(r.Header.Values(xhttp.IfMatch)) != 0 {
+		// Verify the signature and install the body-hash reader before reading
+		// origin metadata for the tag-dependent PutObject authorization.
+		if s3Error := isReqAuthenticated(ctx, r, globalServerRegion, serviceS3); s3Error != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
+			return
+		}
+		if s3Error := authorizeObjectIfMatchBeforeWrite(ctx, r, bucket, object, objectAPI.GetObjectInfo); s3Error != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
+			return
+		}
+	} else {
+		if s3Error := checkRequestAuthType(ctx, r, policy.PutObjectAction, bucket, object); s3Error != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
+			return
+		}
 	}
 
 	// Content-Length is required and should be non-zero

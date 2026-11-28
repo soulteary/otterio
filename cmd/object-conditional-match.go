@@ -115,6 +115,50 @@ func requireSignedObjectIfMatch(r *http.Request) APIErrorCode {
 	return ErrNone
 }
 
+func authorizeObjectIfMatch(ctx context.Context, r *http.Request, bucket, object string, current ObjectInfo) APIErrorCode {
+	policyRequest := withObjectTags(r, current.UserTags)
+	// This policy evaluator does not re-read the upload body and supports
+	// streaming SigV4. Reusing checkRequestAuthType here would reject it.
+	for _, action := range []iampolicy.Action{iampolicy.GetObjectAction, iampolicy.PutObjectAction} {
+		if code := isPutActionAllowed(ctx, getRequestAuthType(r), bucket, object, policyRequest, action); code != ErrNone {
+			return code
+		}
+	}
+	return ErrNone
+}
+
+// The handler verifies the signature (or streaming seed) before calling this
+// preliminary authorization. Validate the identity and session before reading
+// current metadata, and authorize against origin tags before exposing lookup
+// errors or inspecting an upload. The commit callback repeats authorization
+// under the write lock because the current object can change after this read.
+func authorizeObjectIfMatchBeforeWrite(ctx context.Context, r *http.Request, bucket, object string, get GetObjectInfoFn) APIErrorCode {
+	// Validate the supported operation and condition before doing an origin
+	// lookup, including when the active backend cannot promise this contract.
+	var preliminaryOpts ObjectOptions
+	if code := setObjectWriteConditions(ctx, r, bucket, object, &preliminaryOpts); code != ErrNone {
+		return code
+	}
+	cred, _, code := getReqAccessKeyV4(r, globalServerRegion, serviceS3)
+	if code != ErrNone {
+		return code
+	}
+	if _, code = checkClaimsFromToken(r, cred); code != ErrNone {
+		return code
+	}
+	current, err := get(ctx, bucket, object, ObjectOptions{})
+	if err != nil || current.DeleteMarker {
+		current = ObjectInfo{}
+	}
+	if code = authorizeObjectIfMatch(ctx, r, bucket, object, current); code != ErrNone {
+		return code
+	}
+	if err != nil && !isErrObjectNotFound(toObjectErr(err, bucket, object)) {
+		return toAPIErrorCode(ctx, err)
+	}
+	return ErrNone
+}
+
 func setObjectWriteConditions(ctx context.Context, r *http.Request, bucket, object string, opts *ObjectOptions) APIErrorCode {
 	values := r.Header.Values(xhttp.IfMatch)
 	if len(values) == 0 {
@@ -140,15 +184,9 @@ func setObjectWriteConditions(ctx context.Context, r *http.Request, bucket, obje
 	if code = requireSignedObjectIfMatch(r); code != ErrNone {
 		return code
 	}
-	authType := getRequestAuthType(r)
 	condition.Authorize = func(current ObjectInfo) error {
-		policyRequest := withObjectTags(r, current.UserTags)
-		// This policy evaluator does not re-read the upload body and supports
-		// streaming SigV4. Reusing checkRequestAuthType here would reject it.
-		for _, action := range []iampolicy.Action{iampolicy.GetObjectAction, iampolicy.PutObjectAction} {
-			if isPutActionAllowed(ctx, authType, bucket, object, policyRequest, action) != ErrNone {
-				return errAuthentication
-			}
+		if authorizeObjectIfMatch(ctx, r, bucket, object, current) != ErrNone {
+			return errAuthentication
 		}
 		return nil
 	}

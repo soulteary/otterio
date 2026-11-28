@@ -56,6 +56,12 @@ func corsMiddlewareFiber() fiber.Handler {
 		xhttp.RetryAfter,
 		xhttp.AmzBucketRegion,
 		xhttp.Expires,
+		// Credentialed browser requests need explicit condition and capability
+		// names; '*' does not authorize or expose these headers for them.
+		xhttp.IfMatch,
+		xhttp.IfNoneMatch,
+		conditionalWritesHeader,
+		conditionalMatchWritesHeader,
 		"X-Amz*",
 		"x-amz*",
 		"*",

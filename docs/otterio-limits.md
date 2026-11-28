@@ -142,7 +142,10 @@ OtterIO SDK v7.3.4 sends these conditions at initiation and discards
 them during automatic completion; this server rejects that initiation with
 `501` rather than accepting an unconditional result. Use an SDK containing the
 [multipart-condition forwarding fix](https://github.com/soulteary/otterio-sdk/pull/13), direct conditional completion, or a single
-PUT where applicable. Do not remove the condition to work around this error.
+PUT where applicable. An SDK containing that fix supports these conditions for
+ordinary HTTP uploads and HTTP automatic multipart uploads; RDMA uploads return
+`InvalidArgument` for `If-Match` or `If-None-Match` because the native interface
+cannot forward them. Do not remove the condition to work around this error.
 
 The create-only capability is newer than `RELEASE.2026-10-07T14-09-17Z`; the match
 capability is newer than `RELEASE.2026-11-25T20-30-00Z`. Verify the selected release.

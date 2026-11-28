@@ -112,6 +112,9 @@ SDK 自动分片上传必须把条件保留到最终完成。OtterIO SDK v7.3.4 
 发送这些条件，却在自动完成时丢弃；服务端现在对这种初始化返回 `501`，避免接受无条件结果。
 请使用包含[分片条件透传修复](https://github.com/soulteary/otterio-sdk/pull/13)的 SDK、
 直接发起带条件的完成请求，或在适用时使用普通 PUT。
+包含该修复的 SDK 在 HTTP 普通上传和 HTTP 自动分片上传路径支持这些条件；
+RDMA 原生接口无法透传条件，携带 `If-Match` 或 `If-None-Match` 的上传会明确返回
+`InvalidArgument`。
 不要通过删除条件绕过这个错误。
 
 条件创建能力晚于 `RELEASE.2026-10-07T14-09-17Z`，匹配能力晚于
