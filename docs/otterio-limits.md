@@ -63,18 +63,93 @@ Use a multipart-capable S3 client for transfers beyond the Console's configured 
 
 ## Conditional object writes
 
-Current `main` supports atomic `If-None-Match: *` for PUT and multipart completion
-on filesystem and single-pool erasure storage, subject to the running backend.
-Supported configurations advertise `X-Otterio-Conditional-Writes: v1`. Existing
-objects, including empty objects, return HTTP 412. Gateways, multiple pools,
-write-back cache and uninitialized storage do not advertise this capability.
-Unsupported conditions or backends return HTTP 501; `If-Match` is not supported
-for these write operations. Preserve a conditional failure instead of retrying
-with an unconditional overwrite.
+Conditional writes apply to ordinary `PutObject` and `CompleteMultipartUpload`.
+The destination check and final commit share the destination write lock. Read
+the capabilities advertised by the running server; source support does not mean
+an older release includes it.
 
-This capability is newer than `RELEASE.2026-10-07T14-09-17Z`; verify that your
-selected release includes it. Source: [conditional-write contract](../cmd/object-conditional-write.go)
-and [release review](releases/2026-10-08-release-review.md).
+| Condition | Meaning | Capability response header | Supported storage |
+| --- | --- | --- | --- |
+| `If-None-Match: *` | Create only if the current object does not exist | `X-Otterio-Conditional-Writes: v1` | Filesystem or single-pool erasure |
+| `If-Match: "<etag>"` | Replace only if the current object's ETag matches | `X-Otterio-Conditional-Match: v1` | Filesystem or **local** single-pool erasure |
+| `If-Match: *` | Replace only if a supported current object exists | `X-Otterio-Conditional-Match: v1` | Same as the ETag match condition |
+
+Neither capability is advertised for gateways, multiple pools, write-back
+cache, or uninitialized storage. Distributed erasure does not advertise the new
+match capability; the existing create-only capability is unchanged. Supported
+write-through caches delegate matching and commit to origin storage and
+invalidate the cached entry after a successful conditional PUT.
+
+### Matching the current object
+
+Send the ETag returned by GET or HEAD as one strong, case-sensitive, opaque tag.
+Quoted tags and the customary bare S3 ETag form are accepted, including multipart
+ETags. Weak tags and tag lists are not implemented. The check always selects the
+current object; explicit destination `versionId` and replication/import source
+headers are not supported with `If-Match`. On versioned erasure storage, a
+successful write creates a new version according to the bucket configuration;
+an older live version does not satisfy the condition when the current version
+is a delete marker.
+
+The new match capability requires Signature V4, including presigned or streaming
+PUT, with `if-match` in `SignedHeaders`. The principal must have both
+`s3:PutObject` and `s3:GetObject` permission. Authorization is rechecked with the
+current object's stored tags under the commit lock, before returning a match or
+absence result. Signature V2, anonymous requests and unsigned conditions are
+rejected. These requirements do not change the existing create-only contract.
+
+Plain and multipart validators, including the validators exposed for SSE-S3,
+SSE-KMS and SSE-C objects, are supported. The old object's encryption metadata
+determines its validator; encryption headers on the new upload do not determine
+the old ETag. Key-unsealing errors remain errors rather than being treated as a
+mismatch. Compressed current objects, filesystem directory objects and missing
+or fallback validators are rejected with `501`; they do not provide a supported
+validator contract, even with `If-Match: *`.
+
+| Result | Response |
+| --- | --- |
+| Existing object has a different ETag | `412 PreconditionFailed` |
+| Current object is absent or a delete marker | `404 NoSuchKey` |
+| Read/write authorization or condition signature is missing | `403 AccessDenied` |
+| Empty, duplicate or malformed match header; both condition headers present | `400 InvalidRequest` |
+| Unsupported condition form, operation, storage configuration or current-object shape | `501 NotImplemented` |
+
+An ETag is not a unique version ID. Rewriting the same content, metadata-only
+changes or an A-to-B-to-A sequence can retain or restore the same validator.
+Applications requiring a unique state transition should include a generation
+value in the object contents. Ordinary unconditional writes remain available;
+all writers in an optimistic concurrency workflow must use the appropriate
+condition. Preserve a conditional failure instead of retrying with an
+unconditional overwrite.
+
+### Multipart and unsupported operations
+
+Attach the destination condition to **CompleteMultipartUpload**, not to
+initiation or individual parts. A failed condition does not consume the upload;
+the application can explicitly retry completion with a newly obtained ETag or
+abort it. Slow multipart completion can have an HTTP `200` response containing
+an XML `<Error>` after keepalive whitespace; clients must inspect the response
+body as required by the existing completion protocol.
+
+Destination `If-Match` and `If-None-Match` are explicitly rejected on copy,
+multipart initiation/parts/abort, delete, object metadata mutations, browser
+POST and Snowball extraction. The existing `x-amz-copy-source-if-match` checks
+the copy source and remains a separate supported header. GET/HEAD conditions
+are also unchanged.
+
+SDK automatic multipart uploads must preserve the condition through completion.
+OtterIO SDK v7.3.4 sends these conditions at initiation and discards
+them during automatic completion; this server rejects that initiation with
+`501` rather than accepting an unconditional result. Use an SDK containing the
+[multipart-condition forwarding fix](https://github.com/soulteary/otterio-sdk/pull/13), direct conditional completion, or a single
+PUT where applicable. Do not remove the condition to work around this error.
+
+The create-only capability is newer than `RELEASE.2026-10-07T14-09-17Z`; the match
+capability is newer than `RELEASE.2026-11-25T20-30-00Z`. Verify the selected release.
+Sources: [create-only contract](../cmd/object-conditional-write.go),
+[match contract](../cmd/object-conditional-match.go),
+[unsupported operation guards](../cmd/object-write-condition-routes.go) and
+[create-only release review](releases/2026-10-08-release-review.md).
 
 ## Partial or unavailable S3 features
 

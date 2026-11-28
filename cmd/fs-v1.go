@@ -653,7 +653,10 @@ func (fs *FSObjects) CopyObject(ctx context.Context, srcBucket, srcObject, dstBu
 	cpSrcDstSame := isStringEqual(pathJoin(srcBucket, srcObject), pathJoin(dstBucket, dstObject))
 	defer ObjectPathUpdated(path.Join(dstBucket, dstObject))
 
-	if !cpSrcDstSame {
+	// Self-copy must serialize with ordinary PUT, conditional PUT and DELETE.
+	// Its source reader deliberately uses noLock, so this does not upgrade a
+	// held source read lock. Internal callers may already own this write lock.
+	if !dstOpts.NoLock {
 		objectDWLock := fs.NewNSLock(dstBucket, dstObject)
 		ctx, err = objectDWLock.GetLock(ctx, globalOperationTimeout)
 		if err != nil {
@@ -669,6 +672,26 @@ func (fs *FSObjects) CopyObject(ctx context.Context, srcBucket, srcObject, dstBu
 
 	if _, err := fs.statBucketDir(ctx, srcBucket); err != nil {
 		return oi, toObjectErr(err, srcBucket)
+	}
+
+	var currentCopySource ObjectInfo
+	if cpSrcDstSame {
+		expected := dstOpts.CopySourceExpected
+		if expected == nil {
+			expected = &srcInfo
+		}
+		currentCopySource, err = fs.getObjectInfo(ctx, srcBucket, srcObject)
+		if isErrObjectNotFound(toObjectErr(err, srcBucket, srcObject)) {
+			return oi, PreConditionFailed{}
+		}
+		if err != nil {
+			return oi, toObjectErr(err, srcBucket, srcObject)
+		}
+		// The HTTP reader may have returned decrypted/compressed metadata;
+		// CopySourceExpected carries the original storage snapshot instead.
+		if !sameTransitionSource(currentCopySource, expected) {
+			return oi, PreConditionFailed{}
+		}
 	}
 
 	if cpSrcDstSame && srcInfo.metadataOnly {
@@ -692,7 +715,20 @@ func (fs *FSObjects) CopyObject(ctx context.Context, srcBucket, srcObject, dstBu
 		}
 
 		fsMeta.Meta = cloneMSS(srcInfo.UserDefined)
-		fsMeta.Meta["etag"] = srcInfo.ETag
+		if fsMeta.Meta == nil {
+			fsMeta.Meta = make(map[string]string)
+		}
+		// Keep the stored validator, not the reader's possibly decrypted ETag.
+		fsMeta.Meta["etag"] = currentCopySource.ETag
+		// Metadata replacement does not rewrite the source bytes. Keep the
+		// physical compression description attached to those same bytes.
+		for _, key := range []string{ReservedMetadataPrefix + "compression", ReservedMetadataPrefix + "actual-size"} {
+			if value, ok := currentCopySource.UserDefined[key]; ok {
+				fsMeta.Meta[key] = value
+			} else {
+				delete(fsMeta.Meta, key)
+			}
+		}
 		if _, err = fsMeta.WriteTo(wlk); err != nil {
 			return oi, toObjectErr(err, srcBucket, srcObject)
 		}
@@ -1131,8 +1167,10 @@ func (fs *FSObjects) PutObject(ctx context.Context, bucket string, object string
 	}
 	defer lk.Unlock()
 	defer ObjectPathUpdated(path.Join(bucket, object))
-	if opts.RequireNewObject {
-		if err = requireNewObject(ctx, bucket, object, fs.getObjectInfo); err != nil {
+	if opts.RequireNewObject || opts.IfMatch != nil {
+		if err = checkObjectWritePreconditions(ctx, bucket, object, opts, func(ctx context.Context, bucket, object string, _ ObjectOptions) (ObjectInfo, error) {
+			return fs.getObjectInfo(ctx, bucket, object)
+		}); err != nil {
 			return objInfo, toObjectErr(err, bucket, object)
 		}
 	}

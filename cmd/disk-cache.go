@@ -628,6 +628,20 @@ func (c *cacheObjects) migrateCacheFromV1toV2(ctx context.Context) {
 // PutObject - caches the uploaded object for single Put operations
 func (c *cacheObjects) PutObject(ctx context.Context, bucket, object string, r *PutObjReader, opts ObjectOptions) (objInfo ObjectInfo, err error) {
 	putObjectFn := c.InnerPutObjectFn
+	if opts.IfMatch != nil {
+		if c.commitWriteback {
+			return ObjectInfo{}, NotImplemented{}
+		}
+		// The origin owns both the current validator and the commit lock. Never
+		// check a cached ETag or enqueue a conditional overwrite for later.
+		objInfo, err = putObjectFn(ctx, bucket, object, r, opts)
+		if err == nil {
+			if dcache, cacheErr := c.getCacheToLoc(ctx, bucket, object); cacheErr == nil {
+				dcache.Delete(ctx, bucket, object)
+			}
+		}
+		return objInfo, err
+	}
 	// Write-back cache cannot acknowledge an atomic destination precondition.
 	if opts.RequireNewObject {
 		return putObjectFn(ctx, bucket, object, r, opts)

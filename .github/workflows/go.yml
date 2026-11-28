@@ -141,6 +141,12 @@ jobs:
           go test -v -count=1 -timeout 15m ./cmd
           -run 'TestBucketConfig|TestSelfCredentials|TestConfiguration|TestFiber|TestGetBucket|TestPutBucket|TestDeleteBucket|TestAccountInfo|TestBucketMetadata'
 
+      - name: Conditional write regressions (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: >-
+          go test -v -count=1 -timeout 15m ./cmd
+          -run '^(TestIfMatch.*|TestSelfCopy.*|TestConditional.*|TestUnsupportedObjectWriteConditionRoutes|TestAPIUnsupportedObjectWriteConditions|TestSSEKMSRead.*)$'
+
       - name: Lifecycle storage and restore regressions (linux)
         if: matrix.os == 'ubuntu-latest'
         run: |

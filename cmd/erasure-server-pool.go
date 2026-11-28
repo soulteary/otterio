@@ -864,6 +864,11 @@ func (z *erasureServerPools) CopyObject(ctx context.Context, srcBucket, srcObjec
 	dstObject = encodeDirObject(dstObject)
 
 	cpSrcDstSame := isStringEqual(pathJoin(srcBucket, srcObject), pathJoin(dstBucket, dstObject))
+	if cpSrcDstSame && dstOpts.CopySourceExpected == nil {
+		source := srcInfo.Clone()
+		dstOpts.CopySourceExpected = &source
+		dstOpts.CopySourceVersionID = srcOpts.VersionID
+	}
 
 	poolIdx, err := z.getPoolIdxWithOpts(ctx, dstBucket, dstObject, srcInfo.Size, ObjectOptions{NoLock: dstOpts.NoLock})
 	if err != nil {
@@ -902,6 +907,8 @@ func (z *erasureServerPools) CopyObject(ctx context.Context, srcBucket, srcObjec
 		TransitionExpected:   dstOpts.TransitionExpected,
 		TransitionRestore:    dstOpts.TransitionRestore,
 		TransitionedObject:   dstOpts.TransitionedObject,
+		CopySourceExpected:   dstOpts.CopySourceExpected,
+		CopySourceVersionID:  dstOpts.CopySourceVersionID,
 	}
 
 	return z.serverPools[poolIdx].PutObject(ctx, dstBucket, dstObject, srcInfo.PutObjReader, putOpts)

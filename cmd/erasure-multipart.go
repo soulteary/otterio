@@ -734,14 +734,15 @@ func (er erasureObjects) ListObjectParts(ctx context.Context, bucket, object, up
 //
 // Implements S3 compatible Complete multipart API.
 func (er erasureObjects) CompleteMultipartUpload(ctx context.Context, bucket string, object string, uploadID string, parts []CompletePart, opts ObjectOptions) (oi ObjectInfo, err error) {
-	// Hold read-locks to verify uploaded parts, also disallows
-	// parallel part uploads as well.
+	// Completion consumes the upload metadata and parts. Serialize other
+	// completions as well as part uploads and aborts, so a second completion
+	// cannot recreate metadata for data already committed by the first.
 	uploadIDLock := er.NewNSLock(bucket, pathJoin(object, uploadID))
-	ctx, err = uploadIDLock.GetRLock(ctx, globalOperationTimeout)
+	ctx, err = uploadIDLock.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
 		return oi, err
 	}
-	defer uploadIDLock.RUnlock()
+	defer uploadIDLock.Unlock()
 
 	if err = er.checkUploadIDExists(ctx, bucket, object, uploadID); err != nil {
 		return oi, toObjectErr(err, bucket, object, uploadID)
@@ -862,6 +863,21 @@ func (er erasureObjects) CompleteMultipartUpload(ctx context.Context, bucket str
 	// Save the consolidated actual size.
 	fi.Metadata[ReservedMetadataPrefix+"actual-size"] = strconv.FormatInt(objectActualSize, 10)
 
+	// Hold the destination namespace lock through the final commit. Evaluate
+	// conditions before rewriting upload metadata or removing unused parts, so a
+	// failed condition leaves the upload intact and can be retried.
+	lk := er.NewNSLock(bucket, object)
+	ctx, err = lk.GetLock(ctx, globalOperationTimeout)
+	if err != nil {
+		return oi, err
+	}
+	defer lk.Unlock()
+	if opts.RequireNewObject || opts.IfMatch != nil {
+		if err = checkObjectWritePreconditions(ctx, bucket, object, opts, er.getObjectInfo); err != nil {
+			return oi, err
+		}
+	}
+
 	// Update all erasure metadata, make sure to not modify fields like
 	// checksum which are different on each disks.
 	for index := range partsMetadata {
@@ -891,20 +907,7 @@ func (er erasureObjects) CompleteMultipartUpload(ctx context.Context, bucket str
 		}
 	}
 
-	// Hold namespace to complete the transaction
-	lk := er.NewNSLock(bucket, object)
-	ctx, err = lk.GetLock(ctx, globalOperationTimeout)
-	if err != nil {
-		return oi, err
-	}
-	defer lk.Unlock()
-
 	// Rename the multipart object to final location.
-	if opts.RequireNewObject {
-		if err = requireNewErasureObject(ctx, bucket, object, opts, er.getObjectInfo); err != nil {
-			return oi, err
-		}
-	}
 	if onlineDisks, err = renameData(ctx, onlineDisks, otterioMetaMultipartBucket, uploadIDPath,
 		partsMetadata, bucket, object, writeQuorum); err != nil {
 		return oi, toObjectErr(err, bucket, object)

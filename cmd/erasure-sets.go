@@ -1011,6 +1011,11 @@ func (s *erasureSets) DeleteObjects(ctx context.Context, bucket string, objects 
 func (s *erasureSets) CopyObject(ctx context.Context, srcBucket, srcObject, dstBucket, dstObject string, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (objInfo ObjectInfo, err error) {
 	srcSet := s.getHashedSet(srcObject)
 	dstSet := s.getHashedSet(dstObject)
+	if srcBucket == dstBucket && srcObject == dstObject && dstOpts.CopySourceExpected == nil {
+		source := srcInfo.Clone()
+		dstOpts.CopySourceExpected = &source
+		dstOpts.CopySourceVersionID = srcOpts.VersionID
+	}
 
 	auditObjectErasureSet(ctx, dstObject, dstSet)
 
@@ -1047,6 +1052,8 @@ func (s *erasureSets) CopyObject(ctx context.Context, srcBucket, srcObject, dstB
 		TransitionExpected:   dstOpts.TransitionExpected,
 		TransitionRestore:    dstOpts.TransitionRestore,
 		TransitionedObject:   dstOpts.TransitionedObject,
+		CopySourceExpected:   dstOpts.CopySourceExpected,
+		CopySourceVersionID:  dstOpts.CopySourceVersionID,
 	}
 
 	return dstSet.putObject(ctx, dstBucket, dstObject, srcInfo.PutObjReader, putOpts)

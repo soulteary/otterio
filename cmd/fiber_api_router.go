@@ -88,6 +88,12 @@ func rejectedBucketAPIRules() []routeRule {
 }
 
 func s3Route(methods []string, api string, traceHdrs bool, h func(http.ResponseWriter, *http.Request), queries map[string]string, headerRegex map[string]*regexp.Regexp) routeRule {
+	h = guardUnsupportedObjectWriteConditions(api, h)
+	// Archive extraction writes multiple keys and cannot apply one destination
+	// condition to the whole archive. It shares the ordinary PUT statistics name.
+	if api == "putobject" && headerRegex[xhttp.AmzSnowballExtract] != nil {
+		h = rejectObjectWriteConditions(api, h)
+	}
 	return routeRule{
 		methods:     methods,
 		queries:     queries,
