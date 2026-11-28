@@ -55,6 +55,12 @@ func setCommonHeaders(w http.ResponseWriter) {
 	if conditionalMatchWritesSupported() {
 		w.Header().Set(conditionalMatchWritesHeader, "v1")
 	}
+	if conditionalCopyWritesSupported() {
+		w.Header().Set(conditionalCopyWritesHeader, "v1")
+	}
+	if conditionalDeleteSupported() {
+		w.Header().Set(conditionalDeleteHeader, "v1")
+	}
 
 	// Set `x-amz-bucket-region` only if region is set on the server
 	// by default otterio uses an empty region.

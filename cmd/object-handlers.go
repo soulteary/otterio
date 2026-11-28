@@ -979,6 +979,13 @@ func (api objectAPIHandlers) CopyObjectHandler(w http.ResponseWriter, r *http.Re
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		return
 	}
+	if code := setObjectCopyWriteConditions(r, &dstOpts); code != ErrNone {
+		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(code), r.URL)
+		return
+	}
+	if dstOpts.RequireNewObject {
+		dstOpts.VersionSuspended = globalBucketVersioningSys.Suspended(dstBucket)
+	}
 	cpSrcDstSame := isStringEqual(pathJoin(srcBucket, srcObject), pathJoin(dstBucket, dstObject))
 
 	getObjectNInfo := objectAPI.GetObjectNInfo
@@ -3246,9 +3253,23 @@ func (api objectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if s3Error := checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, object); s3Error != ErrNone {
-		writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
-		return
+	var condition *ObjectIfMatchCondition
+	if len(r.Header.Values(xhttp.IfMatch)) != 0 {
+		var code APIErrorCode
+		condition, code = prepareObjectIfMatchDelete(ctx, r, bucket, object, objectAPI.GetObjectInfo)
+		if code != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(code), r.URL)
+			return
+		}
+	} else {
+		if len(r.Header.Values(xhttp.IfNoneMatch)) != 0 {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL)
+			return
+		}
+		if s3Error := checkRequestAuthType(ctx, r, policy.DeleteObjectAction, bucket, object); s3Error != ErrNone {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(s3Error), r.URL)
+			return
+		}
 	}
 
 	getObjectInfo := objectAPI.GetObjectInfo
@@ -3269,12 +3290,27 @@ func (api objectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		return
 	}
+	opts.IfMatch = condition
 	var (
 		hasLockEnabled, hasLifecycleConfig bool
 		goi                                ObjectInfo
 		gerr                               error
 	)
 	replicateDeletes := hasReplicationRules(ctx, bucket, []ObjectToDelete{{ObjectName: object, VersionID: opts.VersionID}})
+	// Replication derives an event from a metadata snapshot outside the final
+	// delete lock. Do not claim a conditional contract for that path yet,
+	// including a configuration whose rules do not currently select this key.
+	if condition != nil {
+		replicationConfig, configErr := getReplicationConfig(ctx, bucket)
+		if _, absent := configErr.(BucketReplicationConfigNotFound); configErr != nil && !absent {
+			writeErrorResponse(ctx, w, toAPIError(ctx, configErr), r.URL)
+			return
+		}
+		if replicationConfig != nil {
+			writeErrorResponse(ctx, w, errorCodes.ToAPIErr(ErrNotImplemented), r.URL)
+			return
+		}
+	}
 	if rcfg, _ := globalBucketObjectLockSys.Get(bucket); rcfg.LockEnabled {
 		hasLockEnabled = true
 	}
@@ -3337,7 +3373,7 @@ func (api objectAPIHandlers) DeleteObjectHandler(w http.ResponseWriter, r *http.
 	// The backend removes remote data before releasing its durable source
 	// reference. Propagate remote failures so clients can retry safely.
 	objInfo, err := deleteObject(ctx, bucket, object, opts)
-	if err != nil && !isErrObjectNotFound(err) && !isErrVersionNotFound(err) {
+	if err != nil && (condition != nil || !isErrObjectNotFound(err) && !isErrVersionNotFound(err)) {
 		writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL)
 		return
 	}

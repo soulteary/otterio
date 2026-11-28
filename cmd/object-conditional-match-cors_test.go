@@ -20,6 +20,7 @@ func TestConditionalMatchCORS(t *testing.T) {
 	globalAPIConfig.mu.Unlock()
 	objectLayer, cacheLayer := newObjectLayerFn(), newCachedObjectLayerFn()
 	gateway, distributed := globalIsGateway, globalIsDistErasure
+	federation, dnsConfig := globalBucketFederation, globalDNSConfig
 	t.Cleanup(func() {
 		globalAPIConfig.mu.Lock()
 		globalAPIConfig.corsAllowOrigins = previousOrigins
@@ -27,10 +28,12 @@ func TestConditionalMatchCORS(t *testing.T) {
 		setObjectLayer(objectLayer)
 		setCacheObjectLayer(cacheLayer)
 		globalIsGateway, globalIsDistErasure = gateway, distributed
+		globalBucketFederation, globalDNSConfig = federation, dnsConfig
 	})
 	setObjectLayer(&FSObjects{})
 	setCacheObjectLayer(nil)
 	globalIsGateway, globalIsDistErasure = false, false
+	globalBucketFederation, globalDNSConfig = false, nil
 
 	app := newFiberApp()
 	app.Use(corsMiddlewareFiber())
@@ -53,7 +56,7 @@ func TestConditionalMatchCORS(t *testing.T) {
 			t.Errorf("credentialed CORS response missing exact origin or credentials: %v", header)
 		}
 	}
-	for _, method := range []string{http.MethodPut, http.MethodPost} {
+	for _, method := range []string{http.MethodPut, http.MethodPost, http.MethodDelete} {
 		for _, condition := range []string{xhttp.IfMatch, xhttp.IfNoneMatch} {
 			t.Run(method+"/"+condition, func(t *testing.T) {
 				request := httptest.NewRequest(http.MethodOptions, "/bucket/object", nil)
@@ -87,7 +90,7 @@ func TestConditionalMatchCORS(t *testing.T) {
 		t.Fatalf("capability response status=%d", response.StatusCode)
 	}
 	assertCredentials(response.Header)
-	for _, capability := range []string{conditionalWritesHeader, conditionalMatchWritesHeader} {
+	for _, capability := range []string{conditionalWritesHeader, conditionalMatchWritesHeader, conditionalCopyWritesHeader, conditionalDeleteHeader} {
 		if response.Header.Get(capability) != "v1" {
 			t.Errorf("missing %s capability: %v", capability, response.Header)
 		}

@@ -54,6 +54,9 @@ func countOnlineDisks(onlineDisks []StorageAPI) (online int) {
 // if source object and destination object are same we only
 // update metadata.
 func (er erasureObjects) CopyObject(ctx context.Context, srcBucket, srcObject, dstBucket, dstObject string, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (oi ObjectInfo, err error) {
+	if err = checkConditionalCopyOptions(dstOpts); err != nil {
+		return oi, err
+	}
 	// This call shouldn't be used for anything other than metadata updates or adding self referential versions.
 	if !srcInfo.metadataOnly {
 		return oi, NotImplemented{}
@@ -68,6 +71,11 @@ func (er erasureObjects) CopyObject(ctx context.Context, srcBucket, srcObject, d
 			return oi, err
 		}
 		defer lk.Unlock()
+	}
+	if dstOpts.RequireNewObject {
+		if err = requireNewErasureObject(ctx, dstBucket, dstObject, dstOpts, er.getObjectInfo); err != nil {
+			return oi, err
+		}
 	}
 
 	// Read metadata associated with the object from all disks.
@@ -1196,6 +1204,11 @@ func (er erasureObjects) DeleteObject(ctx context.Context, bucket, object string
 	versionFound := true
 	objInfo = ObjectInfo{VersionID: opts.VersionID} // version id needed in Delete API response.
 	goi, gerr := er.getObjectInfo(ctx, bucket, object, opts)
+	if err = checkObjectDeletePreconditions(ctx, bucket, object, opts, func(context.Context, string, string, ObjectOptions) (ObjectInfo, error) {
+		return goi, gerr
+	}); err != nil {
+		return objInfo, toObjectErr(err, bucket, object)
+	}
 	if opts.TransitionExpected != nil && (isErrObjectNotFound(gerr) || isErrVersionNotFound(gerr)) {
 		return objInfo, PreConditionFailed{}
 	}

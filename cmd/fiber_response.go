@@ -104,6 +104,12 @@ func setCommonHeadersFiber(c fiber.Ctx) {
 	if conditionalMatchWritesSupported() {
 		c.Set(conditionalMatchWritesHeader, "v1")
 	}
+	if conditionalCopyWritesSupported() {
+		c.Set(conditionalCopyWritesHeader, "v1")
+	}
+	if conditionalDeleteSupported() {
+		c.Set(conditionalDeleteHeader, "v1")
+	}
 	if region := globalServerRegion; region != "" {
 		c.Set(xhttp.AmzBucketRegion, region)
 	}

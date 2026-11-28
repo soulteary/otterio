@@ -1009,6 +1009,9 @@ func (s *erasureSets) DeleteObjects(ctx context.Context, bucket string, objects 
 
 // CopyObject - copies objects from one hashedSet to another hashedSet, on server side.
 func (s *erasureSets) CopyObject(ctx context.Context, srcBucket, srcObject, dstBucket, dstObject string, srcInfo ObjectInfo, srcOpts, dstOpts ObjectOptions) (objInfo ObjectInfo, err error) {
+	if err = checkConditionalCopyOptions(dstOpts); err != nil {
+		return objInfo, err
+	}
 	srcSet := s.getHashedSet(srcObject)
 	dstSet := s.getHashedSet(dstObject)
 	if srcBucket == dstBucket && srcObject == dstObject && dstOpts.CopySourceExpected == nil {
@@ -1047,6 +1050,8 @@ func (s *erasureSets) CopyObject(ctx context.Context, srcBucket, srcObject, dstB
 		ServerSideEncryption:   dstOpts.ServerSideEncryption,
 		UserDefined:            srcInfo.UserDefined,
 		Versioned:              dstOpts.Versioned,
+		VersionSuspended:       dstOpts.VersionSuspended,
+		RequireNewObject:       dstOpts.RequireNewObject,
 		VersionID:              dstOpts.VersionID,
 		MTime:                  dstOpts.MTime,
 		NoLock:                 dstOpts.NoLock,

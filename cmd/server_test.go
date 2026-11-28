@@ -215,6 +215,8 @@ func (s *TestSuiteCommon) TestCors(c *check) {
 		"If-None-Match",
 		conditionalWritesHeader,
 		conditionalMatchWritesHeader,
+		conditionalCopyWritesHeader,
+		conditionalDeleteHeader,
 		"X-Amz*",
 		"x-amz*",
 		"*",
